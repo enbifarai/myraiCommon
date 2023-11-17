@@ -1,0 +1,142 @@
+﻿@using myRaiCommonModel
+@using myRaiHelper
+@model AnagraficaModel
+
+@{
+    var currentContract = Model.DatiContratti.Eventi.OrderByDescending(x => x.DataInizio).First();
+    var minDate = Model.DatiContratti.Eventi.Min(x => x.DataInizio);
+    var maxDate = Model.DatiContratti.Eventi.Max(x => x.DataFine);
+    if (maxDate == currentContract.MaxDate)
+    {
+        maxDate = DateTime.Today;
+    }
+
+    var diffColMonth = ((maxDate.Year - minDate.Year) * 12) + maxDate.Month - minDate.Month + 1;
+    DateTime dateRif = new DateTime(minDate.Year, minDate.Month, 1);
+    var stringEmptyRow = "";
+    while (dateRif <= maxDate)
+    {
+        stringEmptyRow += String.Format("<td colspan=\"2\" data-i=\"{0:yyyyMMdd}\" data-f=\"{1:yyyyMMdd}\"/>", dateRif, dateRif.AddMonths(1).AddDays(-1));
+        dateRif = dateRif.AddMonths(1);
+    }
+
+    var iDate = new DateTime(minDate.Year, minDate.Month, 1);
+    var iMaxDate = new DateTime(maxDate.Year, maxDate.Month, 1);
+
+    string rowYear = "";
+    string rowMonth = "";
+
+    string yearFormat = "<th colspan=\"{1}\"  title=\"{0}\" data-ce=\"y\" data-i=\"{2:yyyyMMdd}\" data-f=\"{3:yyyyMMdd}\"><span>{0}</span></th>";
+    string monthFormat = "<th colspan=\"{1}\" title=\"{3:MMMM yyyy}\" class=\"{2}\" data-ce=\"m\" data-i=\"{3:yyyyMMdd}\" data-f=\"{4:yyyyMMdd}\"><span>{0}</span></th>";
+
+    while (iDate <= iMaxDate)
+    {
+        int numMonth = 12;
+        if (iDate.Month == minDate.Month && iDate.Year == minDate.Year)
+        {
+            numMonth = 13 - iDate.Month;
+        }
+        else if (iDate.Year == maxDate.Year)
+        {
+            numMonth = maxDate.Month;
+        }
+
+        DateTime startYear = iDate;
+        DateTime endYear = new DateTime(iDate.Year + 1, 1, 1).AddDays(-1);
+
+        rowYear += String.Format(yearFormat, iDate.Year, numMonth * 2, startYear, endYear);
+        int rifYear = iDate.Year;
+        while (iDate.Year <= rifYear && iDate <= iMaxDate)
+        {
+            DateTime startMonth = new DateTime(iDate.Year, iDate.Month, 1);
+            DateTime endMonth = startMonth.AddMonths(1).AddDays(-1);
+
+            rowMonth += String.Format(monthFormat, iDate.ToString("MMM").Substring(0, 1).ToUpper(), 2, iDate.Month == 12 ? "" : "", startMonth, endMonth);
+            iDate = iDate.AddMonths(1);
+        }
+    }
+}
+
+@helper PrepareDataRow(BaseEventiContainerModel cont)
+{
+    IEnumerable<EventoModel> records;
+    if (cont.Tipologia == TipoEvento.Mansione)
+    {
+        records = cont.Eventi.Where(x => x.Principale);
+    }
+    else
+    {
+        records = cont.Eventi;
+    }
+    var tmpList = records.OrderBy(x => x.DataInizio).ToList();
+
+    <tr data-evento-row="" data-type="@cont.Tipologia">
+        @for (int i = 0; i < tmpList.Count(); i++)
+        {
+            var record = tmpList[i];
+            var dtaFine = record.DataFine;
+            if (dtaFine == record.MaxDate)
+            {
+                dtaFine = DateTime.Today;
+            }
+            double colspan = ((record.DataFine.Year - record.DataInizio.Year) * 12) + record.DataFine.Month - record.DataInizio.Month + 1;
+            if (i < tmpList.Count() - 1)
+            {
+                if (record.DataFine.Month == tmpList[i + 1].DataInizio.Month)
+                {
+                    colspan -= 0.5;
+                }
+            }
+            if (i > 0)
+            {
+                if (record.DataInizio.Month == tmpList[i - 1].DataFine.Month)
+                {
+                    colspan -= 0.5;
+                }
+            }
+
+            <td colspan="@(colspan*2.0)" data-i="@record.DataInizio.ToString("yyyyMMdd")" data-f="@record.DataFine.ToString("yyyyMMdd")">
+                <div @(record.DataFine==record.MaxDate? "class=actual-event" : "") data-toggle="popover" data-html="true" data-placement="top" data-content="" data-container="body" onclick="showContractPopover(this)" data-trigger="focus">
+                    <div>
+                        <span><span>@record.Codice</span> <b>@CezanneHelper.GetDes(record.Codice, record.Descrizione).TitleCase()</b></span><br />
+                        <span>@record.DataInizio.ToString("dd/MM/yyyy") - @record.DataFine.ToString("dd/MM/yyyy")</span><br />
+                        <span>@record.DescrizioneEvento</span>
+                    </div>
+                </div>
+            </td>
+
+            if (i < tmpList.Count() - 1)
+            {
+                var recordSucc = tmpList[i + 1];
+                int diffMonth = ((recordSucc.DataInizio.Year - record.DataFine.Year) * 12) + recordSucc.DataInizio.Month - record.DataFine.Month - 1;
+                DateTime dateRife = new DateTime(record.DataFine.Year, record.DataFine.Month, 1);
+                for (int j = 0; j < diffMonth; j++)
+                {
+                    dateRife = dateRife.AddMonths(1);
+                    <td colspan="2" data-i="@dateRife.ToString("yyyyMMdd")" data-f="@dateRife.AddMonths(1).AddDays(-1).ToString("yyyyMMdd")" />
+                }
+            }
+        }
+    </tr>
+}
+
+<table class="table rai-table rai-table-vcenter push-5 table-storico-carriera view-year-month">
+    <thead>
+        <tr>@Html.Raw(rowYear)</tr>
+        <tr>@Html.Raw(rowMonth)</tr>
+    </thead>
+    <tbody>
+        <tr data-evento-row data-type="@TipoEvento.Sede">@Html.Raw(stringEmptyRow)</tr>
+        @PrepareDataRow(Model.DatiSedi)
+        <tr data-evento-row data-type="@TipoEvento.Servizio">@Html.Raw(stringEmptyRow)</tr>
+        @PrepareDataRow(Model.DatiServizi)
+        <tr data-evento-row data-type="@TipoEvento.Mansione">@Html.Raw(stringEmptyRow)</tr>
+        @PrepareDataRow(Model.DatiRuoli)
+        <tr data-evento-row data-type="@TipoEvento.Qualifica">@Html.Raw(stringEmptyRow)</tr>
+        @PrepareDataRow(Model.DatiQualifiche)
+        <tr data-evento-row data-type="@TipoEvento.Sezione">@Html.Raw(stringEmptyRow)</tr>
+        @PrepareDataRow(Model.DatiSezioni)
+        <tr>@Html.Raw(stringEmptyRow)</tr>
+    </tbody>
+</table>
+

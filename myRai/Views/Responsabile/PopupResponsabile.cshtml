@@ -1,0 +1,183 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+@using myRai.Business
+
+<div class="modal right fade" id="modal-boss" role="dialog" aria-hidden="true" style="display: none;">
+    <input type="hidden" id="popup-boss-matr" />
+    <input type="hidden" id="popup-boss-actionEnabled" value="0" />
+    <div class="modal-dialog modal-dialog-popin">
+        <form id="form-inserimento" class="js-form1 validation form-horizontal" method="post" action="ajax/inserimento" novalidate="novalidate">
+            <div class="rai modal-content">
+                <div class="block block-transparent remove-margin-b">
+                    <div class="block-header">
+                        <label id="tit-modal-boss" class="rai-font-modal-heading">
+                            Giornata del dipendente
+                        </label>
+                        <div class="block-options">
+                            <button data-dismiss="modal" class="btn btn-action-icon"><i class="glyphicon glyphicon-remove"></i></button>
+                        </div>
+                    </div>
+                    <div class="block-content">
+                        <div class="row no-margin-left-right">
+                            @*COLONNA SINISTRA---------------------------------------------------------*@
+                            <div class="col-md-6">
+                                <section class="rai panel">
+                                    <header class="panel-heading">
+                                        <h2 class="panel-title">Informazioni</h2>
+                                    </header>
+                                    <div class="panel-body">
+                                        <div id="anagrafica-boss">
+
+                                        </div>
+                                        <div id="evidenze-boss">
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+                            @*COLONNA DESTRA----------------------------------------------------------*@
+                            <div class="col-md-6">
+                                <div id="boxleft">
+                                    <div class="block-header block-content-mini bg-cel no-padding ">
+                                        <div class="row" style="padding-top:15px">
+                                            <div class="col-sm-3 no-padding" style="text-align :right">
+                                                <a href="javascript:databossBefore()" style="margin-right:0px">
+                                                    <span style="font-size: 10px;padding-top: 10px;" class="glyphicon glyphicon-triangle-left text-muted"></span>
+                                                </a>
+                                            </div>
+                                            <div class="col-sm-6">
+                                                <div class="input-group mb-md">
+                                                    <span style="cursor: pointer" onclick="$('#data-boss').datetimepicker('show')" class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                                                    <input class="js-datetimepicker form-control" data-format="DD/MM/YYYY" style="width:98%" data-locale="it" type="text" id="data-boss" name="data_da" placeholder="Data">
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-3 no-padding" style="text-align:left">
+                                                <a href="javascript:databossAfter()" style="margin-right:0px">
+                                                    <span style="font-size: 10px;padding-top: 10px;" class="glyphicon glyphicon-triangle-right text-muted"></span>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div id="infogiornata-day-boss-parent" class="block block-transparent block-content-table">
+                                        <div class="block-header block-content-mini">
+                                            <label class="rai-font-table-heading">Informazioni giornata</label>
+                                        </div>
+                                        <div class="block-content block-content-mini">
+                                            <div id="infogiornata-day-boss" class="rai-table-info">
+
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @Html.RenderBlock(BlockType.ContentTable, "Timbrature", "", null, null, "timbratureday-boss")
+
+                                    <div id="segnalazioniday-boss">
+                                        <div class="block block-transparent">
+                                            <div class="block-header block-content-mini">
+                                                <label class="rai-font-table-heading">Segnalazioni presenti</label>
+                                            </div>
+                                            <div class="block-content block-content-mini">
+                                                <table class="table" id="table-segnalazioni">
+                                                    <tbody>
+                                                        <tr>
+                                                            <td class="text-left no-border" colspan="100">
+                                                                <span style="font-size: 16px; font-weight: 300; font-style: italic; line-height: 1.5; text-align: justify;">
+                                                                    <em>
+                                                                        Non ci sono ancora dati da visualizzare.<br />
+                                                                    </em>
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div id="prossimeTrasferte-boss">
+                                        <div class="block block-transparent">
+                                            <div class="block-header block-content-mini">
+                                                <label class="rai-font-table-heading">Prossime trasferte</label>
+                                            </div>
+                                            <div class="block-content block-content-mini">
+                                                <table class="table" id="table-prox-trasferte">
+                                                    <tbody>
+                                                        <tr>
+                                                            <td class="text-center no-border" colspan="100"><span class="rai-font-md-neutral">NON CI SONO DATI DA VISUALIZZARE</span></td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @{
+                                        var matricoleMonitoraggioFerie = CommonHelper.GetParametro<string>
+( EnumParametriSistema.MatricoleMonitoraggioFerie );
+
+                                        bool showDivStatoFerie = false;
+
+                                        if ( !String.IsNullOrEmpty( matricoleMonitoraggioFerie ) )
+                                        {
+                                            if (matricoleMonitoraggioFerie.Contains(CommonManager.GetCurrentUserMatricola()) ||
+                                                matricoleMonitoraggioFerie.Contains( "*" ) )
+                                            {
+                                                showDivStatoFerie = true;
+                                            }
+                                            else
+                                            {
+                                                showDivStatoFerie = false;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            showDivStatoFerie = false;
+                                        }
+
+                                        if ( showDivStatoFerie )
+                                        {
+                                            <div id="statoFerie-boss">
+                                                <div class="block block-transparent">
+                                                    <div class="block-header block-content-mini">
+                                                        <label class="rai-font-table-heading">Stato ferie</label>
+                                                    </div>
+                                                    <div class="block-content block-content-mini" id="table-stato-ferie">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+
+
+                                            <div id="sw-boss" style="display:none">
+                                                <section class="rai block block-content-table block-transparent" id="noid">
+                                                    <header class="block-header">
+                                                        <label class="rai-font-table-heading">Smartworking</label>
+                                                    </header>
+                                                    <div class="block-content">
+                                                        <table class="table" id="table-prox-trasferte">
+                                                            <tbody>
+                                                                <tr>
+                                                                    <td class=" no-border" colspan="100">
+                                                                    <span style="font-weight:bold"  id="sw-period"></span></td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+
+                                                    </div>
+                                                </section>
+                                            </div>
+
+
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

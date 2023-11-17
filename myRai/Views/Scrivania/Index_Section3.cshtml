@@ -1,0 +1,656 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model SectionDayModel
+
+@{
+    bool schermataFlat = CommonHelper.GetParametro<bool>(EnumParametriSistema.AbilitaSchermataFlat);
+}
+<div style="width: 100%" data-async="/scrivania/index_section3?GappClosed=@Model.GappClosed">
+
+    @if ( !Request.Browser.IsMobileDevice )
+    {
+        @Html.Partial( "~/Views/Scrivania/Section_Annuncio.cshtml" )
+    }
+
+    @{
+        if ( !schermataFlat )
+        {
+            if ( Model.IsPreview )
+            {
+                if ( !Model.GappClosed )
+                {
+                    @Html.Partial( "subpartial/trasfertePrecedenti_skeleton" )
+                }
+            }
+            else if ( !Model.GappClosed )
+            {
+                @Html.Partial( "subpartial/trasfertePrecedenti" , Model.TrasfertePrecedenti )
+            }
+
+            if ( Model.ValutatoreEsterno != null )
+            {
+                <section class="rai-widget" id="panelBoxMBO">
+                    <div class="rai-widget-body bg-base">
+                        <div class="rai-widget-cta">
+                            <div class="rai-widget-cta-title">
+                                <span class="rai-title interactive-primary-color">Valutazioni delle performance</span>
+                            </div>
+                            <div class="rai-widget-cta-action">
+                                <a onclick="ValModal_ValutazioneEsterno()" aria-label="Vedi" class="btn rai-btn-small">Consulta</a>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            }
+
+
+            List<myRaiCommonModel.Gestionale.MboScheda> schede = null;
+            bool hasSchede = MboManager.HasSchede(out schede);
+            if (hasSchede)
+            {
+                <section class="rai-widget" id="panelBoxMBO">
+                    <div class="rai-widget-body bg-base">
+                        <div class="rai-widget-cta">
+                            <div class="rai-widget-cta-title">
+                                <span id="mbo_Title" class="rai-title interactive-primary-color">Assegnazione obiettivi</span><br />
+                                <span id="mbo_SubTitle" class="rai-font-sm-neutral">Iniziativa @schede.First().Iniziativa.Nome</span>
+                            </div>
+                            <div class="rai-widget-cta-action">
+                                <a onclick="RaiOpenAsyncModal('modal-mbo-half', '@Url.Action("Modal_Scheda", "Mbo")', { idScheda:@schede.First().Id}, null, 'POST')" aria-label="Vedi" class="btn rai-btn-small">Visualizza</a>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            }
+        }
+    }
+
+    @*ASSISTENTE*@
+    @if ( UtenteHelper.AbilitatoAdAssistente( ) && !Model.IsPreview )
+    {
+        bool AssistenteAbilitato = UtenteHelper.AssistenteAbilitato( );
+        <section class="rai panel" id="sec-ass">
+            <header class="panel-heading bg-primary">
+                <div class="panel-actions" style="width:300px;text-align:right">
+                    <div style="width:100%;text-align:right"></div>
+                </div>
+                <h2 class="panel-title text-white">Assistente  </h2>
+            </header>
+            <div class="panel-body remove-padding">
+                <div class="row">
+                    <div class="col-sm-12" style="padding-top:16px">
+                        <div class="widget-summary">
+                            <div class="widget-summary-col widget-summary-col-icon">
+                                <div id="assistente-icon" class="summary-icon bg-gioev" style="opacity:@(AssistenteAbilitato?"1":"0.3")">
+                                    <i class="icons icon-bubble"></i>
+                                </div>
+                            </div>
+                            <div class="widget-summary-col">
+                                <div class="summary">
+                                    @{
+                                        string disp = "style=display:none";
+                                    }
+                                    @if ( AssistenteAbilitato )
+                                    {
+                                        disp = "";
+                                        <h3 id="assis-tit" class="title">Proposte automatiche</h3>
+
+                                    }
+                                    else
+                                    {
+                                        <h3 id="assis-tit" class="title">Assistente disabilitato</h3>
+                                    }
+
+                                    <div id="assistente-block" @disp>
+                                        <div class="info" style="font-size:0.9em;">
+                                            <div style="float:left">
+                                                <strong id="tot-prop" class="amount">0</strong>
+
+                                            </div>
+                                            <div style="float:left;">
+                                                <span id="range-prop" class="text-primary visibile-lg" style="font-size:1.0em;"></span>
+                                                <input type="hidden" id="last-data" />
+                                            </div>
+                                        </div>
+                                        <div style="float: left;display: block;margin-top:6px">
+                                            <i id="wait-ecce" class="fa fa-refresh fa-spin" style="font-size: 12px; color: #aaa;"></i>
+                                            <span id="wait-h3" style="display:inline;font-size:82%;margin-left:10px;color:#aaa" class="title">Ricerca giornate...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="summary-footer" style="margin-bottom:12px">
+                                    @if ( AssistenteAbilitato )
+                                    {
+                                        <a id="vis-prop" onclick="VisualizzaAssistente()" class="btn btn-default btn-scriv text-uppercase bg-puls_dash disable">VISUALIZZA</a>
+                                        <a id="ab-ass" style="display:none" onclick="AbilitaAssistente()" class="btn btn-default btn-scriv text-uppercase bg-puls_dash">ABILITA</a>
+                                    }
+                                    else
+                                    {
+                                        <a id="vis-prop" style="display:none" onclick="VisualizzaAssistente()" class="btn btn-default btn-scriv text-uppercase bg-puls_dash disable">VISUALIZZA</a>
+                                        <a id="ab-ass" onclick="AbilitaAssistente()" class="btn btn-default btn-scriv text-uppercase bg-puls_dash">ABILITA</a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-xs-12">
+                    </div>
+                </div>
+            </div>
+            @if ( UtenteHelper.AssistenteAbilitato( ) )
+            {
+                <script>Assistente()</script>
+            }
+        </section>
+
+        <div class="modal fade" id="assistente-prop" tabindex="-1" role="dialog" aria-hidden="true"
+             data-backdrop="static" data-keyboard="false" style="display: none;">
+            <div class="modal-dialog modal-dialog-popout modal-lg">
+                <div class="modal-content">
+                    <div class="block block-themed block-transparent remove-margin-b">
+
+
+                        <div class="block-content block-content-full block-content-mini bg-gray-light" style="background-color:#f5f5f5">
+
+                            <span id="titolo1" class="font-w600">PROPOSTE AUTOMATICHE</span>
+                        </div>
+
+
+
+                        <div class="block-content">
+                            <div>
+                                <div class="row">
+                                    <div id="row-cont" class="col-sm-12" style="padding-top:16px;max-height:500px;overflow-y:auto">
+                                        <table id="assis-table" style="width:96%"></table>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="block-content block-content-full bg-gray-lighter clearfix" style="padding-bottom:0px">
+
+                            <i id="wait-pa-spin" class="fa fa-refresh fa-spin" style="font-size: 12px; color: rgb(170, 170, 170);float:left;margin-left:12px"></i>
+                            <h5 id="wait-pa" style="float:left;margin-left:12px;margin-top:0px"></h5>
+
+
+                            <button id="assistente-close" onclick=" $('#assistente-prop').modal('hide')" style="margin-right:4px;display:none" class="  pull-right btn btn-square btn-default push-5-r push-10" type="button">
+                                Chiudi
+                            </button>
+
+                            <button id="assistente-conf" onclick="checkAssisChecked()" style="margin-right:4px" class="disable pull-right btn btn-square btn-default push-5-r push-10" type="button">
+                                <i class="fa fa-fw fa-check text-success"></i>Conferma
+                            </button>
+
+                            <button id="assistente-ann" style="margin-right:4px" onclick="ConfermaAnnullaAssist()" class="disable pull-right btn btn-square btn-default push-5-r push-10" type="button">
+                                <i class="glyphicon glyphicon-remove text-danger"></i>Annulla
+
+                            </button>
+
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <input type="hidden" id="action-url" />
+        </div>
+    }
+
+    @{
+        if ( !schermataFlat )
+        {
+            if ( Model.IsPreview )
+            {
+                if ( !Model.GappClosed )
+                {
+                    @Html.Partial( "subpartial/boxDetassazione_skeleton" )
+                }
+            }
+            else
+            {
+                if ( !Model.GappClosed && Model.DetassazioneVM.HaDiritto ||
+                    !Model.GappClosed && Model.DetassazioneVM.GiaScelto )
+                {
+                    @Html.Partial( "subpartial/boxDetassazione" , Model.DetassazioneVM )
+                }
+            }
+        }
+    }
+
+
+
+    @{
+        if ( !schermataFlat && !Request.Browser.IsMobileDevice )
+        {
+            if ( Model.IsPreview )
+            {
+                if ( !Model.GappClosed )
+                {
+                    @Html.Partial( "subpartial/boxBonus100_skeleton" )
+                }
+            }
+            else
+            {
+                if ( !Model.GappClosed && Model.Bonus100VM.HaDiritto )
+                {
+                    @Html.Partial( "subpartial/boxBonus100" , Model.Bonus100VM )
+                }
+            }
+        }
+    }
+
+
+    @{
+        if ( !schermataFlat && !Request.Browser.IsMobileDevice )
+        {
+            if ( Model.IsPreview )
+            {
+                if ( !Model.GappClosed )
+                {
+                    Model.SmartWorkingWidget = new WidgetModuloBox( )
+                    {
+                        WidgetId = "WdgSmartWorking" ,
+                        Anno = DateTime.Now.Year ,
+                        GiaScelto = false ,
+                        HaDiritto = true ,
+                        Titolo = "" ,
+                        Scelta = string.Empty ,
+                        DataCompilazione = null ,
+                        Bottoni = null,
+                        IsPreview = true
+                    };
+
+                    <div id="ContainerDiv_@(Model.SmartWorkingWidget.WidgetId)">
+                        @Html.Partial( "subpartial/boxModulo" , Model.SmartWorkingWidget )
+                    </div>
+                }
+            }
+            else
+            {
+                if ( !Model.GappClosed && Model.SmartWorkingWidget.HaDiritto )
+                {
+                    <div id="ContainerDiv_@(Model.SmartWorkingWidget.WidgetId)">
+                        @Html.Partial( "subpartial/boxModulo" , Model.SmartWorkingWidget )
+                    </div>
+                }
+            }
+        }
+    }
+
+    @{
+        if ( !schermataFlat && !Request.Browser.IsMobileDevice )
+        {
+            if ( Model.IsPreview )
+            {
+                if ( !Model.GappClosed )
+                {
+                    Model.ProrogaSWWidget = new WidgetModuloBox( )
+                    {
+                        WidgetId = "WdgProrogaSmartWorking" ,
+                        Anno = DateTime.Now.Year ,
+                        GiaScelto = false ,
+                        HaDiritto = true ,
+                        Titolo = "",
+                        Scelta = string.Empty ,
+                        DataCompilazione = null ,
+                        Bottoni = null,
+                        IsPreview = true
+                    };
+
+                    <div id="ContainerDiv_@(Model.ProrogaSWWidget.WidgetId)">
+                        @Html.Partial( "subpartial/boxModulo" , Model.ProrogaSWWidget )
+                    </div>
+                }
+            }
+            else
+            {
+                if ( !Model.GappClosed && Model.ProrogaSWWidget.HaDiritto )
+                {
+                    <div id="ContainerDiv_@(Model.ProrogaSWWidget.WidgetId)">
+                        @Html.Partial( "subpartial/boxModulo" , Model.ProrogaSWWidget )
+                    </div>
+                }
+            }
+        }
+    }
+
+
+
+    @{
+        if (!schermataFlat && !Request.Browser.IsMobileDevice)
+        {
+            if (Model.IsPreview)
+            {
+                if (!Model.GappClosed)
+                {
+                    Model.RinunciaWidget = new WidgetModuloBox()
+                    {
+                        WidgetId = "WdgRinuncia2020",
+                        Anno = DateTime.Now.Year,
+                        GiaScelto = false,
+                        HaDiritto = true,
+                        Titolo = "",
+                        Scelta = string.Empty,
+                        DataCompilazione = null,
+                        Bottoni = null,
+                        IsPreview = true
+                    };
+
+                    <div id="ContainerDiv_@(Model.RinunciaWidget.WidgetId)">
+                        @Html.Partial("subpartial/boxModulo", Model.RinunciaWidget)
+                    </div>
+                }
+            }
+            else
+            {
+                if (!Model.GappClosed && Model.RinunciaWidget.HaDiritto)
+                {
+                    <div id="ContainerDiv_@(Model.RinunciaWidget.WidgetId)">
+                        @Html.Partial("subpartial/boxModulo", Model.RinunciaWidget)
+                    </div>
+                }
+            }
+        }
+    }
+
+
+
+
+    @{
+        if (!schermataFlat && !Request.Browser.IsMobileDevice)
+        {
+            if (Model.IsPreview)
+            {
+                if (!Model.GappClosed)
+                {
+                    Model.Incentivazione012021Widget = new WidgetModuloBox()
+                    {
+                        WidgetId = "WdgIncentivazione012021",
+                        Anno = DateTime.Now.Year,
+                        GiaScelto = false,
+                        HaDiritto = true,
+                        Titolo = "",
+                        Scelta = string.Empty,
+                        DataCompilazione = null,
+                        Bottoni = null,
+                        IsPreview = true
+                    };
+
+                    <div id="ContainerDiv_@(Model.Incentivazione012021Widget.WidgetId)">
+                        @Html.Partial("subpartial/boxModulo", Model.Incentivazione012021Widget)
+                    </div>
+                }
+            }
+            else
+            {
+                if (!Model.GappClosed && Model.Incentivazione012021Widget.HaDiritto)
+                {
+                    <div id="ContainerDiv_@(Model.Incentivazione012021Widget.WidgetId)">
+                        @Html.Partial("subpartial/boxModulo", Model.Incentivazione012021Widget)
+                    </div>
+                }
+            }
+        }
+    }
+
+
+
+
+
+
+    @if (
+        //(myRai.Models.Utente.TipoDipendente() != "G" || "326556,457816,019272,744353".Contains(myRai.Business.CommonManager.GetCurrentUserMatricola()))
+        //&&
+        Model.PianoFerieVisible && !schermataFlat)
+    {
+        @*<section class="rai panel">simula prod
+            <header class="panel-heading bg-primary">
+                <div class="panel-actions" style="width:300px;text-align:right">
+                    <div style="width:100%;text-align:right"></div>
+                </div>
+                <h2 class="panel-title text-white">Piano Ferie 2020</h2>
+            </header>
+            <div class="panel-body remove-padding">
+                <div class="row">
+                    @{
+
+                        string stato = "";
+
+
+                        if (Model.MyPianoFerieSede != null && Model.MyPianoFerieSede.data_firma != null)
+                        {
+                            stato = "<label class='titleElements text-primary text-italic' for='Scelta_piano'>Convalidato</label>";
+                        }
+                        else if (Model.MyPianoFerieSede != null && Model.MyPianoFerieSede.data_approvata != null)
+                        {
+                            stato = "<label class='titleElements text-primary text-italic' for='Scelta_piano'>Approvato</label>";
+                        }
+                        else if (Model.MyPianoFerie != null && Model.MyPianoFerie.data_consolidato != null)
+                        {
+                            stato = "<label class='titleElements text-primary text-italic' for='Scelta_piano'>In approvazione</label>";
+                        }
+                        if (Model.MyPianoFerie != null && !String.IsNullOrWhiteSpace(Model.MyPianoFerie.nota_responsabile))
+                        {
+                            if (stato == "")
+                            {
+                                stato = "<label class='text-bold'>È presente <span class='text-primary text-bold'>1</span> nota</label>";
+                            }
+                            else
+                            {
+                                stato += " <br> <label class='text-bold'>È presente <span class='text-primary text-bold'>1</span> nota</label";
+                            }
+                        }
+                    }
+                    <!--span class="title-Elements text-primary text-italic" id="stato-pfer">
+
+
+
+
+                    </span-->
+
+                    <div class="col-xs-7">
+                        @Html.Raw(stato)
+                        <br />
+                        <!--span class="title-Elements text-primary text-italic" id="stato-pfer">
+
+
+
+
+                        </span-->
+                        <div style="vertical-align: middle; padding-bottom:5px;">
+
+                            @{
+                                string buttonCaption = "GESTISCI LE TUE FERIE";
+                                if (!Model.AbilitatoGestionePianoFerie)
+                                {
+                                    buttonCaption = "VEDI LE TUE FERIE";
+                                }
+                            }
+
+                            <a style="width:150px;" href="javascript:showCalAnnualePF(@DateTime.Now.Year)" aria-label="Gestisci le tue ferie"
+                               class="btn btn-default btn-scriv text-uppercase bg-puls_dash">@buttonCaption</a>
+
+                        </div>
+                    </div>
+                    <div class="col-xs-5" style="padding-right:5px;">
+                        <input id="esentato-ferie" type="hidden" value="@(Model.EsentatoPianoFerie?"1":"0")" />
+                        <a href="javascript:showCalAnnualePF(@DateTime.Now.Year)" style="text-align: right;">
+                            <img style="    margin-top: -40px;width: 87px;height: 100%;float: right; margin-right: 20px;" src="/assets/img/cal.png">
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+            </section>*@
+
+        string buttonCaption = "Gestisci le tue ferie";
+        if ( !Model.AbilitatoGestionePianoFerie )
+        {
+            buttonCaption = "Vedi le tue ferie";
+        }
+        var db = new myRaiData.digiGappEntities();
+
+        string stato = "";
+        bool myPFfirmato = Model.MyPianoFerie != null && Model.MyPianoFerie.Id_pdf_pianoferie_inclusa != null &&
+                        db.MyRai_PianoFerieSedi.Any(x => x.id == Model.MyPianoFerie.Id_pdf_pianoferie_inclusa && x.data_firma != null);
+
+        if (myPFfirmato)
+        {
+            stato = "Convalidato";
+        }
+        else if (Model.MyPianoFerie != null && Model.MyPianoFerie.data_approvato != null)
+        {
+            stato = "Approvato";
+        }
+        else if ( Model.MyPianoFerie != null && Model.MyPianoFerie.data_consolidato != null )
+        {
+            stato = "In approvazione";
+        }
+
+        if ( String.IsNullOrWhiteSpace( stato ) )
+        {
+            stato = "In compilazione";
+        }
+
+        string note = "";
+        note = "";
+        if ( Model.MyPianoFerie != null && !String.IsNullOrWhiteSpace( Model.MyPianoFerie.nota_responsabile ) )
+        {
+            note = "<label class='text-bold'>È presente <span class='text-primary text-bold'>1</span> nota</label";
+        }
+        <input id="esentato-ferie" type="hidden" value="@(Model.EsentatoPianoFerie?"1":"0")" />
+        @Html.RenderWidget(WidgetType.Normal, "Piano Ferie 2021", "icons icon-calendar", stato, note, action: new ActionTemplate() { Title = buttonCaption, Text = buttonCaption, Href = "javascript:showCalAnnualePF(" + DateTime.Now.Year + ")" }, mainAction: true)
+    }
+
+    @if ( Model.IsPreview )
+    {
+        if ( !Model.GappClosed )
+        {
+            if ( Model.OrarioVisibile )
+            {
+                @Html.RenderPanel( myRaiHelper.PanelType.Panel , "Il tuo orario di lavoro per oggi" , "subpartial/orario" , Model.DayResponse , drawSkeleton: Model.IsPreview )
+
+            }
+            if ( Model.ScelteVisibile )
+            {
+                @Html.RenderPanel( myRaiHelper.PanelType.Panel , "Scegli cosa fare" , "subpartial/scelte" , drawSkeleton: Model.IsPreview )
+            }
+        }
+
+
+        if ( Model.WeekPlanVisibile && myRai.Models.Utente.GestitoSirio( ) )
+        {
+            @Html.RenderPanel( myRaiHelper.PanelType.Panel , "Attività settimanali" , "subpartial/weekplan" , Model.WeekPlan , drawSkeleton: Model.IsPreview )
+        }
+
+        if ( !Model.GappClosed )
+        {
+
+            if ( UtenteHelper.IsAbilitatoGapp( ) )
+            {
+                if ( DateTime.Now <= UtenteHelper.GetDataChiusuraSogliaStatica( ) )
+                {
+                    @Html.RenderWidget(WidgetType.Normal, "PRESENZE", "icons icon-note", "Inserisci le tue richieste", action: new ActionTemplate( )
+                {
+                   OnClick = "javascript:ShowPopup('',0)" ,
+                   Text = "Effettua una richiesta"
+                } )
+                }
+
+                @Html.Partial( "subpartial/calendario_skeleton" )
+            }
+
+            if ( !schermataFlat )
+            {
+                if ( Model.TimbraturaVisibile )
+                {
+                    @Html.Partial( "subpartial/timbrature_skeleton" )
+                }
+            }
+        }
+        if ( Model.NotificaVisibile && ( myRai.Models.Utente.IsBoss( ) || UtenteHelper.IsBossLiv2( CommonHelper.GetCurrentUserMatricola( ) ) || myRai.Models.Utente.IsAbilitatoGapp( ) ) )
+        {
+            @Html.Partial( "subpartial/notifiche_skeleton" )
+        }
+        if ( Model.AttivitaVisibile )
+        {
+            @Html.Partial( "subpartial/att_settimanali_skeleton" )
+        }
+        if ( Model.CoseDaFareVisibile )
+        {
+            @Html.Partial( "subpartial/cosedafare_skeleton" )
+        }
+        if ( !schermataFlat )
+        {
+            if ( Model.BustaPagaVisibile )
+            {
+                @Html.Partial( "subpartial/bustapaga_skeleton" )
+            }
+        }
+    }
+    else
+    {
+        if ( !Model.GappClosed )
+        {
+            if ( Model.OrarioVisibile )
+            {
+                @*@Html.Partial("subpartial/orario", Model.DayResponse)*@
+                @Html.RenderPanel( myRaiHelper.PanelType.Panel , "Il tuo orario di lavoro per oggi" , "subpartial/orario" , Model.DayResponse )
+            }
+            if ( Model.ScelteVisibile )
+            {
+                @Html.Partial( "subpartial/scelte" )
+            }
+        }
+
+        if ( Model.WeekPlanVisibile && myRai.Models.Utente.GestitoSirio( ) && myRai.Models.Utente.IsAbilitatoGapp( ) )
+        {
+            @Html.Partial( "subpartial/weekplan" , Model.WeekPlan )
+        }
+
+        if ( !Model.GappClosed )
+        {
+            if ( myRai.Models.Utente.IsAbilitatoGapp( ) && DateTime.Now <= UtenteHelper.GetDataChiusuraSogliaStatica( ) )
+            {
+                @Html.RenderWidget(WidgetType.Normal, "PRESENZE", "icons icon-note", "Inserisci le tue richieste", action: new ActionTemplate( )
+            {
+               OnClick = "javascript:ShowPopup('',0)" ,
+               Text = "EFFETTUA UNA RICHIESTA"
+            } )
+            }
+            if ( UtenteHelper.IsAbilitatoGapp( ) && Model.CalendarioModel != null )
+            {
+                @Html.Partial( "~/Views/FeriePermessi/subpartial/CalendarioNoFerie.cshtml" , Model.CalendarioModel );
+            }
+            if ( Model.TimbraturaVisibile && !schermataFlat )
+            {
+                //@Html.Partial("subpartial/timbrature", Model.DayResponse)
+                @Html.RenderPanel( PanelType.PanelNoPadding , "Timbrature" , "subpartial/timbrature" , Model.DayResponse )
+            }
+        }
+
+        if ( Model.NotificaVisibile && ( UtenteHelper.IsBoss( CommonHelper.GetCurrentUserPMatricola( ) ) || UtenteHelper.IsBossLiv2( CommonHelper.GetCurrentUserPMatricola( ) ) || UtenteHelper.IsAbilitatoGapp( ) ) )
+        {
+            @Html.RenderPanel( myRaiHelper.PanelType.PanelNoPadding , "Notifiche" , "subpartial/notifiche_new" , Model.Notifiche , drawSkeleton: Model.IsPreview )
+        }
+
+        if ( Model.AttivitaVisibile )
+        {
+            @Html.RenderPanel( myRaiHelper.PanelType.Panel , "Attività settimanali" , "subpartial/att_settimanali" , Model , drawSkeleton: Model.IsPreview )
+        }
+        if ( Model.CoseDaFareVisibile )
+        {
+            @Html.RenderPanel( myRaiHelper.PanelType.Panel , "Cose da fare" , "subpartial/cosedafare" , Model )
+        }
+        if ( Model.BustaPagaVisibile )
+        {
+            @Html.RenderPanel( myRaiHelper.PanelType.Panel , "Busta Paga" , "subpartial/bustapaga" , Model , drawSkeleton: Model.IsPreview )
+        }
+    }
+
+</div>

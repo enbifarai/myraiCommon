@@ -1,0 +1,121 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model myRai.Controllers.RichiestaModel
+
+@{
+    bool isMineStep = false;
+    var steps = Model.Richiesta.TREQUESTS_STEP.OrderBy( x => x.NUM_PROGR );
+    int numStep = Model.Richiesta.TREQUESTS_STEP.Count( );
+    var lastStep = Model.Richiesta.TREQUESTS_STEP.ElementAt( numStep - 1 );
+    if ( lastStep.SINTESI1_TO.COD_MATLIBROMAT == CommonHelper.GetCurrentUserMatricola( ) && lastStep.IND_APPROVED == null )
+    {
+        numStep--;
+        isMineStep = true;
+    }
+}
+
+@if ( !isMineStep || Model.Richiesta.TREQUESTS_STEP.Count( ) > 1 )
+{
+    <!--Elenco step-->
+    <div class="block-header block-header-inc block-content-mini">
+        <div class="row">
+            <div class="col-sm-7 col-xs-7 no-padding">
+                <h4 class="font-w600">Dettaglio passaggi</h4>
+            </div>
+            <div class="col-sm-5 col-xs-5 text-right no-padding" style="padding-top:7px !important;font-size:15px;">
+
+            </div>
+        </div>
+    </div>
+    <div class="block-content block-content-mini block-content-full no-padding-left no-padding-right">
+        <div class="row">
+            <div class="col-sm-12">
+                <style>
+                    .tm-box:after {
+                        border-right-color: #e9e9e9 !important;
+                    }
+
+                    .tm-icon-red {
+                        color: red !important;
+                        border-color: red !important;
+                    }
+
+                    .tm-icon-orange {
+                        color: orange !important;
+                        border-color: orange !important;
+                    }
+                </style>
+
+                <div class="timeline">
+                    <div class="tm-body">
+                        <div class="tm-title" style="border: 1px solid #e9e9e9;">
+                            <label>Creazione richiesta</label>
+                            <label>@steps.First( ).DTA_RICHIESTA.ToString( "dd/MM/yyyy HH:mm" )</label>
+                        </div>
+                        <ol class="tm-items">
+                            @for ( int i = 0 ; i <= numStep - 1 ; i++ )
+                            {
+                                var step = Model.Richiesta.TREQUESTS_STEP.ElementAt( i );
+                                int stato = step.IND_APPROVED.HasValue ? ( step.IND_APPROVED.Value ? 1 : 0 ) : -1;
+
+                                <li>
+                                    <div class="tm-info">
+
+                                        @if ( step.IND_APPROVED.HasValue )
+                                        {
+                                            if ( step.IND_APPROVED.Value )
+                                            {
+                                                <div class="tm-icon">
+                                                    <i class="fa fa-check"></i>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="tm-icon tm-icon-red">
+                                                    <i class="fa fa-remove"></i>
+                                                </div>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <div class="tm-icon tm-icon-orange">
+                                                <i class="fa fa-question"></i>
+                                            </div>
+                                        }
+
+                                        @if ( stato == 1 || stato == 0 )
+                                        {
+                                            <time class="tm-datetime" datetime="@step.DTA_APPROVED.Value.ToString("yyyy-MM-hh HH:mm")">
+                                                <div class="tm-datetime-date">@step.DTA_APPROVED.Value.ToString( "dd/MM/yyyy" )</div>
+                                                <div class="tm-datetime-time">@step.DTA_APPROVED.Value.ToString( "HH:mm" )</div>
+                                            </time>
+                                        }
+                                    </div>
+                                    <div class="tm-box">
+                                        <p>
+                                            @if ( stato != -1 )
+                                            {
+                                                <i>Motivo:</i> @step.NOT_APPROVED
+                                            }
+                                            else
+                                            {
+                                                <i>In attesa di approvazione</i>
+                                            }
+                                        </p>
+                                        <div class="tm-meta">
+                                            <span>
+                                                <i class="fa fa-user"></i> @step.SINTESI1_TO.DES_COGNOMEPERS @step.SINTESI1_TO.DES_NOMEPERS
+                                            </span>
+                                        </div>
+                                    </div>
+                                </li>
+                            }
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}

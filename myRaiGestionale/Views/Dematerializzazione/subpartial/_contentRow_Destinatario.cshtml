@@ -1,0 +1,55 @@
+﻿@using myRaiCommonModel;
+@using myRaiHelper;
+@using Newtonsoft.Json;
+@using myRaiCommonManager;
+@model myRaiCommonModel.XR_DEM_DOCUMENTI_EXT
+@{
+    var r = Model;
+}
+
+@{
+    if (!String.IsNullOrEmpty(r.MatricolaDestinatario))
+    {
+        <div class="col-sm-12" style="margin-top:-20px; margin-left: -20px;">
+            @Html.Partial("~/Views/Dematerializzazione/subpartial/_profiloimage.cshtml", new myRaiCommonModel.ProfiloImageModel()
+       {
+           Matricola = r.MatricolaDestinatario,
+           Row1 = r.NominativoUtenteDestinatario,
+           Row2 = "Matricola " + r.MatricolaDestinatario,
+           display = "inline"
+       })
+        </div>
+    }
+    else if (!String.IsNullOrEmpty(r.CustomDataJSON))
+    {
+        string destinatario = "";
+        List<AttributiAggiuntivi> objModuloValorizzato = JsonConvert.DeserializeObject<List<AttributiAggiuntivi>>(r.CustomDataJSON);
+
+        if (objModuloValorizzato != null && objModuloValorizzato.Any())
+        {
+            var obj = objModuloValorizzato.Where(w => w.DBRefAttribute != null && w.DBRefAttribute.ToUpper() == "DESTINATARIOMAIL").FirstOrDefault();
+            if (obj != null)
+            {
+                destinatario = obj.Valore;
+            }
+        }
+
+        <div class="col-sm-12" style="margin-left: -20px;">
+            @{
+                if (destinatario.Contains(","))
+                {
+                    foreach (var d in destinatario.Split(',').ToList())
+                    {
+                        <label class="rai-font-md-bold" style="display:block;">@d</label>
+                    }
+                }
+                else
+                {
+                    <label class="rai-font-md-bold" style="display:block;">@destinatario</label>
+                }
+            }
+
+
+        </div>
+    }
+}

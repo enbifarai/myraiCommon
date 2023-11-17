@@ -1,0 +1,213 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+@using myRaiCommonManager;
+
+@model PianoFerieVM
+
+@{
+    Layout = null;
+}
+
+@{
+    DateTime dt = new DateTime( Model.AnnoCorrente , Model.MeseCorrente , 1 , 0 , 0 , 0 );
+    DateTime dt2 = dt.AddMonths( 1 );
+    dt2 = dt2.AddDays( -1 );
+    int limit = dt2.Day;
+}
+
+<div class="block-header bg-cdf" style="height: 58px; width: 1440px;position:fixed;">
+    <ul class="block-options visible-xs">
+        <li>
+            <button data-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+        </li>
+    </ul>
+
+    @{
+        string descrizione = Model.SedeGapp;
+        var sede = Model.SediGapp.Where( s => s.CodiceSede.Equals( Model.SedeGapp ) ).FirstOrDefault( );
+        if ( sede != null )
+        {
+            descrizione += " - " + sede.DescrizioneSede;
+        }
+    }
+    <div class="calendario-annoVisualizzato" style="max-width: 1400px; min-width: 1000px;">PIANO FERIE SEDE @(descrizione)</div>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+</div>
+
+<div class="sezione-calendario-feriePermessi">
+    <div class="container" style="max-width:100%; background-color:#FFF; padding-top: 100px;">
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="col-xs-4">
+                    <pie class="pie-hand pie-cal-anno pie-bg-grey" title="@(CodiciGiornataHelper.GetDescrizioneByCodice("bg-grey"))"></pie> @(CodiciGiornataHelper.GetDescrizioneByCodice( "bg-grey" ))
+                </div>
+                <div class="col-xs-4">
+                    <pie class="pie-hand pie-cal-anno pie-bg-warning" title="@(CodiciGiornataHelper.GetDescrizioneByCodice("bg-warning"))"></pie> @(CodiciGiornataHelper.GetDescrizioneByCodice( "bg-warning" ))
+                </div>
+                <div class="col-xs-4">
+                    <pie class="pie-hand pie-cal-anno pie-bg-success" title="@(CodiciGiornataHelper.GetDescrizioneByCodice("bg-success"))"></pie> @(CodiciGiornataHelper.GetDescrizioneByCodice( "bg-success" ))
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="col-xs-4">
+                    <pie class="pie-hand pie-cal-anno pie-bg-lightgreen" title="@(CodiciGiornataHelper.GetDescrizioneByCodice("bg-lightgreen"))"></pie> @(CodiciGiornataHelper.GetDescrizioneByCodice( "bg-lightgreen" ))
+                </div>
+                <div class="col-xs-4">
+                    <pie class="pie-hand pie-cal-anno pie-bg-blue" title="@(CodiciGiornataHelper.GetDescrizioneByCodice("bg-blue"))"></pie> @(CodiciGiornataHelper.GetDescrizioneByCodice( "bg-blue" ))
+                </div>
+                <div class="col-xs-4">
+                    <pie class="pie-hand pie-cal-anno pie-bg-info" title="@(CodiciGiornataHelper.GetDescrizioneByCodice("bg-info"))"></pie> @(CodiciGiornataHelper.GetDescrizioneByCodice( "bg-info" ))
+                </div>
+            </div>
+        </div>
+    </div>
+    <br />
+    <div class="div-table-calendario" id="contenitoreTabella" style="padding-top:0px;">
+        <!-- Pannello per navigare tra i mesi -->
+        <table>
+            <thead>
+                <tr>
+                    <th class="tdDay" colspan="@(limit/4)" style="text-align:right;">
+                        <a href="javascript:@(Model.WidgetId)_caricaMese_Modal(@(Model.MeseCorrente - 1), @(Model.AnnoCorrente), '@(Model.SedeGapp)');">
+                            <span style="font-size: 10px" class="glyphicon glyphicon-triangle-left text-muted"></span>
+                        </a>
+                    </th>
+                    <th class="tdDay" colspan="@(limit/2)" style="text-align:right;">
+                        <label style="border:none; font-weight:600; font-size:14px;">
+                            Piano ferie mese di @CommonHelper.TraduciMeseDaNumLett( Model.MeseCorrente.ToString( "00" ) ) @(Model.AnnoCorrente)
+                        </label>
+                    </th>
+                    <th class="tdDay" colspan="@(limit/4)" style="text-align:right;">
+                        <a href="javascript:@(Model.WidgetId)_caricaMese_Modal(@(Model.MeseCorrente + 1), @(Model.AnnoCorrente), '@(Model.SedeGapp)');">
+                            <span style="font-size: 10px" class="glyphicon glyphicon-triangle-right text-muted"></span>
+                        </a>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr style="height:1px;">
+                    <td class="tdMonth" style="height:1px;">&nbsp;</td>
+                    @{
+                        for ( int idx = 0 ; idx < limit ; idx++ )
+                        {
+                            <td class="tdDay" style="height:1px;">&nbsp;</td>
+                        }
+                    }
+                </tr>
+            </tbody>
+        </table>
+        <table class="calendario-table" style="height: 0px;">
+            <tbody>
+                <tr>
+                    <td class="tdDay"></td>
+                    @{
+                        for ( int idx = 0 ; idx < limit ; idx++ )
+                        {
+
+                            DateTime giorno = new DateTime( Model.AnnoCorrente , Model.MeseCorrente , idx + 1 , 0 , 0 , 0 );
+
+                            if ( giorno.DayOfWeek == DayOfWeek.Saturday ||
+                                giorno.DayOfWeek == DayOfWeek.Sunday ||
+                                FestivitaHelper.IsFestivo( giorno , Model.SedeGapp ) ||
+                                FestivitaHelper.IsSuperFestivo( giorno ) )
+                            {
+                                <td class="tdDayGrayCal">@(idx + 1)</td>
+                            }
+                            else
+                            {
+                                <td class="tdDay">@(idx + 1)</td>
+                            }
+                        }
+                    }
+                </tr>
+                @{
+                    if ( Model.Utenti != null && Model.Utenti.Any( ) )
+                    {
+                        foreach ( var item in Model.Utenti )
+                        {
+                            <tr>
+                                <td class="tdMonth">
+                                    <span class="text-primary">
+                                        <b>@(item.Nominativo)</b>
+                                    </span>
+                                </td>
+
+                                @{
+                                    for ( int idx = 0 ; idx < limit ; idx++ )
+                                    {
+
+                                        DateTime giorno = new DateTime( Model.AnnoCorrente , Model.MeseCorrente , idx + 1 , 0 , 0 , 0 );
+
+                                        string myClass = "tdDay";
+                                        string myHtml = String.Empty;
+                                        string pieState = "";
+                                        PFCalendarDayDetail currentItem = null;
+
+                                        if ( item.Eccezioni != null && item.Eccezioni.Any( ) )
+                                        {
+
+                                            currentItem = item.Eccezioni.Where( e => e.Giorno.Equals( idx + 1 ) ).FirstOrDefault( );
+                                            if ( currentItem != null )
+                                            {
+                                                myHtml = currentItem.CodiceEccezione;
+
+                                                if ( currentItem.CodiceEccezione.Equals( "A" ) ||
+                                                    currentItem.CodiceEccezione.Equals( "B" ) )
+                                                {
+                                                    myClass = "tdDayGrayCal";
+                                                }
+                                                else
+                                                {
+                                                    myClass = "tdDay";
+                                                }
+                                            }
+                                        }
+
+                                        if ( !String.IsNullOrEmpty( myHtml ) )
+                                        {
+                                            string pieColor = currentItem.ColorePie;
+                                            if ( myHtml.Equals( "A" ) || myHtml.Equals( "B" ) || myHtml.Equals( "Z" ) )
+                                            {
+                                                <td class=" tdCalWid @(myClass)">
+                                                    &nbsp;
+                                                </td>
+                                            }
+                                            else
+                                            {
+                                                <td class=" tdCalWid @(myClass)">
+                                                    <pie class="pie-hand pie-cal-anno pie-@pieColor" title="@(myHtml)"></pie>
+                                                </td>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <td class=" tdCalWid @(myClass)">
+                                                &nbsp;
+                                            </td>
+                                        }
+                                    }
+                                }
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        @Html.Partial( "~/Views/Shared/_NoDati.cshtml" )
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script type="text/javascript">
+    function @(Model.WidgetId)_caricaMese_Modal( mese, anno, sede )
+    {
+        MostraPianoFerie( sede, mese, anno );
+    }
+</script>

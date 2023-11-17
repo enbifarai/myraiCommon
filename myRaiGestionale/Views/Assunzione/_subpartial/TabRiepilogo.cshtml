@@ -1,0 +1,159 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiCommonModel
+@using myRaiHelper
+@using myRaiData.Incentivi
+
+@model AssunzioniVM
+
+<div>
+    @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Riepilogo"))
+    {
+        <div class="rai-table-info">
+            <div class="row push-10">
+                <div class="col-sm-6 col-lg-3">
+                    <label>Matricola</label>
+                </div>
+                <div class="col-sm-6 col-lg-9">
+                    <label id="lblMatricola">@Model.Matricola</label>
+                </div>
+            </div>
+            <div class="row push-10">
+                <div class="col-sm-6 col-lg-3">
+                    <label>Nome e Cognome</label>
+                </div>
+                <div class="col-sm-6 col-lg-9">
+                    <label id="lblNome">@Model.Nome</label>
+                    <label id="lblCognome">@Model.Cognome</label>
+                </div>
+            </div>
+            <div class="row push-10">
+                <div class="col-sm-6 col-lg-3">
+                    <label>Tipo di contratto</label>
+                </div>
+                <div class="col-sm-6">
+                    <label id="lblRappLavoro">@Model.DescrizioneFormaContratto</label>
+                </div>
+            </div>
+            <div class="row push-10">
+                <div class="col-sm-6 col-lg-3">
+                    <label>Tipologia contratto</label>
+                </div>
+                <div class="col-sm-6">
+                    <label id="lblTipologiaRappLavoro">@Model.DescrizioneTipoAssunzione</label>
+                </div>
+            </div>
+            <div class="row push-10">
+                <div class="col-sm-6 col-lg-3">
+                    <label>Data</label>
+                </div>
+                <div class="col-sm-6">
+                    <label id="lblDataInizioFine">
+                        @Model.DataInizioFine
+                    </label>
+                </div>
+            </div>
+            <div class="row push-10">
+                <div class="col-sm-3 col-lg-3">
+                    <label>Contratto</label>
+                </div>
+                @{
+                    XR_TB_FILES file = myRaiCommonTasks.Helpers.FileAssunzioneManager.GetFile(Model.IdFileContratto).Files.FirstOrDefault();
+                    if (file != null)
+                    {
+                        <div class="col-sm-9">
+                            <span id="span-contratto-container" class="rai-font-md text-primary">
+                                <a href="@(Url.Action( "ScaricaPDF" , "Assunzione" ))?idAllegato=@file.Id" class="rai-font-md text-primary" id="span-allegato"><i class="fa fa-download"> </i> @file.NomeFile</a>
+                            </span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="col-sm-9">
+                            <span id="span-contratto-container" class="rai-font-md text-primary">
+                                N/A
+                            </span>
+                        </div>
+                    }
+
+                }
+
+            </div>
+            @{
+                if (file != null)
+                {
+                    <div class="row push-10">
+                        <div class="col-sm-3 col-lg-3"></div>
+                        @{
+                            <div class="col-sm-6">
+                                <div class="rai-btn">
+                                    <button id="btn-carica-contratto" type="button" class="btn rai-btn-small" onclick="$('#contrattoUpload').click()">
+                                        Carica contratto
+                                    </button>
+                                    <input style="display:none" type="file" id="contrattoUpload" onchange="Assunzione_CaricaContratto()" />
+                                    @{ if (file.Tipologia == "ASSGENCUSTOM")
+                                        {
+                                            <button id="btn-ripristina-contratto" type="button" class="btn rai-btn-small" onclick="AssunzioneRipristinaContratto()">
+                                                Ripristina contratto
+                                            </button>
+                                        }
+                                    }
+                                </div>
+
+                            </div>
+                        }
+                        <div class="col-sm-3"></div>
+
+                    </div>
+                }
+            }
+
+            <div class="row push-10">
+                <div class="col-sm-6 col-lg-3">
+                    <label>Nota pratica</label>
+                </div>
+                <div class="col-sm-6">
+                    <label id="lblNota">@Model.Note</label>
+                </div>
+            </div>
+            @{
+                Assunzione_FileUploadVM allegati = new Assunzione_FileUploadVM();
+                allegati.Allegati = myRaiCommonTasks.Helpers.FileAssunzioneManager.GetFilesByIdAssunzione(Model.IdEvento, "ASS").Files;
+                if (allegati.Allegati != null && allegati.Allegati.Count > 0)
+                {
+                    if (allegati.Allegati != null && allegati.Allegati.Count > 0)
+                    {
+                        int riga = 0;
+                        foreach (var a in allegati.Allegati.Where(y => y != null).OrderBy(w => w.Id).ToList())
+                        {
+                            riga++;
+                            <div class="row push-10-t">
+                                @{
+                                    if (riga == 1)
+                                    {
+                                        <div class="col-sm-4 col-md-3 col-xl-2">
+                                            <span>Documenti a supporto</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="col-sm-4 col-md-3 col-xl-2">
+                                            <span></span>
+                                        </div>
+
+                                    }
+                                }
+                                <div class="col-sm-8">
+                                    <span id="span-allegato-container" class="rai-font-md text-primary">
+                                        <a href="@(Url.Action( "ScaricaPDF" , "Assunzione" ))?idAllegato=@a.Id" class="rai-font-md text-primary" id="span-allegato"><i class="fa fa-download"> </i> @a.NomeFile</a>
+                                    </span>
+                                </div>
+                            </div>
+                        }
+                    }
+
+                }
+            }
+        </div>
+
+    }
+</div>

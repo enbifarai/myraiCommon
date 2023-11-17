@@ -1,0 +1,347 @@
+﻿@model List<myRaiCommonModel.FormStatisticsModel>
+
+@using myRaiHelper
+
+@helper DrawData(myRaiCommonModel.FormStatisticsModel itemModel, int result, bool moreThanOne)
+{
+    if (itemModel.Sentiments.Any())
+    {
+        using (Html.BeginPanel(PanelType.Panel, "Analisi del sentiment", false))
+        {
+            var totSent = itemModel.Sentiments.Count();
+            var positive = itemModel.Sentiments.Where(x => x.sentiment == "Positive").Count();
+            var neutral = itemModel.Sentiments.Where(x => x.sentiment == "Neutral").Count();
+            var negative = itemModel.Sentiments.Where(x => x.sentiment == "Negative").Count();
+
+            var positivePerc = positive > 0 ? Math.Round(((decimal)positive * 100) / (decimal)totSent, 0) : 0;
+            var neutralPerc = neutral > 0 ? Math.Round(((decimal)neutral * 100) / (decimal)totSent) : 0;
+            var negativePerc = negative > 0 ? Math.Round(((decimal)negative * 100) / (decimal)totSent) : 0;
+
+
+            <div class="row push-10">
+                <div class="col-sm-8">
+                    <div class="rai progress progress-chart progress-xl light">
+                        <div class="progress-bar rai-bg-primary" role="progressbar" aria-valuenow="@(positivePerc)" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                            <span class="sottotitolettoBox progress-bar-tooltip" id="span_before">@(positivePerc)%</span>
+                        </div>
+                        <div class="progress-bar rai-bg-primary" role="progressbar" aria-valuenow="@(neutralPerc)" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                            <span class="sottotitolettoBox progress-bar-tooltip" id="span_before">@(neutralPerc)%</span>
+                        </div>
+                        <div class="progress-bar rai-bg-primary" role="progressbar" aria-valuenow="@(negativePerc)" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                            <span class="sottotitolettoBox progress-bar-tooltip" id="span_before">@(negativePerc)%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4 text-center">
+                    <label class="rai-font-text-heading" style="line-height:46px;font-size:36px;">
+                        @if (positive > neutral && positive > negative)
+                        {
+                            <text>Positivo</text>
+                        }
+                        else if (neutral > positive && neutral > negative)
+                        {
+                            <text>Neutrale</text>
+                        }
+                        else if (neutral > positive && neutral > negative)
+                        {
+                            <text>Negativo</text>
+                        }
+                    </label>
+                </div>
+            </div>
+            <div class="row push-10">
+                <div class="col-sm-8">
+                    <div class="rai-chart-legend bg-90"></div><span class="rai-font-sm-bold push-10-r">Positivo</span>
+                    <div class="rai-chart-legend bg-70"></div><span class="rai-font-sm-bold push-10-r">Neutrale</span>
+                    <div class="rai-chart-legend bg-50"></div><span class="rai-font-sm-bold">Negativo</span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12">
+                    <span class="rai-font-sm-neutral text-italic">L'analisi si basa sulle risposte date alle domande a risposta aperta</span>
+                </div>
+            </div>
+        }
+    }
+
+    if (moreThanOne)
+    {
+        @DrawDatoDomanda(itemModel, result)
+    }
+    else
+    {
+        using (Html.BeginPanel(PanelType.NoHeader, ""))
+        {
+            @DrawDatoDomanda(itemModel, result)
+        }
+    }
+}
+
+@helper DrawDatoDomanda(myRaiCommonModel.FormStatisticsModel itemModel, int result)
+{
+    <div class="row">
+        <div class="col-sm-12 text-right">
+            <button class="btn rai-btn-small" id="btnExpand-@(itemModel.formprimario.id)" data-form="@itemModel.formprimario.id" aria-expanded="false" onclick="FormExpandAll(this)">Espandi tutto</button>
+        </div>
+    </div>
+    <table class="table rai-table rai-table-collapsable rai-table-panel rai-table-vcenter" data-rai-table-collapsable-accordion="true" data-form="@itemModel.formprimario.id">
+        @foreach (var i in itemModel.items.GroupBy(x => x.domanda.MyRai_FormSecondario).OrderBy(y => y.Key.progressivo))
+        {
+            int cc = 0;
+
+            <tbody class="rai-table-collapsable-header">
+                <tr>
+                    <td style="padding-top:15px; padding-bottom:15px;">
+                        <span class="rai-font-md-bold">@i.Key.titolo</span><br />
+                        <span class="rai-font-sm-neutral">@Html.Raw(i.Key.descrizione)</span>
+                    </td>
+                    <td class="rai-table-td-toggle">
+                        <i class="fa fa-chevron-down"></i>
+                    </td>
+                </tr>
+            </tbody>
+            <tbody>
+                <tr>
+                    <td colspan="2" class="no-padding">
+                        <table class="table rai-table rai-table-collapsable rai-table-vcenter rai-table-panel" data-rai-table-collapsable-accordion="true" id="domande">
+                            @foreach (var item in i)
+                            {
+                                cc++;
+                                int legend = 96; //a
+
+                                <tbody class="rai-table-collapsable-header" data-rai-collapsable-onopen="UpdateGrafico">
+                                    <tr>
+                                        <td class="@(item.HasSentiment?"border-left-80":"")">
+                                            <span class="rai-font-md">@item.domanda.titolo</span><br />
+                                            <span class="rai-font-sm-neutral">@item.domanda.MyRai_FormTipologieDomande.tipologia</span>
+                                        </td>
+                                        <td class="rai-table-td-toggle">
+                                            <i class="fa fa-chevron-down"></i>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="2">
+                                            <div class="row push-10-t">
+                                                <div class="col-sm-6">
+                                                    <table class="rai-table table rai-table-vcenter rai-table-bordered">
+                                                        @Html.Raw(item.domanda.descrizione)
+                                                        @foreach (var pieItem in item.PieItems)
+                                                        {
+                                                            legend++;
+                                                            <tr>
+                                                                <td style="width:25px;padding:0px;"><div class="rai-chart-legend rai-chart-legend-2x pie ct-series-@((char)legend)"></div></td>
+                                                                <td>@pieItem.label</td>
+                                                                <td class="text-right">@pieItem.data[0][1]</td>
+                                                            </tr>
+                                                        }
+                                                    </table>
+                                                    @if (item.HasOtherCollapse)
+                                                    {
+                                                        <span class="rai-font-sm-neutral">* Sono state segnalate le risposte con più frequenza</span>
+                                                    }
+                                                    else if (item.HasSentiment)
+                                                    {
+                                                        <span class="rai-font-sm-neutral">* I risultati sono frutto dell'analisi del sentiment delle risposte date</span>
+                                                    }
+                                                </div>
+                                                <div class="col-sm-6">
+                                                    @if (item.PieItems != null && item.PieItems.Any())
+                                                    {
+                                                        <div class="rai-chart rai-chart-slice-border chart chart-md" id="pie-@(itemModel.formprimario.id)-@(item.domanda.id)" @*@(result)-@(+cc)"*@
+                                                         style="position: relative;margin-top:20px;margin-bottom:20px;padding-top:10px;padding-bottom:10px;">
+                                                    </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                </tbody>
+                            }
+                        </table>
+                    </td>
+                </tr>
+            </tbody>
+        }
+    </table>}
+
+@{
+    int result = 0;
+
+
+    Layout = "~/Views/Shared/_layout2.cshtml";
+
+    bool moreThanOne = Model.Count() > 1;
+}
+
+
+<style>
+    .ct-label {
+        display: none !important;
+    }
+</style>
+
+<section role="main" class="content-body">
+
+    <!-- start: page -->
+    <!-- Main Container -->
+
+    <main id="main-container">
+        <div class="content">
+
+            @foreach (var itemModel in Model)
+            {
+                result++;
+
+                using (Html.BeginPanel(PanelType.Panel, itemModel.Titolo, moreThanOne))
+                {
+                    <div class="row bg-neutrals-xl-10" style="margin-left:-15px; margin-right:-15px;margin-top:-15px;">
+                        <div class="col-sm-12 text-right push-10 push-10-t">
+                                    <a class="btn rai-btn-small" href="@Url.Action("GetData", "FormStats", new { idForm=itemModel.formprimario.id })">Esporta dati</a>
+                        </div>
+                    </div>
+                    <div class="row push-10-t @(moreThanOne?"push-10":"")">
+                        <div class="col-sm-12">
+                            @if (!String.IsNullOrWhiteSpace(itemModel.formprimario.descrizione))
+                            {
+                                <span class="rai-font-md">@Html.Raw(itemModel.formprimario.descrizione)</span>
+                            }
+                            else
+                            {
+                                <span class="rai-font-md-neutral">Nessuna descrizione presente</span>
+                            }
+                        </div>
+                    </div>
+
+                    if (moreThanOne)
+                    {
+                        @DrawData(itemModel, result, moreThanOne)
+                    }
+                }
+
+                if (!moreThanOne)
+                {
+                    @DrawData(itemModel, result, moreThanOne);
+                }
+            }
+
+
+
+            <div id="tooltip-chart" class="tooltip" style="position:fixed;"><div class="tooltip-inner"></div></div>
+        </div>
+    </main>
+
+    <!-- end: page -->
+</section>
+
+
+
+
+@section afterjs {
+    @Html.Raw(TempData["script"])
+    <script type="text/javascript">
+        function CreaGrafici() {
+            var options = {
+                labelPosition: 'outside',
+                ignoreEmptyValues: true,
+                labelDirection: 'explode',
+                labelOffset: 30
+            };
+
+            @{
+                int c = 0;
+
+
+                foreach (var itemModel in Model)
+                {
+                    c++;
+                    int i = 0;
+                    foreach (var item in itemModel.items)
+                    {
+                        i++;
+                        if (item.PieItems == null || item.PieItems.Count()==0)
+                        {
+                            continue;
+                        }
+                    <text>
+            var chart2 = new Chartist.Pie('#pie-@(itemModel.formprimario.id)-@(item.domanda.id)', {
+                labels: ["@(Html.Raw(String.Join("\",\"", item.PieItems.Select(x=>x.label.Replace("\"","'")))))"],
+                series: [@(Html.Raw(String.Join(",",item.PieItems.Select(x=>x.data[0][1]))))]
+            }, options);
+            </text>
+                }
+            }
+
+
+            }
+
+            $('.rai-chart').on('mouseenter', '.ct-slice-pie', function () {
+                var $point = $(this),
+                    value = $point.attr('ct:value'),
+                    seriesName = $point.parent().attr('ct:series-name');
+
+                var index = $point.parent().parent().find('.ct-series').index($point.parent());
+
+
+                $('#tooltip-chart .tooltip-inner').html($($point.closest('.ct-chart-pie').find('.ct-label')[index]).html() + '<br>' + value);
+                $('#tooltip-chart').addClass('in');
+            });
+
+            $('.rai-chart').on('mouseleave', '.ct-slice-pie', function () {
+                $('#tooltip-chart').removeClass('in');
+            });
+
+            $('.rai-chart').on('mousemove', function (event) {
+                $('#tooltip-chart').css({
+                    left: event.clientX+2,
+                    top: event.clientY+2
+                });
+            });
+        }
+
+        $(document).ready(function () {
+            CreaGrafici();
+        });
+
+
+        function UpdateGrafico(element) {
+            $(element).next('tbody').find('.rai-chart')[0].__chartist__.update();
+        }
+    </script>
+
+    <script type="text/javascript">
+        $('.collapse').on('shown.bs.collapse', function (e) {
+            $(this).find('.rai-chart')[0].__chartist__.update();
+            var $panel = $(this).closest('.panel');
+            $('html,body').animate({
+                scrollTop: $panel.offset().top - 70
+            }, 500);
+
+
+        });
+    </script>
+
+    <script>
+        function FormExpandAll(button) {
+            var idForm = $(button).attr('data-form');
+
+            if ($(button).attr('aria-expanded') == 'false') {
+                $('table[data-form="' + idForm + '"]').find('.rai-table-collapsable-header:not(".open")').addClass('open');
+                $(button).attr('aria-expanded', 'true');
+                $(button).text('Comprimi tutto');
+
+                var list = $('table[data-form="' + idForm + '"]').find('.rai-chart');
+                for (var i = 0; i < list.length; i++) {
+                    list[i].__chartist__.update();
+                }
+
+            } else {
+                $('table[data-form="' + idForm + '"]').find('.rai-table-collapsable-header.open').removeClass('open');
+                $(button).attr('aria-expanded', 'false');
+                $(button).text('Espandi tutto');
+            }
+        }
+    </script>
+}

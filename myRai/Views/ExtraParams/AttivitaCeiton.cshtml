@@ -1,0 +1,204 @@
+﻿@using myRai.Business
+@model myRai.Models.WeekPlan
+
+@{
+    string idAtt = "";
+    string titoloAtt = "";
+}
+
+<div id="extra-params">
+    @if ( Model != null && Model.Days != null && Model.Days.Count > 0 && Model.Days[0].Activities != null && Model.Days[0].Activities.Count > 0 )
+    {
+        var attivita = Model.Days[0].Activities.Select( x => new
+        {
+            nome = x.Title + " - " + x.MainActivity + " (" + x.Schedule + ")" ,
+            id = x.idAttivita,
+            titolo = x.Title
+        } ).ToList( );
+
+        if ( attivita != null && attivita.Any( ) &&
+            attivita.Count( ) == 1 && attivita.First( ).id.Equals( "000000" ) )
+        {
+            <select name="ep-idattivita" id="idattivita" data-eccezione="@(Model.Cod_Eccezione)" class="form-control ep ep-obb nascosto" style="display:none;">
+                @foreach ( var item in attivita )
+                {
+                    idAtt = item.id;
+                    titoloAtt = item.nome;
+                    <option data-titolo="@(item.titolo)" value="@item.id" selected="selected">@item.nome</option>
+                }
+            </select>
+        }
+        else
+        {
+        <div class="col-sm-12">
+            <h5 for="Parametro1"><strong>Seleziona Attività</strong></h5>
+        </div>
+
+        <select name="ep-idattivita" id="idattivita" data-eccezione="@(Model.Cod_Eccezione)" class="form-control ep ep-obb">
+            <option value="">Seleziona attività...</option>
+            @foreach ( var item in attivita )
+            {
+                <option data-titolo="@(item.titolo)" value="@item.id">@item.nome</option>
+            }
+        </select>
+        }
+
+        var approvatoriL4Abilitato = CommonHelper.GetParametro<bool>( EnumParametriSistema.AbilitaApprovatoriL4L5 );
+        var abilitaSceltaApprovatore = CommonHelper.GetParametro<bool>( EnumParametriSistema.AbilitaSceltaApprovatore );
+
+        if ( approvatoriL4Abilitato && abilitaSceltaApprovatore )
+        {
+            if ( attivita != null && attivita.Any( ) &&
+                attivita.Count( ) == 1 && attivita.First( ).id.Equals( "000000" ) )
+            {
+                <div id="label-select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)" class="col-sm-12">
+                    <h5 for="Parametro1"><strong>Seleziona un approvatore di primo livello o un ufficio di produzione</strong></h5>
+                </div>
+                <select name="ep-ApprovatoreSelezionato" id="select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)" class="form-control ep ep-obb">
+                    <option value="">Seleziona un approvatore di primo livello o un ufficio di produzione...</option>
+                </select>
+            }
+            else
+            {
+            <div id="label-select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)" class="col-sm-12" style="display:none;">
+                <h5 for="Parametro1"><strong>Seleziona un approvatore di primo livello o un ufficio di produzione</strong></h5>
+            </div>
+            <select name="ep-ApprovatoreSelezionato" id="select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)" class="form-control ep ep-obb" style="display:none;">
+                <option value="">Seleziona un approvatore di primo livello o un ufficio di produzione...</option>
+            </select>
+        }
+        }
+    }
+    else
+    {
+        <em style="color:red;font-weight:bold" id="no-ceiton-activity">Non ci sono attività di produzione da poter selezionare </em><br /><br />
+    }
+</div>
+
+<script type="text/javascript">
+    function reloadDataApprovatori(idAttivita, titolo) {
+        $('#select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)')
+            .empty()
+            .append('<option value="">Seleziona un approvatore di primo livello o un ufficio di produzione...</option>');
+        var dataRichiesta = $('#data_da').val();
+
+        $.ajax({
+            cache: false,
+            type: "POST",
+            url: '/Ajax/GetElencoApprovatoriPerAttivita',
+            data: { "idAttivita": idAttivita, "dataRichiesta": dataRichiesta, "titolo": titolo },
+            dataType: 'json',
+            success: function (data) {
+                debugger
+                if (data.length == 0) {
+                    $('#select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)').remove();
+                    $('#label-select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)').remove();
+                }
+                else {
+                    var eccSelezionata = $("#select-eccezioni option:selected").val();
+                    var arrEccezioniCeiton = $("#giornata-info-attr").attr("data-eccezioni-ceiton").split(',');
+                    var NecessariaAttivita = (arrEccezioniCeiton.indexOf(eccSelezionata) >= 0);
+                    var CeitonObbligatorioPerSede = $("#giornata-info-attr").attr("data-ceiton-obbl");
+
+                    @*if (data.length == 1 && idAttivita == "000000") {
+                        if (CeitonObbligatorioPerSede == "False" || !NecessariaAttivita) {
+                            $("#idattivita").removeClass("ep-obb");
+                            $('#select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)').removeClass("ep-obb");
+                            $('#select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)').hide();
+                            $('#label-select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)').hide();
+                        }
+                        else {
+                            $('#select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)').hide();
+                            $('#label-select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)').hide();
+                            data[0].Selected = true;
+                        }
+                    }*@
+                    var obbligoSelezione = @Html.Raw( Json.Encode( Utente.SelezioneAttivitaCeitonObbligatoria( ) ) );
+
+                    if (data.length == 1 && idAttivita == "000000" && obbligoSelezione) {
+                        $('#select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)').hide();
+                        $('#label-select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)').hide();
+                        data[0].Selected = true;
+                    }
+
+                    for (var i = 0; i < data.length; i++) {
+                        if (data[i].Selected) {
+                            $('#select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)')
+                                .append('<option value="' + data[i].Matricola + '" selected="selected">' + data[i].Nominativo + '</option>');
+                        }
+                        else {
+                            $('#select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)')
+                                .append('<option value="' + data[i].Matricola + '">' + data[i].Nominativo + '</option>');
+                        }
+                    }
+                }
+            },
+            error: function (a, b, c) {
+                Console.log(a);
+                Console.log(b);
+                Console.log(c);
+            }
+        });
+    }
+
+    function isSedeTorino() {
+        var result = false;
+        $.ajax({
+            cache: false,
+            type: "POST",
+            url: '/Ajax/IsSedeTorino',
+            data: {},
+            dataType: 'json',
+            async: false,
+            success: function (data) {
+                result = data;
+            },
+            error: function (a, b, c) {
+                Console.log(a);
+                Console.log(b);
+                Console.log(c);
+            }
+        });
+        return result;
+    }
+
+    $(function () {
+        $('#idattivita[data-eccezione="@(Model.Cod_Eccezione)"]').on('change', function () {
+            var valore = $(this).val();
+            var titolo = $(this).find('option:selected').data('titolo');
+            if (titolo == "undefined" || typeof titolo == "undefined") {
+                titolo = null;
+            }
+
+            if (valore != "") {
+                if (isSedeTorino()) {
+                    $('#label-select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)').hide();
+                    $('#select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)').hide();
+                }
+                else {
+                    reloadDataApprovatori(valore, titolo);
+                    $('#label-select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)').show();
+                    $('#select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)').show();
+                }
+            }
+            else {
+                $('#label-select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)').hide();
+                $('#select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)').hide();
+            }
+        });
+
+        $('select[id^="select-richiestaeccezione-idApprovatore-"]:selected').each(function () {
+            var selezionato = $(this).val();
+            $('#select-richiestaeccezione-idApprovatore-@(Model.Cod_Eccezione)').val(selezionato);
+        });
+
+        @{
+            if ( !String.IsNullOrEmpty(idAtt) && !String.IsNullOrEmpty(titoloAtt))
+            {
+            <text>            
+                reloadDataApprovatori("@(idAtt)", "@(titoloAtt)");
+            </text>
+            }
+        }
+    });
+</script>

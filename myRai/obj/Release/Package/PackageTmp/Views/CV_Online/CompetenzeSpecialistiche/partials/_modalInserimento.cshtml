@@ -1,0 +1,196 @@
+﻿@model List<myRaiCommonModel.cvModels.cvModel.CompetenzeSpecialistiche>
+
+@{
+    myRai.Data.CurriculumVitae.cv_ModelEntities cvEnt = new myRai.Data.CurriculumVitae.cv_ModelEntities();
+    int j = -1;
+    int i = -1;
+
+    string figProfessionale = myRaiHelper.UtenteHelper.EsponiAnagrafica()._codiceFigProf;
+    //FREAK - DA CANCELLARE DOPO IL TEST
+    figProfessionale = "MBA";
+    //---------------------------------
+
+    //inserisco in una lista tutti i CodConProfAggr
+    var codConProfAggrList = cvEnt.DConProf.Where(x => x.FiguraProfessionale == figProfessionale && x.Stato != "1").GroupBy(x => x.CodConProfAggr).ToList();
+
+}
+
+
+<div class="modal fade right modalCheck" id="modalCompetenzeSpecialisticheInserimento" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            @using (Html.BeginModal("Autovalutazione competenze"))
+            {
+                <form id="frm-insertCompetenzeSpecialistiche" name="frm-insertCompetenzeSpecialistiche"  method="post" action="/CV_Online/EditCompetenzeSpecialistiche">
+                    @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, "", false))
+                    {
+                        <div class="row " id="edit-content">
+                            <div class="col-md-12">
+                                <div class="table-responsive">
+                                <table class="table table-striped mb-none rai-table rai-table-vcenter">
+                                    @foreach (var elem_dCodConProf in codConProfAggrList)
+                                    {
+                                        i++;
+                                        var listModel = Model.Where(x => x._codConProfAggr == elem_dCodConProf.Key).OrderBy(y => y._posizione).ToList();
+
+                                        foreach (var item in listModel)
+                                        {
+                                            j++;
+                                            string checked_codConInfoLiv01 = "";
+                                            string checked_codConInfoLiv02 = "";
+                                            string checked_codConInfoLiv04 = "";
+                                            string checked_flagPrincipale = "";
+                                            string checked_selected = "";
+
+                                            if (item._isSelected)
+                                            {
+                                                checked_selected = "checked=\"checked\"";
+                                            }
+                                            else
+                                            {
+                                                checked_selected = "";
+                                            }
+
+                                            switch (item._codConProfLiv)
+                                            {
+                                                case "01":
+                                                    //checked_codConInfoLiv01 = "checked=\"checked\"";
+                                                    checked_codConInfoLiv01 = "checked=\"checked\"";
+                                                    checked_codConInfoLiv02 = "";
+                                                    checked_codConInfoLiv04 = "";
+                                                    break;
+                                                case "02":
+                                                    //checked_codConInfoLiv02 = "checked=\"checked\"";
+                                                    checked_codConInfoLiv02 = "checked=\"checked\"";
+                                                    checked_codConInfoLiv01 = "";
+                                                    checked_codConInfoLiv04 = "";
+                                                    break;
+                                                case "04":
+                                                    //checked_codConInfoLiv04 = "checked=\"checked\"";
+                                                    checked_codConInfoLiv04 = "checked=\"checked\"";
+                                                    checked_codConInfoLiv02 = "";
+                                                    checked_codConInfoLiv01 = "";
+                                                    break;
+                                                default:
+                                                    checked_codConInfoLiv01 = "";
+                                                    checked_codConInfoLiv02 = "";
+                                                    checked_codConInfoLiv04 = "";
+                                                    break;
+                                            }
+
+                                            if (item._flagPrincipale == "1")
+                                            {
+                                                //checked_flagPrincipale = "checked=\"checked\"";
+                                                checked_flagPrincipale = "checked=\"checked\"";
+                                            }
+                                            else
+                                            {
+                                                checked_flagPrincipale = "";
+                                            }
+
+                                            if (item._isTitle)
+                                            {
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width:60%">
+                                                            <input type="hidden" name="compSpec[@j]._matricola" value="@item._matricola" />
+                                                            <input type="hidden" name="compSpec[@j]._codConProf" value="@item._codConProf" />
+                                                            <label class="">@item._descConProf</label>
+                                                        </th>
+                                                        <th style="width:10%; text-align:left">
+                                                            <label class="">Base</label>
+                                                        </th>
+                                                        <th style="width:10%; text-align:left">
+                                                            <label class="">Medio</label>
+                                                        </th>
+                                                        <th style="width:10%; text-align:left">
+                                                            <label class="">Alto</label>
+                                                        </th>
+                                                        <th style="width:10%; text-align:left">
+                                                            <label class="" title="Maggiormente presidiata">Maggior.<br/> presidiata</label>
+                                                        </th>
+                                                    </tr>
+                                                </thead>
+                                            }
+                                            else
+                                            {
+                                                <tr>
+                                                    <td>
+
+                                                        <input type="hidden" name="compSpec[@j]._matricola" value="@item._matricola" />
+                                                        <input type="hidden" name="compSpec[@j]._codConProf" value="@item._codConProf" />
+                                                        <div class="rai-checkbox">
+
+                                                            <input type="checkbox" name="compSpec[@j]._isSelected" id="compSpec[@j]._isSelected" value="true" class="select-check-@j" onchange="controlCheck('frm-insertCompetenzeSpecialistiche .select-check-@j', 'frm-insertCompetenzeSpecialistiche .radio-item-@j', 'frm-insertCompetenzeSpecialistiche .control-radio-@j')" @checked_selected />
+                                                            <label for="compRai[@j]._codConProf" title="@item._descConProfLunga" class="rai-caption">@item._descConProf</label>
+                                                        </div>
+
+
+                                                    </td>
+                                                    <td>
+                                                        <div class="rai-radio push-10-l">
+                                                            <input type="radio" name="compSpec[@j]._codConProfLiv" value="01" class="radio-item-@j control-radio-@j" onchange="controlRadio('frm-insertCompetenzeSpecialistiche .select-check-@j')" @checked_codConInfoLiv01 />
+                                                            <label class=""></label>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="rai-radio push-10-l">
+                                                            <input type="radio" name="compSpec[@j]._codConProfLiv" value="02" @checked_codConInfoLiv02 class="control-radio-@j" onchange="controlRadio('frm-insertCompetenzeSpecialistiche .select-check-@j')" />
+                                                            <label class=""></label>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="rai-radio push-10-l">
+                                                            <input type="radio" name="compSpec[@j]._codConProfLiv" value="04" @checked_codConInfoLiv04 class="control-radio-@j" onchange="controlRadio('frm-insertCompetenzeSpecialistiche .select-check-@j')" />
+                                                            <label class=""></label>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="rai-radio push-10-l">
+                                                            <input type="radio" name="flagPrinc[@i]" value="@item._codConProf" @checked_flagPrincipale class="magg-pres control-radio-@j" onclick="controlRadioMaggPres('frm-insertCompetenzeSpecialistiche .select-check-@j',this)" />
+                                                            <label class=""></label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        }
+                                    }
+                                </table>
+                                </div>
+                                <!-- fine form -->
+                            </div>
+
+
+
+                        </div>
+
+
+                        <div class="row push-20-t">
+                            <div class="col-sm-12 text-center">
+                                <a href="@Html.Raw(Request.Url.Scheme + "://" + Request.Url.Authority + Request.ApplicationPath.TrimEnd('/') + "/cv_online/pdf")" target="_blank" target="_blank"><p class="text-bold">Visualizza l'anteprima del tuo CV</p></a><br />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <button class="btn rai-btn-primary full-width" type="submit" onclick="submit_CompetenzeSpecialistiche(this)">Salva</button>
+                            </div>
+                        </div>
+
+                        <div id="savedbcompspec" class="alert alert-info" style="position:fixed;bottom:10px;right:10px;display:none;z-index:100">
+                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                            <i class="fa fa-refresh fa-spin"></i> Salvataggio in corso
+                        </div>
+                    }
+                </form>
+            }
+
+
+
+
+
+
+        </div>
+    </div>
+</div>
+

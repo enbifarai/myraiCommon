@@ -1,0 +1,148 @@
+﻿@using myRaiHelper
+@using MVCProject.Custom_Helpers;
+@model myRaiCommonModel.Gestionale.PolRetrLayout
+@{
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    ViewBag.Title = "HRIS - Politiche retributive";
+}
+
+<style>
+    .gest-not-authorized {
+        opacity: 0.1;
+    }
+
+    .height80 {
+        height: 80vh !important;
+    }
+</style>
+
+<section role="main" class="content-body" style="padding-top:10px;">
+
+
+    <!-- start: page -->
+    <!-- Main Container -->
+
+    <main id="main-container">
+
+        <div class="content">
+            <div class="row">
+                <div class="col-sm-8">
+                    @if (Request.Browser.IsMobileDevice)
+                    {
+                        @Html.Partial("../PoliticheRetributive/subpartial/widgetRicercaPratica", new myRaiCommonModel.Gestionale.RicercaAnagrafica() { BoxDest = "ElencoDipendenti", ResultView = "ElencoPratiche" })
+                    }
+                    <section class="panel ">
+                        <header class="panel-heading">
+                            <h2 id="lblLeftBox" class="panel-title">Elenco dipendenti</h2>
+                            <div class="panel-actions visible-xs" style="position: absolute">
+                                <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblRightBox" aria-expanded="true"></a>
+                            </div>
+                        </header>
+
+                        <div class="panel-body no-padding">
+                            <div id="ElencoDipendentiExt">
+                                <div id="ElencoDipendenti">
+                                    @Html.AsyncPartial("PoliticheRetributive", "GetElencoPratiche", "~/Views/PoliticheRetributive/subpartial/ElencoPratiche_skeleton.cshtml", TempData, "pippo();")
+                                </div>
+                            </div>
+                        </div>
+
+                    </section>
+                </div>
+                <div class="col-sm-4">
+                    @{
+                        if (Model.RichiesteDoppie!=null && Model.RichiesteDoppie.Any())
+                        {
+                            <section class="panel">
+                                <header class="panel-heading">
+                                    <h2 class="panel-title">Richieste multiple</h2>
+                                    <div class="panel-actions visible-xs" style="position: absolute">
+                                        <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblRightBox" aria-expanded="true"></a>
+                                    </div>
+                                </header>
+                                <div class="panel-body">
+                                    <div class="widget-summary push-10">
+                                        <div class="widget-summary-col widget-summary-col-icon">
+                                            <div class="summary-icon">
+                                                <i class="fa fa-exclamation"></i>
+                                            </div>
+                                        </div>
+                                        <div class="widget-summary-col">
+                                            <div class="summary">
+                                                <h3 class="title" style="word-break: break-word;">Sono presenti <span class="feedback-error-color">@Model.RichiesteDoppie.Count()</span> matricole con richieste multiple</h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="summary-footer">
+                                        <a href="#" class="btn rai-btn-small full-width" onclick="GestRichDoppie('@(String.Join(", ",Model.RichiesteDoppie.OrderBy(x=>x)))')" style="height:auto;">Visualizza</a>
+                                    </div>
+                                </div>
+                            </section>
+                        }
+                    }
+                    @foreach (var box in Model.BoxAbilitati)
+                    {
+                        @Html.Partial("../PoliticheRetributive/subpartial/" + box.NOME_VIEW)
+                    }
+                    @if (!Request.Browser.IsMobileDevice)
+                    {
+                        @Html.Partial("../PoliticheRetributive/subpartial/widgetRicercaPratica", new myRaiCommonModel.Gestionale.RicercaAnagrafica() { BoxDest = "ElencoDipendenti", ResultView = "ElencoPratiche" })
+                    }
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- end: page -->
+</section>
+
+
+@Html.RenderModal("ricerca", ModalPosition.Right, ModalSize.Half)
+
+@Html.RenderModal("pratica")
+
+@Html.RenderModal("budget", ModalPosition.Right, ModalSize.Half)
+
+<div class="modal right fade" id="modal-anagrafica" role="dialog" aria-hidden="true" style="display: none;">
+
+</div>
+
+<div class="modal fade" id="modal-overview" role="dialog" aria-hidden="true" style="display: none;">
+    <div id="modal-overview-internal"></div>
+</div>
+
+@*<div class="modal fade" id="modal-modifica-lettera" role="dialog" aria-hidden="true" style="display: none;">
+    <div id="modal-modifica-lettera-internal" style="overflow-x:hidden;overflow-y:auto"></div>
+</div>*@
+
+<div class="rai modal fade" id="modal-stato-lettera" role="dialog" aria-hidden="false" style="display: none;">
+    <div class="modal-backdrop fade"></div>
+    <div id="modal-stato-lettera-internal" style="overflow-x:hidden;overflow-y:auto">
+    </div>
+</div>
+
+
+@section afterjs {
+    @Html.Raw(TempData["script"])
+    <script type="text/javascript">
+    function pippo() {
+        $('.collapse').on('shown.bs.collapse', function (e) {
+            var $panel = $(this).closest('.panel');
+            $('html,body').animate({
+                scrollTop: $panel.offset().top - 70
+            }, 500);
+        });
+
+        //$('[data-toggle="collapse"]').on('click', function (e) {
+        //    var panelParent = $(this).closest('.panel');
+        //    var iconToggle = $(this).closest('.panel-heading').find('[data-collapse-icon]');
+        //    if ($(iconToggle).hasClass('fa-chevron-down')) {
+        //        $(iconToggle).removeClass('fa-chevron-down').addClass('fa-chevron-up');
+        //    }
+        //    else {
+        //        $(iconToggle).addClass('fa-chevron-down').removeClass('fa-chevron-up');
+        //    }
+        //})
+    }
+    </script>
+}

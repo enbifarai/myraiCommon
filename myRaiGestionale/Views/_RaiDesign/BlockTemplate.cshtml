@@ -1,0 +1,95 @@
+﻿@using MVCProject.Custom_Helpers;
+@model myRaiHelper.SectionTemplate
+
+@{
+    bool hasContent = !Model.OnlyHeader && !Model.OnlyFooter;
+
+    string classBlock = "";
+    switch (Model.BlockType)
+    {
+        case myRaiHelper.BlockType.ContentTable:
+            classBlock = "block-content-table";
+            break;
+        case myRaiHelper.BlockType.ContentTableNoMarginBottom:
+            classBlock = "block-content-table remove-margin-bottom";
+            break;
+        default:
+            break;
+    }
+
+    var idCollapse = "";
+    if (Model.Collapsable)
+    {
+        idCollapse = Guid.NewGuid().ToString("N");
+    }
+}
+
+@if (hasContent || Model.OnlyHeader)
+{
+    @Html.Raw("<div class=\"block block-transparent " + (classBlock) + "\">")
+    if (!String.IsNullOrWhiteSpace(Model.Title))
+    {
+        <div class="block-header block-content-mini"
+             @if (Model.Collapsable) { @: href="#@idCollapse" data-toggle="collapse" aria-expanded="true" data-block-toggle
+             }>
+            <label class="block-title">@Html.Raw(Model.Title)</label>
+            @if (Model.Collapsable || (Model.Actions != null && Model.Actions.Any()))
+            {
+                <div class="block-options">
+                    @if (Model.Actions != null)
+                    {
+                        foreach (var item in Model.Actions)
+                        {
+                            <button onclick="@item.OnClick" title="@item.Title" class="btn btn-action-icon @(!String.IsNullOrWhiteSpace(item.Text) ? "btn-action-icon-text" : "")">
+                                <i class="@item.Icon">&nbsp;</i>@item.Text
+                            </button>
+                        }
+                    }
+                    @if (Model.Collapsable)
+                    {
+                        <i data-toggle="collapse" class="fa fa-chevron-down"></i>
+                    }
+                </div>
+            }
+        </div>
+    }
+
+
+
+    string beginBlockContent = "";
+    if (Model.Collapsable)
+    {
+        beginBlockContent = "<div class=\"block-content block-content-mini collapse in\" id=\"" + idCollapse + "\">";
+    }
+    else
+    {
+        beginBlockContent = "<div class=\"block-content block-content-mini\">";
+    }
+
+
+    @Html.Raw(beginBlockContent)
+    @Html.Raw("<div " + (!String.IsNullOrWhiteSpace(Model.ContentId) ? "id=\"" + Model.ContentId + "\"" : "") + ">")
+}
+
+@if (hasContent)
+{
+    if (Model.Async)
+    {
+        @Html.AsyncPartial(Model.Controller, Model.Action, "~/Views/_RaiDesign/BlockTemplateSkeleton.cshtml", TempData, Model.AsyncCallBack)
+    }
+    else if (Model.DrawSkeleton)
+    {
+        @Html.Partial("~/Views/_RaiDesign/BlockTemplateSkeleton.cshtml")
+    }
+    else if (!String.IsNullOrWhiteSpace(Model.ViewUrl))
+    {
+        @Html.Partial(Model.ViewUrl, Model.Model)
+    }
+}
+
+@if (hasContent || Model.OnlyFooter)
+{
+    @Html.Raw("</div>")
+    @Html.Raw("</div>")
+    @Html.Raw("</div>")
+}

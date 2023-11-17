@@ -1,0 +1,123 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel.ess;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model WeekPlan
+
+@{
+    bool firstTab = false;
+    DateTime oggi = DateTime.Now;
+}
+
+<div class="tabs-container block" style="margin: 0px;">
+    <ul id="week-days" class="rai-nav-tabs" data-toggle="tabs" role="tablist" style="margin: 0px; padding-left: 0px; padding-right: 0px;">
+        @{
+            firstTab = false;
+            for (int i = 0; i < Model.Days.Count(); i++)
+            {
+                firstTab = (oggi.Date == Model.Days[i].Date.Date);
+                <li class="tabbianco @(firstTab?"active":"")" role="presentation">
+                    <a data-toggle="tab" href="#weekDay@(i)" aria-expanded="@(firstTab?"true":"false")" role="tab" tabindex="@(firstTab?"0":"-1")" aria-controls="weekDay@(i)" style="padding-left:7px;padding-right:7px;">@Model.Days[i].Date.Day</a>
+                </li>
+                firstTab = false;
+            }
+        }
+    </ul>
+    <div class="tab-content" style="border:0px; box-shadow:none; margin: 0px; padding-left: 15px; padding-right: 15px;">
+        @{
+            for (int i = 0; i < Model.Days.Count(); i++)
+            {
+                firstTab = (oggi.Date == Model.Days[i].Date.Date);
+                <div id="weekDay@(i)" class="tab-pane @(firstTab?"active":"")" role="tabpanel">
+                    <div class="row" style="border:0px;padding:5px;">
+                        <div class="col-xs-2" style="padding-left:0px;">
+                            <div class="rai-week-day">
+                                @Model.Days[i].Date.Day
+                            </div>
+                            <div class="rai-week-month">
+                                @Model.Days[i].Date.ToString("MMM").ToUpper()
+                            </div>
+                        </div>
+                        <div class="col-xs-10 no-padding">
+                            @if (Model.Days[i].Activities.Count() > 0)
+                            {
+                                bool prevVisible = false;
+                                bool nextVisible = true;
+                                bool oneActivityVisible = false;
+                                prevVisible = i == 0 && DateTime.Now.TimeOfDay > Model.Days[i].Activities[0].EndTime;
+                                nextVisible = !prevVisible || DateTime.Now.TimeOfDay < Model.Days[i].Activities[Model.Days[i].Activities.Count - 1].StartTime;
+
+                                <div class="row" id="activities-container-day@(i)">
+                                    @if (Model.Days[i].Activities.Count() > 1)
+                                    {
+                                        <div class="col-xs-1 no-padding">
+                                            <div class="rai-week-location">&nbsp;</div>
+                                            <a href="javascript:ShowPrevActivity(@(i))" id="prevAct@(i)" aria-label="Vai alla data precedente" style="@(prevVisible?"":"display:none;")">
+                                                <span class="rai-nav-arrow icons icon-arrow-left-circle"></span>
+                                            </a>
+                                        </div>
+                                    }
+                                    @{
+                                        for (int j = 0; j < Model.Days[i].Activities.Count; j++)
+                                        {
+                                            var item = Model.Days[i].Activities[j];
+                                            bool visibleItem = false;
+                                            if (i == 0)
+                                            {
+                                                if ((j == 0 && DateTime.Now.TimeOfDay < item.StartTime)
+                                                    || (j <= Model.Days[i].Activities.Count - 1 && DateTime.Now.TimeOfDay >= item.StartTime && DateTime.Now.TimeOfDay <= item.EndTime)
+                                                    || (j == Model.Days[i].Activities.Count - 1 && DateTime.Now.TimeOfDay > item.EndTime)
+                                                    || (j > 0 && !oneActivityVisible))
+                                                {
+                                                    visibleItem = oneActivityVisible ? false : true;
+                                                    oneActivityVisible = true;
+                                                }
+                                            }
+                                            else if (j == 0)
+                                            {
+                                                visibleItem = true;
+                                            }
+                                            <div class="@(( Model.Days[i].Activities.Count( ) > 1 ) ? "col-xs-10": "col-xs-11") no-padding" data-activities-item style="@(visibleItem?"":"display:none;")">
+                                                <div class="rai-week-location">@item.Location</div>
+                                                <div class="rai-week-title" style="white-space: nowrap; overflow: hidden;text-overflow: ellipsis;"><a href="javascript:ShowPopup('', '', '@Model.Days[i].Date.ToString("dd/MM/yyyy")', '@Model.Days[i].Date.ToString("dd/MM/yyyy")', true, true, null)">@item.Title</a></div>
+                                                <div class="rai-week-time">@item.Schedule</div>
+                                                @if (item.Eccezioni == 1)
+                                                {
+                                                    <div class="rai-week-location text-italic">1 richiesta</div>
+                                                }
+                                                else if (item.Eccezioni > 1)
+                                                {
+                                                    <div class="rai-week-location text-italic">@item.Eccezioni richieste</div>
+                                                }
+                                            </div>
+                                        }
+                                    }
+                                    @if (Model.Days[i].Activities.Count() > 1)
+                                    {
+                                        <div class="col-xs-1 no-padding">
+                                            <div class="rai-week-location">&nbsp;</div>
+                                            <a href="javascript:ShowNextActivity(@(i))" id="nextAct@(i)" aria-label="Vai alla data precedente" style="@(nextVisible?"":"display:none;")">
+                                                <span class="rai-nav-arrow icons icon-arrow-right-circle"></span>
+                                            </a>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="row">
+                                    <div class="rai-week-title" style="margin-top:10px;">Nessuna attività programmata</div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                firstTab = false;
+            }
+        }
+    </div>
+</div>
+<div class="rai-btn-fill" style="padding-bottom:15px; padding-left:15px; padding-right:15px;">
+    <a class="btn full-width rai-btn-primary" href="@Url.Action("","Attivita")">Vedi Tutte</a>
+</div>

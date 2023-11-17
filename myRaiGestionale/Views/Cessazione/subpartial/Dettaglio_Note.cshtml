@@ -1,0 +1,104 @@
+﻿@using myRaiHelper
+@model myRaiCommonModel.Gestionale.CessazioneModel
+
+@{
+    List<string> enabledMatr = null;
+    string matricola = CommonHelper.GetCurrentUserMatricola();
+    bool applyFilters = CessazioneHelper.GetEnabledNoteChange(matricola, out enabledMatr);
+    bool isGest = CessazioneHelper.EnabledToAnySubFunc(matricola, "ADM", "GEST");
+    bool isNorm = CessazioneHelper.EnabledToAnySubFunc(matricola, "ADM", "NORM");
+
+    bool collapsable = false;// CommonHelper.GetCurrentUserMatricola() == "103650";
+}
+
+<div id="NotePratica">
+    @if (Model.Pratica.XR_INC_DIPENDENTI_NOTE != null && Model.Pratica.XR_INC_DIPENDENTI_NOTE.Count() > 0)
+    {
+
+        var elencoNote = new List<myRaiData.Incentivi.XR_INC_DIPENDENTI_NOTE>();
+        if (Model.OpenFunction == "TESSCONTR")
+        {
+            elencoNote.AddRange(Model.Pratica.XR_INC_DIPENDENTI_NOTE.Where(x => x.NOT_TAG != null && x.NOT_TAG.Contains("Amministrazione")));
+        }
+        else
+        {
+            elencoNote.AddRange(Model.Pratica.XR_INC_DIPENDENTI_NOTE);
+        }
+
+        using (Html.BeginBlock(BlockType.ContentTable, "Note", collapsable: collapsable))
+        {
+            <div class="row">
+                <div class="col-sm-12">
+                    <table class="table table-hover" id="elencoNote" style="margin-bottom:0px;" role="grid">
+                        <tbody class="" aria-expanded="false">
+                            @foreach (var nota in elencoNote.OrderBy(x => x.TMS_TIMESTAMP))
+                            {
+                                <tr tabindex="0" aria-label="" role="row">
+                                    <td>
+                                        @nota.TMS_TIMESTAMP.ToString("dd/MM/yyyy")
+                                    </td>
+                                    <td style="width: 100%" class="text-left">
+                                        <span data-nota="@nota.ID_NOTA" data-tag="@nota.NOT_TAG">@Html.Raw(nota.NOTA.Replace("\r\n", "<br/>"))</span>
+                                        @if (nota.ID_PERSONA.ToString() != Model.Pratica.ID_PERSONA.ToString())
+                                        {
+                                            if (nota.ANAGPERS != null)
+                                            {
+                                                if (nota.ID_PERSONA != CommonHelper.GetCurrentIdPersona())
+                                                {
+                                                    <br />
+                                                    <span class="rai-font-sm-neutral text-italic">Inserita da @(nota.ANAGPERS.DES_COGNOMEPERS.TitleCase() + " " + nota.ANAGPERS.DES_NOMEPERS.TitleCase())</span>
+                                                }
+                                                else
+                                                {
+                                                    <br />
+                                                    <span class="rai-font-sm-neutral text-italic">Inserita da te</span>
+                                                }
+                                            }
+                                        }
+                                        @if (nota.LAST_MOD_ID_PERSONA != null)
+                                        {
+                                            <br />
+                                            <span class="rai-font-sm-neutral text-italic">Ultima modifica di @nota.LAST_MOD_SINTESI11.Nominativo() il @String.Format("{0:dd/MM/yyyy} alle {0:HH:mm}", nota.LAST_MOD_TIMESTAMP.Value)</span>
+                                        }
+                                        @if (!String.IsNullOrWhiteSpace(nota.NOT_TAG))
+                                        {
+                                            <br />
+                                            foreach (var item in nota.NOT_TAG.Split(';'))
+                                            {
+                                                <span class="rai-label">@item</span>
+                                            }
+                                            if (nota.NOT_TAG.Contains("Dipendente") && nota.DTA_INVIO_DIP.HasValue)
+                                            {
+                                                <span class="rai-label" title="Inviata al dipendente il @nota.DTA_INVIO_DIP.Value.ToString("dd/MM/yyyy")"><i class="fa fa-envelope">&nbsp;</i>@nota.DTA_INVIO_DIP.Value.ToString("dd/MM/yyyy")</span>
+                                            }
+                                        }
+                                    </td>
+                                    <td class=" text-right" style="padding-right:0px;">
+                                        <div class="btn-action-icon-container">
+                                            @if (!String.IsNullOrWhiteSpace(nota.NOT_TAG) && nota.NOT_TAG.Contains("Dipendente")
+&& !nota.DTA_INVIO_DIP.HasValue
+&& isGest)
+                                            {
+                                                <a class="btn-action-icon" href="#" onclick="IncInviaNotaPratica(@Model.Pratica.ID_DIPENDENTE, @nota.ID_NOTA)" title="Invia nota"><i class="fa fa-envelope"></i></a>
+                                            }
+                                            @if (nota.ID_PERSONA == CommonHelper.GetCurrentIdPersona() || (!applyFilters || enabledMatr.Contains(nota.SINTESI1.COD_MATLIBROMAT)))
+                                            {
+                                                if (String.IsNullOrWhiteSpace(nota.NOT_TAG) || !nota.NOT_TAG.Contains("Dipendente") || !nota.DTA_INVIO_DIP.HasValue)
+                                                {
+                                                    <a class="btn-action-icon" href="#" onclick="IncModificaNotaPratica(@Model.Pratica.ID_DIPENDENTE, @nota.ID_NOTA,  @(isNorm ? "true" : "false"))" title="Modifica questa nota"><i class="fa fa-pencil"></i></a>
+                                                    <a class="btn-action-icon" href="#" onclick="CancellazioneNotaPratica(@Model.Pratica.ID_DIPENDENTE, @nota.ID_NOTA)" title="Elimina questa nota"><i class="fa fa-trash"></i></a>
+                                                }
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+    }
+</div>
+<!--fine contenuto-->

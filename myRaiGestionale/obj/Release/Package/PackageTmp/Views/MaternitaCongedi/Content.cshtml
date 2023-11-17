@@ -1,0 +1,666 @@
+﻿@model myRaiCommonModel.MaternitaCongediModel
+
+
+<section class="panel " style="">
+    <header class="panel-heading" data-panel-toggle="">
+        <h1 class="panel-title">Elenco richieste</h1>
+        <div class="panel-actions rai-panel-actions">
+            <a id="annulla-ordine" style="cursor: pointer;display: block;">
+                <i class="fa fa-refresh" style="margin-bottom: 4px;"></i>
+            </a>
+            <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" aria-labelledby="lblRightBox" aria-expanded="true"></a>
+        </div>
+    </header>
+    <div class="panel-body no-padding">
+
+
+        <div id="div_elencoimm">
+
+
+            <div class="block" style="margin-bottom:0px;">
+                @if (Model.OpenByUfficioPersonale == false)
+                {
+                    <ul class="nav nav-tabs nav-tabs-alt nav-justified" data-toggle="tabs" role="tablist">
+
+                        <li id="li-1" class="active" role="presentation">
+                            <a href="#tab1" class="rai-badge-anchor" id="hrefTab1" tabindex="0" role="tab" aria-selected="true" aria-controls="tab1">
+                                IN CARICO A ME
+                            </a>
+                        </li>
+                        <li id="li-2" class="" role="presentation">
+                            <a href="#tab2" class="rai-badge-anchor" id="hrefTab2" tabindex="0" role="tab" aria-selected="false" aria-controls="tab2">
+                                DA PRENDERE IN CARICO
+                            </a>
+                        </li>
+                        <li id="li-3" class="" role="presentation">
+                            <a href="#tab3" class="rai-badge-anchor" id="hrefTab3" tabindex="0" role="tab" aria-selected="false" aria-controls="tab3">
+                                IN CARICO AD ALTRI
+                            </a>
+                        </li>
+
+                    </ul>
+                }
+
+
+
+                    <div class="block-content tab-content" style="padding:23px 5px 1px;overflow:unset;">
+                        @{
+                            
+                            string arg = "N1";
+                            if (Model.OrdineRichiesto == "N1")
+                            {
+                                arg = "N2";
+                            }
+                            string argT = "T1";
+                            if (Model.OrdineRichiesto == "T1")
+                            {
+                                argT = "T2";
+                            }
+                            string argScad = "S1";
+                            if (Model.OrdineRichiesto == "S1")
+                            {
+                                argScad = "S2";
+                            }
+                            string argStato = "A1";
+                            if (Model.OrdineRichiesto == "A1")
+                            {
+                                argStato = "A2";
+                            }
+                        }
+
+                        <div class="tab-pane @(Model.OpenByUfficioPersonale==false?"active":"")" id="tab1" role="tabpanel">
+                            <div id="tblContainerInAttesa">
+                                <div class="panel-body  panel-body-nopadding" id="">
+                                    <div id="sez_FoglioSpese">
+                                        <div class="table-responsive">
+                                            <table class="rai-table  table maternita rai-table-vcenter rai-table-high-row rai-table-panel" id="table_InAttesa">
+                                                <thead>
+                                                    <tr>
+
+                                                        <th>
+                                                            <span onclick="OrdinaPratiche('@arg')" style="cursor:pointer">Nominativo</span>
+                                                            @Arrows(Model.OrdineRichiesto, "N")
+                                                        </th>
+                                                        <th style="width:auto;">
+                                                            <span onclick="OrdinaPratiche('@argT')" style="cursor:pointer">Tipo richiesta</span>
+                                                            @Arrows(Model.OrdineRichiesto, "T")
+                                                        </th>
+                                                        <th>
+                                                            <span onclick="OrdinaPratiche('@argScad')" style="cursor:pointer">Scadenza</span>
+                                                            @Arrows(Model.OrdineRichiesto, "S")
+                                                        </th>
+                                                        <th>
+                                                            <span onclick="OrdinaPratiche('@argStato')" style="cursor:pointer">Stato</span>
+                                                            @Arrows(Model.OrdineRichiesto, "A")
+                                                        </th>
+                                                        <th></th>
+                                                    </tr>
+                                                </thead>
+
+                                                @if (Model.RichiesteInCaricoAme.Any() == false)
+                                                {
+                                                    <tbody>
+                                                        <tr>
+                                                            <td class="text-center no-border" colspan="100"><span class="rai-font-md-neutral">Non ci sono dati da visualizzare</span></td>
+                                                        </tr>
+                                                    </tbody>
+                                                }
+                                                else
+                                                {
+                                                    foreach (var ragg in Model.RichiesteAggregateInCaricoAme)
+                                                    {
+                                                        if (ragg.ListaRichiesteAggregate.Count == 1)
+                                                        {
+                                                            <tbody>
+                                                                @Html.Partial("_contentRow",
+                                                                             new myRaiCommonModel.ContentRowModel(ragg.ListaRichiesteAggregate.First().ID) {
+                                                                                 OpenByUfficioPersonale=Model.OpenByUfficioPersonale,
+                                                                                 IDSTATOricercato=Model.RicercaPerID_STATO,
+                                                                                 MyOffice=Model.MyOffice,
+                                                                                 OpenByUfficioAmministrazione
+                                                                                        =Model.OpenByUfficioAmministrazione,
+                                                                                 OperazioniAvviateAny=ragg.ListaRichiesteAggregate.Any(x=>x.XR_MAT_TASK_IN_CORSO.Any())
+                                                                             })
+                                                            </tbody>
+
+                                                        }
+                                                        else
+                                                        {
+                                                            <tbody class="js-table-sections-header">
+                                                                <tr>
+                                                                    <td>
+
+                                                                        @Html.Partial("_profiloimage", new                                                                  myRaiCommonModel.ProfiloImageModel() {
+                                                                     InServizio = null,
+                                                                     Matricola = ragg.Matricola,
+                                                                     Row1 = ragg.ListaRichiesteAggregate[0].NOMINATIVO,
+                                                                     Row2 = "Matricola " + ragg.Matricola,
+                                                                     display="inline"
+
+                                                                 })
+
+                                                                    </td>
+                                                                    <td>
+                                                                        <span class="rai-label rai-label-interactive"
+                                                                              style="">
+                                                                            @ragg.ListaRichiesteAggregate.Count() richieste
+                                                                        </span>
+                                                                    </td>
+                                                                    <td></td>
+                                                                    <td></td>
+                                                                    <td style="padding-top: 9px;width:20px;text-align:right;padding-right:22px" class="interactive-primary-color text-center">
+                                                                        <i class="fa fa-angle-down" style="font-size:20px"></i>
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                            <tbody class="tbodydata" style="border:none ">
+
+                                                                @foreach (var r in ragg.ListaRichiesteAggregate)
+                                                                {
+                                                                    //r.InCaricoANessuno = true;
+
+                                                                    @Html.Partial("_contentRow",
+    new myRaiCommonModel.ContentRowModel(r.ID) {
+        OpenByUfficioPersonale = Model.OpenByUfficioPersonale,
+        IDSTATOricercato = Model.RicercaPerID_STATO,
+        MyOffice = Model.MyOffice,
+        hideImage = true,
+        OpenByUfficioAmministrazione = Model.OpenByUfficioAmministrazione,
+        OperazioniAvviateAny = ragg.ListaRichiesteAggregate.Any(x => x.XR_MAT_TASK_IN_CORSO.Any())
+    })
+                                                                }
+                                                            </tbody>
+
+                                                        }
+
+                                                    }
+
+                                                }
+
+                                            </table>
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                        <div class="tab-pane @(Model.OpenByUfficioPersonale?"active":"")" id="tab2" role="tabpanel">
+                            <div id="tblContainerFirmate">
+                                <div class="panel-body  panel-body-nopadding" id="">
+                                    <div id="sez_FoglioSpese">
+                                        <div class="table-responsive">
+                                            <table class="rai-table table maternita rai-table-vcenter rai-table-high-row rai-table-panel" id="table_Firmate">
+                                                <thead>
+                                                <thead>
+                                                    <tr>
+                                                        <th>
+                                                            <span onclick="OrdinaPratiche('@arg')" style="cursor:pointer">Nominativo</span>
+                                                            @Arrows(Model.OrdineRichiesto, "N")
+                                                        </th>
+                                                        <th style="width:auto;">
+                                                            <span onclick="OrdinaPratiche('@argT')" style="cursor:pointer">Tipo richiesta</span>
+                                                            @Arrows(Model.OrdineRichiesto, "T")
+                                                        </th>
+                                                        <th>
+                                                            <span onclick="OrdinaPratiche('@argScad')" style="cursor:pointer">Scadenza</span>
+                                                            @Arrows(Model.OrdineRichiesto, "S")
+                                                        </th>
+                                                        <th></th>
+                                                    </tr>
+                                                </thead>
+
+                                                @if (Model.RichiesteAggregateInCaricoNessuno.Any() == false)
+                                                {
+                                                    <tbody>
+                                                        <tr>
+                                                            <td class="text-center no-border " colspan="100"><span class="rai-font-md-neutral">Non ci sono dati da visualizzare</span></td>
+                                                        </tr>
+                                                    </tbody>
+                                                }
+                                                else
+                                                {
+                                                    foreach (var ragg in Model.RichiesteAggregateInCaricoNessuno)
+                                                    {
+                                                        if (ragg.ListaRichiesteAggregate.Count == 1)
+                                                        {
+
+                                                            <tbody>
+                                                                @Html.Partial("_contentRow",
+                      new myRaiCommonModel.ContentRowModel(ragg.ListaRichiesteAggregate.First().ID) {
+                          OpenByUfficioPersonale = Model.OpenByUfficioPersonale,
+                          IDSTATOricercato = Model.RicercaPerID_STATO,
+                          MyOffice = Model.MyOffice,
+                          OpenByUfficioAmministrazione
+                                 = Model.OpenByUfficioAmministrazione,
+                          IncaricoAnessuno = true
+
+                                                                })
+                                                            </tbody>
+
+                                                        }
+                                                        else
+                                                        {
+                                                            <tbody class="js-table-sections-header">
+                                                                <tr>
+                                                                    <td>
+
+                                                                        @Html.Partial("_profiloimage", new                                                                  myRaiCommonModel.ProfiloImageModel() {
+                                                                     InServizio = null,
+                                                                     Matricola = ragg.Matricola,
+                                                                     Row1 = ragg.ListaRichiesteAggregate[0].NOMINATIVO,
+                                                                     Row2 = "Matricola " + ragg.Matricola,
+                                                                     display="inline"
+
+                                                                 })
+
+                                                                    </td>
+                                                                    <td>
+                                                                        <span class="rai-label rai-label-interactive"
+                                                                              style="">
+                                                                            @ragg.ListaRichiesteAggregate.Count() richieste
+                                                                        </span>
+                                                                    </td>
+                                                                    <td></td>
+                                                                    <td></td>
+                                                                    <td style="padding-top: 9px;width:20px;text-align:right;padding-right:22px" class="interactive-primary-color text-center">
+                                                                        <i class="fa fa-angle-down" style="font-size:20px"></i>
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                            <tbody class="tbodydata" style="border:none ">
+
+                                                                @foreach (var r in ragg.ListaRichiesteAggregate)
+                                                                {
+                                                                    r.InCaricoANessuno = true;
+
+                                                                    @Html.Partial("_contentRow",
+    new myRaiCommonModel.ContentRowModel(r.ID) {
+        OpenByUfficioPersonale = Model.OpenByUfficioPersonale,
+        IDSTATOricercato = Model.RicercaPerID_STATO,
+        MyOffice = Model.MyOffice,
+        hideImage = true,
+        OpenByUfficioAmministrazione   = Model.OpenByUfficioAmministrazione,
+        IncaricoAnessuno=true
+    })
+                                                                }
+                                                            </tbody>
+
+                                                        }
+
+
+                                                    }
+
+                                                }
+
+
+
+                                            </table>
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="tab-pane" id="tab3" role="tabpanel">
+                            <div id="tblContainerRespinte">
+                                <div class="panel-body  panel-body-nopadding" id="">
+                                    <div id="sez_FoglioSpese">
+                                        <div class="table-responsive">
+                                            <table class="rai-table @(Model.IsPreview ?"rai-loader":"" ) table maternita rai-table-vcenter rai-table-high-row rai-table-panel" id="table_Respinte">
+                                                <thead>
+                                                    <tr>
+                                                        <th>
+                                                            <span onclick="OrdinaPratiche('@arg')" style="cursor:pointer">Nominativo</span>
+                                                            @Arrows(Model.OrdineRichiesto, "N")
+                                                        </th>
+                                                        <th style="width:auto;">
+                                                            <span onclick="OrdinaPratiche('@argT')" style="cursor:pointer">Tipo richiesta</span>
+                                                            @Arrows(Model.OrdineRichiesto, "T")
+                                                        </th>
+                                                        <th>
+                                                            <span onclick="OrdinaPratiche('@argScad')" style="cursor:pointer">Scadenza</span>
+                                                            @Arrows(Model.OrdineRichiesto, "S")
+                                                        </th>
+                                                        <th>In carico a</th>
+                                                        <th></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @if (Model.RichiesteAggregateInCaricoAltri.Any() == false)
+                                                    {
+                                                        <tr>
+                                                            <td class="text-center no-border" colspan="100"><span class="rai-font-md-neutral">Non ci sono dati da visualizzare</span></td>
+                                                        </tr>
+                                                    }
+                                                    else
+                                                    {
+                                                        foreach (var ragg in Model.RichiesteAggregateInCaricoAltri)
+                                                        {
+                                                            if (ragg.ListaRichiesteAggregate.Count == 1)
+                                                            {
+                                                            <tbody>
+                                                                @Html.Partial("_contentRowAltri",
+                                                                             new myRaiCommonModel.ContentRowModel(ragg.ListaRichiesteAggregate.First().ID) {
+                                                                                 OpenByUfficioPersonale=Model.OpenByUfficioPersonale,
+                                                                                 IDSTATOricercato=Model.RicercaPerID_STATO,
+                                                                                 MyOffice=Model.MyOffice,
+                                                                                 OpenByUfficioAmministrazione
+                                                                                        = Model.OpenByUfficioAmministrazione
+                                                                             })
+                                                            </tbody>
+
+                                                        }
+                                                        else
+                                                        {
+                                                            <tbody class="js-table-sections-header">
+                                                                <tr>
+                                                                    <td>
+
+                                                                        @Html.Partial("_profiloimage", new                                                                  myRaiCommonModel.ProfiloImageModel() {
+                                                                     InServizio = null,
+                                                                     Matricola = ragg.Matricola,
+                                                                     Row1 = ragg.ListaRichiesteAggregate[0].NOMINATIVO,
+                                                                     Row2 = "Matricola " + ragg.Matricola,
+                                                                     display="inline"
+
+                                                                 })
+
+                                                                    </td>
+                                                                    <td>
+                                                                        <span class="rai-label rai-label-interactive"
+                                                                              style="">
+                                                                            @ragg.ListaRichiesteAggregate.Count() richieste
+                                                                        </span>
+                                                                    </td>
+                                                                    <td></td>
+                                                                    <td></td>
+                                                                    <td style="padding-top: 9px;width:20px;text-align:right;padding-right:22px" class="interactive-primary-color text-center">
+                                                                        <i class="fa fa-angle-down" style="font-size:20px"></i>
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                            <tbody class="tbodydata" style="border:none ">
+
+                                                                @foreach (var r in ragg.ListaRichiesteAggregate)
+                                                                {
+                                                                    //r.InCaricoANessuno = true;
+
+                                                                    @Html.Partial("_contentRowAltri",
+    new myRaiCommonModel.ContentRowModel(r.ID) {
+        OpenByUfficioPersonale = Model.OpenByUfficioPersonale,
+        IDSTATOricercato = Model.RicercaPerID_STATO,
+        MyOffice = Model.MyOffice,
+        hideImage = true,
+        OpenByUfficioAmministrazione
+                                                                                        = Model.OpenByUfficioAmministrazione
+    })
+                                                                }
+                                                            </tbody>
+
+                                                        }
+
+
+                                                    }
+                                                }
+
+
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                        </div>
+                </div>
+            </div>
+
+
+
+
+
+
+        </div>
+    </section>
+    @helper Arrows(string ordine, string campo)
+    {
+        if (String.IsNullOrWhiteSpace(ordine) || ! ordine.StartsWith(campo))
+        {
+            <span class="fa fa-arrow-up  freccia-ord-dis" onclick="OrdinaPratiche('@(campo)1')"></span>
+            <span class="fa fa-arrow-down  freccia-ord-dis" onclick="OrdinaPratiche('@(campo)2')"></span>
+        }
+        else if (ordine== campo + "1")
+        {
+            <span class="fa fa-arrow-up freccia-ord-ena" style="cursor:default"  ></span>
+            <span class="fa fa-arrow-down  freccia-ord-dis" onclick="OrdinaPratiche('@(campo)2')"></span>
+        }
+        else if (ordine == campo +"2")
+        {
+            <span class="fa fa-arrow-up  freccia-ord-dis" onclick="OrdinaPratiche('@(campo)1')"></span>
+            <span class="fa fa-arrow-down  freccia-ord-ena"  style="cursor:default"   ></span>
+        }
+
+    }
+    <script>
+        $("#annulla-ordine").click(function (e) {
+            e.stopPropagation();
+            GetContent();
+        });
+        function OrdinaPratiche(ordine) {
+            GetContent(ordine);
+        }
+        function VisualizzaGestione(idrichiesta, FromApprovatoreGestione) {
+            debugger
+            $("#popupview-gestione").modal("show");
+            CaricaNote(idrichiesta);
+
+            $("#promemoria").addClass("rai-loader");
+            $.ajax({
+                url: '/MaternitaCongedi/GetPromemoriaBox',
+                type: "GET",
+                data: { idrichiesta: idrichiesta },
+                dataType: "html",
+                complete: function () { },
+                success: function (data) {
+                    $("#promemoria").removeClass("rai-loader");
+                    $("#promemoria").html(data);
+                }
+            });
+
+            $("#button-prendi").attr("onclick", "PrendiInCarico(" + idrichiesta + ")");
+            $("#dettagli-container").html("");
+            $("#dettagli-container").addClass("rai-loader");
+            $.ajax({
+                url: '/MaternitaCongedi/GetVisualizzazioneGestione',
+                type: "GET",
+                data: { idrichiesta: idrichiesta, FromApprovatoreGestione: FromApprovatoreGestione },
+                dataType: "html",
+                complete: function () { },
+                success: function (data) {
+                    $("#dettagli-container").removeClass("rai-loader");
+                    $("#dettagli-container").html(data);
+                    AnnullaModificaEccezione();
+                }
+            });
+
+            $("#dettagli-richiesta-container").html("");
+            $("#dettagli-richiesta-container").addClass("rai-loader");
+            $.ajax({
+                url: '/MaternitaCongedi/GetVisualizzazioneDettaglioRichiesta',
+                type: "GET",
+                data: { idrichiesta: idrichiesta },
+                dataType: "html",
+                complete: function () { },
+                success: function (data) {
+                    $("#dettagli-richiesta-container").removeClass("rai-loader");
+                    $("#dettagli-richiesta-container").html(data);
+                }
+            });
+
+            $("#info-uffperscontainer").html("");
+            $.ajax({
+                url: '/MaternitaCongedi/GetUffPersonaleInfoBox',
+                type: "GET",
+                data: { idrichiesta: idrichiesta },
+                dataType: "html",
+                complete: function () { },
+                success: function (data) {
+                    $("#info-uffperscontainer").html(data);
+                }
+            });
+
+
+            $("#assegnazione-container").html("");
+            $("#assegnazione-container").addClass("rai-loader");
+            $.ajax({
+                url: '/MaternitaCongedi/GetVisualizzazioneAssegnazione',
+                type: "GET",
+                data: { idrichiesta: idrichiesta },
+                dataType: "html",
+                complete: function () { },
+                success: function (data) {
+                    $("#assegnazione-container").removeClass("rai-loader");
+                    $("#assegnazione-container").html(data);
+                }
+            });
+
+
+            $.ajax({
+                url: '/MaternitaCongedi/GetVisualizzazioneAnnullamento',
+                type: "GET",
+                data: { idrichiesta: idrichiesta },
+                dataType: "html",
+                complete: function () { },
+                success: function (data) {
+                    $("#annullamento-container").html(data);
+                }
+            });
+        }
+        $(".promemoria").popover({
+            content: function () {
+                return CreaPopoverPromemoria($(this).attr("data-promemoria"), $(this).attr("id"));
+            }
+        });
+        $(".scaduta").popover({
+            content: function () {
+                return CreaPopoverScaduta($(this).attr("data-idrichiesta"));
+            }
+        });
+        $(".promemoria").on('shown.bs.popover', function () {
+            InitDatePicker();
+        });
+
+        function CreaPopoverPromemoria(data, id) {
+            var r = "<span class='rai-font-md-bold'>PROMEMORIA RICHIESTA</span>" +
+                "<span style='cursor:pointer;float: right;margin-top: -2px;' onclick='$(\"#" + id + "\").popover(\"hide\")'>x</span>" +
+                "<div style='width:100%;height:1px;background-color:#ddd;margin-top:12px;margin-bottom:8px'></div>" +
+                "<div class='row' style='margin-bottom:20px;margin-top:20px'>" +
+                "<div class='col-sm-12 rai-font-sm-neutral' style='padding-left:5px'><span>Questa richiesta compare in alto perchè hai impostato un promemoria</span></div>" +
+                "<div class='col-sm-12 rai-font-md-bold' style='padding-top:16px;padding-left:5px'><span>CAMBIA DATA PROMEMORIA</span></div>" +
+
+                "</div>" +
+                "<div class='row' style='margin-bottom:0px'>" +
+                "<div class='input-group mb-md'>" +
+                "<span onclick='$('#datadal').datetimepicker('show')' class='input-group-addon'><i class='icons icon-calendar'></i></span>" +
+                "<input value='" + data + "' class='js-datetimepicker form-control' data-format='DD/MM/YYYY' data-locale='it' type='text' id='datapro-" + id + "' placeholder='Data promemoria'>" +
+                "</div>"
+                + "<a class='btn rai-btn-small full-width' onclick='CambiaDataPromemoria(\"" + id + "\")'>Salva</a>"
+            "</div>";
+            return r;
+        }
+        function CreaPopoverScaduta(idrichiesta) {
+            var r = "<span class='rai-font-md-bold'>RICHIESTA NON LAVORATA</span>" +
+                "<span style='cursor:pointer;float: right;margin-top: -2px;' onclick='$(\"#alert-" + idrichiesta + "\").popover(\"hide\")'>x</span>" +
+                "<div style='width:100%;height:1px;background-color:#ddd;margin-top:12px;margin-bottom:8px'></div>" +
+                "<div class='row' style='margin-bottom:20px;margin-top:20px'>" +
+                "<div class='col-sm-12 rai-font-sm-neutral' style='padding-left:5px'><span>La richiesta non è stata presa in carico prima della scadenza. Clicca sul pulsante sotto per nasconderla dalla visualizzazione su questo computer.</span></div>" +
+
+                "</div>" +
+                "<div class='row' style='margin-bottom:0px'>" +
+
+                "<a class='btn rai-btn-small full-width' onclick='NascondiRichiesta(" + idrichiesta + ")'>Nascondi richiesta</a>"
+            "</div>";
+            return r;
+        }
+        function NascondiRichiesta(idrichiesta) {
+
+            var t = getCookieMat();
+            var idRichiestaNascosti = t.split(',');
+            idRichiestaNascosti.push(idrichiesta);
+            setCookieMat(idRichiestaNascosti.toString(), 1000)
+            GetContent();
+        }
+
+        function getCookieMat() {
+            var name = "maternita-cookie" + "=";
+            var decodedCookie = decodeURIComponent(document.cookie);
+            var ca = decodedCookie.split(';');
+            for (var i = 0; i < ca.length; i++) {
+                var c = ca[i];
+                while (c.charAt(0) == ' ') {
+                    c = c.substring(1);
+                }
+                if (c.indexOf(name) == 0) {
+                    return c.substring(name.length, c.length);
+                }
+            }
+            return "";
+        }
+        function setCookieMat(cvalue, exdays) {
+            var d = new Date();
+            d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+            var expires = "expires=" + d.toUTCString();
+            document.cookie = "maternita-cookie" + "=" + cvalue + ";" + expires + ";path=/";
+        }
+
+        function SalvaPromemoria(idrichiesta, data) {
+            debugger
+            $.ajax({
+                url: '/MaternitaCongedi/cambiaPromemoria',
+                type: "GET",
+                data: { idrichiesta: idrichiesta, data: data },
+                dataType: "json",
+                complete: function () { },
+                success: function (data) {
+
+                    swal({
+                        title: 'Promemoria salvato correttamente',
+                        type: "success",
+                        confirmButtonText: 'OK',
+                        customClass: 'rai'
+                    });
+                    GetContent();
+                }
+            });
+        }
+        function CambiaDataPromemoria(idspan) {
+            debugger
+            var idrich = $("#" + idspan).attr("data-idrichiesta");
+
+            var dataPro = $("#datapro-" + idspan).val();
+            $.ajax({
+                url: '/MaternitaCongedi/cambiaPromemoria',
+                type: "GET",
+                data: { idrichiesta: idrich, data: dataPro },
+                dataType: "json",
+                complete: function () { },
+                success: function (data) {
+                    $("#" + idspan).attr("data-promemoria", dataPro);
+                    $("#" + idspan).popover("hide");
+                    swal({
+                        title: 'Promemoria salvato correttamente',
+                        type: "success",
+                        confirmButtonText: 'OK',
+                        customClass: 'rai'
+                    });
+                }
+            });
+        }
+
+    </script>

@@ -1,0 +1,224 @@
+﻿@using myRaiCommonModel
+@using myRaiHelper
+@model AnagNoDipIndirizziModel
+
+@using (Html.BeginModal("Gestione indirizzo"))
+{
+    <div class="row">
+        <div class="col-md-8">
+            @using (Html.BeginPanel(PanelType.NoHeader, "Dati indirizzo"))
+            {
+                using (Html.BeginForm("Save_Indirizzo", "AnagNoDip", FormMethod.Post, new { @id = "form-indirizzo" }))
+                {
+                    @Html.HiddenFor(m => m.IdAnag)
+                    @Html.HiddenFor(m => m.IdPersona)
+                    @Html.HiddenFor(m => m.IsNew)
+                    @Html.HiddenFor(m => m.Matricola)
+
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-sm-6 push-10">
+                                @Html.LabelForRequiredObbl(m => m.IndDataInizio, "Data inizio", new { @class = "rai-caption" })
+                                <div class="input-group">
+                                    @if (Model.IsNew)
+                                    {
+                                        <div class="input-group-addon" onclick="$('#IndDataInizio').datetimepicker('show')">
+                                            <i class="fa fa-calendar"></i>
+                                        </div>
+                                        @Html.TextBoxFor(m => m.IndDataInizio, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY", data_locale = "it", placeholder = "Data inizio", autocomplete = "off", required = "required", onchange= "AnagNoDipIndDate()" })
+                                   }
+                                    else
+                                    {
+                                            @Html.TextBoxFor(m => m.IndDataInizio, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY", data_locale = "it", placeholder = "Data inizio", autocomplete = "off", required = "required", @readonly = "readonly" })
+                                        <div class="input-group-addon">
+                                            <i class="fa fa-lock"></i>
+                                        </div>
+                                    }
+                                </div>
+                                @Html.ValidationMessageFor(m => m.IndDataInizio)
+                            </div>
+                            <div class="col-md-6">
+                                @Html.LabelForRequiredObbl(m => m.IndDataFine, "Data fine", new { @class = "rai-caption" })
+                                <div class="input-group">
+                                    <div class="input-group-addon" onclick="$('#IndDataFine').datetimepicker('show')">
+                                        <i class="fa fa-calendar"></i>
+                                    </div>
+                                    @Html.TextBoxFor(m => m.IndDataFine, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY", data_locale = "it", placeholder = "Data fine", autocomplete = "off", required = "required" })
+                                </div>
+                                @Html.ValidationMessageFor(m => m.IndDataFine)
+                            </div>
+                        </div>
+
+                        @using (Html.BeginBlock(BlockType.ContentTable, "Residenza"))
+                        {
+                            <div class="row">
+                                <div class="col-xs-12 push-10">
+                                    @Html.LabelForRequiredObbl(m => m.Residenza.Indirizzo, "Indirizzo", new { @class = "rai-caption" })
+                                    @Html.TextBoxFor(m => m.Residenza.Indirizzo, new { @class = "form-control", required = "required", pattern = @"^[A-Z0-9\.\s'\/\-\,]+$", data_allowedchar = @"[A-Za-z0-9\.\s'\/\-\,]" })
+                                    @Html.ValidationMessageFor(m => m.Residenza.Indirizzo)
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-12 col-md-7 col-xl-8 push-10">
+                                    @Html.LabelForRequiredObbl(m => m.Residenza.CodCitta, "Città", new { @class = "rai-caption" })
+                                    @Html.RaiAsyncSelectFor(m => m.Residenza.CodCitta, Url.Action("GetComuni", "Anagrafica"), 3, attributes: new { required = "required" }, tipoFiltro: myRaiHelper.SelectFilterType.StartsWith, onSelectchange:"AnagNoDipCheckCap('Residenza')")
+                                    @Html.ValidationMessageFor(m => m.Residenza.CodCitta)
+                                </div>
+                                <div class="col-xs-12 col-md-5 col-xl-4 push-10">
+                                    <label class="rai-caption" for="Residenza_CAP">CAP <font color="#d2322d" id="Residenza_CAP_Obbl">*</font></label>
+                                    @Html.TextBoxFor(m => m.Residenza.CAP, new { @class = "form-control", required = "required", maxlength = 5, minlength = 5, pattern = @"^[0-9]+$", data_allowedchar = @"[0-9]" })
+                                    @Html.ValidationMessageFor(m => m.Residenza.CAP)
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-12 push-10 push-20-t">
+                                    <button class="btn rai-btn-small full-width" onclick="AnagNoDipCopyResToDom()">Copia su domicilio</button>
+                                </div>
+                            </div>
+                        }
+
+                        @using (Html.BeginBlock(BlockType.ContentTable, "Domicilio"))
+                        {
+                            <div class="row">
+                                <div class="col-xs-12 push-10">
+                                    @Html.LabelForRequiredObbl(m => m.Domicilio.Indirizzo, "Indirizzo", new { @class = "rai-caption" })
+                                    @Html.TextBoxFor(m => m.Domicilio.Indirizzo, new { @class = "form-control", required = "required", pattern = @"^[A-Z0-9\.\s'\/\-\,]+$", data_allowedchar = @"[A-Za-z0-9\.\s'\/\-\,]" })
+                                    @Html.ValidationMessageFor(m => m.Domicilio.Indirizzo)
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-12 col-md-7 col-xl-8 push-10">
+                                    @Html.LabelForRequiredObbl(m => m.Domicilio.CodCitta, "Città", new { @class = "rai-caption" })
+                                    @Html.RaiAsyncSelectFor(m => m.Domicilio.CodCitta, Url.Action("GetComuni", "Anagrafica"), 3, attributes: new { required = "required" }, tipoFiltro: myRaiHelper.SelectFilterType.StartsWith, onSelectchange: "AnagNoDipCheckCap('Domicilio')")
+                                    @Html.ValidationMessageFor(m => m.Domicilio.CodCitta)
+                                </div>
+                                <div class="col-xs-12 col-md-5 col-xl-4 push-10">
+                                    <label class="rai-caption" for="Domicilio_CAP">CAP <font color="#d2322d" id="Domicilio_CAP_Obbl">*</font></label>
+                                    @Html.TextBoxFor(m => m.Domicilio.CAP, new { @class = "form-control", required = "required", maxlength = 5, minlength = 5, pattern = @"^[0-9]+$", data_allowedchar = @"[0-9]" })
+                                    @Html.ValidationMessageFor(m => m.Domicilio.CAP)
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+
+                <div class="row push-20-t">
+                    <div class="col-sm-12">
+                        <div class="rai-btn-fill">
+                            <button id="btnSave" onclick="AnagNoDipSaveIndirizzo(this)" class="btn rai-btn-primary">Salva</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="col-md-4">
+            <div id="storico-indirizzi">
+
+            </div>
+        </div>
+    </div>
+}
+
+<script>
+    InitDatePicker();
+    $('#form-indirizzo input.form-control[name$="Indirizzo"]').on('keyup', function (e) {
+        forceInputUpperCase(e.target || e.currentTarget);
+    });
+
+    RaiUpdateWidget("storico-indirizzi", "/AnagNoDip/Storico_Indirizzi", "html", { idAnag:@Model.IdAnag});
+   
+    function AnagNoDipIndDate() {
+        let ini = $('#IndDataInizio').val();
+        $('#IndDataFine').data('DateTimePicker').minDate(moment(ini, 'DD/MM/YYYY').add(1, 'days').format('DD/MM/YYYY'));
+    }
+    AnagNoDipIndDate();
+
+    function AnagNoDipCheckCap(tipologia) {
+        let codCitta = $('#' + tipologia + '_CodCitta').val()??'';
+        if (codCitta.startsWith('Z')) {
+            $('#' + tipologia + '_CAP').prop('required', false);
+            $('#' + tipologia + '_CAP_Obbl').hide();
+            $('#' + tipologia + "_CAP").val('');
+        }
+        else {
+            $('#' + tipologia + '_CAP').prop('required', true);
+            $('#' + tipologia + '_CAP_Obbl').show();
+        }
+    }
+    AnagNoDipCheckCap('Residenza');
+    AnagNoDipCheckCap('Domicilio');
+
+    function AnagNoDipCopyResToDom() {
+        event.preventDefault();
+        $('#Domicilio_Indirizzo').val($('#Residenza_Indirizzo').val());
+        $('#Domicilio_CAP').val($('#Residenza_CAP').val());
+        let valResComune = $('#Residenza_CodCitta').val();
+        let valDomComune = $('#Domicilio_CodCitta').val();
+        //if (valResComune!=valDomComune)
+        RaiSelectLoadDefaultValue($('#Domicilio_CodCitta').data('rai-select'), '@Url.Action("GetComuni", "Anagrafica")', valResComune);
+    }
+
+    function AnagNoDipSaveIndirizzo(button) {
+        event.preventDefault();
+        var form = $('#form-indirizzo');
+        var validator = $(form).validate();
+
+        if (!$(form).valid()) {
+            validator.focusInvalid();
+            return false;
+        }
+
+        swal({
+            title: 'Sei sicuro?',
+            text: "Vuoi confermare i dati?",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sì!',
+            cancelButtonText: 'Annulla',
+            reverseButtons: 'true'
+        }).then(function () {
+            $(button).addClass("disable");
+            $(form).parent().addClass("rai-loader");
+
+            var obj = new FormData($(form)[0]);
+
+            $.ajax({
+                url: "/AnagNoDip/Save_Indirizzo",
+                type: "POST",
+                cache: false,
+                dataType: 'json',
+                contentType: false,
+                processData: false,
+                data: obj,
+                success: function (data) {
+                    if (data.esito) {
+                        swal("OK", "Salvataggio effettuato", "success");
+                        var idAnag = $('#IdAnag').val();
+                        var anagDataInizio = $('#AnagDataInizio').val();
+                        let matricola = $('#DatiAnagrafici_Matricola').val();
+                        let cognome = $('#DatiAnagrafici_Cognome').val();
+                        let nome = $('#DatiAnagrafici_Nome').val();
+                        AnagNoDipModal(idAnag, anagDataInizio, matricola, cognome + ' ' + nome);
+                        if ($('#form-nodip-ricerca').length > 0) {
+                            $('#form-nodip-ricerca').submit();
+                        }
+                        $('#modal-anag-no-dip').modal('hide');
+                    } else {
+                        swal("Oops...", data.message, 'error');
+                    }
+                },
+                error: function (a, b, c) {
+                    swal({ title: "Ops...", text: ' ' + b + ' ' + c, type: 'error', customClass: 'rai' });
+                    $(button).removeClass("disable");
+                    $(form).parent().removeClass("rai-loader");
+                },
+                complete: function () {
+                    $(button).removeClass("disable");
+                    $(form).parent().removeClass("rai-loader");
+                }
+            });
+        })
+    }
+</script>

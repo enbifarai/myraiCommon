@@ -1,0 +1,152 @@
+﻿@using System.Globalization;
+@using myRaiCommonModel;
+
+@{
+    Layout = null;
+    var cultureInfo = CultureInfo.GetCultureInfo("it-IT");
+}
+
+@helper ProvvAction(PRV_Dipendente u, int provvedimento, string icon, string text)
+{
+    PRV_Dipendente_CostoVariazione aumentoLivello = new PRV_Dipendente_CostoVariazione();
+    string myClass = "";
+    string selected = "";
+    if (u.Variazioni != null && u.Variazioni.Any())
+    {
+        if (provvedimento != (int)ProvvedimentiEnum.Nessuno && provvedimento != (int)ProvvedimentiEnum.CUSNessuno)
+        {
+            aumentoLivello = u.Variazioni.Where(w => w.IdProvvedimento.Equals(provvedimento)).FirstOrDefault();
+        }
+        if (aumentoLivello != null)
+        {
+            if (u.IdProvvedimento == provvedimento)
+            {
+                myClass = "text-primary";
+                selected = "selected=\"selected\"";
+            }
+            else
+            {
+                myClass = "text-muted";
+            }
+
+            @*if (u.IsConsolidato || Model.IsVisualizzazione)
+                {
+                    <a id="azione_@(u.IdDipendente)_@(provvedimento)" href="#" style="text-decoration:none;"
+                       alt="@text" title="@text" class="@(myClass)" data-costo="@aumentoLivello.Costo"
+                       data-costo-straordinario="@aumentoLivello.CostoStraordinario"
+                       data-costo-periodo="@aumentoLivello.CostoPeriodo"
+                       data-iddirezione="@(Model.IdDirezione)" data-idcampagna="@(Model.IdCampagna)"
+                       data-idprovv="@((int)provvedimento)">
+                        <i class="icons icon-@icon " style="font-size:13px;"
+                           data-costo-straordinario="@aumentoLivello.CostoStraordinario"
+                           data-costo-periodo="@aumentoLivello.CostoPeriodo"
+                           data-idprovv="@((int)provvedimento)" data-costo="@aumentoLivello.Costo"
+                           data-iddipendente="@(u.IdDipendente)">&nbsp;</i>
+                    </a>
+                }
+                else
+                {
+                    <a id="azione_@(u.IdDipendente)_@(provvedimento)" href="#" style="text-decoration:none;"
+                       alt="@text" title="@text" class="@(myClass)" data-costo="@aumentoLivello.Costo"
+                       data-costo-straordinario="@aumentoLivello.CostoStraordinario"
+                       data-costo-periodo="@aumentoLivello.CostoPeriodo"
+                       data-iddirezione="@(Model.IdDirezione)" data-idcampagna="@(Model.IdCampagna)" data-idprovv="@(provvedimento)">
+                        <i class="icons icon-@icon " style="font-size:13px;"
+                           data-costo-straordinario="@aumentoLivello.CostoStraordinario"
+                           data-costo-periodo="@aumentoLivello.CostoPeriodo"
+                           data-idprovv="@(provvedimento)" data-costo="@aumentoLivello.Costo"
+                           data-iddipendente="@(u.IdDipendente)" onclick="setProvvedimento(this);">&nbsp;</i>
+                    </a>
+                }*@
+
+            <option id="azione_@(u.IdDipendente)_@(provvedimento)" style="text-decoration:none;" @selected
+                    data-costo="@aumentoLivello.Costo"
+                    data-costo-straordinario="@aumentoLivello.CostoStraordinario"
+                    data-costo-periodo="@aumentoLivello.CostoPeriodo"
+                    data-iddirezione="@(Model.IdDirezione)" data-idcampagna="@(Model.IdCampagna)"
+                    data-idprovv="@(provvedimento)" value="@provvedimento">
+                @text
+            </option>
+        }
+    }
+}
+
+@model SimulazioneBudgetDirezioneVM
+
+@{
+    if (Model.DipendentiConProvvedimento != null &&
+        Model.DipendentiConProvvedimento.Any())
+    {
+        foreach (var u in Model.DipendentiConProvvedimento)
+        {
+            string stile = "";
+
+            if (u.UtenteNelleSottoSedi)
+            {
+                stile = "border: 2px solid lightsalmon;";
+            }
+
+            if (u.IsConsolidato)
+            {
+                //stile = "background-color: rgba(0, 0, 0, 0.05);";
+                stile = "border: 2px solid lightgreen;";
+            }
+
+            <tr data-persone="" id="TR_@(u.IdPersona)" data-iddipendente="@(u.IdDipendente)" role="row" style="margin:2px; border-top:1px solid lightgray; @(stile)">
+                <td data-id-persona="">
+                    @Html.ProfileWidget(u.Matricola, u.Nominativo, null)
+                </td>
+                <td>
+                    <button class="btn rai-btn-small" onclick="setIdDipendente(@u.IdDipendente, @Model.IdDirezione, @Model.IdCampagna); ShowPratica(@u.IdDipendente);">Visualizza</button>
+                </td>
+                <td data-id-persona="@(u.IdPersona)">
+                    <label class=" text-right  text-primary" style="width:100%;margin-bottom:0px; cursor:pointer;" data-toggle="tooltip" title="Clicca per visualizzare l'elenco dei provvedimenti" onclick="showProvvedimenti(@(u.IdDipendente))">@(u.NumeroProvvedimenti)</label>
+                </td>
+                <td data-id-persona="@(u.IdPersona)">
+                    <label class=" text-right" style="width:100%;margin-bottom:0px;">@(String.Format("€ {0:N2}", u.RAL))</label>
+                </td>
+                <td data-id-persona="@(u.IdPersona)">
+                    <label id="costo-periodo-@(u.IdDipendente)" class=" text-right" style="width:100%;margin-bottom:0px;">@(String.Format("€ {0:N2}", u.CostoPeriodo))</label>
+                </td>
+                <td data-id-persona="@(u.IdPersona)">
+                    <label id="costo-anno-@(u.IdDipendente)" class=" text-right" style="width:100%;margin-bottom:0px;">@(String.Format("€ {0:N2}", u.CostoAnnuo))</label>
+                </td>
+                <td data-azioni="" class="text-right">
+                    <div data-tabella-azioni="" id="Azioni_@(u.IdPersona)" data-iddipendente="@(u.IdDipendente)"
+                         data-iddirezione="@(Model.IdDirezione)" data-idcampagna="@(Model.IdCampagna)">
+                        <select class="form-control" style="width:100%; height:32px;" data-iddipendente="@u.IdDipendente" onchange="setProvvedimento(this)">
+                            @{
+                                if (u.Variazioni != null && u.Variazioni.Any())
+                                {
+                                    @ProvvAction(u, (int)ProvvedimentiEnum.AumentoLivello, "layers", "Aumento di livello")
+                                    @ProvvAction(u, (int)ProvvedimentiEnum.AumentoLivelloNoAssorbimento, "directions", "Aumento di livello senza assorbimento")
+                                    @ProvvAction(u, (int)ProvvedimentiEnum.AumentoMerito, "wallet", "Aumento di merito")
+                                    @ProvvAction(u, (int)ProvvedimentiEnum.Gratifica, "present", "Gratifica")
+
+                                    if (!u.CustomProvv)
+                                    {
+                                        @ProvvAction(u, (int)ProvvedimentiEnum.Nessuno, "trash", "Nessuno")
+                                    }
+
+                                    @ProvvAction(u, (int)ProvvedimentiEnum.CUSAumentoLivello, "layers", "Aumento di livello")
+                                    @ProvvAction(u, (int)ProvvedimentiEnum.CUSAumentoLivelloNoAssorbimento, "directions", "Aumento di livello senza assorbimento")
+                                    @ProvvAction(u, (int)ProvvedimentiEnum.CUSAumentoMerito, "wallet", "Aumento di merito")
+                                    @ProvvAction(u, (int)ProvvedimentiEnum.CUSGratifica, "present", "Gratifica")
+
+                                    if (u.CustomProvv)
+                                    {
+                                        @ProvvAction(u, (int)ProvvedimentiEnum.CUSNessuno, "trash", "Nessuno")
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+                </td>
+            </tr>
+        }
+    }
+    else
+    {
+        @Html.Partial("~/Views/Shared/_NoDati.cshtml")
+    }
+}

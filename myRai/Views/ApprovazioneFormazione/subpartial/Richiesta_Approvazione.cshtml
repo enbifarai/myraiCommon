@@ -1,0 +1,50 @@
+﻿@model int
+
+<div class="row push-10">
+    <div class="col-sm-12">
+        <label>Destinatario richiesta <small><i>(obbligatorio in caso di approvazione)</i></small></label>
+        @Html.DropDownList("Destinario", new List<SelectListItem>(), new { @class = "js-data-example-ajax", @required = "required", @id = "Destinatario_" + Model.ToString() })
+    </div>
+</div>
+
+<script type="text/javascript">
+    $( ".js-data-example-ajax" ).select2( {
+        placeholder: "Scegli a chi inoltrare la richiesta",
+        minimumInputLength: 3,
+        width: '100%',
+        ajax: {
+            url: '/ApprovazioneFormazione/GetCognomiRisorsa',
+            type: "POST",
+            dataType: 'json',
+            data: function ( params )
+            {
+                return {
+                    idRich: @Model,
+                    cog: params.term
+                };
+            },
+            processResults: function ( data )
+            {
+                return {
+                    results: $.map( data, function ( obj )
+                    {
+                        var a = new Array();
+                        for ( var item in obj )
+                        {
+                            var txt = obj[item].text;
+                            var array = txt.split( '/' );
+                            var nome = array[1];
+                            var cognome = array[0];
+                            var direzione = array[2];
+                            var matricola = obj[item].id;
+                            var fullname = matricola + ' - ' + cognome + ' ' + nome + ' (' + direzione + ')';
+
+                            a.push( { id: obj[item].id, text: fullname, nome: nome, cognome: cognome } );
+                        }
+                        return a;
+                    } )
+                };
+            }
+        }
+    } );
+</script>

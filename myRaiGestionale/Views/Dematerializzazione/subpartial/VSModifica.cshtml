@@ -1,0 +1,268 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiCommonModel
+@using myRaiHelper
+@model Dem_ModificaDocumentoVM
+
+@*@{ 
+    Model.MatricolaDestinatario = Model.Matricola;
+    Model.IdPersonaDestinatario = Model.IdPersona;
+}*@
+
+<div class="col-sm-12">
+
+    @using (Ajax.BeginForm("UpdateDocumentoVSDip" , "Dematerializzazione" , new AjaxOptions
+    {
+        InsertionMode = InsertionMode.Replace ,
+        UpdateTargetId = "" ,
+        LoadingElementId = "",
+        HttpMethod = "POST"
+    }, new
+    {
+        id = "form-update-richiestaVSDip"
+    }))
+    {
+ 
+        var allegatoPrincipale = Model.Richiesta.Allegati.FirstOrDefault(w => w.IsPrincipal);
+        int idAllPrinc = 0;
+        if (allegatoPrincipale != null)
+        {
+            idAllPrinc = allegatoPrincipale.Id;
+        }
+
+        UpdateDocumento toupload = new UpdateDocumento( )
+        {
+            Cod_Tipologia_Documentale = Model.Richiesta.Documento.Cod_Tipologia_Documentale ,
+            Descrizione = Model.Richiesta.Documento.Descrizione ,
+            Id = Model.Richiesta.Documento.Id ,
+            IdPersonaApprovatore = Model.Richiesta.Documento.IdPersonaApprovatore ,
+            IdPersonaCreatore = Model.Richiesta.Documento.IdPersonaCreatore ,
+            IdPersonaDestinatario = Model.Richiesta.Documento.IdPersonaDestinatario ,
+            Id_Stato = Model.Richiesta.Documento.Id_Stato ,
+            Id_Tipo_Doc = Model.Richiesta.Documento.Id_Tipo_Doc ,
+            Id_WKF_Tipologia = Model.Richiesta.Documento.Id_WKF_Tipologia ,
+            MatricolaCreatore = Model.Richiesta.Documento.MatricolaCreatore ,
+            MatricolaDestinatario = Model.Richiesta.Documento.MatricolaDestinatario ,
+            MatricolaIncaricato = Model.Richiesta.Documento.MatricolaIncaricato ,
+            NotaApprovatore = Model.Richiesta.Documento.NotaApprovatore ,
+            Allegati = "" ,
+            MatricolaApprovatore = "" ,
+            MatricolaFirma = "" ,
+            Note = "" ,
+            IdAllegatoPrincipaleOLD = idAllPrinc
+        };
+
+        @Html.HiddenFor(m => toupload.Cod_Tipologia_Documentale)
+        @Html.HiddenFor(m => toupload.Descrizione)
+        @Html.HiddenFor(m => toupload.Id)
+        @Html.HiddenFor(m => toupload.IdPersonaApprovatore)
+        @Html.HiddenFor(m => toupload.IdPersonaCreatore)
+        @Html.HiddenFor(m => toupload.IdPersonaDestinatario)
+        @Html.HiddenFor(m => toupload.Id_Stato)
+        @Html.HiddenFor(m => toupload.Id_Tipo_Doc)
+        @Html.HiddenFor(m => toupload.Id_WKF_Tipologia)
+        @Html.HiddenFor(m => toupload.MatricolaCreatore)
+        @Html.HiddenFor(m => toupload.MatricolaDestinatario)
+        @Html.HiddenFor(m => toupload.MatricolaIncaricato)
+        @Html.HiddenFor(m => toupload.NotaApprovatore)
+        @Html.HiddenFor(m => toupload.Allegati)
+        @Html.HiddenFor(m => toupload.IdAllegatoPrincipaleOLD)
+        string divVisibile = "";
+
+        if (Model.SkipSalvataggioCompleto)
+        {
+            divVisibile = "style=display:none;";
+        }
+        <div class="form-group" @divVisibile>
+            <div class="row push-10">
+                <div class="col-sm-12">
+                    <label class="rai-caption">Sostituisci documento <font color="#d2322d">*</font></label>
+                    <br />
+                    <label class="rai-font-md">Il documento selezionato non è ancora stato digitalizzato.Dovrai procedere con il caricamento del file</label>
+                    <div id="div-upload-principale" class="text-center align-v" style="border: 1px solid #c3c3c3; height: 180px; text-align: center !important;">
+                        <br />
+                        <table class="rai-table rai-table-vcenter" style="margin-left: auto; margin-right: auto;">
+                            <tbody>
+                                <tr>
+                                    <td class="text-center">
+                                        <i id="" class="fa fa-upload" style=" font-size: 24px;
+                                                                        font-size: 2.2rem;
+                                                                        width: 32px;
+                                                                        height: 32px;
+                                                                        line-height: 32px;
+                                                                        text-align: center;
+                                                                        background-color: #c2cfd6;
+                                                                        color: #516c7b;
+                                                                        -webkit-border-radius: 50%;
+                                                                        border-radius: 50%;"></i>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center">
+                                        <h4 class="title rai-font-md-bold" style="word-break: break-word;" id="">
+                                            Aggiungi un documento
+                                        </h4>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center">
+                                        <label class="rai-font-sm-neutral">Formato .pdf</label>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center">
+                                        <button id="button-allegato" type="button" onclick="$('#fileupload-VSDIP').click()" class="btn rai-btn-small">
+                                            Aggiungi documento
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <input data-tipo="PDF" style="display:none" type="file" id="fileupload-VSDIP" onchange="Dematerializzazione_AbilitaInfoFile()" />
+                    </div>
+                </div>
+            </div>
+            <div class="row push-10" id="uploading-VSDIP">
+                <table class="rai-table rai-table-vcenter" style="min-width:100%">
+                    <tbody style="min-width:100%" id="tabella-file-principale"></tbody>
+                </table>
+            </div>
+        </div>
+
+        }
+</div>
+
+<script type="text/javascript">
+
+    function SubMitForm() {
+        $('#import-data').html('');
+        $('#import-data').addClass('rai-loader');
+
+        var Cod_Tipologia_Documentale = $('#toupload_Cod_Tipologia_Documentale').val();
+        var Descrizione = $('#toupload_Descrizione').val();
+        var Id = $('#toupload_Id').val();
+        var IdPersonaApprovatore = $('#toupload_IdPersonaApprovatore').val();
+        var IdPersonaCreatore = $('#toupload_IdPersonaCreatore').val();
+        var IdPersonaDestinatario = $('#toupload_IdPersonaDestinatario').val();
+        var Id_Stato = $('#toupload_Id_Stato').val();
+        var Id_Tipo_Doc = $('#toupload_Id_Tipo_Doc').val();
+        var Id_WKF_Tipologia = $('#toupload_Id_WKF_Tipologia').val();
+        var MatricolaCreatore = $('#toupload_MatricolaCreatore').val();
+        var MatricolaDestinatario = $('#toupload_MatricolaDestinatario').val();
+        var MatricolaIncaricato = $('#toupload_MatricolaIncaricato').val();
+        var NotaApprovatore = $('#toupload_NotaApprovatore').val();
+        var IdAllegatoPrincipaleOLD = $('#toupload_IdAllegatoPrincipaleOLD').val();
+        var idAllegatoPrincipale = $('#identificativoAllegato').val();
+        var incaricato = "";
+        var approvatore = "";
+        var approvatoreVisibile = $('#ApprovatoreVisibile').val();
+        var firmaVisibile = $('#FirmaVisibile').val();
+        if (approvatoreVisibile.toUpperCase() === "TRUE") {
+            approvatore = $('#selApprovatore').val();
+        }
+
+        if (firmaVisibile.toUpperCase() === "TRUE") {
+            incaricato = $('#incaricatoFirma').val();
+        }
+
+        var note = $('#Note').val();
+
+        var tempAll = "";
+        var tempAllRemoved = "";
+
+        $('tr[id^="riga-allegato-"]').each(function () {
+            var id = $(this).data('id');
+            if ($(this).is(':visible')) {
+                if (tempAll == '') {
+                    tempAll = id;
+                }
+                else {
+                    tempAll = tempAll + "," + id;
+                }
+            }
+            else if ((typeof $(this).data('removed') === "undefined" && $(this).data('tipo') === 2) ||
+                ($(this).data('removed') !== "true" && $(this).data('tipo') === 2))
+            {
+                // aggiunto perchè la nuova tipologia di file "allegati" viene eliminato in fase di modifica
+                // perchè essendo stati inseriti nel primo tab risultano righe non visibili e per il sistema
+                // sono record rimossi, cosa errata.
+                if (tempAll == '') {
+                    tempAll = id;
+                }
+                else {
+                    tempAll = tempAll + "," + id;
+                }
+            }
+            else {
+                if ($(this).data('isprincipal') != "1") {
+                    if (tempAllRemoved == '') {
+                        tempAllRemoved = id;
+                    }
+                    else {
+                        tempAllRemoved = tempAllRemoved + "," + id;
+                    }
+                }
+            }
+        });
+
+        // recupero dati nella view custom
+        var attrs = Dematerializzazione_GetCustomData();
+
+        $.ajax({
+            url: "/Dematerializzazione/UpdatePratica",
+            type: "POST",
+            data: JSON.stringify({
+                Cod_Tipologia_Documentale: Cod_Tipologia_Documentale,
+                Descrizione: Descrizione,
+                Id: Id,
+                IdPersonaApprovatore: IdPersonaApprovatore,
+                IdPersonaCreatore: IdPersonaCreatore,
+                IdPersonaDestinatario: IdPersonaDestinatario,
+                Id_Stato: Id_Stato,
+                Id_Tipo_Doc: Id_Tipo_Doc,
+                Id_WKF_Tipologia: Id_WKF_Tipologia,
+                MatricolaCreatore: MatricolaCreatore,
+                MatricolaDestinatario: MatricolaDestinatario,
+                MatricolaIncaricato: MatricolaIncaricato,
+                NotaApprovatore: NotaApprovatore,
+                IdAllegatoPrincipale: idAllegatoPrincipale,
+                MatricolaApprovatore: approvatore,
+                MatricolaFirma: incaricato,
+                Note: note,
+                IdAllegatoPrincipaleOLD: IdAllegatoPrincipaleOLD,
+                Allegati: tempAll,
+                AllegatiEliminati: tempAllRemoved,
+                CustomAttrs: attrs
+            }),
+            async: true,
+            cache: false,
+            contentType: "application/json; charset=utf-8",
+            dataType: 'json',
+            success: function (data) {
+                $('#import-data').html('');
+                $('#import-data').removeClass('rai-loader');
+                if (data.success) {
+                    Dematerializzazione_OnSuccess(data, true);
+                }
+                else {
+                    OnFailure(data);
+                }
+            },
+            error: function (xhr, status) {
+                swal({
+                    title: 'Si è verificato un errore nel salvataggio dei dati',
+                    type: 'error',
+                    //confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+            }
+        });
+    }
+
+    $("form#form-update-richiestaVSDip").submit(function (e) {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        SubMitForm();
+    });
+</script>

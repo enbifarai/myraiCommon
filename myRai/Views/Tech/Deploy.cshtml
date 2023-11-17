@@ -1,0 +1,195 @@
+﻿@model myRaiCommonModel.DeployModel
+
+
+
+<!-- Icone -->
+@{
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+}
+
+
+        @Html.Partial("../Shared/sidebar3", myRai.Models.Utente.getSidebarModel())@* Model.menuSidebar)*@
+        <section role="main" class="content-body">
+
+
+            <!-- start: page -->
+            <!-- Main Container -->
+
+            <main id="main-container">
+
+                <div class="content">
+
+                    <div class="row">
+
+                        <div class="col-sm-12" id="deploy">
+
+                            <section class="rai panel" id="persdisp">
+                                <header class="panel-heading">
+                                    <div class="panel-actions">
+                                        <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" tabindex="0" aria-label="I miei dispositivi" aria-expanded="true"></a>
+                                    </div>
+
+                                    <h2 class="panel-title">Da pubblicare</h2>
+                                </header>
+
+                                <div class="block panel-body no-padding" style="overflow-x:hidden">
+
+                                    <table class="js-table-sections table table-hover" role="grid" id="deploytable">
+
+                                        <thead>
+                                            <tr>
+                                                <th>
+                                                    <div class="rai-checkbox">
+                                                        <input id="cb-all" type="checkbox" onchange="selectAllPubb()" />
+                                                        <label class="rai-caption">&nbsp;</label>
+                                                    </div>
+                                                </th>
+                                                <th style="padding:8px">DATA</th>
+                                                <th style="padding:8px">FILE</th>
+                                                <th style="padding:8px">PROGETTO</th>
+                                                <th style="padding:8px">NOTA</th>
+                                                <th style="padding:8px">RICHIESTO DA</th>
+
+                                            </tr>
+                                        </thead>
+
+                                        <tbody>
+
+                                            @if (Model.ListaFileDaPubblicare.Any())
+                                            {
+                                                foreach (var item in Model.ListaFileDaPubblicare)
+                                                {
+                                                    <tr>
+                                                        <td style="width:26px">
+                                                            <div class="rai-checkbox">
+                                                                <input onchange="TastoPubblica()" class="item-pubb" data-id="@item.id" type="checkbox" value="@item.id" />
+                                                                <label class="rai-caption">&nbsp;</label>
+                                                            </div>
+                                                        </td>
+                                                        <td>@item.data_richiesta.ToString("dd/MM/yyyy")</td>
+                                                        <td>
+                                                            @{
+                                                                string nomefile1 = System.IO.Path.GetFileName(item.file_modificato);
+                                                                string nomefile2 = System.IO.Path.GetFileName(item.path_origine);
+                                                                if (nomefile1 != nomefile2)
+                                                                {
+                                                                    nomefile1 += "<br /> (" + nomefile2 + ")";
+                                                                }
+                                                             }
+                                                        @Html.Raw(nomefile1)
+                                                        </td>
+                                                        <td>@item.nome_progetto</td>
+                                                        <td>@item.nota
+                                                        
+                                                        @if (Model.IsRollBack)
+                                                        {
+                                                            <br /><br />
+                                                                  <em>@("Pubblicato il " + ((DateTime)item.data_pubblicazione).ToString("dd/MM/yyyy") + " da " + item.pubblicatore)</em>
+                                                        }
+                                                        </td>
+                                                        <td>@item.richiedente</td>
+                                                    </tr>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <tr>
+                                                    <td colspan="6" style="text-align:center;font-weight:bold;padding-top:20px">
+                                                        Nessun file in attesa di pubblicazione
+                                                    </td>
+                                                </tr>
+                                            }
+
+
+                                        </tbody>
+                                    </table>
+                                    @if (Model.ListaFileDaPubblicare.Any())
+                                    {
+                                        if (Model.IsRollBack)
+                                        {
+                                            <div style="margin-bottom:20px;margin-left: 12px;margin-right: 12px;">
+                                                <a id="button-pubblica"
+                                                   style="background:red;border-color:red;color:white;font-weight:bold"
+                                                   disabled="disabled" class="disabled btn rai-btn-primary full-width" onclick="Pubblica('R')">
+                                                    RollBack
+                                                </a>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div style="margin-bottom:20px;margin-left: 12px;margin-right: 12px;">
+                                                <a id="button-pubblica" disabled="disabled" class="disabled btn rai-btn-primary full-width" onclick="Pubblica('P')">
+                                                    Pubblica
+                                                </a>
+                                            </div>
+                                        }
+
+                                    }
+
+                                </div>
+                            </section>
+
+
+
+                        </div>
+
+
+
+                    </div>
+                </div>
+            </main>
+
+            <!-- end: page -->
+        </section>
+
+
+
+<script>
+
+    function Pubblica(action) {
+        var ids = [];
+        $(".item-pubb").each(function () {
+            if ($(this).prop("checked")) {
+                ids.push($(this).val());
+            }
+        });
+        $.ajax({
+            url: "/tech/deployfiles",
+            type: "POST",
+            dataType: "html",
+            data: { ids: ids.toString(), action:action },
+            success: function (data) {
+
+                if (data != "OK")
+                    swal(data);
+                else {
+                    swal("Eseguita").then(function () { location.reload(); });
+                    
+                }
+            }
+        });
+    }
+    function selectAllPubb() {
+
+        var stato = $("#cb-all").prop("checked");
+        $(".item-pubb").prop("checked", stato);
+        TastoPubblica();
+    }
+    function TastoPubblica() {
+        $("#button-pubblica").attr("disabled", "disabled");
+        $("#button-pubblica").addClass("disabled");
+
+        $(".item-pubb").each(function () {
+            if ($(this).prop("checked")) {
+                $("#button-pubblica").removeAttr("disabled");
+                $("#button-pubblica").removeClass("disabled");
+            }
+        });
+    }
+</script>
+
+
+
+
+
+

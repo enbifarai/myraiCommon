@@ -1,0 +1,120 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel.ess;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model BustaPagaModel
+
+@{
+    System.Web.Script.Serialization.JavaScriptSerializer ser = new System.Web.Script.Serialization.JavaScriptSerializer( );
+    string json = ser.Serialize( Model.elencoDocumenti );
+    string jsonl = ser.Serialize( Model.elencoDocumentiLungo );
+}
+
+<script>
+    @Html.Raw("var jsmodel=" + json)
+    @Html.Raw("var jsmodell=" + jsonl)
+</script>
+
+<div class="row">
+    <section class="panel">
+        <header class="panel-heading">
+            <div class="panel-actions">
+                <a href="#" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+            </div>
+            <h2 class="panel-title">Documenti Amministrativi</h2>
+        </header>
+        <div class="panel-body" id="bspg">
+            @if ( Model.descrizioneTipo != "" )
+            {
+                <span class="h5">  <em>Questi sono i tuoi documenti <b>@Model.descrizioneTipo</b>.</em> <a class="" href="javascript:vediStorico('true','DocumentiAmministrativi');void(0);"><B>VEDI TUTTI</B></a></span>
+            }
+            <table id="tabresoconti" class="js-table-sections table table-hover">
+                <tbody class="js-table-sections-header">
+                    <tr class="">
+                        <td style="width:2%;padding-top:16px"></td>
+                        <td class="text-bold" style="width:20%;padding-top:16px">
+                            Data Emissione
+                        </td>
+                        <td class="text-bold" style="width:40%;padding-top:16px">
+                            Descrizione
+                        </td>
+                        <td class="text-bold " style="width:25%;padding-top:16px">
+                            Note
+                        </td>
+                        <td class="text-bold text-center" style="width:15%;padding-top:16px">
+                            Azioni
+                        </td>
+                    </tr>
+                    @{string dataco = "";
+                        string datacont = "";
+                        int pr = 0;
+                        List<myRai.it.rai.servizi.hrpaga.ListaDatiDocumenti> cedoliniAnnuali = null;}
+
+                    @foreach ( IGrouping<string , myRai.it.rai.servizi.hrpaga.ListaDatiDocumenti> cedoliniRaggruppati in Model.elencoDocumenti )
+                    {
+                        cedoliniAnnuali = cedoliniRaggruppati.ToList( );
+                        foreach ( myRai.it.rai.servizi.hrpaga.ListaDatiDocumenti item in cedoliniAnnuali )
+                        {
+                            <tr @(item.FlagLetto == 2 ? "infirma" : "")>
+                                <td style="width:10px;padding-top:16px"></td>
+                                <td style="padding-top:16px">
+                                    @{
+                                        string dataemissione = "";
+                                        if ( item.DataContabile.Substring( 6 , 2 ) == "00" )
+                                        {
+                                            dataemissione = CommonHelper.TraduciMeseDaNumLett( item.DataContabile.Substring( 4 , 2 ) ) + " " + item.DataContabile.Substring( 0 , 4 );
+                                        }
+                                        else
+                                        {
+                                            dataemissione = item.DataContabile.Substring( 6 , 2 ) + " " + CommonHelper.TraduciMeseDaNumLett( item.DataContabile.Substring( 4 , 2 ) ) + " " + item.DataContabile.Substring( 0 , 4 );
+                                        }
+
+                                        if ( item.DataContabile.Substring( 0 , 4 ) == "9999" )
+                                        {
+                                            dataemissione = "";
+                                        }
+                                    }
+                                    @(dataemissione)
+                                </td>
+                                <td class="col-md-3 " style="padding-top:16px">
+                                    @item.DescrittivaTipoDoc
+                                </td>
+                                <td class="col-md-2 text-italic " style="padding-top:16px">
+                                    @item.Nota
+                                </td>
+                                <td class="col-md-3  text-center" style="padding-top:16px">
+                                    <div class="col-xs-6">
+                                        @{ if ( item.ID.Length > 0 )
+                                            {
+                                                string nomefile = item.DescrittivaTipoDoc.Replace( " " , "_" ) + "_" + item.DataPubblicazione.Replace( " " , "_" );
+                                                <a href="#" onclick="javascript:ShowPdfBustaPaga('@item.ID','@(CommonHelper.TraduciMeseDaNumLett(item.DataCompetenza.Substring(4, 2)) + " " + item.DataCompetenza.Substring(0, 4))','@(CommonHelper.TraduciMeseDaNumLett(item.DataContabile.Substring(4, 2)) + " " + item.DataContabile.Substring(0, 4))','@(CommonHelper.TraduciMeseDaNumLett(item.DataPubblicazione.Substring(4, 2)) + " " + item.DataPubblicazione.Substring(0, 4))','@item.Nota','DocumentiAmministrativi','@item.DescrittivaTipoDoc','@nomefile')">
+                                                    <i class="icons icon-doc h4 @(item.FlagLetto == 1 ? "text-primary" : "text-danger") "></i>
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <i class="icons icon-doc h4 text-gray"></i>
+                                            }
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                            dataco = item.DataCompetenza;
+                            datacont = item.DataContabile;
+                        }
+                    }
+
+                    @if ( Model.flagUltimoAnno )
+                    {
+                        <tr>
+                            <td class="text-center" style="width:100%;margin-top:30px" colspan="6">
+                                <a class="btn btn-default bg-puls_dash btn-scriv" href="javascript:vediStorico('false','DocumentiAmministrativi');void(0);">VEDI TUTTO LO STORICO</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>

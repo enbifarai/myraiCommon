@@ -1,0 +1,331 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model  MyRaiServiceInterface.it.rai.servizi.digigappws.dayResponse
+@using System.Globalization;
+@{
+    CultureInfo ci = new CultureInfo("it-IT", false);
+    bool datapresente = false;
+    DateTime dataelab = new DateTime();
+    var datav = "";
+    var titledanger = "timbratura mancante";
+    var titlewarning = "tuttora presente in azienda";
+    if (Model.giornata != null)
+    {
+        datapresente = true;
+        dataelab = @Model.giornata.data.Date;
+        datav = dataelab.ToString("dddd", ci) + ", " + dataelab.Day + " " + dataelab.ToString("MMMM", ci);
+    }
+}
+@*<section class="panel block" id="sectimb">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblTimbr" aria-expanded="true"></a>
+
+        </div>
+
+        <h2 id="lblTimbr" class="panel-title">Timbrature</h2>
+
+
+    </header>*@
+<div id="sectimb">
+    <div style="padding: 5px;" id="timbraturecontent" role="grid">
+        @if (Model.HideRefresh == false && datapresente)
+        {
+            <div class="rai-nav-fill">
+                <div class="rai-nav-fill-item">
+                    <a href="javascript:cambiaGiorno(-1)" aria-label="Vai alla data precedente">
+                        <span class="icons icon-arrow-left-circle"></span>
+                    </a>
+                </div>
+                <div class="rai-nav-fill-item">&nbsp;</div>
+                <div class="rai-nav-fill-item-label" id="labdata" data-date="@dataelab.ToString()">
+                    @datav
+                    <span style="display:none;" id="timb-wait-item"><i class="fa fa-spinner fa-spin"></i> Attendi</span>
+                </div>
+                @if (@dataelab < DateTime.Today)
+                {
+                    <div class="rai-nav-fill-item-label" style="text-align:right; flex-grow: 1;">
+                        <span style="cursor:pointer" id="timb-oggi-item" onclick="javascript:cambiaGiorno('oggi')" aria-label="Vai alla data di oggi">Oggi</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="rai-nav-fill-item">&nbsp;</div>
+                }
+                <div class="rai-nav-fill-item">
+                    @if (@dataelab < DateTime.Today)
+                    {
+                        <a href="javascript:cambiaGiorno(+1)" aria-label="Vai alla data successiva">
+                            <span class="icons icon-arrow-right-circle"></span>
+                        </a>
+                    }
+                </div>
+            </div>
+
+            <br />
+        }
+
+        @if (Model != null && Model.timbrature != null && Model.timbrature.Count() > 0)
+        {
+            for (int i = 0; i < Model.timbrature.Count(); i++)
+            {
+                string ariaLabel = "";
+                MyRaiServiceInterface.it.rai.servizi.digigappws.Timbrature timbratura = Model.timbrature[i];
+
+                if (timbratura.entrata != null && timbratura.uscita != null
+                    && (timbratura.entrata.insediamento == "082" || timbratura.uscita.insediamento == "082"))
+                {
+                    continue;
+                }
+
+                if (timbratura.entrata != null && timbratura.uscita != null
+                && timbratura.entrata.insediamento != timbratura.uscita.insediamento
+                && timbratura.entrata.insediamento != "080" && timbratura.uscita.insediamento != "080")
+                {
+                    ariaLabel = "Insediamento: " + timbratura.entrata.descrittivaInsediamento + ".";
+                    ariaLabel += "Orario di entrata: " + timbratura.entrata.orario;
+                    ariaLabel += "Orario di uscita: " + "non rilevato";
+                    <div class="row timbratura-row" role="row" tabindex="@(i == 0 ? "0" : "-1")" aria-label="@ariaLabel">
+                        <div class="col-xs-12">
+                            <div class="col-xs-1" style="padding: 15px 0px 15px 0px;">
+                                <i class="icons icon-login h4  @(i == 0 ? "feedback-success-color" : "")"></i>
+                            </div>
+                            <div class="font-w500 h4 col-xs-2 rai-font-md-bold timbratura-in" style="padding-left: 0 !important; padding-right: 0 !important; margin-top: 15px !important;">
+                                @timbratura.entrata.orario
+                            </div>
+                            <div class="text-center h5 col-xs-6  rai-font-sm-neutral no-padding" style="font-size: 0.9em; margin-top: 18px;">
+                                @System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(timbratura.entrata.descrittivaInsediamento.ToLower())
+                            </div>
+                            <div class="font-w500 h4 col-xs-2 rai-font-md-bold timbratura-out" style="padding-left: 0 !important; padding-right: 0 !important; margin-top: 15px !important;">
+                                --:--
+                            </div>
+                            <div class="col-xs-1" style="padding: 15px 0px 15px 5px;">
+                                <i data-toggle="tooltip" class="icons icon-logout h4 text-danger" title="@titledanger"></i>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    ariaLabel = "Insediamento: " + timbratura.uscita.descrittivaInsediamento + ".";
+                    ariaLabel += "Orario di entrata: " + "non rilevato";
+                    ariaLabel += "Orario di uscita: " + timbratura.uscita.orario;
+
+                    <div class="row timbratura-row" role="row" tabindex="@(i == 0 ? "0" : "-1")" aria-label="@ariaLabel">
+                        <div class="col-xs-12">
+                            <div class="col-xs-1" style="padding: 15px 0px 15px 0px;">
+                                <i data-toggle="tooltip" class="icons icon-logout h4 text-danger" title="@titledanger"></i>
+                            </div>
+                            <div class="font-w500 h4 col-xs-2" style="font-size: 1.3em; padding-left: 0 !important; padding-right: 0 !important; margin-top: 15px !important;">
+                                --:--
+                            </div>
+                            <div class="text-center h5 font-w500 col-xs-6" style="font-size: 0.9em; margin-top: 18px;">
+                                @System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(timbratura.uscita.descrittivaInsediamento.ToLower())
+                            </div>
+                            <div class="font-w500 h4 col-xs-2 rai-font-md-bold timbratura-out" style="padding-left: 0 !important; padding-right: 0 !important; margin-top: 15px !important;">
+                                @timbratura.uscita.orario
+                            </div>
+                            <div class="col-xs-1" style="padding: 15px 0px 15px 5px;">
+
+                                @if (datapresente)
+                                {
+                                    if (i == (Model.timbrature.Count() - 1))
+                                    {
+                                        if ((DateTime.Today.ToString("dd/MM/yyyy") == dataelab.ToString("dd/MM/yyyy")))
+                                        {
+                                            if (timbratura.uscita == null)
+                                            {
+                                                <i data-toggle="tooltip" class="icons icon-logout h4 text-warning" title="@titlewarning"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="icons icon-logout h4 feedback-success-color"></i>
+                                            }
+                                        }
+                                        else
+                                            if (timbratura.uscita == null)
+                                        {
+                                            <i data-toggle="tooltip" class="icons icon-logout h4 text-danger" title="@titledanger"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="icons icon-logout h4 feedback-success-color"></i>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (timbratura.uscita == null)
+                                        {
+                                            <i data-toggle="tooltip" class="icons icon-logout h4 text-danger" title="@titledanger"></i>
+                                        }
+                                        else
+                                        {
+
+                                            <i class="icons icon-logout h4"></i>
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    if (timbratura.uscita == null)
+                                    {
+                                        <i data-toggle="tooltip" class="icons icon-logout h4 text-danger" title="@titledanger"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="icons icon-logout h4 feedback-success-color"></i>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+
+
+                }
+                else
+                {
+                    if (timbratura.entrata != null)
+                    {
+                        ariaLabel = "Insediamento: " + timbratura.entrata.descrittivaInsediamento + ".";
+                        ariaLabel += "Orario di entrata: " + (timbratura.entrata != null ? timbratura.entrata.orario : "non rilevato");
+                    }
+
+                    if (timbratura.uscita != null)
+                    {
+                        ariaLabel += "Orario di uscita: " + (timbratura.uscita.OraGiornoSuccessivo == null ? timbratura.uscita.orario : timbratura.uscita.OraGiornoSuccessivo + "(giorno successivo)");
+                    }
+
+                    <div class="row timbratura-row" role="row" tabindex="@(i == 0 ? "0" : "-1")" aria-label="@ariaLabel">
+                        <div class="col-xs-12">
+                            <div class="col-xs-1" style="padding: 15px 0px 15px 0px;">
+                                <i class="icons icon-login h4 @(timbratura.entrata == null ? "text-danger" : i == 0 ? "feedback-success-color" : "")"></i>
+                            </div>
+                            <div class="font-w500 h4 col-xs-2 rai-font-md-bold timbratura-in" style="padding-left: 0 !important; padding-right: 0 !important; margin-top: 15px !important;">
+                                @if (timbratura.entrata != null)
+                                {
+                                    @timbratura.entrata.orario
+                                }
+                            </div>
+                            <div class="text-center h5 col-xs-6  rai-font-sm-neutral no-padding" style="font-size: 0.9em; margin-top: 18px;">
+                                @if (timbratura.entrata != null)
+                                {
+                                    @System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(timbratura.entrata.descrittivaInsediamento.ToLower());
+
+                                }
+                                @if (timbratura.entrata != null && timbratura.entrata.insediamento == "080")
+                                {
+                                    <br /><small><i>Timbratura di entrata manuale</i></small>
+                                }
+                                @if (timbratura.uscita != null && timbratura.uscita.insediamento == "080")
+                                {
+                                    <br /><small><i>Timbratura di uscita manuale</i></small> @*(i<Model.timbrature.Count()-1 && Model.timbrature[i+1].entrata!=null && Model.timbrature[i+1].entrata.insediamento=="082"?" bilanciata":"")</i></small>*@
+                                }
+                            </div>
+                            <div class="font-w500 h4 col-xs-2 rai-font-md-bold timbratura-out" style="padding-left: 0 !important; padding-right: 0 !important; margin-top: 15px !important;">
+                                @if (timbratura.uscita != null)
+                                {
+                                    if (timbratura.uscita.OraGiornoSuccessivo == null)
+                                    {
+                                        @timbratura.uscita.orario
+                                    }
+                                    else
+                                    {
+                                        @timbratura.uscita.OraGiornoSuccessivo<br />
+                                        if (timbratura.uscita != null && timbratura.uscita.OraGiornoSuccessivo != null)
+                                        {
+                                            <span style="font-size: 1.3em; right: 4px; bottom: 2px; font-size: 70%">Giorno successivo</span>
+                                        }
+                                    }
+
+                                }
+                            </div>
+                            <div class="col-xs-1" style="padding: 15px 0px 15px 5px;">
+                                @if (datapresente)
+                                {
+                                    if (i == (Model.timbrature.Count() - 1))
+                                    {
+                                        if ((DateTime.Today.ToString("dd/MM/yyyy") == dataelab.ToString("dd/MM/yyyy")))
+                                        {
+                                            if (timbratura.uscita == null)
+                                            {
+                                                <i data-toggle="tooltip" class="icons icon-logout h4 text-warning" title="@titlewarning"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="icons icon-logout h4 feedback-success-color"></i>
+                                            }
+                                        }
+                                        else
+                                            if (timbratura.uscita == null)
+                                        {
+                                            <i data-toggle="tooltip" class="icons icon-logout h4 text-danger" title="@titledanger"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="icons icon-logout h4 feedback-success-color"></i>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (timbratura.uscita == null)
+                                        {
+                                            <i data-toggle="tooltip" class="icons icon-logout h4 text-danger" title="@titledanger"></i>
+                                        }
+                                        else
+                                        {
+
+                                            <i class="icons icon-logout h4"></i>
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    if (timbratura.uscita == null)
+                                    {
+                                        <i data-toggle="tooltip" class="icons icon-logout h4 text-danger" title="@titledanger"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="icons icon-logout h4 feedback-success-color"></i>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        }
+        else
+        {
+            <div class="row push-10" tabindex="0" aria-label="Non ci sono dati da visualizzare">
+                @Html.Partial("_nodatidiv")
+            </div>
+
+        }
+
+        @if (Model.HideRefresh == false && datapresente)
+        {
+            <div class="row push-10-t push-10">
+                <div class="col-sm-12">
+                    <div class="rai-btn-fill">
+                        <a class="btn full-width rai-btn-primary" href="/Timbrature/">Vedi l'intero mese</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+@*</section>*@
+
+<script type="text/javascript">
+    $(function () {
+        var popContent = document.getElementById('timbraturecontent');
+
+        $(popContent).find(".timbratura-row>div")
+            .find("div:eq(2)").addClass("rai-font-sm-neutral").addClass("no-padding").removeClass("font-w500").css("font-size", "");
+
+        $(popContent).find(".timbratura-row>div>div").css({ "padding-top": "0px", "margin-top": "0px" })
+    });
+</script>

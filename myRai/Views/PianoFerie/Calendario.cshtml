@@ -1,0 +1,247 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+@using myRaiCommonManager;
+
+@model PianoFerieVM
+
+@{
+    Layout = null;
+}
+
+<section class="panel">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle></a>
+            <a href="#" class="panel-action panel-action-dismiss" data-panel-dismiss></a>
+        </div>
+        <h2 class="panel-title">Piano ferie</h2>
+    </header>
+    <div class="panel-body">
+
+        @{
+            DateTime dt = new DateTime( Model.AnnoCorrente , Model.MeseCorrente , 1 , 0 , 0 , 0 );
+            DateTime dt2 = dt.AddMonths( 1 );
+            dt2 = dt2.AddDays( -1 );
+            int limit = dt2.Day;
+        }
+
+        <div class="row">
+            <div class="col-xs-8"></div>
+            <div class="col-xs-4">
+                <select id="sediGappSelector" class="js-data-example-ajax" onchange="javascript:@(Model.WidgetId)_cambiaSede(@(Model.MeseCorrente), @(Model.AnnoCorrente));">
+                    @{
+                        foreach ( var s in Model.SediGapp )
+                        {
+                            string selected = "";
+
+                            if ( s.CodiceSede.Equals( Model.SedeGapp ) )
+                            {
+                                selected = "selected=\"selected\"";
+                            }
+                            <option value="@(s.CodiceSede)" @(selected)><b>@(s.CodiceSede)</b> - @(s.DescrizioneSede)</option>
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-xs-3 text-right">
+                <a href="javascript:@(Model.WidgetId)_caricaMese(@(Model.MeseCorrente - 1), @(Model.AnnoCorrente), '@(Model.SedeGapp)');">
+                    <span style="font-size: 10px" class="glyphicon glyphicon-triangle-left text-muted"></span>
+                </a>
+            </div>
+            <div class="col-xs-6 text-center">
+                <label style="border:none; font-weight:600; font-size:14px;">
+                    Piano ferie mese di @CommonHelper.TraduciMeseDaNumLett( Model.MeseCorrente.ToString( "00" ) ) @(Model.AnnoCorrente)
+                </label>
+            </div>
+            <div class="col-xs-3">
+                <a href="javascript:@(Model.WidgetId)_caricaMese(@(Model.MeseCorrente + 1), @(Model.AnnoCorrente), '@(Model.SedeGapp)');">
+                    <span style="font-size: 10px" class="glyphicon glyphicon-triangle-right text-muted"></span>
+                </a>
+            </div>
+        </div>
+        @{
+            string colClass = "col-xs-1";
+            string colClassCenter = "col-xs-10";
+            if ( Model.Utenti != null && Model.Utenti.Any( ) )
+            {
+                colClass = "hide";
+                colClassCenter = "col-xs-12";
+            }
+        }
+
+        <div id="@(Model.WidgetId)_tableBody" class="row">
+            <div class="@(colClass)"></div>
+            <div class="@(colClassCenter)">
+                <table class="calendario-table" style="height:auto;">
+                    <thead>
+                        <tr>
+                            <td class="thDay"></td>
+                            @{
+                                for ( int idx = 0 ; idx < limit ; idx++ )
+                                {
+
+                                    DateTime giorno = new DateTime( Model.AnnoCorrente , Model.MeseCorrente , idx + 1 , 0 , 0 , 0 );
+
+                                    if ( giorno.DayOfWeek == DayOfWeek.Saturday ||
+                                        giorno.DayOfWeek == DayOfWeek.Sunday ||
+                                        FestivitaHelper.IsFestivo( giorno , Model.SedeGapp ) ||
+                                        FestivitaHelper.IsSuperFestivo( giorno ) )
+                                    {
+                                        <td class="tdDayGrayCal">@(idx + 1)</td>
+                                    }
+                                    else
+                                    {
+                                        <td class="thDay">@(idx + 1)</td>
+                                    }
+                                }
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            if ( Model.Utenti != null && Model.Utenti.Any( ) )
+                            {
+                                foreach ( var item in Model.Utenti )
+                                {
+                                    <tr>
+                                        <td class="tdMonth" style="padding-left:3px; width: 150px;">
+                                            <div class="row no-margin-left-right no-pad-left no-pad-right">
+                                                <div class="col-sm-3 no-pad-left no-pad-right">
+                                                    <div class="widget-profile-info">
+                                                        <div class="profile-picture" style="position: relative">
+                                                            <img style="width: 40px; height: 40px" src="@(item.Foto)">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-9 no-pad-right">
+                                                    <a href="#">
+                                                        <span class="font-w200" style="font-weight: bold;">@(item.Nominativo)</span>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        @for ( int idx = 0 ; idx < limit ; idx++ )
+                                        {
+
+                                            DateTime giorno = new DateTime( Model.AnnoCorrente , Model.MeseCorrente , idx + 1 , 0 , 0 , 0 );
+
+                                            string myClass = "thDay";
+                                            string myHtml = String.Empty;
+                                            string pieState = "";
+
+                                            if ( giorno.DayOfWeek == DayOfWeek.Saturday ||
+                                                giorno.DayOfWeek == DayOfWeek.Sunday ||
+                                                FestivitaHelper.IsFestivo( giorno , Model.SedeGapp ) ||
+                                                FestivitaHelper.IsSuperFestivo( giorno ) )
+                                            {
+                                                myClass = "tdDayGrayCal";
+                                            }
+                                            else
+                                            {
+                                                myClass = "thDay";
+                                            }
+
+                                            if ( item.Eccezioni != null && item.Eccezioni.Any( ) )
+                                            {
+                                                var y = item.Eccezioni.Where( e => e.Giorno.Equals( idx + 1 ) ).FirstOrDefault( );
+                                                if ( y != null )
+                                                {
+                                                    myHtml = y.CodiceEccezione;
+
+                                                   // if ( y.Stato != EnumStatiRichiesta.Approvata )
+                                                   // {
+                                                   //     pieState = "bg-pink";
+                                                   // }
+                                                }
+                                            }
+
+                                            <td class="@(myClass)">
+                                                @{
+                                                    if (!String.IsNullOrEmpty(myHtml) && myHtml!="A" && myHtml!="B")
+                                                    {
+                                                        PFEccezioneColorEnum valore = PFEccezioneColorEnum.DEFAULT;
+                                                        try
+                                                        {
+                                                            valore = ( PFEccezioneColorEnum ) Enum.Parse( typeof( PFEccezioneColorEnum ) , myHtml );
+                                                        }
+                                                        catch(Exception ex)
+                                                        {
+                                                            valore = PFEccezioneColorEnum.DEFAULT;
+                                                        }
+
+                                                        string pieColor = valore.GetIconDescription( );
+
+                                                        if ( !String.IsNullOrEmpty( pieState ) )
+                                                        {
+                                                            pieColor = pieState;
+                                                        }
+                                                        <circle class="pie-hand pie-cal-anno @(pieColor)" title="@(myHtml)"></circle>
+                                                    }
+                                                }
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                @Html.Partial( "~/Views/Shared/_NoDati.cshtml" )
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="@(colClass)"></div>
+        </div>
+
+        <br />
+        <br />
+        <div class="row">
+            <div class="@(colClass)"></div>
+            <div class="@(colClassCenter)">
+                @{
+                    List<String> giaRenderizzati = new List<String>( );
+                    foreach ( PFEccezioneColorEnum pfEcc in ( PFEccezioneColorEnum[] ) Enum.GetValues( typeof( PFEccezioneColorEnum ) ) )
+                    {
+                        if ( giaRenderizzati.Any( ) )
+                        {
+                            if ( giaRenderizzati.Contains( pfEcc.GetIconDescription( ) ) )
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                giaRenderizzati.Add( pfEcc.GetIconDescription( ) );
+                            }
+                        }
+                        else
+                        {
+                            giaRenderizzati.Add( pfEcc.GetIconDescription( ) );
+                        }
+                        <div class="col-xs-12">
+                            <circle class="pie-hand pie-cal-anno @(pfEcc.GetIconDescription())" title="@(pfEcc.ToString())"></circle> @(pfEcc.GetAmbientValue( ))
+                        </div>
+                    }
+                }
+                <div class="col-xs-12">
+                    <circle class="pie-hand pie-cal-anno bg-pink" title="In approvazione"></circle> In approvazione
+                </div>
+            </div>
+            <div class="@(colClass)"></div>
+        </div>
+    </div>
+</section>
+
+<script type="text/javascript">
+    $(".js-data-example-ajax").select2({
+        width: '100%',
+        minimumResultsForSearch: -1
+    });
+</script>

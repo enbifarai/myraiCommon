@@ -1,0 +1,299 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+@model AnagraficaModel
+
+@{
+    var tmpSw = Model.DatiStatiRapporti.Eventi.Where(x => x.Codice=="SW" && (x.ValiditaFine == null || x.ValiditaFine > DateTime.Now)).OrderBy(x => x.DataInizio);
+    List<EventoModel> eventi = new List<EventoModel>();
+    DateTime dataRif = Model.DataAssunzione;
+    for (int i = 0; i < tmpSw.Count(); i++)
+    {
+        if (dataRif != tmpSw.ElementAt(i).DataInizio)
+        {
+            eventi.Add(new EventoModel()
+            {
+                Codice = "PRESENZA",
+                Descrizione = "In presenza",
+                DataInizio = dataRif,
+                DataFine = tmpSw.ElementAt(i).DataInizio.AddDays(-1)
+            });
+        }
+        dataRif = tmpSw.ElementAt(i).DataFine.AddDays(1);
+        eventi.Add(tmpSw.ElementAt(i));
+    }
+
+    if (dataRif <= DateTime.Today)
+    {
+        eventi.Add(new EventoModel()
+        {
+            Codice = "PRESENZA",
+            Descrizione = "In presenza",
+            DataInizio = dataRif,
+            DataFine = DateTime.Today
+        });
+    }
+
+
+    var evento = tmpSw.FirstOrDefault(x => x.DataInizio <= DateTime.Today && x.DataFine > DateTime.Today);
+    if (evento == null)
+    {
+        evento = new EventoModel()
+        {
+            Matricola = Model.Matricola,
+            IdPersona = Model.IdPersona,
+            MinDate = tmpSw.Any()? tmpSw.Max(x => x.DataFine).AddDays(1):Model.DataAssunzione,
+            MaxDate = Model.DataCessazione,
+            DataInizio = DateTime.Today,
+            DataFine = DateTime.Today.AddDays(1),
+            Codice = "SW",
+            TipologiaAccordo = "Unilaterale"
+        };
+    }
+
+    var tmpCommGara = Model.DatiStatiRapporti.Eventi.Where(x => x.Codice == "COMM_GARA" && (x.ValiditaFine == null || x.ValiditaFine > DateTime.Now)).OrderBy(x => x.DataInizio);
+    foreach (var item in tmpCommGara)
+    {
+        eventi.Add(item);
+    }
+
+    var eventoCommGara = tmpCommGara.FirstOrDefault(x => x.DataInizio <= DateTime.Today && x.DataFine > DateTime.Today);
+    if (eventoCommGara == null)
+    {
+        eventoCommGara = new EventoModel()
+        {
+            Matricola = Model.Matricola,
+            IdPersona = Model.IdPersona,
+            MinDate = tmpCommGara.Any()?tmpCommGara.Max(x=>x.DataFine).AddDays(1):Model.DataAssunzione,
+            MaxDate = Model.DataCessazione,
+            DataInizio = DateTime.Today,
+            DataFine = DateTime.Today.AddDays(1),
+            Codice = "COMM_GARA",
+        };
+    }
+
+    var listStati = new myRaiDataTalentia.TalentiaEntities().XR_TB_STATO_RAPPORTO.OrderBy(x=>x.ORDINE).ToList();
+}
+
+@using (Html.BeginModal(Model.Cognome.TitleCase() + " " + Model.Nome.TitleCase()))
+{
+    <div class="row" id="block-stati">
+        <div class="col-md-8">
+            <div id="profile-widget" style="display:none">
+                @Html.ProfileWidget(Model.Matricola, Model.Nome + " " + Model.Cognome, null)
+            </div>
+
+            @using (Html.BeginPanel(PanelType.PanelNoPadding, "Storico  stati", false))
+            {
+                <div class="form-group">
+                    <div class="row push-10 push-10-t">
+                        <div class="col-sm-6">
+                            <label class="rai-caption">Filtra per data</label>
+                            <div class="input-group">
+                                <i class="input-group-addon"><i class="fa fa-calendar"></i></i>
+                                <input type="text" class="form-control js-daterangepicker" id="rangePicker" onchange="onStateFilterChange()"
+                                       data-startdate="@Model.DataAssunzione.ToString("dd/MM/yyyy")"
+                                       data-enddate="@eventi.Max(x=>x.DataFine).ToString("dd/MM/yyyy")"
+                                       data-mindate="@Model.DataAssunzione.ToString("dd/MM/yyyy")"
+                                       @*data-parentel="#rangePicker"*@
+                                       data-showdropdowns="true" />
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="rai-caption">Filtra per stato</label>
+                            <div class="rai-checkbox-container rai-check-inline">
+                                <div class="rai-checkbox">
+                                    <input id="chkStSW" type="checkbox" data-stato-type="SW" checked="checked" onclick="onStateFilterChange()" />
+                                    <label for="chkStSW">Smartworking</label>
+                                </div>
+                                <div class="rai-checkbox">
+                                    <input id="chkStPres" type="checkbox" data-stato-type="PRESENZA" checked="checked" onclick="onStateFilterChange()" />
+                                    <label for="chkStPres">Presenza</label>
+                                </div>
+                                <div class="rai-checkbox">
+                                    <input id="chkStComm" type="checkbox" data-stato-type="COMM_GARA" checked="checked" onclick="onStateFilterChange()" />
+                                    <label for="chkStComm">Commissario di gara</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <table class="table rai-table rai-table-vcenter rai-table-high-row js-table-sections rai-table-borderless">
+                    <thead>
+                        <tr>
+                            <th>Stato</th>
+                            <th>Data inizio</th>
+                            <th>Data fine</th>
+                            <th>Accordo</th>
+                            <th>Ricevuta</th>
+                            <th class="rai-table-td-toggle"></th>
+                        </tr>
+                    </thead>
+
+                    @foreach (var item in eventi.OrderByDescending(x => x.DataInizio))
+                    {
+                        var subEventi = new List<EventoModel>();
+                        int? idRif = item.IdEventoPrec;
+                        while (idRif.HasValue)
+                        {
+                            var tmpEv = Model.DatiStatiRapporti.Eventi.FirstOrDefault(x => x.IdEvento == idRif);
+                            if (tmpEv != null)
+                            {
+                                subEventi.Add(tmpEv);
+                                idRif = tmpEv.IdEventoPrec;
+                            }
+                        }
+
+                        <tbody class="js-table-sections-header">
+                            <tr data-stato="@item.Codice" data-inizio="@item.DataInizio.ToString("yyyyMMdd")" data-fine="@item.DataFine.ToString("yyyyMMdd")" data-type="@item.Codice">
+                                <td>
+                                    <span>@item.Descrizione</span>
+                                    @if (subEventi.Count() > 0)
+                                    {
+                                        var labelText = "modifica";
+                                        if (subEventi.Count() > 1)
+                                        {
+                                            labelText = "modifiche";
+                                        }
+
+                                        <br />
+                                        <span class="feedback-warning-color">@subEventi.Count() @labelText</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span>@item.DataInizio.ToString("dd/MM/yyyy")</span>
+                                </td>
+                                <td>
+                                    <span>@item.DataFine.ToString("dd/MM/yyyy")</span>
+                                </td>
+                                <td>
+                                    @if (!String.IsNullOrWhiteSpace(item.TipologiaAccordo))
+                                    {
+                                        <span>@item.TipologiaAccordo</span>
+                                    }
+                                    else
+                                    {
+                                        <span>&nbsp;</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span></span>
+                                </td>
+                                <td>
+                                    @if (subEventi.Count() > 0)
+                                    {
+                                        <i class="fa fa-chevron-down"></i>
+                                    }
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tbody class="no-border">
+                            @foreach (var subItem in subEventi)
+                            {
+                                <tr>
+                                    <td>
+                                        <span>&nbsp;</span>
+                                    </td>
+                                    <td>
+                                        <span>@subItem.DataInizio.ToString("dd/MM/yyyy")</span>
+                                    </td>
+                                    <td>
+                                        <span>@subItem.DataFine.ToString("dd/MM/yyyy")</span>
+                                    </td>
+                                    <td>
+                                        @if (!String.IsNullOrWhiteSpace(subItem.TipologiaAccordo))
+                                        {
+                                            <span>@subItem.TipologiaAccordo</span>
+                                        }
+                                        else
+                                        {
+                                            <span>&nbsp;</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span></span>
+                                    </td>
+                                    <td>
+                                        &nbsp;
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    }
+
+                </table>
+            }
+        </div>
+        <div class="col-md-4">
+            @using (Html.BeginPanel(PanelType.PanelNoPadding, "Gestisci", false))
+            {
+                <div class="row" style="margin:15px;">
+                    <div class="col-sm-12 form-group">
+                        <label class="rai-caption">Tipologia stato</label>
+                        <select class="form-control" onchange="onSelectStateChange(this)">
+                            @for (int i = 0; i < listStati.Count(); i++)
+                            {
+                                <option value="@listStati.ElementAt(i).COD_STATO_RAPPORTO" @(i==0?"selected":"")>@listStati.ElementAt(i).DES_STATO_RAPPORTO</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="tab-content no-shadow no-border" id="tabStatiContainer">
+                    <div class="tab-pane active" id="tabStato-SW">
+                            @Html.Partial("~/Views/Anagrafica/subpartial/Modal_DatiStatoRapporto.cshtml", evento)
+                    </div>
+                    <div class="tab-pane" id="tabStato-COMM_GARA">
+                            @Html.Partial("~/Views/Anagrafica/subpartial/Modal_DatiStatoRapporto.cshtml", eventoCommGara)
+                    </div>
+                </div>
+            }
+
+
+
+        </div>
+    </div>
+}
+
+<script>
+    InitDateRangePicker();
+
+    function onSelectStateChange(select) {
+        var stateSel = $(select).val();
+        $('#tabStatiContainer .tab-pane').removeClass('active');
+        $('#tabStato-' + stateSel).addClass('active');
+    }
+
+    function onStateFilterChange() {
+        var rifDate = $('#rangePicker').val();
+        var rifInizio = '19000101';
+        var rifFine = '29991231';
+
+        if (rifDate != '') {
+            var ary = rifDate.split('-');
+            var arySt = ary[0].trim();
+            var aryEnd = ary[1].trim();
+
+            rifInizio = arySt.substr(6, 4) + arySt.substr(3, 2) + arySt.substr(0, 2);
+            rifFine = aryEnd.substr(6, 4) + aryEnd.substr(3, 2) + aryEnd.substr(0, 2);
+        }
+
+        $('[data-stato]').hide();
+        var list = $('[data-stato]');
+        for (var i = 0; i < list.length; i++) {
+            if (rifInizio <= $(list[i]).attr('data-fine')
+                && $(list[i]).attr('data-inizio') <= rifFine) {
+
+                var tipo = $(list[i]).attr('data-type');
+                if ($('[data-stato-type="' + tipo + '"]:checked').length > 0) {
+                    $(list[i]).show();
+                } else {
+                    $(list[i]).hide();
+                    $(list[i]).removeClass('open');
+                }
+            }
+            else {
+                $(list[i]).hide();
+                $(list[i]).removeClass('open');
+            }
+        }
+    }
+</script>

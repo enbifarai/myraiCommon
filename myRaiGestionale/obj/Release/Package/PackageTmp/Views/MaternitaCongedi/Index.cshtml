@@ -1,0 +1,1147 @@
+﻿@using MVCProject.Custom_Helpers;
+@using myRaiGestionale.Controllers;
+@{
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    ViewBag.Title = "HRIS - Maternità Congedi";
+}
+@model myRaiCommonModel.MaternitaIndexModel
+<section role="main" class="content-body" style="padding-top:10px;">
+    <!-- start: page -->
+    <!-- Main Container -->
+
+    <main id="main-container">
+        <div class="content">
+
+
+            <div class="row">
+                <div class="col-sm-8">
+                    @if (Model.IsResponsabileGestione)
+                    {
+                        <div id="appr-container">
+                            @Html.Partial("content_approvazioni", new myRaiCommonModel.MaternitaApprovazioniModel() { IsPreview = true })
+                        </div>
+                    }
+
+                    <div id="content-container">
+                        @Html.Partial("content", new myRaiCommonModel.MaternitaCongediModel() { IsPreview = true })
+                    </div>
+
+                </div>
+                <div class="col-sm-4">
+
+
+
+                    @*CARICA FILE EXCEL*@
+                    @if (myRaiCommonManager.MaternitaCongediManager.IsAbilitatoUpload())
+                    {
+                        @Html.Partial("ImportaExcel")
+                    }
+
+
+
+
+
+
+                    <section class="rai panel" id="panelRicercaRichieste">
+                        <header class="panel-heading">
+                            <h2 class="panel-title">Filtra elenco richieste</h2>
+                        </header>
+                        <div class="panel-body">
+                            <form id="cercaImm">
+                                <div class="rai form-group">
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <label class="rai-caption">MESE</label>
+                                            <div class="input-group mb-md">
+                                                <span onclick="$('#datadal').datetimepicker('show')" class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                                                <input class="js-datetimepicker form-control" data-format="MM/YYYY" data-locale="it" type="text" id="datamese" placeholder="Mese">
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <label class="rai-caption">MATRICOLA O NOMINATIVO DIPENDENTE</label>
+                                            <input type="text" class="form-control form-control-value mb-md" id="matricola" placeholder="Matricola" required="">
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <label class="rai-caption">SEDE</label>
+                                            <select type="text" class="form-control form-control-value mb-md" id="sede">
+                                                <option></option>
+                                                @foreach (var sede in Model.Sedi)
+                                                {
+                                                    <option value="@sede.CodiceSede">@sede.DescSede</option>
+                                                }
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <label class="rai-caption">TIPO DI RICHIESTA</label>
+                                            <select class="form-control form-control-value mb-md" id="tipo">
+                                                <option></option>
+                                                @foreach (var c in Model.Categorie.OrderBy(x => x.ID))
+                                                {
+                                                    if (c.CAT == "CON")
+                                                    {
+                                                        if (c.SOTTO_CAT == "PARTO")
+                                                        {
+                                                            <option value="@c.ID">@c.TITOLO (Parto)</option>
+                                                        }
+                                                        if (c.SOTTO_CAT == "AFFIDO_NAZ")
+                                                        {
+                                                            <option value="@c.ID">@c.TITOLO (Affido naz.)</option>
+                                                        }
+                                                        if (c.SOTTO_CAT == "AFFIDO_INT")
+                                                        {
+                                                            <option value="@c.ID">@c.TITOLO (Affido int.)</option>
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        <option value="@c.ID">@c.TITOLO</option>
+                                                    }
+
+                                                }
+
+
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <label class="rai-caption">STATO DELLA RICHIESTA</label>
+                                            <select class="form-control form-control-value mb-md" id="stato">
+                                                <option></option>
+                                                @foreach (var stato in Model.Stati)
+                                                {
+                                                    <option value="@stato.ID_STATO">@stato.DESCRIZIONE</option>
+                                                }
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <label class="rai-caption">TASK ESEGUITI NEL MESE</label>
+                                            <div class="input-group mb-md">
+                                                <span onclick="$('#datatask').datetimepicker('show')" class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                                                <input class="js-datetimepicker form-control" data-format="MM/YYYY" data-locale="it" type="text" id="datatask" placeholder="Mese">
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                    <div class="row push-20-t">
+                                        <div class="col-sm-12">
+                                            <div class="rai-btn-fill">
+                                                <input type="button" id="btnRipristina" class="btn rai-btn-secondary" title="Ripristina" value="Ripristina" onclick="reset()" required="">
+                                                <input type="button" id="btnCercaMatricola" class="btn rai-btn-primary" title="Cerca" value="Cerca" onclick="search()" required="">
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </section>
+
+                </div>
+            </div>
+
+
+
+
+        </div>
+    </main>
+
+    <!-- end: page -->
+</section>
+
+@if (myRaiHelper.MaternitaCongediHelper.EnabledToMaternitaCongediUfficioAnyRole(myRaiHelper.MaternitaCongediHelper.MaternitaCongediUffici.Gestione) || myRaiHelper.MaternitaCongediHelper.EnabledToMaternitaCongediUfficioAnyRole(myRaiHelper.MaternitaCongediHelper.MaternitaCongediUffici.Personale))
+{
+    @Html.Partial("popupvisgest")
+}
+
+
+@Html.Partial("popupvisamm")
+@Html.Partial("popupvisammCedolino")
+@Html.Partial("popupvisgestPianificazione")
+@Html.Partial("popupviewperiodi")
+@Html.Partial("popupviewcedolino")
+@Html.Partial("_alertfield")
+
+@section afterjs{
+
+    <script>
+        function attivaContatore(mesi,giorni, mesiconiuge, giorniconiuge)
+    {
+
+        //$('#congedi').data('plugin_contatore').giorniRimanenti();
+
+        debugger
+            var MF = "M";
+        var mesiSpettanti = 6;
+        if (MF == "M") mesiSpettanti = 7;
+
+        var mesiPersi = 0;
+        var giorniPersi = 0;
+        if (mesiconiuge >= 4) {
+            mesiPersi = mesiconiuge - 4;
+            giorniPersi = giorniconiuge;
+        }
+
+        if ($("#congedi").html().trim() == "") {
+
+            var valori = {
+                sesso: MF,
+                mesifruiti: mesi,
+                giornifruiti: giorni,
+                mesipratica: 0,
+                giornipratica: 0,
+                giorniconiuge: giorniconiuge,
+                mesi: 6,
+                mesibonuspadre: 1,
+                mesiperbonuspadre: 3,
+                mesiindennizati: 6,
+                debug: false,
+                alert: 10,
+                onComplete: function () {
+
+                }
+            }
+            console.log(JSON.stringify(valori));
+            var instance =
+                $('#congedi').contatore(valori);
+        }
+        else {
+            $('#congedi').data('plugin_contatore').cambiaValore({ mesifruiti: mesi, giornifruiti: giorni, giorniconiuge: giorniconiuge });
+        }
+        }
+
+        function ShowCedolino(matricola, dataCompetenza, dataContabilizzazione, tipo) {
+
+
+        }
+
+        function ShowPeriodi(idric) {
+            $("#popupview-periodi").modal("show")
+
+
+            $("#dettagli-richiesta-2").addClass("rai-loader");
+            $.ajax({
+                url: '/MaternitaCongedi/GetDettaglioRichiestaAmmBoxPeriodi',
+                type: "GET",
+                data: { idrichiesta: idric },
+                dataType: "html",
+                complete: function () { },
+                success: function (data) {
+                    $("#dettagli-richiesta-2").removeClass("rai-loader");
+                    $("#dettagli-richiesta-2").html(data);
+
+                }
+            });
+
+
+            $.ajax({
+                url: "/maternitacongedi/GetPeriodiDipendente?idrichiesta="+idric,
+                type: 'GET',
+                processData: false,
+                contentType: false,
+                dataType: "html",
+                data: {},
+                success: function (data) {
+                    $("#container-periodi-dip").html(data);
+                    debugger
+                    var g = $("#gen-solo").val();
+                    if (g.toLowerCase() == "true")
+                        $("#su-mesi").text(" / 6 mesi");
+                    else
+                        $("#su-mesi").text(" / 10 mesi");
+
+                    $.ajax({
+                        url: "/maternitacongedi/GetPeriodiConiuge?idrichiesta=" + idric,
+                        type: 'GET',
+                        processData: false,
+                        contentType: false,
+                        dataType: "html",
+                        data: {},
+                        success: function (data) {
+                            $("#container-periodi-altro-genitore").html(data);
+                            var giornidip = 0;
+                            if ($("#totale-giorni-d").length > 0) {
+                                if ($("#totale-giorni-d").val().trim() != "") {
+                                    giornidip = parseFloat($("#totale-giorni-d").val().trim());
+                                }
+                            }
+                            var giornicon = 0;
+                            if ($("#totale-giorni-c").length > 0) {
+                                if ($("#totale-giorni-c").val().trim() != "") {
+                                    giornicon = parseFloat($("#totale-giorni-c").val().trim());
+                                }
+                            }
+                            debugger
+                            var mesidipContatore = parseInt(giornidip / 30);
+                            var giornidipContatore = giornidip % 30;
+
+                            attivaContatore(mesidipContatore, giornidipContatore, 0, giornicon);
+                            var Rimanenti = $('#congedi').data('plugin_contatore').giorniRimanenti();
+                            var giorniRimanenti = "";
+                            if (Rimanenti.mesi > 0) {
+                                if (Rimanenti.mesi == 1) giorniRimanenti = "1 mese e ";
+                                else giorniRimanenti = Rimanenti.mesi + " mesi e ";
+                            }
+                            if (Rimanenti.giorni == 1) giorniRimanenti += "1 giorno ";
+                            else giorniRimanenti += Rimanenti.giorni + " giorni";
+                            $("#giorni-rimanenti").text(giorniRimanenti);
+                        }
+                    });
+
+
+
+
+                }
+            });
+
+
+        }
+        function InviaFileExcel() {
+            var form = $("#form-excel");
+            var fdata = new FormData();
+            var fileInput = $('#file-excel');
+            if (fileInput[0].files.length > 0) {
+                var file = fileInput[0].files[0];
+                fdata.append("file", file);
+            }
+            fdata.append("stato", $("#stato-pratica").val());
+            $.ajax({
+                url: "/maternitacongedi/UploadExcel",
+                type: 'POST',
+                processData: false,
+                contentType: false,
+                dataType: "json",
+                data: fdata,
+                success: function (data) {
+                    if (data.esito == true) {
+
+                        swal({
+                            title: 'Pratiche caricate correttamente',
+                            type: "success",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        }).then(function () {
+                            GetContent();
+                        });
+                    }
+                    else {
+                        swal({
+                            title: data.errore,
+                            type: "error",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                    }
+
+                },
+                error: function (a, b, c) {
+                    alert(a + b + c);
+                }
+            })
+
+        }
+        function showname() {
+            var name = document.getElementById('file-excel');
+            var nomefile = name.files.item(0).name;
+
+            if (nomefile.toUpperCase().indexOf(".XLSX") < 0) {
+                swal({
+                    title: "Sono ammessi soltanto file excel (.xlsx)",
+                    type: "error",
+                    confirmButtonText: 'OK',
+                    customClass: 'rai'
+                });
+                return;
+            }
+            $("#invia-file").removeClass("disable");
+
+        };
+
+        @if (Model.IsResponsabileGestione)
+        {
+            @:GetContentApprovazioni();
+        }
+
+        function GetContentApprovazioni() {
+            $.ajax({
+                url: '/MaternitaCongedi/GetContentApprovazioni',
+                type: "GET",
+                data: {},
+                dataType: "html",
+                complete: function () { $("#content-approvazioni").removeClass("rai-loader") },
+                success: function (data) {
+
+                    $("#appr-container").html(data);
+                    $("#content-approvazioni").removeClass("rai-loader");
+                }
+            });
+
+        }
+        GetContent();
+        function GetContent(ordine) {
+            debugger
+            var seltab = 1;
+            if ($("#li-2").hasClass("active")) {
+                seltab = 2;
+            }
+            if ($("#li-3").hasClass("active")) {
+                seltab = 3;
+            }
+            $("#content-container .panel-body").first().addClass("rai-loader")
+            $.ajax({
+                url: '/MaternitaCongedi/GetContent',
+                type: "GET",
+                data: {ordine:ordine},
+                dataType: "html",
+                complete: function () { $("#content-container .panel-body").first().removeClass("rai-loader") },
+                success: function (data) {
+                    $("#content-container .panel-body").first().removeClass("rai-loader")
+                    $("#content-container").html(data);
+                    $("#li-" + seltab + " a").click();
+                }
+            });
+        }
+        function ShowPianificazione(idRichiesta) {
+            $("#popup-view-pianificazione").modal("show");
+            $.ajax({
+                type: 'GET',
+                url: "/maternitacongedi/GetPianificazioneContent",
+                dataType: "html",
+                data: { idRichiesta: idRichiesta },
+                cache: false,
+                success: function (data) {
+                    $("#calendario-pianificazione").html(data);
+                    $("#control-string").val(getControlString());
+
+                }
+            });
+        }
+        function reset() {
+            $("#datamese").val("");
+            $("#datatask").val("");
+            $("#matricola").val("");
+            $("#sede").val("");
+            $("#tipo").val("");
+            $("#stato").val("");
+
+        }
+        function search() {
+            var mese = $("#datamese").val();
+            var meseTask = $("#datatask").val();
+            var matr = $("#matricola").val();
+            var sede = $("#sede").val();
+            var tipo = $("#tipo").val();
+            var stato = $("#stato").val();
+            $("table.maternita").addClass("rai-loader");
+           // $("table.matapp").addClass("rai-loader");
+            var liactive = "1";
+            if ($("#li-2").hasClass("active")) liactive = "2";
+            if ($("#li-3").hasClass("active")) liactive = "3";
+
+            $.ajax({
+                url: '/MaternitaCongedi/GetContent',
+                type: "GET",
+                data: { mese: mese, matr: matr, sede: sede, tipo: tipo, stato: stato, mesetask: meseTask },
+                dataType: "html",
+                complete: function () { },
+                success: function (data) {
+                    $("table.maternita").removeClass("rai-loader");
+                    $("#content-container").html(data);
+                    debugger
+                    $("#li-" + liactive + " a").click();
+                }
+            });
+            //$.ajax({
+            //    url: '/MaternitaCongedi/GetContentApprovazioni',
+            //    type: "GET",
+            //    data: { mese: mese, matr: matr, sede: sede, tipo: tipo, stato: stato },
+            //    dataType: "html",
+            //    complete: function () { },
+            //    success: function (data) {
+            //        $("table.matapp").removeClass("rai-loader");
+            //        $("#appr-container").html(data);
+
+            //    }
+            //});
+        }
+        function VisualizzaUffPersonale(idRichiesta) {
+            VisualizzaGestione(idRichiesta);
+        }
+        function VisualizzaAmm(titolo, idrichiesta) {
+            $("#popupview-amm").modal("show");
+            $("#alert-lavorata").hide();
+            $("#current-id-richiesta").val(idrichiesta);
+
+            $("#dettagli-amm").html("");
+            $("#dettagli-amm").addClass("rai-loader");
+
+            $("#dettagli-richiesta-amm").html("");
+            $("#dettagli-richiesta-amm").addClass("rai-loader");
+
+            $("#assegnazione-amm").html("");
+            $("#assegnazione-amm").addClass("rai-loader");
+
+            $("#cat-domanda").text(titolo);
+            $.ajax({
+                url: '/MaternitaCongedi/getDettaglioAmm',
+                type: "GET",
+                data: { idrichiesta: idrichiesta },
+                dataType: "html",
+                complete: function () { },
+                success: function (data) {
+                    debugger
+                    $("#dettagli-amm").removeClass("rai-loader");
+                    $("#dettagli-amm").html(data);
+                    $("#cat-domanda").text(titolo);
+                    ShowCedolino(idrichiesta);
+                    if ($(data).find("#operazioni-avviate").length > 0)
+                        AmmPage(3);
+                }
+            });
+            $.ajax({
+                url: '/MaternitaCongedi/GetDettaglioRichiestaAmmBox',
+                type: "GET",
+                data: { idrichiesta: idrichiesta },
+                dataType: "html",
+                complete: function () { },
+                success: function (data) {
+                    $("#dettagli-richiesta-amm").removeClass("rai-loader");
+                    $("#dettagli-richiesta-amm").html(data);
+                    CaricaNote(idrichiesta);
+                }
+            });
+
+            $("#promemoria").addClass("rai-loader");
+            $.ajax({
+                url: '/MaternitaCongedi/GetPromemoriaBox',
+                type: "GET",
+                data: { idrichiesta: idrichiesta },
+                dataType: "html",
+                complete: function () { },
+                success: function (data) {
+                    $("#promemoria").removeClass("rai-loader");
+                    $("#promemoria").html(data);
+                }
+            });
+
+
+            $.ajax({
+                url: '/MaternitaCongedi/GetAssegnazioneAmmBox',
+                type: "GET",
+                data: { idrichiesta: idrichiesta },
+                dataType: "html",
+                complete: function () { },
+                success: function (data) {
+                    $("#assegnazione-amm").removeClass("rai-loader");
+                    $("#assegnazione-amm").html(data);
+
+                }
+            });
+
+            $.ajax({
+                url: '/MaternitaCongedi/GetAnnullamentoAmmBox',
+                type: "GET",
+                data: { idrichiesta: idrichiesta },
+                dataType: "html",
+                complete: function () { },
+                success: function (data) {
+                    console.log(data);
+                    $("#annullamento-amm").removeClass("rai-loader");
+                    $("#annullamento-amm").html(data);
+
+                }
+            });
+
+            //CaricaNote(idrichiesta);
+        }
+        function AmmPage(page) {
+            $("#refresh-operazioni").hide();
+
+            for (var i = 1; i <= 3; i++) {
+                if (page == i) {
+                    $("#amm" + i + "-ok").hide();
+                    $("#amm" + i + "-cur").show();
+                    $("#amm" + i + "-todo").hide();
+                }
+                if (i < page) {
+                    debugger
+                    $("#amm" + i + "-ok").show();
+                    $("#amm" + i + "-cur").hide();
+                    $("#amm" + i + "-todo").hide();
+                }
+                if (i > page) {
+                    $("#amm" + i + "-ok").hide();
+                    $("#amm" + i + "-cur").hide();
+                    $("#amm" + i + "-todo").show();
+                }
+            }
+            debugger
+            $("#page1-amm").hide();
+            $("#page2-amm").hide();
+            $("#page3-amm").hide();
+            $("#page" + page + "-amm").show();
+
+            var idric = $("#current-id-richiesta").val();
+
+            if (page == 2) {
+
+
+                var incongruenze = 0;
+                if ($("#giorni-incongruenti").length > 0) {
+                    incongruenze = $("#giorni-incongruenti").attr("data-giorni");
+                }
+                var giornicedolino = $("#tot-giorni").text();
+                debugger
+                $("#task-container").html("<div style='height:200px'></div>");
+                $("#task-container").addClass("rai-loader");
+                $("#popup-view-amm-content").scrollTop(0);
+                var Importo13ma = $("#13ma").text();
+                var Importo14ma = $("#14ma").text();
+                var ImportoPremio = $("#premio").text();
+                var ImportoTotale = $("#importo-accordion").text();
+
+
+                $.ajax({
+                    url: '/MaternitaCongedi/getTasks',
+                    type: "GET",
+                    data: { idrichiesta: idric, incongruenze: incongruenze, giornicedolino: giornicedolino, Importo13ma: Importo13ma, Importo14ma: Importo14ma, ImportoPremio:ImportoPremio,ImportoTotale:ImportoTotale, meseanno:$("#mese-anno-comp").val() },
+                    dataType: "html",
+                    complete: function () { },
+                    success: function (data) {
+                        $("#task-container").removeClass("rai-loader");
+                        $("#task-container").html(data);
+                    }
+                });
+
+            }
+            if (page == 3) {
+                $("#refresh-operazioni").show();
+                $("#task-recap-container").addClass("rai-loader");
+                $.ajax({
+                    url: '/MaternitaCongedi/getTasksRecap',
+                    type: "GET",
+                    data: { idrichiesta: idric },
+                    dataType: "html",
+                    complete: function () { },
+                    success: function (data) {
+                        $("#task-recap-container").removeClass("rai-loader");
+                        $("#task-recap-container").html(data);
+                    }
+                });
+            }
+        }
+        function CaricaNote(idrichiesta) {
+            $(".note-amm:visible").addClass("rai-loader");
+            $.ajax({
+                url: '/MaternitaCongedi/GetNoteBox',
+                type: "GET",
+                data: { idrichiesta: idrichiesta },
+                dataType: "html",
+                complete: function () { },
+                success: function (data) {
+                    debugger
+                    $(".note-amm:visible").removeClass("rai-loader");
+                    $(".note-amm:visible").html(data);
+
+                }
+            });
+        }
+        function AbilitaButtonAssegna() {
+
+            var operatore = $("#assegna-operatori").val();
+
+            if (operatore == null || operatore == "")
+                $("#button-assegna").addClass("disable");
+            else
+                $("#button-assegna").removeClass("disable");
+        }
+        function PrendiInCaricoAmm(idrichiesta) {
+            swal({
+                title: "Presa in carico",
+                type: 'question',
+                html: "Confermi di prendere in carico la richiesta visualizzata?",
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+                cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+                reverseButtons: true,
+                customClass: 'rai rai-confirm-cancel'
+            }).then(function () {
+                $.ajax({
+                    url: '/MaternitaCongedi/PrendiInCaricoAmministrazione',
+                    type: "GET",
+                    data: { idrichiesta: idrichiesta },
+                    dataType: "json",
+                    complete: function () { },
+                    success: function (data) {
+                        if (data.esito == true) {
+
+                            swal({
+                                title: 'Richiesta presa in carico correttamente',
+                                type: "success",
+                                confirmButtonText: 'OK',
+                                customClass: 'rai'
+                            }).then(function () {
+                                VisualizzaAmm('', idrichiesta);
+                                GetContent();
+                            });
+
+                        }
+                        else {
+                            swal({
+                                title: data.errore,
+                                type: "error",
+                                confirmButtonText: 'OK',
+                                customClass: 'rai'
+                            });
+                        }
+                    }
+                });
+            });
+
+        }
+        function RilasciaAmm(idrichiesta) {
+            swal({
+                title: "Rilascio richiesta",
+                type: 'question',
+                html: "Confermi di rilasciare la richiesta visualizzata?",
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+                cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+                reverseButtons: true,
+                customClass: 'rai rai-confirm-cancel'
+            }).then(function () {
+                $.ajax({
+                    url: '/MaternitaCongedi/RilasciaAmministrazione',
+                    type: "GET",
+                    data: { idrichiesta: idrichiesta },
+                    dataType: "json",
+                    complete: function () { },
+                    success: function (data) {
+                        if (data.esito == true) {
+
+                            swal({
+                                title: 'Richiesta rilasciata correttamente',
+                                type: "success",
+                                confirmButtonText: 'OK',
+                                customClass: 'rai'
+                            }).then(function () {
+                                VisualizzaAmm('', idrichiesta);
+                                GetContent();
+                            });
+
+                        }
+                        else {
+                            swal({
+                                title: data.errore,
+                                type: "error",
+                                confirmButtonText: 'OK',
+                                customClass: 'rai'
+                            });
+                        }
+                    }
+                });
+            });
+
+
+
+        }
+        function AssegnaRichiesta(idrichiesta) {
+            AssegnaRichiestaAmm(idrichiesta);
+        }
+        function AssegnaRichiestaAmm(idrichiesta) {
+            var operatore = $("#assegna-operatori").val();
+
+            swal({
+                title: "Riassegnazione richiesta",
+                type: 'question',
+                html: "Confermi di riassegnare la richiesta visualizzata?",
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+                cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+                reverseButtons: true,
+                customClass: 'rai rai-confirm-cancel'
+            }).then(function () {
+                $.ajax({
+                    url: '/MaternitaCongedi/assegna',
+                    type: "GET",
+                    data: { operatore: operatore, idRichiesta: idrichiesta },
+                    dataType: "json",
+                    complete: function () { },
+                    success: function (data) {
+                        if (data.esito == true) {
+                            $("#popupview-amm").modal("hide");
+                            GetContent();
+                            swal({
+                                title: 'Richiesta assegnata correttamente',
+                                type: "success",
+                                confirmButtonText: 'OK',
+                                customClass: 'rai'
+                            });
+                        }
+                        else {
+                            swal({
+                                title: data.errore,
+                                type: "error",
+                                confirmButtonText: 'OK',
+                                customClass: 'rai'
+                            });
+                        }
+                    }
+                });
+            });
+
+
+        }
+
+        function ShowCedolino(idrichiesta, modifica) {
+            var mese = $("#mese-competenza").attr("data-mesecomp");
+            var anno = $("#mese-competenza").attr("data-annocomp");
+            debugger
+            if (modifica == undefined) modifica = false;
+
+            // $("#popupview-cedolino").modal("show");
+            $.ajax({
+                url: '/MaternitaCongedi/GetDettaglioCedolinoAmm',
+                type: "GET",
+                data: { idrichiesta: idrichiesta, modifica: modifica, mese: mese, anno: anno },
+                dataType: "html",
+                complete: function () { },
+                success: function (data) {
+                    debugger
+                    $("#ced-cont").html(data);
+
+                }
+            });
+        }
+        function CambiaMeseImportiCedolino(idric) {
+            debugger
+            var meseanno = $("#mese-anno-comp").val();
+            var mese = meseanno.split("/")[0];
+            var anno = meseanno.split("/")[1];
+            var modifica = false;
+
+            $.ajax({
+                url: '/MaternitaCongedi/GetDettaglioCedolinoCambioMese',
+                type: "GET",
+                data: { idrichiesta: idric, modifica: modifica, mese: mese, anno: anno },
+                dataType: "html",
+                complete: function () { },
+                success: function (data) {
+                    debugger
+                    $("#ced-cont").html(data);
+
+                }
+            });
+        }
+        function PredisponiNuovaNota() {
+            $("#pre-nota").hide();
+            $("#new-nota").show();
+        }
+        function CancellaNotaCongedi(idnota, idrichiesta) {
+            swal({
+                title: "Conferma cancellazione",
+                type: 'question',
+                html: "Confermi di cancellare la nota?",
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+                cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+                reverseButtons: true,
+                customClass: 'rai rai-confirm-cancel'
+            }).then(function () {
+                $.ajax({
+                    url: "/maternitacongedi/cancellanota",
+                    type: 'POST',
+                    dataType: "json",
+                    data: { idnota: idnota },
+                    success: function (data) {
+                        if (data.esito == true) {
+
+                            swal({
+                                title: 'Nota eliminata correttamente',
+                                type: "success",
+                                confirmButtonText: 'OK',
+                                customClass: 'rai'
+                            }).then(function () {
+                                CaricaNote(idrichiesta);
+                            });
+                        }
+                        else {
+                            swal({
+                                title: data.errore,
+                                type: "error",
+                                confirmButtonText: 'OK',
+                                customClass: 'rai'
+                            });
+                        }
+
+                    },
+                    error: function (a, b, c) {
+                        alert(a + b + c);
+                    }
+                });
+            });
+        }
+        function HideNote() {
+            $("#note-hidden").hide();
+            $("#show-note").show();
+        }
+        function ShowNoteHidden() {
+            $("#note-hidden").show();
+            $("#show-note").hide();
+
+        }
+        function ModificaNotaCongedi(idnota, idrichiesta) {
+            $.ajax({
+                url: "/maternitacongedi/getnota",
+                type: 'GET',
+                dataType: "html",
+                data: { idnota: idnota },
+                success: function (data) {
+                    $("#nota-container-" + idnota).html(data);
+                }
+            });
+
+        }
+        function ModificaNota(idnota) {
+            var fdata = new FormData();
+            var fileInput = $('#file-nota-' + idnota);
+            if (fileInput[0].files.length > 0) {
+                var file = fileInput[0].files[0];
+                fdata.append("file", file);
+                fdata.append("nomefile", fileInput[0].files[0].name);
+            }
+            fdata.append("testo", $("#nota-mod-" + idnota).val());
+            fdata.append("idrichiesta", $("#id-richiesta").val());
+            fdata.append("idnota", idnota);
+            fdata.append("visibilita", $('input[name="visibilita-' + idnota + '"]:checked').val());
+
+            $.ajax({
+                url: "/maternitacongedi/salvanota",
+                type: 'POST',
+                processData: false,
+                contentType: false,
+                dataType: "json",
+                data: fdata,
+                success: function (data) {
+                    if (data.esito == true) {
+
+                        swal({
+                            title: 'Nota modificata correttamente',
+                            type: "success",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        }).then(function () {
+                            CaricaNote($("#id-richiesta").val());
+                        });
+                    }
+                    else {
+                        swal({
+                            title: data.errore,
+                            type: "error",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                    }
+
+                },
+                error: function (a, b, c) {
+                    alert(a + b + c);
+                }
+            });
+        }
+        function AggiungiNota() {
+
+            var fdata = new FormData();
+            var fileInput = $('#file-nota');
+            if (fileInput[0].files.length > 0) {
+                var file = fileInput[0].files[0];
+                fdata.append("file", file);
+                fdata.append("nomefile", fileInput[0].files[0].name);
+            }
+
+
+            fdata.append("testo", $("#nota-amm").val());
+            fdata.append("idrichiesta", $("#id-richiesta").val());
+            fdata.append("idnota", $("#id-nota").val());
+            fdata.append("visibilita", $('input[name="visibilita"]:checked').val());
+
+
+            $.ajax({
+                url: "/maternitacongedi/salvanota",
+                type: 'POST',
+                processData: false,
+                contentType: false,
+                dataType: "json",
+                data: fdata,
+                success: function (data) {
+                    if (data.esito == true) {
+
+                        swal({
+                            title: 'Nota registrata correttamente',
+                            type: "success",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        }).then(function () {
+                            CaricaNote($("#id-richiesta").val());
+                        });
+                    }
+                    else {
+                        swal({
+                            title: data.errore,
+                            type: "error",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                    }
+
+                },
+                error: function (a, b, c) {
+                    alert(a + b + c);
+                }
+            });
+
+
+        }
+        function FileNotaChanged(inp) {
+            $("#nomefile-nota").text($(inp)[0].files[0].name);
+            $("#nomefile-container").show();
+            $("#get-alle").hide();
+        }
+        function FileNotaChangedModificata(idnota, inp) {
+            $("#nomefile-nota-" + idnota).text($(inp)[0].files[0].name);
+            $("#nomefile-container-" + idnota).show();
+            $("#get-alle-" + idnota).hide();
+        }
+        function AllegaDocNota() {
+            $("#file-nota").click();
+        }
+        function AllegaDocNotaModificata(idnota) {
+            $("#file-nota-" + idnota).click();
+        }
+
+        function AbilitaButtonAggNota() {
+            var t = $("#nota-amm").val().trim().length;
+            if (t > 0) {
+                $("#agg-nota").removeClass("disable");
+            }
+            else {
+                $("#agg-nota").addClass("disable");
+            }
+        }
+        function AbilitaButtonModNota(idnota) {
+            var t = $("#nota-mod-" + idnota).val().trim().length;
+            if (t > 0) {
+                $("#mod-nota-" + idnota).removeClass("disable");
+            }
+            else {
+                $("#mod-nota-" + idnota).addClass("disable");
+            }
+        }
+
+
+        function CarattereValido(tipoCampo, carattereDaVerificare) {
+            var ammessi = getRangeCharTipoTesto(tipoCampo);
+            return (ammessi.indexOf(carattereDaVerificare) >= 0);
+        }
+
+
+        function getRangeCharTipoTesto(TipoTesto) {
+            var chValS = "$%&='_#()[]{}/\\><-£";
+            var chValSP = " ";
+            var chValAT = "@@";
+            var chValP = ".,:;!?";
+            var chValN = "123456789";
+            var chValSN = "-+";
+            var chValAP = "'";
+            var chValNZ = "0";
+            var chValAst = "*";
+            var chValVirg = ",";
+            var chValPunt = ".";
+            var chValA = "'’abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZèéàòìù°€";
+            var chValCAP = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            var chValNEG = "{}ABCDEFGHIJKLMNOPQR";
+            var chValMA = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            var chCFis = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var chPersonale = "";
+            var chValVari = "-_()";
+            var chVbCrLf = String.fromCharCode(13, 10);
+            var appoRet = "";
+
+            switch (TipoTesto) {
+                case "A":
+                case "LIBERO":
+                    appoRet = chValS + chValSP + chValAT + chValP + chValN + chValSN + chValAP + chValNZ + chValAst + chValPunt + chValVirg + chValA + chValCAP + "/";
+                    break;
+                case "B":
+                case "ALFANUMERICO":
+                    appoRet = chValMA + chValN + chValSP + chValNZ;
+                    break;
+                case "C":
+                case "ALFANUMERICO ESTESO":
+                    appoRet = chValMA + chValN + chValSP + chValS + chValP + chValAT + chValAst + chValSN + chValNZ;
+                    break;
+                case "D":
+                case "SOLO TESTO":
+                    appoRet = chValMA + chValSP;
+                    break;
+                case "K":
+                case "TESTO ESTESO":
+                    appoRet = chValCAP + chValSP + chValS + chValP + chValAT + chValAst + chValSN;
+                    break;
+                case "E":
+                case "SOLO NUMERO":
+                    appoRet = chValNZ + chValN + chValSN;
+                    break;
+                case "L":
+                case "NUMERO ESTESO":
+                    appoRet = chValNZ + chValN + chValS + chValP + chValAT + chValAst + chValSN + chValSP;
+                    break;
+                case "F":
+                case "IMPORTO SEGNATO":
+                    appoRet = chValNZ + chValN + chValNEG;
+                    break;
+                case "G":
+                case "GIORNO":
+                    appoRet = chValNZ + chValN;
+                    break;
+                case "H":
+                case "MESE":
+                    appoRet = chValNZ + chValN;
+                    break;
+                case "P":
+                case "J":
+                case "X":
+                case "Y":
+                case "IMPORTO SEGNATO ESTESO":
+                    appoRet = chValNZ + chValN + chValNEG + chValSP;
+                    break;
+                case "Z":
+                    appoRet = "";
+                    break;
+                default:
+                    appoRet = null;
+                    break;
+            }
+            return appoRet;
+        }
+
+        function ApriPratica(categoria, idpratica) {
+            $("#popupviewAmm").modal("hide");
+            VisualizzaAmm(categoria, idpratica);
+        }
+
+        @if (Model.JSstringApriRichiesta != null)
+        {
+            @Html.Raw(Model.JSstringApriRichiesta)
+        }
+    </script>
+}

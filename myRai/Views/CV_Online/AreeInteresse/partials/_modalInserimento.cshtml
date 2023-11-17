@@ -1,0 +1,131 @@
+﻿@model myRaiCommonModel.cvModels.cvModel.AreeInteresse
+@using MVCProject.Custom_Helpers
+@{
+    myRai.Data.CurriculumVitae.cv_ModelEntities cvEnt = new myRai.Data.CurriculumVitae.cv_ModelEntities();
+}
+
+<div class="rai modal fade right modalCheck" id="modalAreeInteresseInserimnento"  role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="rai modal-content">
+            @using (Html.BeginModal("Aggiungi un interesse aziendale"))
+            {
+                using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Dati generali", false, new List<myRaiHelper.ActionTemplate>()
+                {
+                    new myRaiHelper.ActionTemplate()
+                    {
+                        Text = " Tutorial",
+                        Icon="fa fa-life-ring",
+                        OnClick = "StartTourAreeInteresse();return false;"
+                    }
+                }))
+                {
+                    <form class="mb-lg form-insertareainteresse" id="form-insertareainteresse" novalidate="novalidate" action="/CV_Online/InsertAreeInteresse" method="post">
+                        <input type="hidden" id="_flagEspRai" name="_flagEspRai" value="" />
+
+
+                        <div class="rai form-group" id="edit-content">
+                            <div class="row">
+                                <div class="push-10 col-md-12" data-tourdb="tour-interesse-area"
+                                     @Html.TourAttributes(Model.TourElements, "tour-interesse-area")>
+                        <label for="_codAreaOrg" class="titleElements rai-caption required">Area</label>
+                                    @Html.DropDownListFor(m => m._codAreaOrg, Model.AreaInteresseItems, new { @class = "js-select2 rai form-control ", @data_minimum_results_for_search = "Infinity", @style = "width:100%" })
+                                    @Html.ValidationMessageFor(m => m._codAreaOrg)
+                                    @Html.HiddenFor(m => m._codServizio)
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="push-20 col-md-6" data-tourdb="tour-interesse-note"
+                                     @Html.TourAttributes(Model.TourElements, "tour-interesse-note")>
+                        <label for="_areeIntDispo" class="titleElements rai-caption">Note</label>
+                        <textarea  maxlength="1000" id="_areeIntDispo" name="_areeIntDispo" rows="5" class="rai form-control" style="width: 100%" placeholder="Descrivi un ambito aziendale di interesse utilizzando al massimo 1000 caratteri"></textarea>
+                                    @Html.ValidationMessageFor(m => m._areeIntDispo)
+                                </div>
+                                <div class="push-10 col-md-6" data-tourdb="tour-interesse-profili"
+                                     @Html.TourAttributes(Model.TourElements, "tour-interesse-profili")>
+                        <label for="_profIntDispo" class="titleElements rai-caption">Indica eventuali profili di interesse</label>
+                        <textarea  maxlength="1000" id="_profIntDispo" name="_profIntDispo" rows="5" class="rai form-control" style="width: 100%" placeholder="Descrivi profilo/i di interesse utilizzando al massimo 1000 caratteri"></textarea>
+                                    @Html.ValidationMessageFor(m => m._profIntDispo)
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="push-10 col-md-12" data-tourdb="tour-interesse-dispo"
+                                     @Html.TourAttributes(Model.TourElements, "tour-interesse-dispo")>
+                                    <label for="_codTipoDispo" class="titleElements rai-caption">
+                                        Disponibilità allo svolgimento di mansioni diverse da quelle attualmente svolte,
+                                        nel rispetto delle competenze professionali acquisite
+                                    </label>
+                        <select class="js-select2 rai form-control " id="_codTipoDispo" name="_codTipoDispo" style="width: 100%">
+                                        <option></option> @* serve per il placeholder *@
+                                        @{
+                                            var tipoDispo = cvEnt.DTipoDispo.OrderBy(x => x.DescTipoDispo);
+                                            foreach (var elem in tipoDispo)
+                                            {
+                                                <option value="@elem.CodTipoDispo">@(elem.DescTipoDispo)</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="push-20 col-md-12">
+                                    <div class="rai-checkbox">
+                                        <input type="checkbox" name="_flagEsteroDispo" id="_flagEsteroDispo" value="S" />
+                                        <label for="_flagEsteroDispo" class="titleElements rai-caption">
+                                            Se disponibile a svolgere la propria attività anche all'estero
+                                            selezionare il check
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="push-10 col-md-12" data-tourdb="tour-interesse-areageo"
+                                     @Html.TourAttributes(Model.TourElements, "tour-interesse-areageo")>
+                                    <label for="_codAreaGeo" class="titleElements rai-caption">
+                                        Indica presso quale sede aziendale si è disponibili a svolgere
+                                        la propria attività
+                                    </label>
+                        <select class="js-select2 rai form-control " multiple id="_listaLocalita" name="_listaLocalita" 
+                                            style="width: 100%">
+                                        <option></option> @* serve per il placeholder *@
+                                        @{
+                                            var localita = cvEnt.DTabellaCV.Where(x => x.NomeTabella == "LocalitaEsp").OrderBy(y => y.Ordine).ToList();
+                                            foreach (var elem in localita)
+                                            {
+                                                <option value="@elem.Codice">@(elem.Descrizione)</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row push-20-t">
+                                <div class="col-md-12 text-center">
+                                    <a href="@Html.Raw(Request.Url.Scheme + "://" + Request.Url.Authority + Request.ApplicationPath.TrimEnd('/') + "/cv_online/pdf")" target="_blank" target="_blank"><p class="text-bold">Visualizza l'anteprima del tuo CV</p></a><br />
+                                </div>
+                            </div>
+                            <div class="row push-20-t">
+                                <div class="col-md-12">
+                                    <button class="btn rai-btn-primary full-width" type="submit" onclick="submit_areaInteresse(this)">Salva</button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </form>
+                }
+            }
+
+            <div id="savedbareaint" class="alert alert-primary" style="position:fixed;bottom:10px;right:10px;display:none;z-index:100; width:250px;">
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                <i class="fa fa-refresh fa-spin"></i> Salvataggio in corso
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+     $.validator.unobtrusive.parse($("form:last"));
+
+
+</script>

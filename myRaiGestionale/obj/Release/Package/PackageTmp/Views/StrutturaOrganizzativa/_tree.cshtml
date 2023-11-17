@@ -1,0 +1,126 @@
+﻿
+@model myRaiCommonModel.Gestionale.IncarichiTreeModel
+
+@{
+    string icon_l1 = "fa fa-home";
+}
+
+@helper DrawTree(myRaiCommonModel.Gestionale.TAlberoSezioneModel node)
+{
+bool hasChild = Model.AlberoItems.Any(x => x.subordinato_a == node.id);
+string treeIcon = "";
+if (!hasChild)
+{
+    treeIcon = "fa fa-file";
+}
+else
+{
+    treeIcon = "fa fa-folder";
+}
+
+    <li data-jstree='{"icon":"@treeIcon"}' data-codice="@node.codice_visibile" data-idsezione="@node.id">
+        @node.descrizione_lunga
+        @if (hasChild)
+        {
+            <ul>
+                @foreach (var child in Model.AlberoItems.Where(x=>x.subordinato_a==node.id).OrderBy(x=>x.num_ordina))
+                {
+                    @DrawTree(child)
+                }
+            </ul>
+        }
+    </li>
+}
+
+<section class="panel" id="panelAlbero">
+    <header class="panel-heading">
+        <h2 class="panel-title" style="display:inline">Struttura aziendale</h2>
+        <div class="panel-actions rai-panel-actions">
+            <button class="btn btn-action-icon" title="Ricerca personale" alt="Ricerca personale" onclick="ricercaDipendenteStr()"><div class="fa fa-users"></div></button>
+            <button class="btn btn-action-icon" title="Ricerca struttura" alt="Ricerca struttura" onclick="ricercaStruttura()"><div class="fa fa-sitemap"></div></button>
+        </div>
+    </header>
+    <div class="panel-body" style="padding-right:30px" id="tree-body">
+        <div id="search-str" class="hide">
+            <input id="search-box" placeholder="Ricerca struttura..." onkeyup="treeSearch()" type="text" class="form-control" style="padding: 4px;height: 26px;font-size: 12px;margin-bottom:10px">
+        </div>
+        <div id="moving" class="movsez hide">
+            Clicca sul ramo sotto il quale spostare
+            <span id="nome-s"></span>
+        </div>
+        <div class="widget-summary push-10" id="jstree" style="display:none;font-size:88%">
+            @foreach (var item in Model.AlberoItems.Where(x => x.id == x.subordinato_a).OrderBy(x => x.codice_visibile))
+            {
+                <ul>
+                    <li data-jstree='{"icon":"@icon_l1"}' data-codice="@item.codice_visibile" data-idsezione="@item.id">
+                        @item.descrizione_lunga
+
+                        @if (Model.AlberoItems.Any(x => x.subordinato_a == item.id && x.subordinato_a != x.id))
+                        {
+                            <ul>
+                                @foreach (var child in Model.AlberoItems.Where(x => x.subordinato_a == item.id && x.subordinato_a != x.id).OrderBy(x => x.num_ordina))
+                                {
+                                    @DrawTree(child)
+                                }
+                            </ul>
+                        }
+
+                    </li>
+                </ul>
+            }
+        </div>
+        <div class="summary-footer">
+
+        </div>
+    </div>
+</section>
+<script>
+    var h = $(window).innerHeight();
+    $("#tree-body").css("max-height", (h - 220).toString() + "px").css("overflow-y", "auto");
+    $("#jstree").jstree({
+        'search': {
+            'show_only_matches': true,
+            'show_only_matches_children': true
+        },
+        "plugins": ["search"],
+
+    });
+
+
+    $("#jstree").show();
+
+    function treeSearch() {
+        var k = $("#search-box").val();
+        $("#jstree").jstree(true).search(k);
+    }
+    function ricercaStruttura() {
+        if ($("#search-str").hasClass("hide")) {
+
+            $("#search-str").removeClass("hide");
+            $("#search-box").focus();
+        }
+        else {
+            $("#search-str").addClass("hide");
+            $("#search-box").val("");
+            $("#jstree").jstree(true).search("");
+        }
+
+    }
+   
+    function ricercaDipendenteStr() {
+        $('#modal-ricerca-internal').html(' ');
+        $('#modal-ricerca-internal').load('/Cessazione/SelezioneDipendenti', function () {
+            $("#btnAzzera").attr("onclick", "resetFiltri()");
+            $("#btnCerca").attr("onclick", "ricercaDip()");
+            $("#form-ricerca-RicercaDipendenti").attr("action", "");
+
+            $('#form-ricerca-RicercaDipendenti').append('<input type="hidden" id="TreeSearch" name="TreeSearch" value="true"/>');
+
+        });
+
+        $("#TreeSearch").val("true");
+        $('#modal-ricerca').modal('show');
+
+
+    }
+</script>

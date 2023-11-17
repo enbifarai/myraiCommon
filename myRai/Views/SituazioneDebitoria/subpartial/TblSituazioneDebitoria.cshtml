@@ -1,0 +1,156 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel.SituazioneDebitoria.ESS;
+@using MVCProject.Custom_Helpers;
+
+@model SituazioneDebitoriaVM
+
+@{
+    Layout = null;
+}
+
+@{
+    DateTime dataCorrente = Model.CurrentDate;
+}
+
+<div class="table-responsive">
+    <table class="table rai-table trasferte debitoria rai-table-vcenter" id="">
+        <thead>
+            <tr>
+                <td class="col-xs-3">Descrittiva</td>
+                <td class="col-xs-2">Addebito</td>
+                <td class="col-xs-3">Periodo</td>
+                <td class="col-xs-2">Rate</td>
+                <td class="col-xs-2">Residuo</td>
+            </tr>
+        </thead>
+        <tbody id="">
+            @{
+                if ( Model.Data == null || !Model.Data.Any( ) )
+                {
+                    <tr>
+                        <td colspan="5">
+                            @Html.Partial( "~/Views/Shared/_NoDati.cshtml" )
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    int rowCount = 1;
+                    foreach ( var itm in Model.Data )
+                    {
+                        <tr id="situazioneDebitoRow_@(rowCount)">
+                            <td class="col-xs-3">
+                                <span class="rai-font-md-neutral">@itm.Descrizione</span>
+                            </td>
+                            <td class="col-xs-2">
+                                @{
+                                    if ( itm.Addebito == 0.0 )
+                                    {
+                                        <span class="rai-font-md-bold"></span>
+                                    }
+                                    else
+                                    {
+                                        <span class="rai-font-md-bold">@(String.Format( "{0:N2} €" , itm.Addebito ))</span>
+                                    }
+                                }
+                            </td>
+                            <td class="col-xs-3">
+
+                                @{
+                                    if ( String.IsNullOrEmpty( itm.MeseDa ) &&
+                                        !String.IsNullOrEmpty( itm.MeseA ) )
+                                    {
+                                        <span class="rai-font-md-neutral">Fino a @itm.MeseA</span>
+                                    }
+                                    else if ( String.IsNullOrEmpty( itm.MeseDa ) &&
+                                            String.IsNullOrEmpty( itm.MeseA ) )
+                                    {
+                                        <span class="rai-font-md-neutral"></span>
+                                    }
+                                    else if ( !String.IsNullOrEmpty( itm.MeseDa ) &&
+                                            String.IsNullOrEmpty( itm.MeseA ) )
+                                    {
+                                        <span class="rai-font-md-neutral">A partire da @itm.MeseDa</span>
+                                    }
+                                    else if ( !String.IsNullOrEmpty( itm.MeseDa ) &&
+                                            !String.IsNullOrEmpty( itm.MeseA ) )
+                                    {
+                                        <span class="rai-font-md-neutral">Da @itm.MeseDa</span>
+                                        <br />
+                                        <span class="rai-font-md-neutral">A @itm.MeseA</span>
+                                    }
+                                }
+                            </td>
+                            <td class="col-xs-2">
+                                @{
+                                    if ( itm.ImportoRata == 0.0 )
+                                    {
+                                        <span class="rai-font-md-bold">&nbsp;</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="rai-font-md-bold">
+                                            @(String.Format( "{0:N2} €" , itm.ImportoRata ))
+                                        </span>
+                                    }
+                                }
+                                <br />
+                                <span class="rai-font-sm-neutral rai-font-italic ">
+                                    @{
+                                        string nRate = "";
+                                        if ( itm.NumeroRate > 1 )
+                                        {
+                                            nRate = String.Format( "{0} rate" , itm.NumeroRate );
+                                        }
+                                        else if ( itm.NumeroRate == 0 )
+                                        {
+                                            nRate = String.Empty;
+                                        }
+                                        else
+                                        {
+                                            nRate = String.Format( "{0} rata" , itm.NumeroRate );
+                                        }
+                                    }
+                                    @(nRate)
+                                </span>
+                            </td>
+                            <td class="col-xs-2">
+                                @{
+                                    if ( itm.ImportoRateResidue == 0.0 )
+                                    {
+                                        <span class="rai-font-md-bold text-primary"></span>
+                                    }
+                                    else
+                                    {
+                                        <span class="rai-font-md-bold text-primary">
+                                            @(String.Format( "{0:N2} €" , itm.ImportoRateResidue ))
+                                        </span>
+                                    }
+                                }
+
+                                @{
+                                    string residue = "";
+                                    if ( itm.NumeroRateResidue > 1 )
+                                    {
+                                        residue = String.Format( "{0} rate" , itm.NumeroRateResidue );
+                                    }
+                                    else if ( itm.NumeroRateResidue == 0 )
+                                    {
+                                        residue = String.Empty;
+                                    }
+                                    else
+                                    {
+                                        residue = String.Format( "{0} rata" , itm.NumeroRateResidue );
+                                    }
+                                }
+                                <br />
+                                <span class="rai-font-sm-neutral rai-font-italic ">@(residue)</span>
+                            </td>
+                        </tr>
+                        rowCount++;
+                    }
+                }
+            }
+        </tbody>
+    </table>
+</div>

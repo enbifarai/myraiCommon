@@ -1,0 +1,262 @@
+﻿@model myRai.Models.SupportoFSmodel
+
+
+<div id="supportoFS" class="block pull-up-block" tabindex="0">
+    <div class="block block-bordered  pull-t" id="suppFS" aria-labelledby="lblPropAutoDay" style="padding-bottom:30px">
+        <div class="block-header bg-cel">
+
+            <h4 class="font-w600  tit-richieste" style="text-align:center">Informazioni di supporto ad FS per il :</h4>
+            <div class="row div-data" style="display:block">
+                <div class="col-sm-4" style="text-align:right">
+                    @*<a aria-label="Vai al giorno precedente" class="daybefore" href="javascript:ScorriBack()"><span style="font-size: 10px" class="glyphicon glyphicon-triangle-left text-muted"></span></a>*@
+                </div>
+                <div class="col-sm-4">   <h4 id="lblPropAutoDay" class="giorno-display" style="text-align: center;font-weight:bold;margin-top:2px">19/09/2019</h4></div>
+                <div class="col-sm-4" style="text-align:left">
+                    @*<a aria-label="Vai al giorno successivo" tabindex="0" class="dayafter" href="javascript:ScorriAhead()"><span style="font-size: 10px" class="glyphicon glyphicon-triangle-right text-muted"></span></a>*@
+                </div>
+            </div>
+
+        </div>
+        <div class="block-content">
+
+            @{
+                bool InAttesaSegreteria = false;
+                bool CambioEseguitoDaSegreteria = false;
+
+                string dalle_richiesto = null;
+                string alle_richiesto = null;
+                string spostamento = null;
+                if (Model.WizardFS_db != null)
+                {
+                    if (Model.WizardFS_db.id_stato == 2)
+                    {
+                        InAttesaSegreteria = true;
+                    }
+                    if (Model.WizardFS_db.id_stato == 3)
+                    {
+                        CambioEseguitoDaSegreteria = true;
+                    }
+                    if (Model.WizardFS_db.id_stato == 2 || Model.WizardFS_db.id_stato == 3)
+                    {
+                        if (!String.IsNullOrWhiteSpace(Model.WizardFS_db.orario_richiesto) && Model.WizardFS_db.orario_richiesto.Length >= 9)
+                        {
+                            dalle_richiesto = Model.WizardFS_db.orario_richiesto.Split('/')[0];
+                            alle_richiesto = Model.WizardFS_db.orario_richiesto.Split('/')[1];
+                            dalle_richiesto = dalle_richiesto.Insert(2, ":");
+                            alle_richiesto = alle_richiesto.Insert(2, ":");
+                            spostamento = Model.WizardFS_db.Spostamento;
+                        }
+                    }
+                }
+            }
+            <div class="row">
+                <div class="col-sm-2 " id="param-dalle-orario" style="padding-right:2px;padding-left:2px;">
+                    <label style="font-size:85%">Inizio Turno</label>
+                    <input type="text" name="dalle-orario" onchange="CheckQuantitaDalleAlleSupportoFS()" class="form-control formato-ora-fs" placeholder="Dalle"
+                           @if (dalle_richiesto != null) { @: value="@dalle_richiesto"
+                           }
+                           @if (InAttesaSegreteria || CambioEseguitoDaSegreteria) { @: disabled="disabled"
+                           }
+                           maxlength="5">
+                </div>
+                <div class="col-sm-2 " id="param-alle-orario" style="padding-right:2px;padding-left:2px;">
+                    <label  style="font-size:85%">Fine Turno</label>
+                    <input type="text" name="alle-orario" onchange="CheckQuantitaDalleAlleSupportoFS()" class="form-control formato-ora-fs" placeholder="Alle"
+                           @if (alle_richiesto != null) { @: value="@alle_richiesto"
+                           }
+                           @if (InAttesaSegreteria || CambioEseguitoDaSegreteria) { @: disabled="disabled"
+                           }
+                           maxlength="5">
+                </div>
+
+                <div class="col-sm-8 params" style="padding-right:2px;padding-left:2px;">
+                    <label  style="font-size:85%">Modalità di spostamento</label>
+                    <select @if (InAttesaSegreteria || CambioEseguitoDaSegreteria) {
+                                @: disabled="disabled"
+                            }
+                            id="tipo-spost" class="form-control" style="width:96%" onchange="$('#ecc-p').html(''); $('#button-procedifs').show(); CheckQuantitaDalleAlleSupportoFS();">
+                        @if (Model.AbilitatoGAVE || Model.AbilitatoGAVU || Model.AbilitatoGAPC)
+                        {
+                            <option @if (spostamento == "Guida") { @: selected
+                                    }
+                                    value="Guida">
+                                Guida
+                            </option>
+                        }
+                        <option @if (spostamento == "Trasp") { @: selected
+                                }
+                                value="Trasp">
+                            Trasportato
+                        </option>
+
+                        <option @if (spostamento == "Mezzo") { @: selected
+                                }
+                                value="Mezzo">
+                            Mezzo di trasporto (Aereo/Treno)
+                        </option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12" style="text-align:center">
+                    <button onclick="procediFS()" style="margin-top:20px;margin-bottom:20px" id="button-procedifs" type="button"
+                            @if (!CambioEseguitoDaSegreteria) { @: disabled="disabled"
+                            }
+                            class="btn btn-primary">
+                        Procedi
+                    </button>
+
+                    <span id="nota-inserita" class="" style="display: none;font-weight: bold;"></span>
+                    @if (InAttesaSegreteria)
+                    {
+                        <span class="text-warning" style="display:block; font-weight:bold">In attesa di cambio turno dalla segreteria</span>
+                    }
+
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12" id="ecc-p" style="margin-top:20px">
+
+                </div>
+            </div>
+
+
+        </div>
+
+       
+
+
+    </div>
+    <div style="width:100%;text-align:center;padding-top:40px">
+        <h5>
+            Non hai trovato nessuna opzione utile nel pannello FS? Scegli manualmente
+        </h5>
+        <button onclick="ScegliDaWizard()" type="button" class="btn btn-default btn-scriv bg-puls_dash">
+            SCEGLI MANUALMENTE
+        </button>
+
+    </div>
+    <script>
+
+
+        $(".formato-ora-fs").timepicker({ showMeridian: false, minuteStep: 1, defaultTime: "00:00", maxHours: 30 })
+        @if (  String.IsNullOrWhiteSpace(dalle_richiesto) && String.IsNullOrWhiteSpace(alle_richiesto))
+        {
+            @: $(".formato-ora-fs").val("");
+        }
+
+          @if (Model.WizardFS_db == null || InAttesaSegreteria)
+          {
+            @: $("#button-procedifs").attr("disabled", "disabled");
+          }
+          else
+          {
+            @: $("#button-procedifs").removeAttr("disabled");
+          }
+
+        $("#nota-inserita").css("display", "none");
+        $("#nota-inserita").text("");
+
+
+
+
+
+
+
+function procediFS() {
+$("#button-procedifs").attr("disabled", "disabled");
+
+    debugger
+    var hmGappFrom = $("#timbraturetoday").attr("data-orario-entrata-hh") + ":" + $("#timbraturetoday").attr("data-orario-entrata-mm");
+    var hmGappTo = $("#timbraturetoday").attr("data-orario-uscita-hh") + ":" + $("#timbraturetoday").attr("data-orario-uscita-mm");
+    var hmGapp = hmGappFrom + "/" + hmGappTo;
+
+    var hmInseritoFrom = $("#param-dalle-orario input").val();
+    var hmInseritoTo = $("#param-alle-orario input").val();
+    var hmInserito = hmInseritoFrom + "/" + hmInseritoTo;
+
+    if (toMinutes(hmInseritoFrom) < toMinutes(hmGappFrom) && toMinutes(hmGappTo)<= ((24*60) + 30) ) {
+        ComunicaSegreteria(hmInseritoFrom, hmInseritoTo, hmGapp);
+        return;
+    }
+    var smapTestaMinuti = 0;
+    if (toMinutes(hmInseritoFrom) < toMinutes(hmGappFrom) && toMinutes(hmGappTo) > ((24 * 60) + 30)) {
+        smapTestaMinuti = toMinutes(hmGappFrom) - toMinutes(hmInseritoFrom);
+    }
+
+    ElaboraEccezioni(hmInseritoFrom, hmInseritoTo, $("#data_da").val(), smapTestaMinuti);
+
+}
+
+        function ElaboraEccezioni(hmInseritoFrom, hmInseritoTo, datagiornata, smapTestaMinuti) {
+            $.ajax({
+                url: "/ajax/elaboraEccezioni",
+                type: "POST",
+                dataType: "html",
+                data: { data: datagiornata, oraFrom: hmInseritoFrom, oraTo: hmInseritoTo, spostamento: $("#tipo-spost").val(), smapTestaMinuti: smapTestaMinuti },
+                success: function (data) {
+
+                    var t = $(data).find("#table-ecc-auto");
+                    $(t).find("tr").each(function () { if ($(this).hasClass("ecc-remove")) $(this).remove() })
+                    debugger
+                    $(t).find("#button-conferma-auto").attr("onclick", "AccettaProposte(true)");
+                    $("#ecc-p").html(t);
+                    $("#button-procedifs").hide();
+                },
+                error: function (parm1, parm2, parm3) {
+                }
+            });
+        }
+
+
+            function ComunicaSegreteria(hmInseritoFrom, hmInseritoTo, hmGapp) {
+
+                var datagiornata = $("#data_da").val()
+                $.ajax({
+                url: "/ajax/AggiungiNotaEccezione",
+                type: "POST",
+                    dataType: "html",
+                    data: { data: datagiornata, nota: "Si richiede cambio turno per orario eseguito " + hmInseritoFrom + "/" + hmInseritoTo + " per il " + datagiornata + " (turno attuale:" + hmGapp + ")" },
+                success: function (data) {
+
+                        if (data == "OK") {
+                        $("#nota-inserita").text("E' stata inviata una segnalazione alla Segreteria per il cambio turno.");
+                        $("#nota-inserita").css("display", "block");
+
+                            CambiaStato(datagiornata, hmGapp, hmInseritoFrom + "/" + hmInseritoTo, $("#tipo-spost").val());
+                            $("#button-procedifs").attr("disabled", "disabled");
+                        }
+                        else {
+                            $("#button-procedifs").removeAttr("disabled");
+                            swal("Oops...", data, 'error');
+                        }
+
+                    },
+                error: function (parm1, parm2, parm3) {
+                    }
+                });
+        }
+
+        function CambiaStato(data, hmGapp, hmInserito, spostamento) {
+            $.ajax({
+            url: "/ajax/CambiaStatoFS",
+                type: "POST",
+                dataType: "html",
+                data: {stato:"CambioOrarioRichiesto", data: data, hmGapp: hmGapp, hmInserito: hmInserito, spostamento:spostamento },
+                success: function (data) {
+
+                    if (data == "OK") {
+
+                    }
+                    else {
+                        swal("Oops...", data, 'error');
+                    }
+
+                },
+                error: function (parm1, parm2, parm3) {
+                }
+            });
+        }
+
+    </script>
+</div>

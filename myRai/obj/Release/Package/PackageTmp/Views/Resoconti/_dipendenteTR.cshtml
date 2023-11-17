@@ -1,0 +1,156 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonModel.ess;
+@using MVCProject.Custom_Helpers;
+@using MyRaiServiceInterface.it.rai.servizi.digigappws;
+
+@model Periodo
+<tr>
+    <td colspan="5">
+        <div class="row">
+
+            <div class="col-xs-6 col-sm-6 col-md-3 col-lg-3" style="padding-right: 1px;padding-top:10px">
+                @*@Html.ProfileWidget( Model.dipendente.matricola , Model.dipendente.cognome + " " + Model.dipendente.nome , null , null , null , Model.dipendente.reparto )*@
+                @Html.ProfileWidget( Model.dipendente.matricola , Model.dipendente.cognome + " " + Model.dipendente.nome , null , null , null , null )
+            </div>
+
+            <div class="col-xs-6 visible-xs text-right">
+                <div class="row">
+                    <div class="col-xs-12 no-padding">&nbsp;</div>
+                    <div class="col-xs-12 no-padding"><span class="text-total @(Model.deltaTotale.Trim().StartsWith("+")?"feedback-success-color":"feedback-error-color")"> @Model.deltaTotale.Trim( )</span></div>
+                    <div class="col-xs-12 no-padding">&nbsp;</div>
+                </div>
+            </div>
+
+            <div class="hidden-xs">
+                @for ( int day = 0 ; day < 7 ; day++ )
+                {
+                    <div class="col-sm-1"
+                         data-placement="top" data-html="true"
+                         data-toggle="popover" data-content="Attendere"
+                         onclick="showPopover2(this,'@Model.dipendente.matricola','@Model.giornate[day].data.ToString("dd/MM/yyyy")')" style="cursor:pointer;">
+                        <div class="row rectangle-resoconto-day bg-neutrals-xl-10">
+                            @if ( Model.giornate[day].eccezioni != null && Model.giornate[day].eccezioni.Length > 0 )
+                            {
+                                <div class="col-xs-12 no-padding">&nbsp;</div>
+                                <div class="col-xs-12 no-padding"><small class="rai-text-normal base-text text-center">@Model.giornate[day].eccezioni[0].cod </small></div>
+                                <div class="col-xs-12 no-padding">&nbsp;</div>
+                            }
+                            else
+                            {
+                                <div class="col-xs-12 no-padding"><span class="rai-label rai-label-interactive">@Model.giornate[day].orarioReale</span></div>
+                                if ( Model.giornate[day].maggiorPresenza.Trim( ) != "00:00" )
+                                {
+                                    <div class="col-xs-12 no-padding">
+                                        @*<span style="color:green;font-weight:bold">+@Model.giornate[day].maggiorPresenza.Trim()</span>*@
+                                        <span class="rai-font-md-neutral-bold feedback-success-color">@Model.giornate[day].maggiorPresenza.Trim( )</span>
+                                    </div>
+                                }
+                                else
+                                { <div class="col-xs-12 no-padding">
+                                        <span class="rai-font-md-neutral-bold text-center">@Model.giornate[day].maggiorPresenza</span>
+                                    </div>
+                                }
+
+
+                                if ( Model.giornate[day].carenza.Trim( ) != "00:00" )
+                                {<div class="col-xs-12 no-padding">
+                                        @*<span style="color:red;font-weight:bold">-@Model.giornate[day].carenza.Trim()</span>*@
+                                        <span class="rai-font-md-neutral-bold text-center feedback-error-color">@Model.giornate[day].carenza.Trim( )</span>
+                                    </div>
+                                }
+                                else
+                                { <div class="col-xs-12 no-padding">
+                                        <span class="rai-font-md-neutral-bold text-center">@Model.giornate[day].carenza</span>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="col-sm-6 col-md-2 col-lg-2 text-center hidden-xs">
+                <div class="row">
+                    <div class="col-xs-12 no-padding">&nbsp;</div>
+                    <div class="col-xs-12 no-padding">
+                        <span class="text-total @(Model.deltaTotale.Trim().StartsWith("+")?"feedback-success-color":"feedback-error-color")"> @Model.deltaTotale.Trim()</span>
+                        @if (Model.DeltaTotale_OldVersion != null)
+                        {
+                            <i style="font-size:150%;color:orange;cursor:pointer" class="fa fa-exclamation-triangle" title="Nel PDF il valore è @Model.DeltaTotale_OldVersion"></i>
+                        }
+
+                    </div>
+                    <div class="col-xs-12 no-padding">&nbsp;</div>
+                </div>
+            </div>
+        </div>
+        <div class="container visible-xs no-padding" style="overflow-x:scroll;">
+            <div class="row push-10" style="width:140%">
+                @for ( int i = 0 ; i < 7 ; i++ )
+                {
+                    <div class="col-xs-1" style="width:14%">
+                        <div class="row rectangle-day push-10">
+                            <div class="col-xs-12 no-padding">
+                                <span class="rai-font-md-bold">@Model.giornate[i].data.ToString( "dd" )</span>
+                            </div>
+                            <div class="col-xs-12 no-padding">
+                                <span class="rai-font-sm-neutral">@Model.giornate[i].data.ToString( "ddd" )</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="row" style="width:140%">
+                @for ( int day = 0 ; day < 7 ; day++ )
+                {
+                    <div class="col-xs-1" style="width:14%;cursor:pointer;"
+                         data-placement="top" data-html="true"
+                         data-toggle="popover" data-content="Attendere"
+                         onclick="showPopover2(this,'@Model.dipendente.matricola','@Model.giornate[day].data.ToString("dd/MM/yyyy")')">
+                        <div class="row rectangle-resoconto-day bg-neutrals-xl-10">
+                            @if ( Model.giornate[day].eccezioni != null && Model.giornate[day].eccezioni.Length > 0 )
+                            {
+                                <div class="col-xs-12 no-padding">&nbsp;</div>
+                                <div class="col-xs-12 no-padding"><span class="rai-text-normal base-text text-center">@Model.giornate[day].eccezioni[0].cod </span></div>
+                                <div class="col-xs-12 no-padding">&nbsp;</div>
+                            }
+                            else
+                            {
+                                <div class="col-xs-12 no-padding"><span class="rai-label rai-label-interactive">@Model.giornate[day].orarioReale</span></div>
+                                if ( Model.giornate[day].maggiorPresenza.Trim( ) != "00:00" )
+                                {
+                                    <div class="col-xs-12 no-padding">
+                                        @*<span style="color:green;font-weight:bold">+@Model.giornate[day].maggiorPresenza.Trim()</span>*@
+                                        <span class="rai-font-md-neutral-bold text-center feedback-success-color">@Model.giornate[day].maggiorPresenza.Trim( )</span>
+                                    </div>
+                                }
+                                else
+                                { <div class="col-xs-12 no-padding">
+                                        <span class="rai-font-md-neutral-bold text-center">@Model.giornate[day].maggiorPresenza</span>
+                                    </div>
+                                }
+
+
+                                if ( Model.giornate[day].carenza.Trim( ) != "00:00" )
+                                {<div class="col-xs-12 no-padding">
+                                        @*<span style="color:red;font-weight:bold">-@Model.giornate[day].carenza.Trim()</span>*@
+                                        <span class="rai-font-md-neutral-bold text-center feedback-error-color">@Model.giornate[day].carenza.Trim( )</span>
+                                    </div>
+                                }
+                                else
+                                { <div class="col-xs-12 no-padding">
+                                        <span class="rai-font-md-neutral-bold text-center">@Model.giornate[day].carenza</span>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+        </div>
+
+    </td>
+</tr>

@@ -1,0 +1,63 @@
+﻿@using myRai.Controllers
+@model myRai.Controllers.RicercaRichiesteModel
+
+@{
+    /**/
+
+    var formId = "form-ricerca-" + Model.BoxDest;
+}
+
+<style>
+    @@media (max-width:768px) {
+        .xs-collapsed {
+            display: none;
+        }
+    }
+</style>
+
+
+@using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Ricerca"))
+{
+    using (Ajax.BeginForm("RicercaRichieste", "ApprovazioneFormazione", new AjaxOptions
+    {
+        InsertionMode = InsertionMode.Replace,
+        HttpMethod = "POST",
+        UpdateTargetId = Model.BoxDest,
+        OnBegin = "AcaPreSubmit('" + Model.BoxDest + "')",
+        OnSuccess = "AcaSuccessSubmit('" + formId + "','" + Model.BoxDest + "')"
+    }, new { id = formId, @class = "", role = "search" }))
+    {
+        @Html.HiddenFor(m => m.HasFilter, new { @class = formId + " form-control-bool" })
+        @Html.HiddenFor(m => m.ResultView)
+
+        <div class="form-group">
+            <div class="row">
+                <div class="col-xl-6 col-sm-12 push-10">
+                    <label class="rai-caption">Matricola</label>
+                    @Html.TextBoxFor(m => m.Matricola, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Matricola" })
+                </div>
+                <div class="col-xl-6 col-sm-12 push-10">
+                    <label class="rai-caption">Cognome</label>
+                    @Html.TextBoxFor(m => m.Cognome, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Cognome" })
+                </div>
+                <div class="col-xl-6 col-sm-12 push-10">
+                    <label class="rai-caption">Nome</label>
+                    @Html.TextBoxFor(m => m.Nome, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Nome" })
+                </div>
+                <div class="col-xl-6 col-sm-12 push-10">
+                    <label class="rai-caption">Corso</label>
+                    @Html.DropDownListFor(m => m.IdCorso, new SelectList(ApprovazioneFormazioneController.getCorsiList(), "Value", "Text", null), new { @class = formId + " form-control form-control-value-int", style = "width: 100%", placeholder = "Corsi" })
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="rai-btn-fill">
+                    <input type="button" id="btnAzzera" class="btn rai-btn-secondary" title="Azzera" value="Azzera" onclick="AcaPulisciFiltri('@(formId)',true)" />
+                    <input type="submit" id="btnCerca" class="btn btn-primary" title="Cerca" value="Cerca" onclick="AcaCheckHasFilter('@(formId)')" />
+                </div>
+            </div>
+        </div>
+    }
+}

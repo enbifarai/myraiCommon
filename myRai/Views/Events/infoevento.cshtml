@@ -1,0 +1,45 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model InfoEvento
+
+@if ( Model != null )
+{
+    <div class="row ">
+        <div class="col-sm-5"><label>Data Evento</label></div>
+        <div class="col-sm-7"><label>@(((DateTime)Model.Evento.data_inizio).ToString("dd/MM/yyyy"))</label></div>
+    </div>
+    <div class="row ">
+        <div class="col-sm-5"><label>Evento</label></div>
+        <div class="col-sm-7"><label>@Model.Evento.titolo (Luogo: @Model.Evento.luogo ) </label></div>
+    </div>
+    <div class="row ">
+        <div class="col-sm-5"><label>Posti Prenotabili</label></div>
+        @{
+            int PostiPrenotabiliDaEvento = int.Parse( Model.Evento.numero_massimo.ToString( ) ) - Model.Evento.B2RaiPlace_Eventi_Anagrafica.Where( a => a.matricola == Model.matricola && a.confermata == true ).Count( );
+            if ( Model.Evento.B2RaiPlace_Eventi_Programma != null && Model.Evento.B2RaiPlace_Eventi_Programma.numero_massimo != null )
+            {
+                int PostiPrenotabiliConsiderandoProgramma = ( int ) Model.Evento.B2RaiPlace_Eventi_Programma.numero_massimo - Model.PrenotazioniStessoProgramma;
+                if ( PostiPrenotabiliConsiderandoProgramma < PostiPrenotabiliDaEvento )
+                {
+                    PostiPrenotabiliDaEvento = PostiPrenotabiliConsiderandoProgramma;
+                }
+            }
+        }
+        <div class="col-sm-7"><label id="npostiprenotati">@(PostiPrenotabiliDaEvento)</label></div>
+    </div>
+    <div class="row ">
+        <div class="col-sm-5"><label>Posti Rimanenti</label></div>
+        <div class="col-sm-7"><label id="postirimanenti">@(int.Parse( Model.Evento.numero_totale.ToString( ) ) - @Model.Evento.B2RaiPlace_Eventi_Anagrafica.Where( a => a.confermata == true ).Count( ))</label></div>
+    </div>
+}
+else
+{
+    <div>
+        Evento non disponibile
+    </div>
+}
+<script>
+    if ($("#npostiprenotati").text() == "0") $("#button-pren-anag").addClass("disable"); else $("#button-pren-anag").removeClass("disable");
+</script>

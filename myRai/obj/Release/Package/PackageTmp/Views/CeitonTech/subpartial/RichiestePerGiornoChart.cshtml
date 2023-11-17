@@ -1,0 +1,124 @@
+﻿@model List<myRai.Controllers.CeitonGraph>
+
+
+
+<section class="panel">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+        </div>
+        <h2 class="panel-title">Richieste per giorno</h2>
+    </header>
+    <div class="panel-body">
+        <div id="wait-req-day" class="text-center" style="display:none;">
+            <i class="fa fa-refresh fa-spin" style="font-size: 22px; color: #ebebeb;"></i>
+        </div>
+        <div id="content-req-day">
+            <div class="row">
+                <div class="col-sm-4 no-padding-right">
+                    <div class="input-group mb-md">
+                        <span class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                        <input class="js-datetimepicker form-control" data-format="DD/MM/YYYY" data-locale="it" type="text" id="datada" name="datada" value="@(Model.First().Label)" placeholder="Dal">
+                    </div>
+                </div>
+                <div class="col-sm-4 no-padding-right">
+                    <div class="input-group mb-md">
+                        <span class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                        <input class="js-datetimepicker form-control" data-format="DD/MM/YYYY" data-locale="it" type="text" id="dataal" name="dataal" value="@(Model.Last().Label)" placeholder="Al">
+
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <button class="btn btn-action-icon" onclick="UpdateGraph()"><i class="fa fa-refresh"></i></button>
+                    <button class="btn btn-action-icon" onclick="ExportGraph()"><i class="fa fa-file-excel-o"></i></button>
+                </div>
+            </div>
+            <div class="row push-10 push-10-t">
+                <div class="col-sm-6">
+                    <div class="row">
+                        <div class="col-sm-4">
+                            <div class="rule rule-a"></div>
+                        </div>
+                        <div class="col-sm-8">
+                            <label>Numero richieste</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="row">
+                        <div class="col-sm-4">
+                            <div class="rule rule-b"></div>
+                        </div>
+                        <div class="col-sm-8">
+                            <label>Numero errori</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12 text-center">
+                    <div id="chart-req-day" style="width:100%;margin-bottom:10px;" class="ct-chart ct-perfect-fourth ct-golden-section">
+                        @*...CHART*@
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<script type="text/javascript">
+    InitDatePicker();
+
+    var labels = [];
+    var serieReq = [];
+    var serieErrori = [];
+    var labelSerie = [];
+    @{
+        foreach (var day in Model)
+        {
+            <text>labels.push('@(day.Label)');
+    serieReq.push(@(day.RichiesteTOT));
+    serieErrori.push(@(day.RichiesteErrori));
+    labelSerie.push('Data: @(day.Label)<br>Richieste: @(day.RichiesteTOT.ToString())<br>Errori: @(day.RichiesteErrori.ToString())')</text>
+        }
+    }
+
+    var chart2 = new Chartist.Line('#chart-req-day', {
+        labels: labels,
+        series: [{ name: 'Richieste', data: serieReq }, { name: 'Errori', data: serieErrori }]
+    }, {
+        fullWidth: true,
+        chartPadding: { right: 10 }
+    }
+        );
+
+
+    var $chart = $('#chart-req-day');
+
+    var $toolTip = $chart
+				.append('<div class="tooltip tooltip-day" style="z-index:99;"></div>')
+				.find('.tooltip-day')
+				.hide();
+
+    $chart.on('mouseenter', '.ct-point', function () {
+            var $point = $(this),
+                value = $point.attr('ct:value'),
+                seriesName = $point.parent().attr('ct:series-name');
+
+            var index = $point.parent().find('.ct-point').index($point);
+
+            $toolTip.html(labelSerie[index]).show();
+        });
+
+    $chart.on('mouseleave', '.ct-point', function () {
+            $toolTip.hide();
+        });
+
+    $chart.on('mousemove', function (event) {
+            $toolTip.css({
+                left: (event.offsetX || event.originalEvent.layerX) - $toolTip.width() / 2-10,
+                top: (event.offsetY || event.originalEvent.layerY) - $toolTip.height() - 40
+            });
+        });
+</script>

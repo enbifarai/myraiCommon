@@ -1,0 +1,66 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+
+@model List<MPGGruppo>
+
+<table class="js-table-sections table rai-table rai-table-vcenter rai-table-panel" id="acc-slot">
+    @foreach (var item in Model)
+    {
+        string title = item.Codice + " - " + String.Join("/", item.Stanze.Select(x => x.PrenStanza.NoteStanza).Distinct());
+        int countDip = item.PrenDip != null ? item.PrenDip.Count() : 0;
+
+        <tbody class="js-table-sections-header">
+            <tr>
+                <td width="auto">
+                    <span class="rai-font-md-bold">@title</span>
+                </td>
+                <td class="text-right">
+                    <span class="rai-font-sm-neutral" data-elem-dip-counter="">@countDip dipendenti</span>
+                </td>
+                <td class="text-right">
+                    <button class="btn rai-btn-small" onclick="RaiOPNavGoToNext('mpg', 'mpg-add-dip', 'Dettaglio gruppo', '@Url.Action("Dettaglio_gruppo","Mappatura", new { codiceGruppo=item.Codice })')">Dettaglio</button>
+                </td>
+                <td class="rai-table-td-toggle">
+                    <i class="fa fa-chevron-down"></i>
+                </td>
+            </tr>
+        </tbody>
+        <tbody>
+            <tr>
+                <td class="no-padding" colspan="4">
+                    <table class="table rai-table rai-table-vcenter rai-table-panel rai-table-striped">
+                        @if (item.PrenDip != null)
+                        {
+                            foreach (var dip in item.PrenDip)
+                            {
+                                <tr data-search="elenco-dip" data-search-matr="@dip.Dip.Matricola'" data-search-name="@dip.Dip.Nominativo" data-search-interv="@(dip.Intervista!=null?"off":"on")" aria-hidden="false">
+                                    <td>
+                                        <label><b>@dip.Dip.Matricola</b> - @(dip.Dip.Nominativo.TitleCase())</label>
+                                    </td>
+                                    <td>
+                                        @if (dip.Intervista != null)
+                                        {
+                                            <span class="rai-label rai-label-interactive">Intervistato il @dip.Intervista.DataInterv.Value.ToString("dd/MM/yyyy")</span>
+                                        }
+                                        else if (dip.Prenotazione != null)
+                                        {
+                                            <span class="rai-label rai-label-warning">Prenotazione effettuata</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr data-search="elenco-dip" data-search-matr="-" data-search-name="-" data-search-interv="off" aria-hidden="false">
+                                <td colspan="2">
+                                    <label class="rai-font-md-bold">Nessun dipendente associato</label>
+                                </td>
+                            </tr>
+                        }
+                    </table>
+                </td>
+            </tr>
+        </tbody>
+    }
+</table>

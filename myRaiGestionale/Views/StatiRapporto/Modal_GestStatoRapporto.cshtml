@@ -1,0 +1,59 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+@model AnagraficaModel
+
+@{
+    var listStati = new myRaiDataTalentia.TalentiaEntities().XR_TB_STATO_RAPPORTO.Where(x => x.IND_VISUALIZZA).OrderBy(x => x.ORDINE).ToList();
+    var evento = Model.DatiStatiRapporti.Eventi.FirstOrDefault();
+}
+
+@using (Html.BeginModal(Model.Cognome.TitleCase()+" "+Model.Nome.TitleCase()))
+{
+    <input type="hidden" id="idPersona" value="@Model.IdPersona" />
+    <div class="row">
+        <div class="col-md-12">
+            @using (Html.BeginPanel(PanelType.PanelNoPadding, "Gestisci", false))
+            {
+                <div class="row" style="margin:10px;">
+                    <div class="col-sm-12 form-group">
+                        <label class="rai-caption">Tipologia stato</label>
+                        <select class="form-control" onchange="onSelectStateChange(this)" @(evento.IdEvento==0?"":"disabled")>
+                            @for (int i = 0; i < listStati.Count(); i++)    
+                            {
+                                <option value="@listStati.ElementAt(i).COD_STATO_RAPPORTO" @(i == 0 ? "selected" : "")>@listStati.ElementAt(i).DES_STATO_RAPPORTO</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="tab-content no-shadow no-border" id="tabStatiContainer">
+                    <div class="tab-pane active" id="tabStato-SW">
+                        <div class="form-group">
+                            <input type="hidden" id="MatrCode" value="@Model.Matricola" />
+                            <div class="row push-10">
+                                <div class="col-sm-12">
+                                    <label class="rai-caption">Assic. Infortuni</label>
+                                </div>
+                                <div class="col-sm-9">
+                                    <input type="text" id="assic_inf" class="form-control" value="@Model.AssicurazioneInfortuni" disabled />
+                                </div>
+                                <div class="col-sm-3">
+                                    <button class="btn btn-action-icon" onclick="AnagModifyAI()" style="margin:8px 0"><i class="fa fa-pencil"></i></button>
+                                </div>
+                                @if (Model.AssicurazioneInfortuniUpdate.HasValue)
+                                {
+                                    <div class="col-sm-12">
+                                        <em class="rai-font-sm-neutral">Aggiornato al @Model.AssicurazioneInfortuniUpdate.Value.ToString("dd/MM/yyyy")</em>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                        @Html.Partial("~/Views/Anagrafica/subpartial/Modal_DatiStatoRapporto.cshtml", evento)
+                    </div>
+                    <div class="tab-pane" id="tabStato-COMM_GARA">
+                        @Html.Partial("~/Views/Anagrafica/subpartial/Modal_DatiStatoRapporto.cshtml", evento)
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}

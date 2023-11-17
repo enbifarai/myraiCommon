@@ -1,0 +1,79 @@
+﻿@model myRaiCommonModel.MaternitaSegnalazioneModel
+
+@{
+    string mymatricola = myRaiHelper.CommonHelper.GetCurrentUserMatricola();
+
+    int counter = 0;
+    var SegnalazioneAperta = Model.Segnalazione;
+
+}
+
+<div class="row">
+    <div class="col-sm-12">
+        <span class="as-block-title">RICHIESTE DI MODIFICA</span>
+    </div>
+</div>
+
+<div class="bg-neutrals-xl-10" style="padding:16px 24px;margin:12px -15px;">
+
+    @if (SegnalazioneAperta.XR_MAT_SEGNALAZIONI_COMUNICAZIONI.OrderByDescending(x => x.TIMESTAMP).FirstOrDefault().MATRICOLA_FROM == SegnalazioneAperta.XR_MAT_RICHIESTE.MATRICOLA)
+
+    {
+        <span class="rai-font-sm">LA TUA RISPOSTA</span>
+        <span class="campoObbligatorio" style="font-weight:bold">*</span>
+
+        <textarea id="testo-risposta" placeholder="Scrivi qui la tua comunicazione per il dipendente" rows="5" onkeyup="CheckButtonInviaRisposta()" onclick="" style="width:100%;border: solid 1px #ddd;padding: 10px;margin-top: 10px;border-radius: 2px;margin-bottom: 12px;"></textarea>
+
+        <div class="row">
+            <div class="col-sm-6">
+                <button id="button-invia-risposta" type="button" class="disable btn rai-btn-primary full-width" onclick="InviaMessaggioPerSegnalazione(@SegnalazioneAperta.ID)" style="height:44px">
+                    Invia risposta
+                </button>
+            </div>
+            <div class="col-sm-6">
+                <button id="button-invia-risposta" type="button" class="btn rai-btn-secondary full-width" onclick="ApprovaRichiestaMat(@SegnalazioneAperta.XR_MAT_RICHIESTE.ID)" style="height:44px">
+                    Approva richiesta
+                </button>
+            </div>
+        </div>
+
+
+    }
+    @{ 
+        List<int> idAllegatiInApprovazione = new List<int>();
+    }
+    @foreach (var item in SegnalazioneAperta.XR_MAT_SEGNALAZIONI_COMUNICAZIONI.OrderByDescending(x => x.TIMESTAMP))
+    {
+        counter++;
+        
+        if (item.MATRICOLA_FROM == mymatricola)
+        {
+
+            @Html.Partial("_chatItem", new myRaiCommonModel.ChatItemModel() {
+           chatitem=item,
+           matricola=mymatricola,
+           IsOpeningItem =counter== SegnalazioneAperta.XR_MAT_SEGNALAZIONI_COMUNICAZIONI.Count(),
+           ListInfoMatricole= Model.ListInfoMatricole,
+           IdAllegatiGiaInValutazione=idAllegatiInApprovazione
+       })
+
+            idAllegatiInApprovazione.AddRange(item.XR_MAT_ALLEGATI.Where(x => x.ID_STATO == 10).Select(x => x.ID).ToList());
+
+        }
+        else
+        {
+
+            @Html.Partial("_chatItem", new myRaiCommonModel.ChatItemModel() {
+           chatitem=item,
+           matricola= SegnalazioneAperta.XR_MAT_RICHIESTE.MATRICOLA,
+           IsOpeningItem = counter == SegnalazioneAperta.XR_MAT_SEGNALAZIONI_COMUNICAZIONI.Count(),
+           ListInfoMatricole = Model.ListInfoMatricole
+           ,
+           IdAllegatiGiaInValutazione = idAllegatiInApprovazione
+       })
+        }
+       
+
+    }
+
+</div>

@@ -1,0 +1,101 @@
+﻿@using myRaiData.Incentivi
+@using myRaiHelper
+@model List<XR_HRIS_ABIL_FUNZIONE>
+
+@{
+    ActionTemplate actionNew = new ActionTemplate()
+    {
+        OnClick = "AbilFuncDett(0, 'Nuova funzione');",
+        Icon = "fa fa-plus"
+    };
+
+    RaiAttributes attributes = new RaiAttributes()
+    {
+        new RaiAttribute("class","panel-collapsed"),
+        new RaiAttribute("bodystyle","display:none")
+    };
+}
+
+@using (Html.BeginPanel(myRaiHelper.PanelType.PanelNoPadding, "Funzioni", actions: new List<ActionTemplate>() { actionNew }, panelAttributes:attributes))
+{
+    <div @*style="max-height:50vh;overflow:hidden;overflow-y:auto"*@>
+        <table class="table rai-table rai-table-vcenter rai-table-panel rai-table-collapsable">
+            @if (Model.Any())
+            {
+                foreach (var funz in Model.OrderByDescending(x => x.IND_ATTIVO).ThenBy(x => x.COD_FUNZIONE))
+                {
+                    <tbody class="rai-table-collapsable-header">
+                        <tr>
+                            <td>
+                                <span class="rai-font-md-bold">@funz.COD_FUNZIONE</span><span> - @funz.DES_FUNZIONE</span>
+                                @if (!funz.IND_ATTIVO)
+                                {
+                                    <span>&nbsp;<span class="rai-label">Funzione non attiva</span></span>
+                                }
+                            </td>
+                            <td class="rai-table-td-action">
+                                <button class="btn btn-action-icon" onclick="AbilFuncDett(@funz.ID_FUNZIONE, 'Funzione @funz.COD_FUNZIONE - @funz.DES_FUNZIONE')"><i class="fa fa-pencil"></i></button>
+                            </td>
+                            <td class="rai-table-td-toggle">
+                                <i class="fa fa-chevron-down"></i>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tdbody>
+                        <tr>
+                            <td colspan="3" class="no-padding">
+                                <table class="table rai-table rai-table-vcenter rai-table-panel table-striped">
+                                    @if (funz.XR_HRIS_ABIL_SUBFUNZIONE != null && funz.XR_HRIS_ABIL_SUBFUNZIONE.Any())
+                                    {
+                                        foreach (var subfunz in funz.XR_HRIS_ABIL_SUBFUNZIONE)
+                                        {
+                                            <tr>
+                                                <td class="full-width">
+                                                    <span class="rai-font-md">@subfunz.COD_SUBFUNZIONE - @subfunz.DES_SUBFUNZIONE</span>
+                                                    @if (!subfunz.IND_ATTIVO)
+                                                    {
+                                                        <span>&nbsp;<span>Sottofunzione non attiva</span></span>
+                                                    }
+                                                </td>
+                                                <td class="text-right ws-nowrap">
+                                                    @if (subfunz.XR_HRIS_ABIL != null)
+                                                    {
+                                                        <label class="rai-font-md-neutral"><span class="fa fa-users"></span> @subfunz.XR_HRIS_ABIL.Count(x => x.IND_ATTIVO) pers.</label>
+                                                    }
+                                                </td>
+                                                <td class="text-right  ws-nowrap">
+                                                    @if (subfunz.XR_HRIS_ABIL_PROFILO_ASSOCIAZIONI != null)
+                                                    {
+                                                        <label class="rai-font-md-neutral"><span class="fa fa-briefcase"></span> @subfunz.XR_HRIS_ABIL_PROFILO_ASSOCIAZIONI.Count(x => x.IND_ATTIVO) profili</label>
+                                                    }
+                                                </td>
+                                                <td class="rai-table-td-action">&nbsp;</td>
+                                                <td class="rai-table-td-toggle">&nbsp;</td>
+                                            </tr>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            @Html.Partial("_NoDati")
+                                        </tr>
+                                    }
+                                </table>
+                            </td>
+                        </tr>
+                    </tdbody>
+                }
+            }
+            else
+            {
+                @Html.Partial("_NoDati")
+            }
+        </table>
+    </div>
+}
+
+<script>
+    function AbilFuncDett(idFunz, descr) {
+        RaiOPNavGoToNext('nav-abil', 'nav-abil-funz', descr, '/Abilitazioni/Modal_Funzione', { id: idFunz }, 'POST');
+    }
+</script>

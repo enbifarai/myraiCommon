@@ -1,0 +1,126 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model SediGappModel
+<section class="panel">
+    <header class="panel-heading">
+        <div class="panel-actions">
+
+
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblSitFeriePerm" aria-expanded="true"></a>
+
+        </div>
+
+        <h2 id="lblSitFeriePerm" class="panel-title">
+            Sedi gapp abilitate (@Model.SediGappList.Where( a => a.NomeSede.Length == 5 ).Count( ) / @Model.SediGappList.Count( ))
+
+        </h2>
+
+    </header>
+    <div class="panel-body" style="display: block; padding: 8px">
+
+        <div>
+
+            <table class="table table-hover">
+                <thead>
+                <th></th>
+                <th class="text-primary">Sede</th>
+                <th class="text-primary">Descrizione</th>
+                <th class="text-primary">Calendario di sede</th>
+                <th></th>
+                </thead>
+
+                @foreach ( var item in Model.SediGappList )
+                {
+                    <tbody class="js-table-sections-header">
+                        <tr style="height:30px">
+                            <td class="fixed-20">
+                                <i class="fa fa-angle-right"></i>
+                            </td>
+                            <td>
+                                <b>@item.NomeSede</b>
+                            </td>
+                            <td>
+                                @item.DescSede
+                            </td>
+                            <td>
+                                @if ( item.NomeSede.Length == 5 )
+                                {
+                                    if ( item.sedeGappDB != null )
+                                    {
+                                        @item.sedeGappDB.CalendarioDiSede
+                                    }
+                                    else
+                                    {
+                                        <a href="javascript:GetSede('@item.NomeSede')" class="btn btn-default btn-scriv text-uppercase bg-puls_dash">COPIA DA HRDW</a>
+                                    }
+                                }
+
+                            </td>
+                            <td>
+                                @if ( item.NomeSede.Length == 5 && item.sedeGappDB != null )
+                                {
+                                    <i class="icons icon-pencil edit-sedegapp" style="cursor:pointer" data-toggle="tooltip" title=""
+                                       data-id-sedegapp="@item.sedeGappDB.id"
+                                       data-original-title="Modifica i dati della sede @item.NomeSede"></i>
+
+                                }
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tbody style="background-color:#f9f9f9">
+                        <tr>
+                            <td></td>
+                            <td style="text-align:right;padding-right:50px"><b>L1</b></td>
+                            <td colspan="3">
+                                @{
+                                    var l1 = Model.Abilitazioni.ListaAbilitazioni.Where( x => x.Sede == item.NomeSede )
+                                          .FirstOrDefault( );
+                                }
+                                @if ( l1 != null )
+                                {
+                                    foreach ( var m in l1.MatrLivello1 )
+                                    {
+                                        <span class="resolve-matr">@m.Matricola</span>
+                                    }
+                                }
+
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td style="text-align:right;padding-right:50px"><b>L2</b></td>
+                            <td colspan="3">
+                                @{
+                                    var l2 = Model.Abilitazioni.ListaAbilitazioni.Where( x => x.Sede == item.NomeSede )
+                                          .FirstOrDefault( );
+                                }
+                                @if ( l2 != null )
+                                {
+                                    foreach ( var m in l2.MatrLivello2 )
+                                    {
+                                        <span class="resolve-matr">@m.Matricola</span>
+                                    }
+                                }
+
+                            </td>
+                        </tr>
+                    </tbody>
+                }
+            </table>
+        </div>
+
+        @{
+            var model = new SedeGappModel( );
+            model.sedeDB = new L2D_SEDE_GAPP_Model( );
+
+            var db = new myRaiData.digiGappEntities( );
+            var sDB = db.L2D_SEDE_GAPP.Find( 2 );
+            if ( sDB != null )
+            {
+                CommonHelper.Copy( model.sedeDB , sDB );
+            }
+        }
+    </div>
+</section>

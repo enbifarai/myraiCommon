@@ -1,0 +1,387 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model ModelDash
+
+<style>
+    .panel-actions a.dropdown-item {
+    }
+
+    .dropdown-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        z-index: 1000;
+        display: none;
+        float: left;
+        min-width: 160px;
+        padding: 5px 0;
+        margin: 2px 0 0;
+        font-size: 14px;
+        text-align: left;
+        list-style: none;
+        background-color: #fff;
+        -webkit-background-clip: padding-box;
+        background-clip: padding-box;
+        border: 1px solid #ccc;
+        border: 1px solid rgba(0,0,0,.15);
+        border-radius: 4px;
+        -webkit-box-shadow: 0 6px 12px rgba(0,0,0,.175);
+        box-shadow: 0 6px 12px rgba(0,0,0,.175);
+    }
+
+    .dropdown-item {
+        display: block;
+        width: 100%;
+        padding: .25rem 1.5rem;
+        clear: both;
+        font-weight: 400;
+        color: #212529;
+        text-align: inherit;
+        white-space: nowrap;
+        background-color: transparent;
+        border: 0;
+    }
+</style>
+
+<div id="extDaApprovare">
+    <div id="daapprovare">
+        <header class="panel-heading">
+
+            <h2 class="panel-title" tabindex="0">Da approvare</h2>
+
+            <div class="rai-panel-actions">
+                <a tabindex="0" style="" class="btn-action-icon" data-toggle="block-option" data-action="refresh_toggle"
+                   data-refreshurl="/ApprovazioneProduzione/GetRichiesteAttProduzione" data-parentdiv="daapprovare"
+                   data-refreshelements="my-block,my-block2,my-block3,my-block4"
+                   data-action-mode="demo"
+                   aria-label="Aggiorna le richieste da approvare">
+                    <i class="fa fa-refresh"></i>
+                </a>
+            </div>
+
+        </header>
+        <div id="blockType" class="block">
+            <div class="block-content" style="padding:0px;">
+                <div class="block" id="my-block4">
+                    <ul class="nav nav-tabs nav-tabs-alt nav-justified" data-toggle="tabs" role="tablist">
+                        @if (Model.elencoProfilieSedi != null)
+                        {
+                            Model.ViewUtility.TotRich = Model.elencoProfilieSedi.elencoSediEccezioni.SelectMany(x => x.eccezionidaValidare).Count();
+                            Model.ViewUtility.TotUrg = Model.elencoProfilieSedi.elencoSediEccezioni.SelectMany(x => x.eccezionidaValidare.Where(item => item.IsUrgent == true)).Count();
+                            Model.ViewUtility.TotS = Model.elencoProfilieSedi.elencoSediEccezioni.SelectMany(x => x.eccezionidaValidare.Where(item => item.IsOverdue == true)).Count();
+                            Model.ViewUtility.TotOrd = Model.ViewUtility.TotRich - Model.ViewUtility.TotUrg - Model.ViewUtility.TotS;
+                            bool firstTab = true;
+                            foreach (var ragg in Model.elencoProfilieSedi.RaggruppamentiEccezioni)
+                            {
+                                <li class="text-center @(ragg.IdRaggruppamento==0?"active":"")" role="presentation">
+                                    <a role="tab" class="font-w600 rai-badge-anchor" tabindex="@(firstTab?"0":"-1")" aria-selected="@(ragg.IdRaggruppamento == 0 ? "true" : "false")" aria-controls="tab2-@ragg.IdRaggruppamento" href="#tab2-@ragg.IdRaggruppamento">
+                                        @ragg.Descrizione.TitleCase()
+                                        @if (ragg.IdRaggruppamento == 0)
+                                        {
+                                            <div class="rai-badge-tab bg-neutrals-xl-10"><span class="text-smaller text-bold ">@Model.ViewUtility.TotRich</span></div>
+                                        }
+                                        else if (ragg.IdRaggruppamento == 1) // && Model.ViewUtility.TotUrg > 0)
+                                        {
+                                            <div class="rai-badge-tab bg-neutrals-xl-10">
+                                                <span id="badge-tot-u" class="text-smaller text-bold">@Model.ViewUtility.TotUrg</span>
+                                            </div>
+                                        }
+                                        else if (ragg.IdRaggruppamento == 2)// && Model.ViewUtility.TotS > 0)
+                                        {
+                                            <div class="rai-badge-tab bg-neutrals-xl-10">
+                                                <span id="badge-tot-s" class="text-smaller text-bold">@Model.ViewUtility.TotS</span>
+                                            </div>
+                                        }
+                                        else if (ragg.IdRaggruppamento == 3)// && totOrd > 0)
+                                        {
+                                            <div class="rai-badge-tab bg-neutrals-xl-10"><span class="text-smaller text-bold ">@Model.ViewUtility.TotOrd</span></div>
+                                        }
+                                    </a>
+                                </li>
+                                firstTab = false;
+                            }
+                        }
+                    </ul>
+
+                    <div id="appr" class="block-content tab-content">
+
+                        @if (Model.elencoProfilieSedi == null)
+                        {
+                            <span class="my-card-loading-block" style="width: 28%; height: 18px;"></span>
+                            <span class="my-card-loading-block" style="width: 10%; height: 8px;"></span>
+                        }
+
+                        @if (Model.elencoProfilieSedi != null)
+                        {
+                            //per ogni tab (tutto/urgenti/scadute/altro)
+                            foreach (var ragg in Model.elencoProfilieSedi.RaggruppamentiEccezioni)
+                            {
+                                <div role="tabpanel" class="tab-pane tab-filtro @(ragg.IdRaggruppamento == 0 ? "active" : "")" id="tab2-@ragg.IdRaggruppamento">
+                                    <div id="approv">
+                                        @{
+                                            bool vediFiltri = true;
+                                            if (Request.QueryString["primaesecuzione"] != null &&
+                                                Request.QueryString["primaesecuzione"] != "" &&
+                                                Request.QueryString["primaesecuzione"] == "true")
+                                            {
+                                                vediFiltri = false;
+                                            }
+                                        }
+                                        @if (vediFiltri && (
+                                            (Request.QueryString["nome"] != "" && !Request.QueryString["nome"].ToUpper().Equals("UNDEFINED")) ||
+                                            (Request.QueryString["titolo"] != "" && !Request.QueryString["titolo"].ToUpper().Equals("UNDEFINED")) ||
+                                            (Request.QueryString["sede"] != "" && !Request.QueryString["sede"].ToUpper().Equals("UNDEFINED")) ||
+                                            (Request.QueryString["eccezione"] != "" && !Request.QueryString["eccezione"].ToUpper().Equals("UNDEFINED")) ||
+                                            Request.QueryString["stato"] != "" ||
+                                            Request.QueryString["data_da"] != "" || Request.QueryString["data_a"] != ""))
+                                        {
+                                            <div class="block">
+                                                <div class="row">
+                                                    <div class="col-sm-9">
+                                                        Hai Cercato:
+                                                        @if (Request.QueryString["nome"] != "" && !Request.QueryString["nome"].ToUpper().Equals("UNDEFINED"))
+                                                        {<b>@Request.QueryString["nome"], </b>}
+                                                        @if (Request.QueryString["sede"] != "" && !Request.QueryString["sede"].ToUpper().Equals("UNDEFINED"))
+                                                        {<b>@Request.QueryString["sede"], </b>}
+                                                        @if (Request.QueryString["titolo"] != "" && !Request.QueryString["titolo"].ToUpper().Equals("UNDEFINED"))
+                                                        {<b>@Request.QueryString["titolo"], </b>}
+                                                        @if (Request.QueryString["stato"] != "")
+                                                        {<b>@Request.QueryString["stato"], </b>}
+                                                        @if (Request.QueryString["eccezione"] != "" && !Request.QueryString["eccezione"].ToUpper().Equals("UNDEFINED"))
+                                                        {<b>@Request.QueryString["eccezione"], </b>}
+                                                        @if (Request.QueryString["data_da"] != "" && Request.QueryString["data_a"] == "")
+                                                        {<b>@Request.QueryString["data_da"] - @DateTime.Now.ToShortDateString(), </b>}
+                                                        @if (Request.QueryString["data_da"] != "" && Request.QueryString["data_a"] != "")
+                                                        {<b>@Request.QueryString["data_da"] - @Request.QueryString["data_a"], </b>}
+                                                        @if (Request.QueryString["livelloDip"] != "" && !Request.QueryString["livelloDip"].ToUpper().Equals("UNDEFINED"))
+                                                        {<b>dipendenti di livello @Request.QueryString["livelloDip"]</b>}
+                                                    </div>
+                                                    <div class="col-sm-3">
+                                                        <a href="#" onclick="$(':text').val(''); $(':input,select option').removeAttr('checked').removeAttr('selected'); $('#btnFilter').attr('disabled', 'disabled'); $('#stato').val('10');" data-reset="/ApprovazioneProduzione/GetRichiesteAttProduzione" data-parentdiv="daapprovare" data-resetelements="my-block,my-block2,my-block3,my-block4">TORNA ALL'ELENCO</a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                        <table id="tabapp" class="js-table-sections table rai rai-table rai-table-vcenter" role="grid" style="margin-top:0px;">
+                                            @*<thead>
+                                                <tr>
+                                                    <th style="width: 5%;"></th>
+                                                    <th style="width: 5%;"></th>
+                                                    <th style="width: 20%;"></th>
+                                                    <th style="width: 25%;"></th>
+                                                    <th style="width: 25%;"></th>
+                                                    <th style="width: 20%;"></th>
+                                                </tr>
+                                                </thead>*@
+
+                                            @if (Model.elencoProfilieSedi != null &&
+                                                  Model.elencoProfilieSedi.elencoSediEccezioni.Count > 0 &&
+                                                (ragg.IdRaggruppamento == 0 ||
+                                                    (ragg.IdRaggruppamento == 1 && Model.ViewUtility.TotUrg > 0) ||
+                                                    (ragg.IdRaggruppamento == 2 && Model.ViewUtility.TotS > 0) ||
+                                                    (ragg.IdRaggruppamento == 3 && Model.ViewUtility.TotOrd > 0)
+                                                    ))
+                                            {
+                                                int sediVisualizzate = 0;
+                                                //per ogni sede nel tab
+
+                                                foreach (daApprovareModel.sedegappAbilitata SedeAbil in Model.elencoProfilieSedi.elencoSediEccezioni.Where(f => f.Accesso_in_scrittura))
+                                                {
+                                                    int countEcc = 0;
+
+                                                    var listEcc = SedeAbil.eccezionidaValidare
+                                                            .Where(d => ragg.IdRaggruppamento == 0 ||
+                                                                (ragg.IdRaggruppamento == 1 && d.IsUrgent == true) ||
+                                                                (ragg.IdRaggruppamento == 2 && d.IsOverdue == true) ||
+                                                                (ragg.IdRaggruppamento == 3 && d.IsOverdue == false && d.IsUrgent == false)
+                                                               );
+
+                                                    countEcc = listEcc.Count();
+                                                    if (countEcc == 0)
+                                                    {
+                                                        continue;
+                                                    }
+
+                                                    var raggruppaAttivita = listEcc.GroupBy(x => x.AttivitaCeiton);
+
+                                                    foreach (var attivita in raggruppaAttivita)
+                                                    {
+                                                        sediVisualizzate++;
+
+                                                        <tbody class="js-table-sections-header">
+                                                            <tr role="row" tabindex="@(sediVisualizzate == 1 ? "0" : "-1")" aria-label="" aria-expanded="false">
+                                                                <td class="rai-table-td-toggle text-center">
+                                                                    <i class="fa fa-angle-right interactive-primary-color"></i>
+                                                                </td>
+                                                                <td colspan="4" class="no-padding-left">
+                                                                    <span class="cod-sede"
+                                                                          data-rep-desc="@SedeAbil.RepartoDescrizione"
+                                                                          data-rep-cod="@SedeAbil.RepartoCodice">
+                                                                        <b>
+                                                                            @{
+                                                                                string titolo = "NESSUN TITOLO";
+                                                                                if (!String.IsNullOrEmpty(attivita.Key))
+                                                                                {
+                                                                                    titolo = attivita.Key;
+                                                                                }
+                                                                            }
+                                                                            @titolo
+                                                                        </b>
+                                                                    </span>
+                                                                </td>
+                                                                <td class="text-right">
+                                                                    @{
+                                                                        int r = attivita.Count();
+                                                                    }
+                                                                    <span class="base-text rai-text-bold-12 rai-alert-dot">
+                                                                        @r.ToString() richiest@(r == 1 ? "a" : "e")
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                        <tbody class="tbodydata">
+                                                            <tr>
+                                                                <td colspan="6" class="no-padding-left no-padding-right">
+                                                                    <table id="tabappData" class="js-table-sections table rai rai-table rai-table-vcenter" role="grid">
+                                                                        @{
+                                                                            var raggPerData = attivita.GroupBy(x => x.DataRichiesta);
+
+                                                                            foreach (var itemData in raggPerData)
+                                                                            {
+                                                                                <tbody class="js-table-sections-header">
+                                                                                    <tr role="row" tabindex="0" aria-label="Per la data di @itemData.Key.ToString("d MMMM yyyy"), hai @itemData.Count() richieste da validare" aria-expanded="false" onfocus="onFocusRow(this)">
+                                                                                        <td class="rai-table-td-toggle text-center">
+                                                                                            <i class="fa fa-angle-right interactive-primary-color"></i>
+                                                                                        </td>
+                                                                                        <td colspan="3" class="no-padding-left">
+                                                                                            <span class="base-text rai-text-normal text-center font-w400">@itemData.Key.ToString("d MMMM yyyy")</span>
+                                                                                        </td>
+
+                                                                                        <td colspan="2" class="text-right td-num-ragg-appr" style="padding-top:15px;">
+                                                                                            <span class="base-text rai-text-bold-12 rai-alert-dot">@itemData.Count() richiest@(@itemData.Count() == 1 ? "a" : "e")</span>
+                                                                                        </td>
+
+                                                                                        <td colspan="2" class="text-right td-button-ragg-appr">
+                                                                                            <button class="pad6 button-approva-turno btn btn-xs btn-default button-ragg-appr" type="submit" role="link" tabindex="-1" aria-label="Approva tutte le richieste per il giorno @(itemData.Key.ToString("d MMMM yyyy"))">
+                                                                                                Approva tutti
+                                                                                            </button>
+                                                                                            <button class="pad6 btn button-rifiuta-turno btn-xs btn-default button-ragg-appr" type="submit" role="link" tabindex="-1" aria-label="Approva tutte le richieste per il giorno @(itemData.Key.ToString("d MMMM yyyy"))">
+                                                                                                Rifiuta tutti
+                                                                                            </button>
+                                                                                        </td>
+
+                                                                                    </tr>
+                                                                                </tbody>
+                                                                                <tbody class="tbodydata body-stripes">
+                                                                                    @{
+                                                                                        var raggMatr = itemData.GroupBy(x => x.matricola);
+
+                                                                                        foreach (var itemMatr in raggMatr)
+                                                                                        {
+                                                                                            <tr role="row" onfocus="onFocusRow(this)">
+                                                                                                <td colspan="6" style="padding-left:0px; padding-right:0px;">
+                                                                                                    <div class="row">
+                                                                                                        <div class="col-md-4">
+                                                                                                            @{
+                                                                                                                var dip = itemMatr.First();
+                                                                                                                var cognome = dip.dipendente.cognome;
+                                                                                                                var nome = dip.dipendente.nome;
+                                                                                                                string action = "javascript:ShowPopupBoss('0" + itemMatr.Key + "','" + itemData.Key.ToString("dd/MM/yyyy") + "','" + nome.Trim().ToUpper() + " " + cognome.Trim().ToUpper() + "','1')";
+
+                                                                                                            }
+                                                                                                            @Html.ProfileWidgetAction(itemMatr.Key, cognome + " " + nome, action, null)
+                                                                                                            <br />
+                                                                                                            @{
+                                                                                                                var eccVis = Model.elencoProfilieSedi.EccVisualizzate.Where(i => i.Matricola.Equals(itemMatr.Key) && i.Data.Equals(itemData.Key)).FirstOrDefault();
+                                                                                                                if (eccVis != null && eccVis.Visualizzato)
+                                                                                                                {
+                                                                                                                    <div title="VISUALIZZATO" style="background-color: #eeeeee;">
+                                                                                                                        <span style="font-weight: 500;font-size: 9px;color:#000000;">VISUALIZZATO</span>
+                                                                                                                    </div>
+                                                                                                                }
+                                                                                                            }
+
+                                                                                                            @if (itemMatr.Count() > 1)
+                                                                                                            {
+                                                                                                                <div>
+                                                                                                                    <button class="pad6 button-approva-matricola btn btn-xs btn-default button-ragg-appr" type="submit" aria-label="Approva tutte le richieste di @(itemMatr.First().dipendente.nome) @(itemMatr.First().dipendente.cognome)">
+                                                                                                                        Approva tutti
+                                                                                                                    </button>
+                                                                                                                    <button class="pad6 btn button-rifiuta-matricola btn-xs btn-default button-ragg-appr" type="submit" aria-label="Approva tutte le richieste di @(itemMatr.First().dipendente.nome) @(itemMatr.First().dipendente.cognome)">
+                                                                                                                        Rifiuta tutti
+                                                                                                                    </button>
+                                                                                                                </div>
+                                                                                                            }
+                                                                                                        </div>
+                                                                                                        <div class="col-sm-8">
+                                                                                                            <table class="js-table-sections table table-hover">
+                                                                                                                @foreach (var item in itemMatr)
+                                                                                                                {
+                                                                                                                    EccezioneApprovatoreVM vm = new EccezioneApprovatoreVM()
+                                                                                                                    {
+                                                                                                                        Eccezione = item,
+                                                                                                                        Visualizzato = false,
+                                                                                                                        attivitaCeiton = CeitonHelper.GetAttivitaCeiton(item.IdRichiestaPadre)
+                                                                                                                    };
+
+                                                                                                                    if (Model.elencoProfilieSedi.EccVisualizzate != null)
+                                                                                                                    {
+                                                                                                                        var myItem = Model.elencoProfilieSedi.EccVisualizzate.Where(i => i.Matricola.Equals(item.matricola) && i.Data.Equals(item.dataCompleta)).FirstOrDefault();
+
+                                                                                                                        if (myItem != null)
+                                                                                                                        {
+                                                                                                                            vm.Visualizzato = myItem.Visualizzato;
+                                                                                                                        }
+                                                                                                                    }
+
+                                                                                                                    @Html.Partial("~/Views/ApprovazioneProduzione/subpartial/_TRdaapprovare3.cshtml", vm)
+                                                                                                                }
+                                                                                                            </table>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </td>
+                                                                                            </tr>
+                                                                                        }
+                                                                                    }
+                                                                                </tbody>
+                                                                            }
+                                                                        }
+                                                                    </table>
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    }
+                                                    if (sediVisualizzate == 0)
+                                                    {
+                                                        <tbody>
+                                                            @Html.Partial("_nodati")
+                                                        </tbody>
+                                                    }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <tbody>
+                                                    @Html.Partial("_nodati")
+                                                </tbody>
+                                            }
+                                        </table>
+                                    </div>
+
+                                    @if (Model.elencoProfilieSedi != null && Model.elencoProfilieSedi.FrecciaVisibile)
+                                    {
+                                        <div class="block-content block-content-full text-center">
+                                            <a href="/Responsabile/totaledaapprovare"><i class="si si-arrow-right fa-2x text-info"></i></a>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

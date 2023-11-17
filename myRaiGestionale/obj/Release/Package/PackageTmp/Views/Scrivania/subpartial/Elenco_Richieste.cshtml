@@ -1,0 +1,99 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+@model List<RichiestaAnag>
+
+@if (Model != null)
+{
+
+    using (Html.BeginPanel(myRaiHelper.PanelType.PanelNoPadding, "Da fare", true))
+    {
+        if (!Model.Any())
+        {
+            <div class="row push-10-t push-10">
+                <div class="col-xs-12 text-center">
+                    <span class="rai-font-md-neutral">Non ci sono dati da visualizzare</span>
+                </div>
+            </div>
+        }
+        else
+        {
+            @*<div class="row bg-neutrals-xl-10" style="margin-left:0px; margin-right:0px;">
+                <div class="col-sm-12">
+                    <div class="row push-10-t push-10">
+                        <div class="col-sm-12 text-right">
+                            <a href="@Url.Action("Index","MaternitaCongedi")" title="Visualizza tutte le richieste">Visualizza tutte</a> 
+                        </div>
+                    </div>
+                </div>
+            </div>*@
+
+            <div style="max-height:400px;overflow:hidden;overflow-y:auto">
+                <table class="table rai-table rai-table-vcenter rai-table-panel">
+                    <thead>
+                        <tr>
+                            <th>Nominativo</th>
+                            <th>Tipo richiesta</th>
+                            <th>Scadenza</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>
+                                    @Html.ProfileWidget(item.Matricola, item.Nominativo, details1: "Matricola " + item.Matricola)
+                                </td>
+                                <td>
+                                    <span class="rai-font-md">@item.Descrizione</span>
+                                </td>
+                                <td>
+                                    @if (item.DataScadenza.HasValue)
+                                    {
+                                        <span>
+                                            @if (item.DataScadenza.Value < DateTime.Now)
+                                            {
+                                                <i class="fa fa-warning feedback-error-color"></i>
+                                            }
+                                            @item.DataScadenza.Value.ToString("dd/MM/yyyy")
+                                        </span>
+                                    }
+                                    else if (item.DataMemo.HasValue)
+                                    {
+                                        <span>
+                                            @if (item.DataMemo.Value <= DateTime.Now)
+                                            {
+                                                <i class="promemoria text-warning icons icon-clock"></i>
+                                            }
+                                            @item.DataScadenza.Value.ToString("dd/MM/yyyy")
+                                        </span>
+                                    }
+
+
+
+                                </td>
+                                <td colspan="2" class="text-right">
+                                    @switch (item.Tipologia)
+                                    {
+                                        case TipoRichiestaAnag.IBAN:
+                                            <button class="btn rai-btn-small" onclick="OpenModalRichiesta('@item.Matricola', '@item.Tipologia', @item.IdRichiesta)">Visualizza</button>
+                                            break;
+                                        case TipoRichiestaAnag.Congedo:
+                                            <button class="btn rai-btn-small" onclick="location.href='@Url.Action("","Maternitacongedi", new { idrichiesta = @item.IdRichiesta})';return false;">Visualizza</button>
+                                            break;
+                                        case TipoRichiestaAnag.Dematerializzazione:
+                                            <button class="btn rai-btn-small" onclick="OpenModalGetDettaglioDematerializzazione(@item.Matricola, @item.IdPersona, @item.IdRichiesta)">Visualizza</button>
+                                            break;
+                                        default:
+                                            break;
+                                    }
+
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+}

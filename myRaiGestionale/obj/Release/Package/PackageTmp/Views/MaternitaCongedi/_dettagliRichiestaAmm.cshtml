@@ -1,0 +1,389 @@
+﻿@model myRaiCommonModel.DettagliRichiestaAmmModel
+@using myRaiGestionale.Controllers
+
+@Html.Partial("_profiloimage", new myRaiCommonModel.ProfiloImageModel() {
+    InServizio = myRaiCommonManager.HomeManager.IsInServizio(Model.Richiesta.MATRICOLA),
+    Matricola = Model.Richiesta.MATRICOLA,
+    Row1 = Model.Richiesta.NOMINATIVO,
+    Row2 = "Matricola " + Model.Richiesta.MATRICOLA
+
+})
+
+@if (Model.IsFromPeriodiPopup)
+{
+    <div class="row" style="margin-top:20px">
+        <div class="col-sm-12">
+            <span class="rai-font-sm-neutral">
+                Data Richiesta
+            </span><br />
+            <label>
+                @Model.Richiesta.DATA_INVIO_RICHIESTA.ToString("dd/MM/yyyy")
+            </label>
+
+        </div>
+    </div>
+    <div class="row" style="margin-top:20px">
+        <div class="col-sm-12">
+            <span class="rai-font-sm-neutral">
+                Tipo richiesta
+            </span><br />
+
+            @if (Model.Richiesta.XR_MAT_CATEGORIE.CAT == "MAT")
+            {
+                <label>
+                    Maternità
+                </label>
+            }
+            else
+            {
+                <label>
+                    Congedo parentale
+                </label>
+            }
+        </div>
+    </div>
+    <div class="row" style="margin-top:20px">
+        <div class="col-sm-12">
+            <span class="rai-font-sm-neutral">
+                Scadenza
+            </span><br />
+            <label>
+                @Model.Richiesta.DATA_SCADENZA.Value.ToString("dd/MM/yyyy")
+
+            </label>
+
+        </div>
+    </div>
+    return;
+}
+@if (!String.IsNullOrWhiteSpace(Model.Richiesta.PROTOCOLLO_INPS))
+{
+    <div class="row" style="margin-top:20px">
+        <div class="col-sm-12">
+            <span class="rai-font-sm-neutral">
+                Numero protocollo INPS
+            </span><br />
+            <label>
+                @Model.Richiesta.PROTOCOLLO_INPS
+            </label>
+
+        </div>
+    </div>
+}
+
+
+@{
+    int idstato = Model.Richiesta.XR_WKF_MATCON_OPERSTATI.OrderByDescending(x => x.ID_STATO).Select(x => x.ID_STATO).FirstOrDefault();
+
+}
+@if (idstato >= 100 && idstato <= 199)
+{
+    <div class="row" style="margin-top:20px">
+        <div class="col-sm-12">
+            <span class="rai-font-md-neutral-bold">Stato</span><br />
+        </div>
+
+        <div class="col-sm-12">
+            <i class="fa fa-circle circle-red" aria-hidden="true"></i>
+            <label>Annullata</label>
+        </div>
+    </div>
+}
+<div class="row" style="margin-top:20px">
+    <div class="col-sm-12">
+        <span class="rai-font-sm-neutral">
+            Periodo assenza
+        </span><br />
+        @if (Model.Richiesta.INIZIO_GIUSTIFICATIVO != null)
+        {
+            <label>
+                @Model.Richiesta.INIZIO_GIUSTIFICATIVO.Value.ToString("dd/MM/yyyy") - @Model.Richiesta.FINE_GIUSTIFICATIVO.Value.ToString("dd/MM/yyyy")
+            </label>
+        }
+        else
+        {
+            <label>
+                @Model.Richiesta.DATA_INIZIO_MATERNITA.Value.ToString("dd/MM/yyyy") - @Model.Richiesta.DATA_FINE_MATERNITA.Value.ToString("dd/MM/yyyy")
+            </label>
+        }
+
+    </div>
+</div>
+
+<div class="row" style="margin-top:20px">
+    <div class="col-sm-12">
+        <span class="rai-font-sm-neutral">
+            Tipo richiesta
+        </span><br />
+
+        @if (Model.Richiesta.XR_MAT_CATEGORIE.CAT == "MAT")
+        {
+            <label>
+                Maternità
+            </label>
+        }
+        else
+        {
+            <label>
+                Congedo parentale
+            </label>
+        }
+    </div>
+</div>
+
+
+<div class="row" style="margin-top:20px">
+    <div class="col-sm-12">
+        @if (Model.Richiesta.XR_MAT_CATEGORIE.CAT == "MAT")
+        {
+            <span class="rai-font-sm-neutral">
+                Tipo di maternità
+            </span><br />
+        }
+        else
+        {
+            <span class="rai-font-sm-neutral">
+                Tipo di congedo
+            </span><br />
+        }
+        @{
+            var codice = myRaiCommonManager.MaternitaCongediManager.GetEccezioneRisultante(Model.Richiesta);
+            var db = new myRaiData.digiGappEntities();
+            var scheda = db.MyRai_Regole_SchedeEccezioni.ValidToday().Where(x => x.codice == codice).FirstOrDefault();
+        }
+        @if (scheda == null)
+        {
+            <label>
+                @codice - @Model.Richiesta.XR_MAT_CATEGORIE.TITOLO
+            </label>
+        }
+        else
+        {
+            <label style="cursor:pointer" onclick="showDettaglioEccezione('@codice')">
+                @codice - @Model.Richiesta.XR_MAT_CATEGORIE.TITOLO
+            </label>
+        }
+
+    </div>
+</div>
+
+
+
+<div class="row" style="margin-top:20px" id="mos1">
+    <div class="col-sm-12">
+        <div style="text-align:center">
+            <span onclick="$('#det1').show();$('#mos1').hide();" style="cursor:pointer" class="text-primary rai-font-sm">Mostra tutti i dettagli</span>
+        </div>
+    </div>
+</div>
+
+<div id="det1" style="display:none">
+    @{
+        var Sintesi = myRaiHelper.UtenteHelper.SintesiInfo(Model.Richiesta.MATRICOLA);
+    }
+    <div class="row" style="margin-top:20px">
+        <div class="col-sm-12">
+            <span class="rai-font-sm-neutral">
+                Direzione
+            </span><br />
+
+            @if (Sintesi != null)
+            {
+                <label>@Sintesi.DES_SERVIZIO</label>
+            }
+        </div>
+    </div>
+    <div class="row" style="margin-top:20px">
+        <div class="col-sm-12">
+            <span class="rai-font-sm-neutral">
+                Inquadramento
+            </span><br />
+
+            @if (Sintesi != null)
+            {
+                <label>@Sintesi.DES_QUALIFICA</label>
+            }
+        </div>
+    </div>
+    <div class="row" style="margin-top:20px">
+        <div class="col-sm-12">
+            <span class="rai-font-sm-neutral">
+                Tipo contratto
+            </span><br />
+
+            @if (Sintesi != null)
+            {
+                <label>@Sintesi.DES_TPCNTR</label>
+            }
+        </div>
+    </div>
+    <div class="row" style="margin-top:20px">
+        <div class="col-sm-12">
+            <span class="rai-font-sm-neutral">
+                Sede
+            </span><br />
+
+            @if (Sintesi != null)
+            {
+                <label>@Sintesi.DES_SEDE</label>
+            }
+        </div>
+    </div>
+
+    @if (Model.Richiesta.DATA_PRESUNTA_PARTO != null)
+    {
+        <div class="row" style="margin-top:20px">
+            <div class="col-sm-12">
+                <span class="rai-font-sm-neutral">
+                    Data presunta parto
+                </span><br />
+
+                <label>@Model.Richiesta.DATA_PRESUNTA_PARTO.Value.ToString("dd/MM/yyyy")</label>
+
+            </div>
+        </div>
+    }
+
+    <div class="row" style="margin-top:20px">
+        <div class="col-sm-12">
+            <span class="rai-font-sm-neutral">
+                Data di nascita del bambino/a
+            </span><br />
+
+            @if (Model.Richiesta.DATA_NASCITA_BAMBINO != null)
+            {
+                <label>@Model.Richiesta.DATA_NASCITA_BAMBINO.Value.ToString("dd/MM/yyyy")</label>
+            }
+            else
+            {
+                if (Model.Richiesta.ECCEZIONE == "MT")
+                {
+                    <span id="span-nascita" class="text-primary rai-font-sm"
+                          style="cursor:pointer" onclick="ImpostaDataNascita()">Inserisci data effettiva</span>
+
+                    <div id="div-nascita" style="display:none">
+                        <div class="input-group mb-md">
+                            <span class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                            <input onchange="AbilitaImpostaDataNascita()" class="js-datetimepicker form-control"
+                                   data-format="DD/MM/YYYY" data-locale="it" type="text" id="data-nasc"
+                                   placeholder="Data nascita">
+                        </div>
+                        <a id="salvanascita" class="btn rai-btn-small full-width disable"
+                           onclick="SalvaDataNascita(@Model.Richiesta.ID, $('#data-nasc').val())">Salva data di nascita</a>
+                    </div>
+                }
+                else
+                {
+                    <label>-</label>
+                }
+
+
+            }
+        </div>
+    </div>
+
+    <div class="row" style="margin-top:20px">
+        <div class="col-sm-12">
+            <span class="rai-font-sm-neutral">
+                Codice fiscale del bambino/a
+            </span><br />
+
+            @if (Model.Richiesta.CF_BAMBINO != null)
+            {
+                <label>@Model.Richiesta.CF_BAMBINO </label>
+            }
+            else
+            {
+                <label>-</label>
+            }
+        </div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+        <div class="col-sm-12">
+            <div style="width:100%;height:1px;background-color:#eee;margin-bottom:10px">
+
+            </div>
+            <span class="rai-font-sm-neutral">
+                Documenti allegati
+            </span>
+
+        </div>
+
+    </div>
+    @if (myRaiHelper.MaternitaCongediHelper.EnabledToMaternitaCongediUfficioAnyRole(myRaiHelper.MaternitaCongediHelper.MaternitaCongediUffici.Amministrazione))
+    {
+        foreach (var a in Model.Richiesta.XR_MAT_ALLEGATI)
+        {
+            myRaiData.Incentivi.XR_MAT_TIPOALLEGATI t = new myRaiData.Incentivi.IncentiviEntities().XR_MAT_TIPOALLEGATI
+                      .Where(x => x.TIPO == a.TIPOLOGIA).FirstOrDefault();
+            <div class="row" style="margin-top:6px">
+                <div class="col-sm-12">
+                    <span class="text-primary fa fa-download"></span><a target="_blank" href="/maternitacongedi/getpdf?id=@a.ID"> @t.TITOLO</a>
+                </div>
+            </div>
+        }
+    }
+
+    <div class="row" style="margin-top:20px">
+        <div class="col-sm-12">
+            <div style="text-align:center">
+                <span onclick="$('#det1').hide();$('#mos1').show();" style="cursor:pointer" class="text-primary rai-font-sm">Nascondi dettagli</span>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    InitDatePicker();
+    function ImpostaDataNascita() {
+        $("#div-nascita").show();
+    }
+    function AbilitaImpostaDataNascita() {
+        var d = $("#data-nasc").val();
+        if (d.trim() != "")
+            $("#salvanascita").removeClass("disable");
+        else
+            $("#salvanascita").addClass("disable");
+    }
+    function SalvaDataNascita(idrich, datanasc) {
+        $.ajax({
+            url: '/MaternitaCongedi/SalvaDataNascita',
+            type: "POST",
+            data: { idrich: idrich, data: datanasc },
+            dataType: "json",
+            complete: function () { },
+            success: function (data) {
+                if (data.esito == true) {
+                    swal({
+                        title: 'Data di nascita registrata correttamente',
+                        type: "success",
+                        confirmButtonText: 'OK',
+                        customClass: 'rai'
+                    }).then(function () {
+                        $("#span-nascita").text(datanasc);
+                        $("#div-nascita").hide();
+                        if (data.reload == true) {
+                            debugger
+                            var id = $("#current-id-richiesta").val();
+                            var tit = $("#cat-domanda").text();
+                            VisualizzaAmm(tit, id);
+                        }
+                        if (data.back == true) {
+                            AmmPage(2);
+                        }
+                    });
+                }
+                else {
+                    swal({
+                        title: data.errore,
+                        type: "error",
+                        confirmButtonText: 'OK',
+                        customClass: 'rai'
+                    });
+                }
+
+            }
+        });
+
+    }
+</script>

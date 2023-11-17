@@ -1,0 +1,254 @@
+﻿@model myRaiCommonModel.SituazioneDebitoria.ESS.SituazioneDebitoriaVM
+
+@{
+    DateTime dataCorrente = Model.CurrentDate;
+}
+
+<div class="table-responsive push-10-t push-10" id="dipSitDeb" style="max-height:250px">
+    <table class="table table-hover rai-table rai-table-vcenter" id="table-eventi-3">
+        <thead>
+            <tr>
+                <th rowspan="2">Descrittiva</th>
+                <th rowspan="2">Addebito</th>
+                <th rowspan="2">Inizio</th>
+                <th rowspan="2">Fine</th>
+                <th colspan="2" class="text-center">Rate mensili</th>
+                <th colspan="2" class="text-center">Residuo</th>
+            </tr>
+            <tr>
+                <th class="text-right">N°</th>
+                <th class="text-right">Importo</th>
+                <th class="text-right">N°</th>
+                <th class="text-right">Importo</th>
+            </tr>
+            @*<tr>
+                <td class="Situazione-debitoriaTr col-md-3">Descrittiva</td>
+                <td class="Situazione-debitoriaTr col-md-2">Addebito</td>
+                <td class="Situazione-debitoriaTr col-md-3">Periodo</td>
+                <td class="Situazione-debitoriaTr col-md-2">Rate</td>
+                <td class="Situazione-debitoriaTr col-md-2">Residuo</td>
+            </tr>*@
+        </thead>
+        <tbody>
+            @{
+                if (Model.Data == null || !Model.Data.Any())
+                {
+                    <tr>
+                        <td colspan="5">
+                            @Html.Partial("~/Views/Shared/_NoDati.cshtml")
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    int rowCount = 1;
+                    foreach (var itm in Model.Data)
+                    {
+                        <tr>
+                            <td>
+                                @itm.Descrizione
+                            </td>
+                            <td class="text-right">
+                                @if (itm.Addebito == 0.0)
+                                {
+
+                                }
+                                else
+                                {
+
+                                    @(String.Format("{0:N2} €", itm.Addebito))
+
+                                }
+                            </td>
+                            <td>
+                                @if (!String.IsNullOrWhiteSpace(itm.MeseDa))
+                                {
+                                    <span class="">@itm.MeseDa</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!String.IsNullOrWhiteSpace(itm.MeseA))
+                                {
+                                    <span>@itm.MeseA</span>
+                                }
+                            </td>
+                            <td class="text-right">
+                                @{
+                                    string nRate = "";
+                                    if (itm.NumeroRate > 1)
+                                    {
+                                        nRate = String.Format("{0}", itm.NumeroRate);
+                                    }
+                                    else if (itm.NumeroRate == 0)
+                                    {
+                                        nRate = String.Empty;
+                                    }
+                                    else
+                                    {
+                                        nRate = String.Format("{0}", itm.NumeroRate);
+                                    }
+                                }
+                                @(nRate)
+                            </td>
+                            <td class="text-right">
+                                @{
+                                    if (itm.ImportoRata == 0.0)
+                                    {
+                                    }
+                                    else
+                                    {
+                                        @(String.Format("{0:N2} €", itm.ImportoRata))
+                                    }
+                                }
+                            </td>
+                            <td class="text-bold text-right">
+                                @{
+                                    string residue = "";
+                                    if (itm.NumeroRateResidue > 1)
+                                    {
+                                        residue = String.Format("{0}", itm.NumeroRateResidue);
+                                    }
+                                    else if (itm.NumeroRateResidue == 0)
+                                    {
+                                        residue = String.Empty;
+                                    }
+                                    else
+                                    {
+                                        residue = String.Format("{0}", itm.NumeroRateResidue);
+                                    }
+                                }
+                                @(residue)
+                            </td>
+                            <td class="text-bold text-right">
+
+                                @{
+                                    if (itm.ImportoRateResidue == 0.0)
+                                    {
+                                    }
+                                    else
+                                    {
+
+                                        @(String.Format("{0:N2} €", itm.ImportoRateResidue))
+
+                                    }
+                                }
+
+
+                            </td>
+                        </tr>
+                        @*<tr id="situazioneDebitoRow_@(rowCount)">
+                            <td>
+                                <p class="Situazione-debitoriaTd">@itm.Descrizione</p>
+                            </td>
+                            <td class="Situazione-debitoriaTd addebito bg-cel">
+                                @{
+                                    if (itm.Addebito == 0.0)
+                                    {
+                                        <p></p>
+                                    }
+                                    else
+                                    {
+                                        <p>
+                                            @(String.Format("{0:N2} €", itm.Addebito))
+                                        </p>
+                                    }
+                                }
+                            </td>
+                            <td>
+
+                                @{
+                                    if (String.IsNullOrEmpty(itm.MeseDa) &&
+                                        !String.IsNullOrEmpty(itm.MeseA))
+                                    {
+                                        <p class="Situazione-debitoriaTd">Fino a @itm.MeseA</p>
+                                    }
+                                    else if (String.IsNullOrEmpty(itm.MeseDa) &&
+                                            String.IsNullOrEmpty(itm.MeseA))
+                                    {
+                                        <p class="Situazione-debitoriaTd"></p>
+                                    }
+                                    else if (!String.IsNullOrEmpty(itm.MeseDa) &&
+                                            String.IsNullOrEmpty(itm.MeseA))
+                                    {
+                                        <p class="Situazione-debitoriaTd">A partire da @itm.MeseDa</p>
+                                    }
+                                    else if (!String.IsNullOrEmpty(itm.MeseDa) &&
+                                            !String.IsNullOrEmpty(itm.MeseA))
+                                    {
+                                        <p class="Situazione-debitoriaTd">Da @itm.MeseDa</p>
+                                        <p class="Situazione-debitoriaTd">A @itm.MeseA</p>
+                                    }
+                                }
+                            </td>
+                            <td class="Situazione-debitoriaTd">
+                                @{
+                                    if (itm.ImportoRata == 0.0)
+                                    {
+                                        <p class="rateRettangolo1">&nbsp;</p>
+                                    }
+                                    else
+                                    {
+                                        <p class="rateRettangolo1">
+                                            @(String.Format("{0:N2} €", itm.ImportoRata))
+                                        </p>
+                                    }
+                                }
+                                <p class="rateRettangolo2">
+                                    @{
+                                        string nRate = "";
+                                        if (itm.NumeroRate > 1)
+                                        {
+                                            nRate = String.Format("{0} rate", itm.NumeroRate);
+                                        }
+                                        else if (itm.NumeroRate == 0)
+                                        {
+                                            nRate = String.Empty;
+                                        }
+                                        else
+                                        {
+                                            nRate = String.Format("{0} rata", itm.NumeroRate);
+                                        }
+                                    }
+                                    @(nRate)
+                                </p>
+                            </td>
+                            <td class="Situazione-debitoriaTd">
+
+                                @{
+                                    if (itm.ImportoRateResidue == 0.0)
+                                    {
+                                        <p class="residue1 text-primary"></p>
+                                    }
+                                    else
+                                    {
+                                        <p class="residue1 text-primary">
+                                            @(String.Format("{0:N2} €", itm.ImportoRateResidue))
+                                        </p>
+                                    }
+                                }
+
+                                @{
+                                    string residue = "";
+                                    if (itm.NumeroRateResidue > 1)
+                                    {
+                                        residue = String.Format("{0} rate", itm.NumeroRateResidue);
+                                    }
+                                    else if (itm.NumeroRateResidue == 0)
+                                    {
+                                        residue = String.Empty;
+                                    }
+                                    else
+                                    {
+                                        residue = String.Format("{0} rata", itm.NumeroRateResidue);
+                                    }
+                                }
+                                <p class="residue2">@(residue)</p>
+                            </td>
+                        </tr>*@
+                        rowCount++;
+                    }
+                }
+            }
+        </tbody>
+    </table>
+</div>

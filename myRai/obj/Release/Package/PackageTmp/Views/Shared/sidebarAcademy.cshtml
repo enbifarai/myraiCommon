@@ -1,0 +1,227 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model sidebarModel
+
+@helper MenuRaiPerMe()
+{
+    Model.sezioni = Model.sezioni.Where(s => s.Titolo != null && !s.Titolo.StartsWith("*")).ToList();
+
+    if (Model.sezioni.Any(a => a.codiceMy == "ACADA"))
+    {
+        @VoceMenuRaiPerMe("CATALOGO CORSI", "ACADA", "icon-basket")
+    }
+    if (Model.sezioni.Any(a => a.codiceMy == "ACADB"))
+    {
+        @VoceMenuRaiPerMe("LA MIA FORMAZIONE", "ACADB", "icon-graduation")
+    }
+    if (Model.sezioni.Any(a => a.codiceMy == "ACADC"))
+    {
+        @VoceMenuRaiPerMeSemplice("ACADC", "icon-book-open")
+    }
+    if (Model.sezioni.Any(a => a.codiceMy == "ACADE"))
+    {
+        @VoceMenuRaiPerMe("PERCHÈ RAI ACADEMY", "ACADE", "icon-question")
+    }
+
+    @*if (Model.sezioni.Any(a => a.codiceMy == "ACADF"))
+        {
+            @VoceMenuRaiPerMeSemplice( "ACADF" , "icon-feed" )
+        }*@
+
+    if (Model.sezioni.Any(a => a.codiceMy == "ACADG"))
+    {
+        @VoceMenuRaiPerMeSemplice("ACADG", "icon-feed  text-bold")
+    }
+
+    if (Model.sezioni.Any(a => a.codiceMy == "ACADH"))
+    {
+        @VoceMenuRaiPerMeSemplice("ACADH", "icon-envelope-open  text-bold")
+    }
+}
+
+@helper VoceMenuRaiPerMeSemplice(string menuCode, string menuIcon)
+{
+    foreach (var sez in Model.sezioni.Where(a => a.codiceMy == menuCode).OrderBy(x => x.progressivo))
+    {
+        //Sezioni
+        if (sez.customView == null)
+        {
+        }
+        else
+        {
+
+            string s = "";
+
+            if (sez.attivo)
+            {
+                s = "active";
+            }
+
+            var dataLocation = sez.customView;
+            if (sez.customView.Contains("?"))
+            {
+                //dataLocation = sez.customView.Substring(0, sez.customView.IndexOf("?"));
+            }
+
+            <li role="presentation">
+                <a role="menuitem" tabindex="0" class="@s nav-active academy-menu-item" href="@sez.customView" data-location="@dataLocation.ToLower()">
+                    <i class="icons @menuIcon text-primary academy-menu-item-icon" aria-hidden="true"></i>
+                    <span class="academy-menu-princ">@sez.nomeSezione.ToUpper()</span>
+                </a>
+            </li>
+        }
+    }
+    <li role="presentation">
+        <hr role="presentation" class="academy-menu-hr">
+    </li>
+}
+
+@helper VoceMenuRaiPerMe(string menuTitle, string menuCode, string menuIcon)
+{
+    <li class="nav-parent " role="presentation">
+        <a role="menuitem" aria-haspopup="true" tabindex="-1" class="academy-menu-item">
+            <i class="icons @menuIcon text-primary academy-menu-item-icon" style="" aria-hidden="true"></i>
+            <span class="academy-menu-princ">@menuTitle</span>
+        </a>
+        <ul role="menu" class="nav nav-children">
+            @foreach (var sez in Model.sezioni.Where(a => a.codiceMy == menuCode).OrderBy(x => x.progressivo))
+            {
+                if (sez.vociMenu.Count > 0)
+                {
+                    <li class="nav-parent " role="presentation">
+                        <a role="menuitem" aria-haspopup="true" tabindex="-1" class="academy-menu-item-sec">
+                            <span class="academy-menu-sec colorSecondLiv">@sez.nomeSezione</span>
+                        </a>
+                        <ul role="menu" class="nav nav-children">
+                            @foreach (var voce in sez.vociMenu.OrderBy(x => x.progressivo))
+                            {
+                                var dataLocation = sez.customView;
+                                if (voce.customView.Contains("?"))
+                                {
+                                    //dataLocation = voce.customView.Substring(0, voce.customView.IndexOf("?"));
+                                }
+
+                                <li role="presentation">
+                                    <a role="menuitem" href="@voce.customView" data-location="@dataLocation.ToLower()" class="margine-10-sx">@voce.nomeSezione</a>
+                                </li>
+                            }
+                        </ul>
+                    </li>
+                }
+                else
+                {
+                    string s = "";
+                    if (sez.attivo)
+                    {
+                        s = "nav-active";
+                    }
+
+                    var dataLocation = sez.customView;
+                    if (sez.customView.Contains("?"))
+                    {
+                        //dataLocation = sez.customView.Substring(0, sez.customView.IndexOf("?"));
+                    }
+
+                    <li role="presentation">
+                        <a role="menuitem" tabindex="-1" class="@s academy-menu-item-sec  gapp-rich-@sez.RichiedeGapp.ToString()  gapp-chiuso-@UtenteHelper.GappChiuso().ToString()" href="@sez.customView" data-location="@dataLocation.ToLower()">
+                            <span class="academy-menu-sec colorSecondLiv">@sez.nomeSezione</span>
+                        </a>
+                    </li>
+                }
+            }
+        </ul>
+    </li>
+    <li role="presentation">
+        <hr role="presentation" class="academy-menu-hr">
+    </li>
+}
+
+<style>
+    .academy-menu-item-icon {
+        font-size: 16px !important;
+    }
+
+    .academy-menu-hr {
+        margin-top: 12px;
+        margin-bottom: 7px;
+    }
+</style>
+
+
+<!-- start: sidebar -->
+<aside id="sidebar-left" class="sidebar-left">
+
+    <div class="nano">
+        <div class="nano-content">
+            <nav id="menu" class="nav-main" role="navigation" style="padding-top:5px;">
+
+
+                @{
+                    if (!Model.HeaderName.Equals("Svil_Header", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        <ul role="menubar" aria-label="Navigazione" class="nav nav-main  visible-xs">
+                            @{
+                                if (Model.HeaderMenu != null)
+                                {
+                                    foreach (var voce in Model.HeaderMenu.Where(m => m.MinimizedModeEnabled).ToList())
+                                    {
+                                        <li role="presentation">
+                                            <a role="menuitem" tabindex="-1" class="nav-active" href="@(voce.Link)" title="@(voce.Title)">
+                                                <i class="icons text-primary" aria-hidden="true"></i>
+                                                <span>@(voce.Descrizione)</span>
+                                            </a>
+                                        </li>
+                                    }
+                                }
+                            }
+
+                            <li class="nav-parent nav-expanded" role="presentation">
+                                @*<a role="menuitem" tabindex="-1" class="nav-active">
+                                        <i class="icons icon-home text-primary" aria-hidden="true"></i>
+                                        <span>RAI PER ME</span>
+                                    </a>*@
+
+                                <ul role="menu" class="nav nav-children">
+                                    @if (Model.sezioni != null)
+                                    {
+                                        @MenuRaiPerMe()
+                                    }
+                                </ul>
+
+                            </li>
+                        </ul>
+                    }
+                }
+                <br />
+                <ul role="menubar" aria-label="Navigazione" aria-orientation="vertical" class="nav nav-main @( !Model.HeaderName.Equals("Svil_Header", StringComparison.InvariantCultureIgnoreCase) ? "hidden-xs" : "")"
+                    style="margin-right:0;">
+                    @if (Model.sezioni != null)
+                    {
+                        @MenuRaiPerMe()
+                    }
+                </ul>
+            </nav>
+
+
+        </div>
+    </div>
+
+    @if (@ViewData["viewhelp"] != null)
+    {
+        <div>
+            <ul class="nav nav-main sfondoGuida">
+                <li>
+                    <a id="guida" class="nav-active sfondoGuida" href="javascript:Info('@ViewData["viewhelp"]');">
+                        <i class="icons icon-info text-white" aria-hidden="true"></i>
+                        <span>GUIDA ALL'UTILIZZO</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    }
+
+</aside>
+<!-- end: sidebar -->

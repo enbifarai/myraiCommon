@@ -1,0 +1,111 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model SituazRifornimentiViewModel
+@{
+    Layout = "~/Views/Shared/_Layout2.cshtml";
+}
+
+<section class="body">
+    @Html.Partial( "../Shared/header2" , new NotifichePopupModel( CommonHelper.GetCurrentUserMatricola( ) ) )
+    <div class="inner-wrapper">
+        @Html.Partial( "../Shared/sidebar3" , myRaiHelper.UtenteHelper.getSidebarModel(  ) )
+        <section role="main" class="content-body">
+            <div id="containerSideLeft" class="col-lg-8" style="min-width: 500px;">
+                @Html.Partial( "~/Views/Rifornimenti/subpartial/StoricoRifornimenti.cshtml" , Model.RifornimentiAnno )
+            </div>
+            <div id="containerSideRight" class="col-lg-4" style="min-width: 320px;">
+                @if ( !String.IsNullOrWhiteSpace( Model.MessaggioAssegnatario ) )
+                {
+                    <section class="panel" id="panelInformazione">
+                        <header class="panel-heading">
+                            <h2 class="panel-title">Avviso</h2>
+                            <div class="panel-actions">
+                                <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblNotifiche" aria-expanded="true"></a>
+                            </div>
+                        </header>
+                        <div class="panel-body">
+                            @if ( Model.MessaggioAssegnatario.StartsWith( "#html" ) )
+                            {
+                                @Html.Raw( Model.MessaggioAssegnatario.Replace( "#html" , "" ) )
+                            }
+                            else
+                            {
+                                <span class="h5 text-primary text-bold">@Model.MessaggioAssegnatario</span>
+                            }
+                        </div>
+                    </section>
+                }
+                <div id="containerRiepilogoRifornimenti">
+                    @Html.Partial( "~/Views/Rifornimenti/subpartial/RiepilogoRifornimenti.cshtml" , Model.RiepilogoAnno )
+                </div>
+            </div>
+            <div id="containerModaleInsertSkCarb" class="modal right fade in" data-backdrop="static" data-keyboard="false" role="dialog" aria-hidden="true"></div>
+        </section>
+    </div>
+</section>
+
+<script type="text/javascript">
+    function editSkCarb(annoRif, dataRif) {
+        $.ajax({
+            url: '@Url.Action("getView_ModificaSchedaCarburante", "Rifornimenti")',
+            type: "POST",
+            cache: false,
+            data: { targetYear: annoRif, dataRifToEdit: dataRif },
+            success: function (data) {
+                $("#containerModaleInsertSkCarb").html(data);
+                $("#containerModaleInsertSkCarb").modal("show");
+            },
+            error: function (data) {
+                swal("Errore caricamento scheda carburante");
+            }
+        });
+    }
+
+    function CambiaAnno(delta) {
+        var annoCorrente = @DateTime.Now.Year.ToString() + "";
+        var annoSelezionato = parseInt(document.getElementById("AnnoSelezionato").innerHTML) + delta;
+
+        if (annoSelezionato != "NaN" && annoSelezionato >= 2018 && annoSelezionato <= annoCorrente) {
+            $.ajax({
+                url: '@Url.Action("getView_StoricoRifornimenti", "Rifornimenti")',
+                type: "POST",
+                cache: false,
+                data: { targetYear: annoSelezionato },
+                success: function (data) {
+                    $("#containerSideLeft").html(data);
+                    document.getElementById("AnnoSelezionato").innerHTML = annoSelezionato;
+                    if (annoSelezionato <= 2018) { $("#scegliPeriodo_Sx").hide() } else { $("#scegliPeriodo_Sx").show(); };
+                    if (annoSelezionato >= annoCorrente) { $("#scegliPeriodo_Dx").hide() } else { $("#scegliPeriodo_Dx").show(); };
+                    setTimeout(function () { AttivaAccordion(); }, 400);
+                },
+                error: function (data) {
+                    swal("Errore caricamento storico dell'anno " + annoSelezionato);
+                }
+            });
+
+            $.ajax({
+                url: '@Url.Action("getView_RiepilogoRifornimenti", "Rifornimenti")',
+                type: "POST",
+                cache: false,
+                data: { targetYear: annoSelezionato },
+                success: function (data) {
+                    $("#containerRiepilogoRifornimenti").html(data);
+                },
+                error: function (data) {
+                    swal("Errore caricamento riepilogo dell'anno " + annoSelezionato);
+                }
+            });
+        }
+        else {
+            swal("Anno selezionato non valido");
+            location.reload();
+        }
+    }
+</script>
+@section afterjs {
+    <script type="text/javascript">
+        AttivaAccordion();
+    </script>
+}

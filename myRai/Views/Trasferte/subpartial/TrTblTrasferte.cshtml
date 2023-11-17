@@ -1,0 +1,205 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel.ess;
+@using MVCProject.Custom_Helpers;
+@using myRaiHelper;
+
+@model TrasferteViewModel
+@{
+    Layout = null;
+}
+
+@{
+    string macroStato = "";
+    switch (Model.MacroStato)
+    {
+        case myRaiCommonModel.ess.TrasferteMacroStato.Aperte:
+            macroStato = "Aperte";
+            break;
+        case myRaiCommonModel.ess.TrasferteMacroStato.Concluse:
+            macroStato = "Concluse";
+            break;
+        default:
+            break;
+    }
+
+    string tx = null;
+
+    using ( var db = new myRaiData.digiGappEntities( ) )
+    {
+        var item = db.MyRai_ParametriSistema.Where( p => p.Chiave.Equals( "TrasferteStatiEsclusi" ) ).FirstOrDefault( );
+
+        if ( item != null )
+        {
+            tx = item.Valore1;
+        }
+    }
+
+    if ( Model.Data.Viaggi == null || !Model.Data.Viaggi.Any( ) )
+    {
+        <tr>
+            <td colspan="6">
+                @Html.Partial( "~/Views/Shared/_NoDati.cshtml" )
+            </td>
+        </tr>
+    }
+    else
+    {
+        int rowCount = 1;
+        foreach ( var itms in Model.Data.Viaggi.OrderByDescending( tt => tt.DataFromDB ).GroupBy( t => t.FoglioViaggio ).ToList( ) )
+        {
+            string cod = "";
+            int i = 0;
+            foreach ( var itm in itms )
+            {
+                i++;
+                if ( itm.Stato == null ||
+                    itm.Stato.Equals( "A" ) ||
+                    itm.Stato.Equals( "B" ) )
+                {
+                    continue;
+                }
+                string desStato = "";
+                var decodStato = Model.Stati.FirstOrDefault(x => x.Cod_Stato == itm.Stato);
+                if (decodStato != null)
+                {
+                    desStato = decodStato.Desc_Stato;
+                }
+
+                bool hideBottomBorder = false;
+
+                if ( cod.Equals( itm.FoglioViaggio , StringComparison.InvariantCultureIgnoreCase ) )
+                {
+                    hideBottomBorder = true;
+                }
+
+                string desc = "";
+                if (!String.IsNullOrEmpty(itm.Descrizione))
+                {
+                    desc = "- " + itm.Descrizione;
+                }
+
+
+
+                <tr id="trasferta_@(rowCount)">
+                    <td class="col-xs-5" style="@(hideBottomBorder ? "border-top:none;" : "")">
+                        <span class="text-bold">
+                            @if ( itm.Stato != null && !tx.Contains( itm.Stato ) )
+                            {
+                                <a onclick="DettaglioTrasferta('@(itm.FoglioViaggio)');" class="  @(hideBottomBorder ? "hidden" : "")" href="#">@itm.FoglioViaggio @desc</a>
+                            }
+                            else
+                            {
+                                <a onclick="VisualizzaBiglietti('@(itm.FoglioViaggio)');" class=" @(hideBottomBorder ? "hidden" : "")" href="#">@itm.FoglioViaggio @desc</a>
+                            }
+                        </span><br class="@(hideBottomBorder ? "hidden" : "")" />
+                        <span class="rai-font-sm-bold">
+                            @{
+                                string dateRange = "";
+                                if ( !itm.DataFromDB.Equals( DateTime.MinValue ) && !itm.DataArrivoFromDB.Equals( DateTime.MinValue ) )
+                                {
+                                    dateRange = String.Format( "dal {0} al {1}" , itm.DataFromDB.ToString( "dd/MM/yyyy" ) , itm.DataArrivoFromDB.ToString( "dd/MM/yyyy" ) );
+                                }
+                            }
+                            @dateRange
+                        </span><br />
+                        <span class="rai-font-sm-neutral">
+                            @{
+                                string note = "";
+                                if ( !String.IsNullOrEmpty( itm.Note ) )
+                                {
+                                    note = itm.Note;
+                                }
+                            }
+                            @(note)
+                        </span><br />
+                    </td>
+                    <td class="col-xs-2" style="@(hideBottomBorder ? "border-top:none;" : "")">
+                        <span class="rai-font-sm">
+                            @{
+                                if ( itm.SpesaPrevista != 0.00 )
+                                {
+                                    @(String.Format( "{0:N2} €" , itm.SpesaPrevista ))
+                                }
+                            }
+                        </span>
+                    </td>
+                    <td class="col-xs-2" style="@(hideBottomBorder ? "border-top:none;" : "")">
+                        <span class="rai-font-sm">
+                            @{
+                                if ( itm.Rimborso != 0.00 )
+                                {
+                                    @(String.Format( "{0:N2} €" , itm.Rimborso ))
+                                }
+                            }
+                        </span>
+                    </td>
+                    <td class="col-xs-2" style="@(hideBottomBorder ? "border-top:none;" : "")">
+                        <span class="rai-font-sm">
+                            @{
+                                if ( itm.Anticipo != 0.00 )
+                                {
+                                    @(String.Format( "{0:N2} €" , itm.Anticipo ))
+                                }
+                            }
+                        </span>
+                    </td>
+                    <td class="col-xs-1" style="@(hideBottomBorder ? "border-top:none;" : "")">
+                            @if (itm.Stato != null && !tx.Contains(itm.Stato))
+                            {
+                                <a onclick="DettaglioTrasferta('@(itm.FoglioViaggio)');" class="btn rai-btn-small  @(hideBottomBorder ? "hidden" : "")" href="#">Dettaglio</a>
+                            }
+                            else
+                            {
+                                <a onclick="VisualizzaBiglietti('@(itm.FoglioViaggio)');" class="btn rai-btn-small @(hideBottomBorder ? "hidden" : "")" href="#">Dettaglio</a>
+                            }
+                        </td>
+                </tr>
+
+                if (i == itms.Count())
+                {
+                    <tr>
+                        <td colspan="6" style="border-top:none;vertical-align:middle;">
+                            @if (!String.IsNullOrWhiteSpace(desStato))
+                            {
+                                <label class="rai-label">@(desStato)</label>
+                                if (itm.Stato == "D" && !itm.DataArrivoFromDB.Equals(DateTime.MinValue))
+                                {
+                                    <br />
+                                    <label class="rai-label rai-label-error">Termine rendicontazione @(itm.DataArrivoFromDB.AddDays(15).ToString("dd/MM/yyyy"))</label>
+                                }
+                            }
+                        </td>
+                        @*<td colspan="2" class="text-right" style="border-top:none;vertical-align:middle;">
+                            @if (itm.Stato != null && !tx.Contains(itm.Stato))
+                            {
+                                <a onclick="DettaglioTrasferta('@(itm.FoglioViaggio)');" class="btn rai-btn-small  @(hideBottomBorder ? "hidden" : "")" href="#">Dettaglio</a>
+                            }
+                            else
+                            {
+                                <a onclick="VisualizzaBiglietti('@(itm.FoglioViaggio)');" class="btn rai-btn-small @(hideBottomBorder ? "hidden" : "")" href="#">Dettaglio</a>
+                            }
+                        </td>*@
+                    </tr>
+                }
+
+                rowCount++;
+                cod = itm.FoglioViaggio;
+            }
+        }
+    }
+}
+
+<script type="text/javascript">
+
+    $('#trasferte_pagina@(macroStato)').val('@(Model.Page)');
+    $('#trasferte_elementi@(macroStato)').val('@(Model.Size)');
+
+    @{
+        if (!Model.HasNext)
+        {
+            <text>
+                    $('#DivAltreTrasferte@(macroStato)').hide();
+            </text>
+        }
+    }
+</script>

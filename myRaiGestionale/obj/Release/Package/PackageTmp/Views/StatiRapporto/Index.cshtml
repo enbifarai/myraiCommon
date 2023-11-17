@@ -1,0 +1,110 @@
+﻿@using myRaiHelper
+@using myRaiGestionale.Controllers
+@model RicercaStati
+
+
+@{
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    ViewBag.Title = "HRIS - Gestione stati";
+}
+
+<section role="main" class="content-body">
+    <main id="main-container">
+        <input id="scroll-skip" type="hidden" value="0" />
+        <input id="scroll-take" type="hidden" value="10" />
+        <input id="scroll-stop" type="hidden" value="false" />
+        <div class="content">
+            <div id="anag-container">
+                <div class="row">
+                    <div class="col-sm-8">
+                        @using (Html.BeginPanel(PanelType.PanelNoPadding, "Elenco dipendenti", false))
+                        {
+
+                            <div id="elenco-dip" style="min-height:100px;">
+
+                            </div>
+                        }
+                    </div>
+                    <div class="col-sm-4">
+                        @Html.RenderWidget(WidgetType.Normal, "Importa dati", "fa fa-upload", "Importa dei nuovi dati da file", action:new ActionTemplate()
+                    {
+                       Text="Importa",
+                       OnClick = "ShowImportModal()"
+                   })
+
+                        @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Cerca dipendente", false))
+                        {
+                            var formId = "form-ricerca-dipendente";
+
+                            using (Ajax.BeginForm("RicercaDipendente", "StatiRapporto", null, new AjaxOptions
+                            {
+                                InsertionMode = InsertionMode.Replace,
+                                HttpMethod = "POST",
+                                OnBegin = "$('#elenco-dip').addClass('rai-loader');",
+                                UpdateTargetId = "elenco-dip",
+                                OnSuccess = "AfterSearch()"
+                            }, new { id = formId, @class = "", role = "search" }))
+                            {
+                                <div class="form-group">
+                                    <div class="row">
+                                        <div class="col-xs-12 push-10">
+                                            @Html.LabelFor(model => model.Matricola, "Matricola", new { @class = "rai-caption" })
+                                            @Html.TextBoxFor(m => m.Matricola, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Inserisci la matricola" })
+                                        </div>
+                                        <div class="col-xs-12 push-10">
+                                            @Html.LabelFor(model => model.NominativoDipendente, "Nominativo", new { @class = "rai-caption" })
+                                            @Html.TextBoxFor(m => m.NominativoDipendente, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Nominativo" })
+                                        </div>
+                                        <div class="col-xs-12 push-10">
+                                            @Html.RaiCheckBoxLabelFor(m=>m.SoloAttivi, "Solo stati attivi", "rai-caption")
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <div class="rai-btn-fill">
+                                                <input type="submit" id="btnCerca" class="btn btn-primary" title="Cerca" value="Cerca" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- end: page -->
+</section>
+
+@Html.RenderModal("ricerca", size: ModalSize.Half)
+@Html.RenderModal("dipendente", size: ModalSize.Half)
+@Html.RenderModal("stati-rapporto", size: ModalSize.Half)
+
+@Html.RenderModal("aggiunta-massiva", size:ModalSize.Half)
+
+<script>
+    function AfterSearch() {
+        $('#elenco-dip').removeClass('rai-loader');
+        $('#scroll-skip').val(0);
+
+        if ($('#elenco-dip').find('tbody').length / 2 < 10)
+            $('#scroll-stop').val('true');
+    }
+
+    function ShowImportModal() {
+        RaiOpenAsyncModal('modal-aggiunta-massiva', '@Url.Action("Modal_AggiuntaMassiva","StatiRapporto")', null);
+    }
+</script>
+
+
+@section afterjs{
+    @Html.Raw(TempData["script"])
+
+    <script>
+        $('#btnCerca').click();
+
+    </script>
+}

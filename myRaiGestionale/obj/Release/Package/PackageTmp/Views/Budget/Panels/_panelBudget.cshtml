@@ -1,0 +1,159 @@
+﻿@using System.Globalization;
+@using myRaiCommonModel;
+@using myRaiHelper;
+
+@{
+    Layout = null;
+    var cultureInfo = CultureInfo.GetCultureInfo("it-IT");
+}
+
+@model SimulazioneBudgetDirezioneVM
+
+@{
+    decimal delta = Model.BudgetRiepilogo.Delta;
+    decimal budget = Model.BudgetRiepilogo.Direzione;
+    decimal totProvv = Model.BudgetRiepilogo.TotaleProvv;
+    decimal valorePercentuale = 0;
+    decimal utilizzato = 0;
+
+    // calcola la percentuale
+    if (budget > 0)
+    {
+        valorePercentuale = (totProvv / budget) * 100;
+    }
+    else
+    {
+        valorePercentuale = 0;
+    }
+
+    valorePercentuale = Math.Round(valorePercentuale * 100) / 100;
+
+    if (valorePercentuale < 100)
+    {
+        utilizzato = 100 - valorePercentuale;
+    }
+    else
+    {
+        utilizzato = valorePercentuale;
+    }
+
+    string iconDelta = "ti-stats-up";
+    string classeDelta = "text-success";
+
+    if (delta < 0)
+    {
+        iconDelta = "ti-stats-down";
+        classeDelta = "text-danger";
+    }
+}
+
+<div class="row">
+    <div class="col-sm-8">
+        @using (Html.BeginPanel(PanelType.Panel, "Report simulazione", false))
+        {
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="graf rai-chart overflow-hidden">
+                        <div class="dir_graf"></div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <br />
+                    <p><label class="rai-font-md-bold">Costo Annuo</label> <span>@String.Format("€ {0:N2}", totProvv)</span></p>
+                    <p><label class="rai-font-md-bold">Budget Annuo</label> <span>@(String.Format("€ {0:N2}", budget))</span></p>
+                    <p><span class="@iconDelta"></span>&nbsp;<span class="@(classeDelta)">Delta @(String.Format("€ {0:N2}", delta))</span></p>
+                </div>
+            </div>
+        }
+    </div>
+    <div class="col-sm-4">
+        @using (Html.BeginPanel(PanelType.Panel, "Esporta e convalida", false))
+        {
+            <div class="row">
+                <div class="col-sm-12">
+                    <a class="btn rai-btn-small full-width" href="@Url.Action("EsportaAreaXLSX", "Budget", new { idCamp = Model.IdCampagna, idArea = 0, idDirezione = Model.IdDirezione, })" target="_blank">
+                        Esporta dati direzione
+                    </a>
+                </div>
+            </div>
+            <div class="row push-5-t push-10">
+                <div class="col-sm-12">
+                    <a class="btn rai-btn-small full-width" id="DownloadXLSX" href="@Url.Action("DownloadXLSX", "Budget", new { idDir= Model.IdDirezione, idCamp = Model.IdCampagna })" target="_blank" onclick="Esporta(@(Model.IdDirezione), @(Model.IdCampagna))">
+                        Esporta simulazione
+                    </a>
+                </div>
+            </div>
+
+            if (Model.IdCampagna > 1)
+            {
+                if (PoliticheRetributiveHelper.EnabledToBudget() && !Model.IsVisualizzazione)
+                {
+                    if (Model.IsConsolidata)
+                    {
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <a href="@Url.Action("ScaricaLettere","Budget")" class="btn btn-primary full-width">Scarica lettere</a>
+                            </div>
+                        </div>
+                        <div class="row push-5-t">
+                            <div class="col-sm-12">
+                                <button onclick="sbloccaDirezione(this);" id="btn_consolida_direzione" data-iddirezione="@(Model.IdDirezione)" data-idcampagna="@(Model.IdCampagna)" class="btn rai-btn-primary full-width" type="button">Sconvalida</button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <button onclick="consolidaDirezione(this);" id="btn_consolida_direzione" data-iddirezione="@(Model.IdDirezione)" data-idcampagna="@(Model.IdCampagna)" class="btn rai-btn-primary full-width" type="button">Convalida</button>
+                            </div>
+                        </div>
+                    }
+                }
+            }
+
+        }
+    </div>
+</div>
+
+
+<script>
+    @{ 
+        int valGraf = (int)valorePercentuale;
+        if (valGraf>100)
+        {
+            valGraf = 100;
+        }
+        int valResiduoGraf = (int)(100 - valorePercentuale);
+        if (valResiduoGraf<0)
+        {
+            valResiduoGraf = 0;
+        }
+    }
+
+    var grafDir = new Chartist.Pie('.dir_graf', { series: [@valGraf, 0, 0, 0, 0, 0, 0, @valResiduoGraf] },
+        {
+            donut: true,
+            donutWidth: 40,
+            startAngle: 270,
+            total: 200,
+            showLabel: false
+        });
+    grafDir.on("created", function () {
+                var svg = $('.dir_graf svg')[0];;
+                svg.setAttribute("transform", "scale(1.75)");
+                svg.setAttribute("style", "position:relative;top:70px;");
+                var newElementText = document.createElementNS("http://www.w3.org/2000/svg", 'text');
+                var newElementTspan = document.createElementNS("http://www.w3.org/2000/svg", 'tspan');
+                newElementText.setAttribute("y", "45%");
+                newElementText.setAttribute("font-size", "12px");
+                newElementText.setAttribute("style", "font-size:12px");
+                newElementText.setAttribute("fill", "#333");
+                newElementText.setAttribute("class", "rai-font-text-heading");
+                newElementTspan.setAttribute("x", (svg.clientWidth / 2).toString());
+                newElementTspan.setAttribute("text-anchor", "middle");
+                newElementTspan.textContent = "@valorePercentuale%";
+                newElementText.appendChild(newElementTspan);
+                svg.appendChild(newElementText)
+            });
+</script>

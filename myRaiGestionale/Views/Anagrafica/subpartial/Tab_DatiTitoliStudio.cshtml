@@ -1,0 +1,224 @@
+﻿@using myRaiCommonModel
+@model AnagraficaTitoliStudio
+
+@{
+    var listAction = new List<myRaiHelper.ActionTemplate>();
+    if (Model.CanAdd)
+    {
+        listAction.Add(new myRaiHelper.ActionTemplate() { Icon = "fa fa-plus", OnClick = "OpenModalTitoloStudio('" + Model.Matricola + "','')" });
+    }
+}
+
+@using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Titoli di studio C<span class=\"text-lowercase\">ertificati</span>", listAction))
+{
+    bool isFirst = true;
+
+    foreach (var item in Model.Studi.OrderBy(x => x.Origine).ThenByDescending(x => x.DataFine.GetDate()))
+    {
+        if (!isFirst)
+        {
+            <hr class="between-row" />
+        }
+
+        <div class="row push-10-t push-10">
+            <div class="col-xs-8">
+                <span class="rai-font-md-bold">@item.DesTipoTitolo</span>
+                <br />
+                @if (item.DataInizio.HasValue)
+                {
+                    <span class="rai-font-sm-neutral">Dal @item.DataInizio.Get(false, "/") al @item.DataFine.Get(false, "/")</span>
+                }
+                else
+                {
+                    <span class="rai-font-sm-neutral">@item.DataFine.Get(false, "/")</span>
+                }
+            </div>
+            <div class="col-xs-4 text-right">
+                @if (item.Origine == StudioModel.StudioOrigine.Cezanne)
+                {
+                    <div class="btn-action-icon-container">
+                        @if (Model.CanModify)
+                        {
+                            <button class="btn-action-icon" onclick="OpenModalTitoloStudio('@item.Matricola', '@item.CodTitolo')"><i class="fa fa-pencil"></i></button>
+                        }
+                        @if (Model.CanDelete)
+                        {
+                            <button class="btn-action-icon" onclick="Delete_DatiStudio('@item.Matricola', '@item.CodTitolo')"><i class="fa fa-trash-o"></i></button>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="rai-table-info push-20">
+            <div class="row push-5-t">
+                <div class="col-sm-4 col-md-3 col-xl-2">
+                    <span>Titolo</span>
+                </div>
+                <div class="col-sm-8 col-md-9 col-xl-10">
+                    <span>@item.DesTitolo</span>
+                </div>
+            </div>
+
+            @if (!String.IsNullOrWhiteSpace(item.CorsoLaurea))
+            {
+                <div class="row push-5-t">
+                    <div class="col-sm-4 col-md-3 col-xl-2">
+                        <span>Corso</span>
+                    </div>
+                    <div class="col-sm-8 col-md-9 col-xl-10">
+                        <span>@item.CorsoLaurea</span>
+                    </div>
+                </div>
+            }
+
+            <div class="row push-5-t">
+                <div class="col-sm-4 col-md-3 col-xl-2">
+                    <span>Valutazione</span>
+                </div>
+                <div class="col-sm-8 col-md-9 col-xl-10">
+                    @if (!String.IsNullOrWhiteSpace(item.Voto))
+                    {
+                        <span>@(String.Format("{0}/{1}", item.Voto, item.Cod_PunteggioMax))@(item.Lode ? " con lode" : "")</span>
+                    }
+                    else
+                    {
+                        <span>-</span>
+                    }
+                </div>
+            </div>
+
+            @if (!String.IsNullOrWhiteSpace(item.CodCitta))
+            {
+                <div class="row push-5-t">
+                    <div class="col-sm-4 col-md-3 col-xl-2">
+                        <span>Città</span>
+                    </div>
+                    <div class="col-sm-8 col-md-9 col-xl-10">
+                        <span>@item.DesCitta</span>
+                    </div>
+                </div>
+            }
+
+            <div class="row push-5-t">
+                <div class="col-sm-4 col-md-3 col-xl-2">
+                    <span>Istituto</span>
+                </div>
+                <div class="col-sm-8 col-md-9 col-xl-10">
+                    <span>@(!String.IsNullOrWhiteSpace(item.Istituto) ? item.Istituto : "-")</span>
+                </div>
+            </div>
+
+        </div>
+
+        isFirst = false;
+    }
+
+    if (isFirst) //Non ci sono titoli
+    {
+        <div class="row push-10-t push-10">
+            @Html.Partial("_NoDatiDiv")
+        </div>
+    }
+}
+
+@if (Model.CVOnline.Any())
+{
+    using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "CV Online"))
+    {
+        bool isFirst = true;
+
+        foreach (var item in Model.CVOnline.OrderByDescending(x => x.DataFine.GetDate()))
+        {
+            if (!isFirst)
+            {
+                <hr class="between-row" />
+            }
+
+            <div class="row push-10-t push-10">
+                <div class="col-xs-8">
+                    <span class="rai-font-md-bold">@item.DesTipoTitolo</span>
+                    @if (item.Origine == StudioModel.StudioOrigine.Cezanne)
+                    {
+                        <text>&nbsp;</text>
+                        <span class="rai-label">Certificato</span>
+                    }
+                    <br />
+                    @if (item.DataInizio.HasValue)
+                    {
+                        <span class="rai-font-sm-neutral">Dal @item.DataInizio.Get(false, "/") al @item.DataFine.Get(false, "/")</span>
+                    }
+                    else
+                    {
+                        <span class="rai-font-sm-neutral">@item.DataFine.Get(false, "/")</span>
+                    }
+                </div>
+                <div class="col-xs-4 text-right">
+                </div>
+            </div>
+
+            <div class="rai-table-info push-20">
+                <div class="row push-5-t">
+                    <div class="col-sm-4 col-md-3 col-xl-2">
+                        <span>Titolo</span>
+                    </div>
+                    <div class="col-sm-8 col-md-9 col-xl-10">
+                        <span>@item.DesTitolo</span>
+                    </div>
+                </div>
+
+                @if (!String.IsNullOrWhiteSpace(item.CorsoLaurea))
+                {
+                    <div class="row push-5-t">
+                        <div class="col-sm-4 col-md-3 col-xl-2">
+                            <span>Corso</span>
+                        </div>
+                        <div class="col-sm-8 col-md-9 col-xl-10">
+                            <span>@item.CorsoLaurea</span>
+                        </div>
+                    </div>
+                }
+
+                <div class="row push-5-t">
+                    <div class="col-sm-4 col-md-3 col-xl-2">
+                        <span>Valutazione</span>
+                    </div>
+                    <div class="col-sm-8 col-md-9 col-xl-10">
+                        @if (!String.IsNullOrWhiteSpace(item.Voto))
+                        {
+                            <span>@(String.Format("{0}/{1}", item.Voto, item.Cod_PunteggioMax))@(item.Lode ? " con lode" : "")</span>
+                        }
+                        else
+                        {
+                            <span>-</span>
+                        }
+                    </div>
+                </div>
+
+                @if (!String.IsNullOrWhiteSpace(item.CodCitta))
+                {
+                    <div class="row push-5-t">
+                        <div class="col-sm-4 col-md-3 col-xl-2">
+                            <span>Città</span>
+                        </div>
+                        <div class="col-sm-8 col-md-9 col-xl-10">
+                            <span>@item.DesCitta</span>
+                        </div>
+                    </div>
+                }
+
+                <div class="row push-5-t">
+                    <div class="col-sm-4 col-md-3 col-xl-2">
+                        <span>Istituto</span>
+                    </div>
+                    <div class="col-sm-8 col-md-9 col-xl-10">
+                        <span>@(!String.IsNullOrWhiteSpace(item.Istituto) ? item.Istituto : "-")</span>
+                    </div>
+                </div>
+
+            </div>
+
+            isFirst = false;
+        }
+    }
+}

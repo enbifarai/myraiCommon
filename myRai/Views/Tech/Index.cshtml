@@ -1,0 +1,235 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model TechDashModel
+
+@{
+    Layout = "~/Views/Shared/_layout2.cshtml";
+    string[] mess = CommonHelper.GetParametri<string>( EnumParametriSistema.MessaggioChiusura );
+}
+
+<section class="body">
+    @Html.Partial( "../Shared/header2" , new myRaiCommonModel.NotifichePopupModel( CommonHelper.GetCurrentUserMatricola( ) ) )
+    <div class="inner-wrapper">
+        @Html.Partial( "../Shared/sidebar3" , myRaiHelper.UtenteHelper.getSidebarModel(  ) )
+        <section role="main" class="content-body" style="padding:10px">
+            <main id="main-container">
+                <div class="row">
+                    <div id="container-resptime" class="col-sm-6">
+                        @Html.Partial( "_averageResponseTime" , Model.Intervallo )
+                    </div>
+
+                    <div id="container-resptimeHH" class="col-sm-6">
+                        @Html.Partial( "_averageResponseTimeHH" , Model.Intervallo )
+                    </div>
+                    <div id="container-resptimeHHreq" class="col-sm-6">
+                        @Html.Partial("_averageResponseTimeHHreq", Model.Intervallo)
+                    </div>
+
+                </div>
+                <div class="row">
+                    <div id="container-rich" class="col-sm-6">
+                        @Html.Partial( "_chartRichieste" , Model.RichiestePerData )
+                    </div>
+                    <div id="container-matr" class="col-sm-6">
+                        @Html.Partial( "_chartMatricole" , Model.MatricoleAllaData )
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div id="container-pdf" class="col-sm-12">
+                        @Html.Partial( "_pdfStatus" , Model.SediPdf )
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div id="myChartLogs">
+                            @Html.Partial( "~/Views/Tech/ChartLogs/_box_skeleton.cshtml" )
+                        </div>
+                    </div>
+                    <div id="container-appr" class="col-sm-6">
+                        @Html.Partial( "_daapprStatus" , Model.SediDaAppr )
+                    </div>
+                    <div class="col-sm-6"></div>
+                </div>
+
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div id="myChartRichieste">
+                            @Html.Partial( "~/Views/Tech/ChartRichieste/_box_skeleton.cshtml" )
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div id="myChartRichiesteApprovate">
+                            @Html.Partial( "~/Views/Tech/RichiesteApprovate/_box_skeleton.cshtml" )
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div id="cache-reset">
+                            @Html.Partial( "~/Views/Tech/cacheReset.cshtml" )
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div id="container-pdf" class="col-sm-12">
+                        @Html.Partial( "_testProposta" )
+                    </div>
+                </div>
+                <div class="row">
+                    <div id="container-stato-approvazione-produzione" class="col-sm-12">
+                        @Html.Partial( "~/Views/Tech/RichiesteApprovate/_box_skeleton.cshtml" )
+                    </div>
+                </div>
+                <div class="row">
+                    <div id="container-bonus100" class="col-sm-4">
+                        @Html.Partial( "~/Views/_raiDesign/Widget_Skeleton.cshtml" )
+                    </div>
+                    <div id="container-bonus100" class="col-sm-8">
+                    </div>
+                </div>
+            </main>
+            <!-- end: page -->
+        </section>
+    </div>
+
+    <aside id="sidebar-right" class="sidebar-right">
+        <div class="nano has-scrollbar">
+            <div class="nano-content" tabindex="0" style="right: -17px;">
+            </div>
+        </div>
+
+        <div class="nano-pane" style="opacity: 1; visibility: visible;">
+            <div class="nano-slider" style="height: 583px; transform: translate(0px, 0px);"></div>
+        </div>
+
+
+    </aside>
+
+</section>
+@section afterjs {
+    @Html.Raw( TempData["script"] )
+
+    <script type="text/javascript">
+        $( document ).ready( function (){
+            $( '#myChartLogs' ).load( "/tech/chartlogs" );
+            $("#container-rich").load("/tech/getrich");
+            setInterval(function () { $("#container-resptime").load("/tech/getresptime"); }, 1000);
+            setInterval(function () { $("#container-resptimeHH").load("/tech/getresptimeHH"); }, @Model.Intervallo.IntervalloRefresh);
+
+            $( "#container-matr" ).load( "/tech/getmatr" );
+            $( "#container-pdf" ).load( "/tech/getdoc" );
+            $( "#container-appr" ).load( "/tech/getappr" );
+            $('#myChartRichieste').load("/tech/chartrichieste");
+            $('#myChartRichiesteApprovate').load("/tech/chartrichiesteapprovate");
+            $('#myChartRichiesteApprovate').load("/tech/chartrichiesteapprovate");
+            $("#container-stato-approvazione-produzione").load("/tech/ControllaApprovatoriProduzione");
+            $("#container-bonus100").load("/tech/GetBonusStats");
+
+            $("form#intervallominutiform").submit(function () {
+                var intervallominuti = $("#intervallominuti").val();
+             
+                $.ajax({
+                    type: "POST",
+                    url: "/tech/getresptimeHH/" + intervallominuti,
+                    
+                    dataType: "html",
+                    success: function (risposta) {
+                        
+                        $("div#formminuti").html(risposta);
+
+
+                    },
+                    error: function () {
+                        alert("Chiamata fallita!");
+                    }
+                });
+                return false;
+        });
+        });
+
+        function cacheReset() {
+            swal({
+                title: "Conferma reset",
+                html: "RaiPerMe potrebbe subire dei rallentamenti più o meno gravi a seconda del carico di HRGA, confermi il reset della cache?",
+                type: 'question',
+                showCloseButton: true,
+                showCancelButton: false,
+                confirmButtonText: ' OK'
+            }).then(function () {
+                $.ajax({
+                    url: '/tech/reset',
+                    type: "GET",
+                    dataType: "html",
+
+                    data: {  },
+                    success: function (data) {
+                        swal('', data, 'info');
+                    },
+                    error: function (result) {
+
+                    }
+                });
+                });
+        }
+        function resetsede() {
+            var anno = $("#anno-pf").val();
+            var matr = $("#matricola-pf").val();
+            var sede = $("#sede-pf").val();
+            swal({
+                title: "Conferma modifica",
+                html: "Confermi di resettare il pianoferie " + anno + " della sede " + sede + " annullando eventuale approvazione e firma ?",
+                type: 'question',
+                showCloseButton: true,
+                showCancelButton: true,
+                confirmButtonText: ' OK'
+            }).then(function () {
+                $.ajax({
+                    url: '/tech/resetsede',
+                    type: "GET",
+                    dataType: "html",
+
+                    data: { anno: anno,  sede: sede },
+                    success: function (data) {
+                        swal('', data, 'info');
+                    },
+                    error: function (result) {
+
+                    }
+                });
+            });
+        }
+        function modpf() {
+            var anno = $("#anno-pf").val();
+            var matr = $("#matricola-pf").val();
+            var sede = $("#sede-pf").val();
+            swal({
+                title: "Conferma modifica",
+                html: "Confermi di modificare il pianoferie "+anno+" della matricola "+ matr + " cambiando la sede in " + sede + " ?",
+                type: 'question',
+                showCloseButton: true,
+                showCancelButton: true,
+                confirmButtonText: ' OK'
+            }).then(function () {
+                $.ajax({
+                    url: '/tech/modpf',
+                    type: "GET",
+                    dataType: "html",
+
+                    data: {anno:anno, matr:matr, sede:sede},
+                    success: function (data) {
+                        debugger
+                        swal('', data, 'info');
+                    },
+                    error: function (result) {
+                        debugger
+                    }
+                });
+            });
+        }
+    </script>
+}

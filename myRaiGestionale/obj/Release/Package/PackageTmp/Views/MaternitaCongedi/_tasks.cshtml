@@ -1,0 +1,395 @@
+﻿@model myRaiCommonModel.TaskModel
+
+
+<div class="row">
+    <div class="col-sm-12">
+        <span>Il sistema eseguirà automaticamente le operazioni automatiche elencate. Se non vuoi eseguire una di queste operazioni puoi disattivarla.</span>
+    </div>
+</div>
+
+@{
+    int counter = -1;
+
+}
+<form id="form-tasks" method="post" action="/maternitacongedi/salvatask">
+    @foreach (var mese in Model.DateRiferimentoPrimoDelMeseTaskNecessari)
+    {
+        int counterPerMese = 0;
+        int IdRichiestaPrincipaleConTaskInCorso = 0;
+
+        float giorni26mi = Model.DettaglioAmmModel.ElencoGiorniPerMese.Where(x => x.RiferimentoPrimoDelMese == mese)
+    .Select(z => z.TotaleGiorni).FirstOrDefault();
+        var MeseHaTracciati = Model.DettaglioAmmModel.ElencoGiorniPerMese.Where(x => x.RiferimentoPrimoDelMese == mese).Count() > 0;
+
+        <div class="row">
+            <div class="col-sm-8" style="padding-top:22px">
+                <span class="rai-font-md-bold text-primary">@(mese.ToString("MMMM yyyy").Substring(0, 1).ToUpper() + mese.ToString("MMMM yyyy").Substring(1)) </span>
+            </div>
+            <div class="col-sm-4" style="padding-top:22px;text-align:right">
+                <span class="rai-font-md-bold text-primary"> @giorni26mi/26 </span>
+                <span class="rai-font-md text-primary">giorni</span>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-12">
+                <div style="background-color: #eee;height: 1px;margin-top: 11px;"></div>
+            </div>
+        </div>
+
+        foreach (var item in Model.Richiesta.XR_MAT_CATEGORIE.XR_MAT_CATEGORIA_TASK.Where(x => x.STATO_PRATICA == Model.StatoFinalePratica).OrderBy(x => x.PROGRESSIVO))
+        {
+            if (item.XR_MAT_ELENCO_TASK.NOME_TASK.Trim() == "STORNO CEDOLINO")
+            {
+                var tdv = Model.TaskDaVisualizzareModel.Where(x => x.DataPrimoDelMese == mese).FirstOrDefault();
+                var StornoCed = tdv.Info.Where(x => x.Anno == mese.Year && x.Mese == mese.Month && x.IdTask == item.ID_TASK).FirstOrDefault();
+
+                if (StornoCed != null)
+                {
+                    counter++;
+                    counterPerMese++;
+                    myRaiData.Incentivi.XR_MAT_TASK_IN_CORSO taskInCorso = null;
+
+                    <table class="js-table-sections table  rai-table" role="grid">
+                        <tbody class="js-table-sections-header">
+                            <tr role="row" tabindex="0">
+                                <td>
+                                    <div class="row task-row" style="border-bottom:solid 1px #eee;padding-top:16px;padding-bottom:16px">
+                                        <input type="hidden" name="model[@counter].idtask" value="@item.XR_MAT_ELENCO_TASK.ID" />
+                                        <input type="hidden" name="model[@counter].idrichiesta" value="@Model.Richiesta.ID" />
+                                        <input type="hidden" name="model[@counter].progressivotask" value="@item.PROGRESSIVO" />
+                                        <input type="hidden" name="model[@counter].mese" value="@mese.ToString("MM")" />
+                                        <input type="hidden" name="model[@counter].anno" value="@mese.ToString("yyyy")" />
+
+                                        <div class="col-sm-8">
+                                            <span class="task-nome rai-font-md-bold">@item.XR_MAT_ELENCO_TASK.NOME_TASK</span>
+
+                                            <br />
+                                            <span class="task-desc rai-font-sm">@item.XR_MAT_ELENCO_TASK.DESCRIZIONE_TASK  </span>
+                                        </div>
+                                        <div class="col-sm-4" style="text-align:right">
+                                            <span class="rai-font-sm-neutral" style="margin-right:10px">@(myRaiCommonManager.MaternitaCongediManager.GetRewDew(mese.Year, mese.Month))</span>
+                                            @if (!Model.Richiesta.XR_MAT_TASK_IN_CORSO.Any())
+                                            {
+                                                @Html.Partial("_taskswitch", new myRaiCommonModel.TaskSwitchModel() { stato = true, counter = counter })
+                                            }
+                                            else
+                                            {
+                                                taskInCorso = myRaiCommonManager.MaternitaCongediManager.GetTaskGiaSalvatoStessaPratica(
+                                                   item.ID_TASK, Model.Richiesta.ID, mese.Month, mese.Year, "", "");
+
+                                                //taskInCorso = Model.Richiesta.XR_MAT_TASK_IN_CORSO.Where(x => x.ID_TASK ==
+                                                //item.ID_TASK).FirstOrDefault();
+
+                                                @Html.Partial("_taskStatus" , new myRaiCommonModel.TaskStatusModel() {
+                                                counter=counter, TaskInCorso=taskInCorso
+                                                })
+
+                                            }
+
+                                        </div>
+                                    </div>
+                                </td>
+                                @if (taskInCorso != null && taskInCorso.TERMINATA)
+                                {
+                                    <td style="padding-top: 24px;width:20px" class="interactive-primary-color text-center"></td>
+                                }
+                                else
+                                {
+                                    <td style="padding-top: 24px;width:20px" class="interactive-primary-color text-center">
+                                        <i class="fa fa-angle-down" style="font-size:20px"></i>
+                                    </td>
+                                }
+
+                            </tr>
+                        </tbody>
+                        <tbody class="tbodydata" style="border:none ">
+                            <tr>
+                                <td>
+                                    @{
+                                        var TracciatoEsploso =
+                   Model.TracciatiEsplosi.Where(x => x.mese == mese.Month && x.anno == mese.Year && x.IdElencoTask == item.ID_TASK
+                   ).FirstOrDefault();
+                                    }
+                                    @Html.Partial("_tasksTracciatoExp",new myRaiCommonModel.TaskTracciatoExpModel() {
+                                   TracciatoEsploso=TracciatoEsploso , counter =counter
+                              })
+
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                }
+            }
+            else //non è storno cedolino
+
+            {
+                List<myRaiCommonModel.DettaglioGiorniModel> PeriodiEccezione =
+                    new List<myRaiCommonModel.DettaglioGiorniModel>();
+
+                var meserif = Model.DettaglioAmmModel.ElencoGiorniPerMese.Where(x => x.RiferimentoPrimoDelMese == mese).FirstOrDefault();
+                if (!MeseHaTracciati && item.XR_MAT_ELENCO_TASK.TIPO != "SERVIZIO")
+                {
+                    continue;
+                }
+                if (item.XR_MAT_ELENCO_TASK.TIPO == "SERVIZIO")
+                {
+                    var tdv = Model.TaskDaVisualizzareModel.Where(x => x.DataPrimoDelMese == mese).FirstOrDefault();
+                    var TaskServizio = tdv.Info.Where(x => x.Anno == mese.Year && x.Mese == mese.Month && x.IdTask == item.ID_TASK).FirstOrDefault();
+
+                    if (TaskServizio != null)
+                    {
+                        PeriodiEccezione = new List<myRaiCommonModel.DettaglioGiorniModel>() {
+            new myRaiCommonModel.DettaglioGiorniModel (){
+             CodiceEccezione=Model.EccezioneRisultante,
+               TipoTask="SERVIZIO",
+                DataDa=new DateTime(9999,12,31),
+                DataA =new DateTime(9999,12,31)
+            }
+            };
+                    }
+                    else
+                    {
+                        if (IdRichiestaPrincipaleConTaskInCorso == 0)
+                        {
+                            IdRichiestaPrincipaleConTaskInCorso = tdv.IdRichiestaCheGiaVisualizzaTask;
+                        }
+
+                    }
+
+                }
+                else
+                {
+                    PeriodiEccezione = meserif.ElencoGiorni.Where(x => x.CodiceEccezione == Model.EccezioneRisultante).ToList();
+                }
+
+
+                foreach (var periodoEccezione in PeriodiEccezione)
+                {
+                    var taskGiaPresenteNelDB = myRaiCommonManager.MaternitaCongediManager.GetTaskGiaSalvatoAltrePratiche(item.ID_TASK, Model.Richiesta.ID,
+                        mese.Month, mese.Year, periodoEccezione.DataDa.ToString("dd/MM/yyyy"), periodoEccezione.DataA.Value.ToString("dd/MM/yyyy"));
+                   // var test = myRaiCommonManager.MaternitaCongediManager.IsTaskPresentDB(Model.Richiesta.ID, item.ID_TASK, mese.Year, mese.Month, periodoEccezione.DataDa, periodoEccezione.DataA);
+                    if (taskGiaPresenteNelDB != null)
+                    {
+                        IdRichiestaPrincipaleConTaskInCorso = taskGiaPresenteNelDB.ID_RICHIESTA;
+                        continue;
+                    }
+                    counter++;
+                    counterPerMese++;
+                    <table class="js-table-sections table  rai-table" role="grid">
+                        <tbody class="js-table-sections-header">
+                            <tr role="row" tabindex="0">
+                                <td>
+                                    <div class="row task-row" style="border-bottom:solid 1px #eee;padding-top:16px;padding-bottom:16px">
+                                        <input type="hidden" name="model[@counter].idtask" value="@item.XR_MAT_ELENCO_TASK.ID" />
+                                        <input type="hidden" name="model[@counter].idrichiesta" value="@Model.Richiesta.ID" />
+                                        <input type="hidden" name="model[@counter].progressivotask" value="@item.PROGRESSIVO" />
+                                        <input type="hidden" name="model[@counter].mese" value="@mese.ToString("MM")" />
+                                        <input type="hidden" name="model[@counter].anno" value="@mese.ToString("yyyy")" />
+                                        <input type="hidden" name="model[@counter].eccezionerisultante" value="@Model.EccezioneRisultante" />
+
+
+                                        <input type="hidden" name="model[@counter].periododa"
+                                               value="@periodoEccezione.DataDa.ToString("dd/MM/yyyy")" />
+
+                                        @if (periodoEccezione.DataA == null)
+                                        {
+                                            <input type="hidden" name="model[@counter].periodoa"
+                                                   value="@periodoEccezione.DataDa.ToString("dd/MM/yyyy")" />
+                                        }
+                                        else
+                                        {
+                                            <input type="hidden" name="model[@counter].periodoa"
+                                                   value="@periodoEccezione.DataA.Value.ToString("dd/MM/yyyy")" />
+                                        }
+
+
+                                        <div class="col-sm-8">
+                                            <span class="task-nome rai-font-md-bold">@item.XR_MAT_ELENCO_TASK.NOME_TASK</span>
+
+
+                                            <br />
+                                            @*<span class="task-desc rai-font-sm">@item.XR_MAT_ELENCO_TASK.DESCRIZIONE_TASK  </span><br />*@
+                                            @if (periodoEccezione.TipoTask != "SERVIZIO")
+                                            {
+                                                if (periodoEccezione.DataA == null)
+                                                {
+                                                    <span class="rai-font-sm">@periodoEccezione.DataDa.ToString("dd/MM/yyyy")</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="rai-font-sm">@periodoEccezione.DataDa.ToString("dd/MM/yyyy") - @periodoEccezione.DataA.Value.ToString("dd/MM/yyyy")</span>
+                                                }
+                                                @*if (periodoEccezione.NotaFusione != null)
+                                                    {
+                                                        <br />
+                                                        <span class="rai-font-sm text-warning">@periodoEccezione.NotaFusione</span>
+                                                    }*@
+                                                if (periodoEccezione.Fusioni > 0)
+                                                {
+                                                    string titolo = String.Join("<br />", periodoEccezione.IntervalliFusi.ToArray());
+                                                    <span data-toggle="tooltip" data-html="true" title="@titolo" class="rai-label rai-label-interactive">@(periodoEccezione.Fusioni) periodi uniti</span>
+
+                                                }
+                                            }
+
+                                        </div>
+                                        <div class="col-sm-4" style="text-align:right">
+                                            @if (periodoEccezione.TipoTask != "SERVIZIO")
+                                            {
+                                                <span class="rai-font-sm-neutral" style="margin-right:10px">@(myRaiCommonManager.MaternitaCongediManager.GetRewDew(mese.Year, mese.Month))</span>
+                                            }
+
+                                            @{
+                                                myRaiData.Incentivi.XR_MAT_TASK_IN_CORSO taskInCorso = null;
+                                            }
+
+                                            @if (!Model.Richiesta.XR_MAT_TASK_IN_CORSO.Any())
+                                            {
+                                                @Html.Partial("_taskswitch", new myRaiCommonModel.TaskSwitchModel() { stato = true, counter = counter, statoeccezione = periodoEccezione.StatoEccez })
+                                            }
+                                            else
+                                            {
+                                                string d1 = periodoEccezione.DataDa.ToString("dd/MM/yyyy");
+                                                string d2 = periodoEccezione.DataA.Value.ToString("dd/MM/yyyy");
+
+                                                //taskInCorso =
+                                                //   myRaiCommonManager.MaternitaCongediManager.GetTaskInCorsoDaDB(Model.Richiesta.ID, item.ID_TASK, mese.Year, mese.Month, periodoEccezione.DataDa, periodoEccezione.DataA);
+                                                taskInCorso =
+                                                  myRaiCommonManager.MaternitaCongediManager.GetTaskGiaSalvatoStessaPratica
+                                                  (item.ID_TASK, Model.Richiesta.ID, mese.Month, mese.Year, d1, d2);
+                                                @Html.Partial("_taskStatus" , new myRaiCommonModel.TaskStatusModel() {
+                                                    counter=counter, TaskInCorso=taskInCorso
+                                                })
+
+                                            }
+
+                                        </div>
+                                    </div>
+                                </td>
+                                <td style="padding-top: 24px;width:20px" class="interactive-primary-color text-center">
+                                    @if (taskInCorso != null && taskInCorso.TERMINATA)
+                                    {
+
+                                    }
+                                    else
+                                    {
+                                        <i class="fa fa-angle-down" style="font-size:20px"></i>
+                                    }
+
+
+                                </td>
+
+
+                            </tr>
+                        </tbody>
+                        <tbody class="tbodydata" style="border:none ">
+                            <tr>
+                                <td>
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <span class="task-desc rai-font-sm">@item.XR_MAT_ELENCO_TASK.DESCRIZIONE_TASK  </span>
+                                        </div>
+                                    </div>
+
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @{
+                                        var TracciatoEsploso =
+                   Model.TracciatiEsplosi.Where(x => x.mese == mese.Month && x.anno == mese.Year && x.IdElencoTask == item.ID_TASK
+                   && x.PeriodoDa == periodoEccezione.DataDa && x.PeriodoA == periodoEccezione.DataA).FirstOrDefault();
+                                    }
+
+                                    @Html.Partial("_tasksTracciatoExp",new myRaiCommonModel.TaskTracciatoExpModel() {
+                                    TracciatoEsploso=TracciatoEsploso , counter =counter
+                               })
+
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                }
+            }
+
+        }
+        if (counterPerMese == 0)
+        {
+            <div class="row">
+                <div class="col-sm-12">
+                    <span class="text-warning rai-font-sm-bold">
+                        Tutte le operazioni necessarie sono già state avviate da un'altra pratica, clicca <a href="javascript:ApriPratica('@Model.Richiesta.XR_MAT_CATEGORIE.TITOLO', @IdRichiestaPrincipaleConTaskInCorso)">qui</a> per aprirla
+
+                    </span>
+                </div>
+            </div>
+        }
+    }
+
+</form>
+
+
+<script>
+    @if (counter < 0)
+    {
+        @:$("#avvia-pratica").addClass("disable");
+    }
+    $(".campo-tracc-edit").on("keyup", function (evt) { ModificaTracciato($(this), evt) });
+    $(".campo-tracc-edit").on("keydown", function (evt) {
+        CheckValido($(this), evt)
+    });
+
+    function CheckValido(input, evt) {
+        var tipo = $(input).attr("data-campo-codicetipocampo");
+        if (tipo == "P") {
+            evt.stopPropagation();
+            evt.preventDefault();
+            return;
+        }
+        var nome = $(input).attr("data-campo-nome");
+        if (nome == "MATRICOLA RAI") {
+            evt.stopPropagation();
+            evt.preventDefault();
+            return;
+        }
+        debugger
+        var spanError = $(input).closest("div").find(".err-tracc");
+
+        if (evt.keyCode == 8 || evt.keyCode == 37 || evt.keyCode == 39 || evt.keyCode == 46) {
+            $(spanError).text("");
+            return;
+        }
+        var tipocampo = $(input).attr("data-campo-codicetipocampo");
+        if (!CarattereValido(tipocampo, evt.key)) {
+            $(spanError).text("Carattere '" + evt.key + "' non valido");
+            evt.stopPropagation();
+            evt.preventDefault();
+        }
+        else
+            $(spanError).text("");
+    }
+    function ModificaTracciato(input, evt) {
+        var pos = ($(input).attr("data-campo-posizione"));
+        var lun = ($(input).attr("data-campo-lunghezza"));
+        var testoAttuale = $(input).val();
+        if (testoAttuale.length == lun) {
+            debugger
+            $(input).removeClass("input-error");
+            $("#avvia-pratica").removeClass("disable");
+            var elementTestoTracc = $(input).parents("td").find("input.tracc");
+            var testo = $(elementTestoTracc).val();
+            var outstr = testo.substr(0, pos - 1) + testoAttuale + testo.substr(pos - 1 + testoAttuale.length);
+            $(elementTestoTracc).val(outstr);
+        }
+        else {
+            $(input).addClass("input-error");
+            $("#avvia-pratica").addClass("disable");
+        }
+    }
+    $(".switch-primary").on("click", function (evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+        ChangeSwitch($(this));
+    });
+</script>

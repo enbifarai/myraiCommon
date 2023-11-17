@@ -1,0 +1,228 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model myRaiCommonModel.ModelDash
+
+@{
+    ViewBag.Title = "Approvazioni";
+    Layout = "~/Views/Shared/_LayoutContent.cshtml";
+    string[] mess = CommonHelper.GetParametri<string>(EnumParametriSistema.MessaggioChiusura);
+    
+	string[] msgPrimoLiv = null;
+    using (myRaiData.digiGappEntities db = new myRaiData.digiGappEntities())
+    {
+        var param = db.MyRai_ParametriSistema.FirstOrDefault(x => x.Chiave == "MessaggioPrimoLiv");
+        if (param != null && !String.IsNullOrWhiteSpace(param.Valore1) && !String.IsNullOrWhiteSpace(param.Valore2))
+        {
+            msgPrimoLiv = new string[] { param.Valore1, param.Valore2 };
+        }
+    }
+}
+
+
+<section role="main" class="content-body">
+    @{
+        int TotEvid = (UtenteHelper.GetQuadratura() == Quadratura.Settimanale ? @Model.TotaleEvidenzeDaGiustificareSoloAssIng : @Model.TotaleEvidenzeDaGiustificare);
+    }
+    <main id="main-container">
+        <div class="content">
+                    @if (msgPrimoLiv != null)
+                    {
+                        <div class="row">
+                            <div class="col-sm-12">
+                                @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, msgPrimoLiv[0], false))
+                                {
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <label class="rai-font-md">@msgPrimoLiv[1]</label>
+                                    </div>
+                                </div>
+                                }
+                            </div>
+                        </div>
+                    }
+            <div class="row">
+                <div class="col-lg-8">
+                    @if (!UtenteHelper.GappChiuso())
+                    {
+                        if (UtenteHelper.IsBoss(CommonHelper.GetCurrentUserPMatricola()) ||
+                            UtenteHelper.IsBossLiv2(CommonHelper.GetCurrentUserPMatricola()))
+                        {
+                            @Html.Partial("../Responsabile/da_approvare")
+                        }
+
+                        if (!CommonHelper.GetParametro<bool>(EnumParametriSistema.SpegniResoconti))
+                        {
+                            if (UtenteHelper.IsBoss(CommonHelper.GetCurrentUserPMatricola()))
+                            {
+                                @Html.Partial("../resoconti/_resoconti_skeleton")
+                            }
+                        }
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning alert-dismissable ">
+                            <h3 class="font-w300 push-15 text-black ">@mess[0]</h3>
+                            <p class="text-black">@mess[1]</p>
+                        </div>
+                    }
+                </div>
+                <div class="col-lg-4">
+                            @if (myRai.Models.Utente.IsBoss() && myRai.Business.CommonManager.GetCurrentUserMatricola()!="581330")
+                    {
+                        <section class="rai-widget">
+                            <div class="rai-widget-body bg-base">
+                                <div class="rai-widget-cta">
+                                    <div class="rai-widget-cta-title">
+                                                <label class="rai-title interactive-primary-color">Apri Piano Ferie 2021</label>
+                                    </div>
+                                    <div class="rai-widget-cta-action">
+                                                <a href="javascript:ShowPfApprovatore()" aria-label="Approva piano ferie" class="btn btn-action-default font-w600 bg-interactive-secondary interactive-primary-color">Vedi</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                                if ( Model.WidgetStatoFerie != null )
+                                {
+                                    <div id="@Model.WidgetStatoFerie.WidgetId">
+                                        @Html.Partial( "~/Views/DashboardResponsabile/_box_skeleton.cshtml" , Model.WidgetStatoFerie.Title )
+                                    </div>
+
+                                }
+                    }
+
+                    @if (!CommonHelper.GetParametro<bool>(EnumParametriSistema.SpegniPresenze))
+                    {
+                        @Html.Partial("_presenzeDipendenti", new PresenzaDipendenti() { IsPreview = true })
+                    }
+
+                    @Html.Partial("ricerca", Model.RicercaModel)
+
+                </div>
+            </div>
+        </div>
+    </main>
+</section>
+
+<aside id="sidebar-right" class="sidebar-right">
+    <div class="nano has-scrollbar">
+        <div class="nano-content" tabindex="0" style="right: -17px;">
+        </div>
+    </div>
+    <div class="nano-pane" style="opacity: 1; visibility: visible;">
+        <div class="nano-slider" style="height: 583px; transform: translate(0px, 0px);"></div>
+    </div>
+</aside>
+
+@Html.Partial("../Richieste/_motivoRifiuto")
+@Html.Partial("../Richieste/_nuovarichiesta", Model.Raggruppamenti)
+@Html.Partial("../Richieste/_popupInizialePreSelezione")
+@Html.Partial("../Richieste/_validarifiutatutti")
+@Html.Partial("../Responsabile/popupResponsabile")
+@Html.Partial("../maternitacongedi/popupviewpianificazione")
+
+<div class="modal fade right" id="giornata-modal" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+</div>
+<div class="modal fade right" id="doc-modal" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-popin modal-lg">
+        <div class="block-header bg-cdf" style="height: 0px; padding: 0px;">
+            <ul class="block-options visible-xs">
+                <li>
+                    <button data-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+                </li>
+            </ul>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+
+        </div>
+        <div class="modal-content" id="pdfcontent" style="text-align: center">
+            <iframe style="width: 100%; margin: 8px; border: none" id="docframe"></iframe>
+        </div>
+    </div>
+</div>
+
+<div class="modal right fade" id="statoferie-modal" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-popin">
+        <div class="modal-content height100" id="statoferie-modal-content" style="overflow-y: hidden;overflow-x: hidden;">
+        </div>
+    </div>
+</div>
+
+@section afterjs
+{
+    <script>
+        $(document).ready(function () {
+            var color = "#0088CC";
+            if (document.getElementsByClassName("bg-cdf").length) {
+                var style = window.getComputedStyle(document.getElementsByClassName("bg-cdf")[0], null);
+                if (style.length) {
+                    var rgb = style["background-color"];
+                    if (rgb.length) {
+                        var color = rgb.replace('rgb(', '').replace(')', '').split(',');
+
+                        var r, g, b;
+                        r = parseInt(color[0].trim());
+                        g = parseInt(color[1].trim());
+                        b = parseInt(color[2].trim());
+
+                        color = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+                    }
+                }
+            }
+
+            $('.chart').easyPieChart({
+                "barColor": color, "delay": 300, scaleColor: false, lineWidth: 7, size: 125
+            });
+            $('.chart-small').easyPieChart({
+                "barColor": color, "delay": 300, scaleColor: false, lineWidth: 4, size: 55
+            });
+
+            @{ 
+                if (Model.WidgetStatoFerie != null)
+                {
+                <text>
+                    $.ajax({
+                        type: "POST",
+                        url: "@Url.Action(Model.WidgetStatoFerie.ActionName, "DashboardResponsabile" )",
+                        dataType: "html",
+                        success: function (risposta) {
+                            $('#@Model.WidgetStatoFerie.WidgetId').html(risposta);
+                        },
+                        error: function () {
+                            alert("Chiamata fallita!");
+                        }
+                    });
+                </text>
+                }
+            }
+
+           // getMaternitaCongediContent();
+        });
+        function getMaternitaCongediContent() {
+             $.ajax({
+                        type: "GET",
+                        url: "/approvazione/getApprovazioniModel",
+                        dataType: "html",
+                        success: function (data) {
+                            $("#matcong-container-approvazioni").html(data);
+                        },
+                        error: function () {
+
+                        }
+                    });
+        }
+
+        function PianificaMouseUp() {
+            console.log ("no mod da appr")
+        }
+        function PianificaMouseDown() {
+            console.log("no mod da appr")
+        }
+        function PianificaMouseOver() {
+            console.log("no mod da appr")
+        }
+        function PianificaMouseUpNoCell() {
+            console.log("no mod da appr")
+        }
+    </script>
+}

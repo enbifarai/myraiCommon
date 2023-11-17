@@ -1,0 +1,137 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel.Gestionale
+@model List<MboScheda>
+
+
+
+@if (Model == null || !Model.Any())
+{
+    <div class="panel">
+        <div class="panel-heading">
+            <label class="panel-title">Elenco schede</label>
+        </div>
+        <div class="panel-body">
+            <div class="row push-10-t push-10">
+                <div class="col-sm-12 text-center">
+                    <span class="rai-font-md-neutral">Non ci sono dati da visualizzare</span>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    var firstIni = true;
+
+
+    foreach (var ini in Model.GroupBy(x => x.Iniziativa.Id))
+    {
+        using (Html.BeginPanel(PanelType.Panel, ini.First().Iniziativa.Nome, panelAttributes: new RaiAttributes() { new RaiAttribute("class", firstIni ? "" : "panel-collapsed") }))
+        {
+            @*if (ini.Any(x => x.StatoCorrente.ID_STATO == (int)MboState.DaCompilare))
+            {
+                <div class="row bg-neutrals-xl-10" style="margin:-15px -15px 10px -15px; display:none;" >
+                    <div class="col-sm-12 text-right push-10-t push-10">
+                        <button class="btn rai-btn-small" onclick="MboInviaReminderIniz(@ini.Key)">Invia reminder compilazione</button>
+                    </div>
+                </div>
+            }*@
+
+            var firstGroup = true;
+            <div class="panel-group no-margin-bottom" id="elSchede@(ini.Key)">
+                @foreach (var grDir in ini.GroupBy(x => x.PersValutato.CodServizio).OrderBy(x => x.Key))
+                {
+                    <div class="panel panel-accordion">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <a class="accordion-toggle collapse no-padding" data-toggle="collapse" data-parent="#elSchede@(ini.Key)" href="#collapse_dir_@(ini.Key)_@(grDir.Key)" aria-expanded="false">
+                                    <span>@grDir.Key - @grDir.First().PersValutato.DesServizio</span>
+                                </a>
+                            </h4>
+                            <div class="panel-actions">
+                                <span class="rai-notification">@grDir.Count()</span>
+                            </div>
+                        </div>
+                        <div id="collapse_dir_@(ini.Key)_@(grDir.Key)" class="collapse" aria-expanded="false">
+                            <div class="panel-body panel-row-bordered" style="padding:5px; padding-top:0px;">
+                                @foreach (var item in grDir.OrderBy(x => x.PersValutato.Nominativo))
+                                {
+                                    <div class="row" style="padding:10px;" data-id-iniz="@ini.Key" data-stato="@item.StatoCorrente.ID_STATO">
+                                        <div class="col-sm-6">@Html.ProfileWidget(item.PersValutato.Matricola, item.PersValutato.Nominativo, null, item.PersResp!=null?item.PersResp.Nominativo:null)</div>@*, item.CodLivelloDir.ToString())</div>*@
+                                        <div class="col-sm-3">
+                                            <label class="rai-label">
+                                                @item.StatoCorrente.DES_DESCRIZIONE
+                                            </label>
+                                            @if (item.IdPersonaResp == 0)
+                                            {
+                                                <br />
+                                                <span class="rai-label rai-label-warning">Non assegnato</span>
+                                            }
+                                        </div>
+                                        <div class="col-sm-3 text-right">
+                                            <button class="btn rai-btn-small" onclick="MboOpenModalScheda(@item.Id)">Visualizza</button>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+
+            </div>
+
+            @*<table class="table rai-table rai-table-vcenter rai-table-panel js-table-sections">
+                    @foreach (var grDir in ini.GroupBy(x => x.PersValutato.DesServizio).OrderBy(x => x.Key))
+                    {
+                        <tbody class="js-table-sections-header  @(firstGroup?"open":"")">
+                            <tr>
+                                <td class="full-width">
+                                    <span class="rai-font-lg">@grDir.Key</span>
+                                </td>
+                                <td class="text-right">
+                                    <span class="rai-notification">@grDir.Count()</span>
+                                </td>
+                                <td class="rai-table-td-toggle">
+                                    <i class="fa fa-chevron-down"></i>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tbody>
+                            <tr>
+                                <td colspan="3" class="no-padding">
+                                    <table class="table rai-table rai-table-vcenter rai-table-panel table-striped">
+                                        @foreach (var item in grDir.OrderBy(x => x.PersValutato.Matricola))
+                                        {
+                                            <tr>
+                                                <td>@Html.ProfileWidget(item.PersValutato.Matricola, item.PersValutato.Nominativo, null, item.CodLivelloDir.ToString())</td>
+                                                <td>
+                                                    <span>
+                                                        @item.StatoCorrente.DES_DESCRIZIONE
+                                                    </span>
+                                                    @if (item.PersResp == null)
+                                                    {
+                                                        <br />
+                                                        <span class="rai-label rai-label-warning">Responsabile non indicato</span>
+                                                    }
+                                                </td>
+                                                <td class="text-right">
+                                                    <button class="btn rai-btn-small" onclick="MboOpenModalScheda(@item.Id)">Visualizza</button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </table>
+                                </td>
+                            </tr>
+
+                        </tbody>
+
+                        firstGroup = false;
+                    }
+                </table>*@
+        }
+
+        firstIni = false;
+    }
+
+
+}

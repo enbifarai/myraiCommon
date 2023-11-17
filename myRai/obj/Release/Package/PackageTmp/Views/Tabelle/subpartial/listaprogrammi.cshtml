@@ -1,0 +1,153 @@
+﻿@using myRaiData;
+@using myRaiHelper;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+@using MyRaiServiceInterface.it.rai.servizi.digigappws;
+
+@model ModelDash
+
+<div id="listaeventi">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <button data-toggle="block-option" data-action="refresh_toggle"
+                    data-refreshurl="/eventi/RefreshProgrammi/" data-parentdiv="listaprogrammi"
+                    data-refreshelements="my-block" style="cursor:pointer" id="refresh-prog"
+                    data-action-mode="demo" class="btn btn-action-icon">
+                <i class="fa fa-refresh"></i>
+            </button>
+        </div>
+        <h2 class="panel-title">Lista Programmi</h2>
+    </header>
+    <div class="panel-body panel-body-nopadding" id="my-block">
+        <div id="appr" class="">
+            @if (Model.Programs != null)
+            {
+
+                <div id="approv">
+                    <table id="tabapp" class="js-table-sections table table-hover rai-table rai-table-vcenter push-5-t" border="0">
+                        <thead>
+                            <tr>
+                                <th>Id</th>
+                                <th>Data</th>
+                                <th>Titolo</th>
+                                <th>Luogo</th>
+                                <th class="rai-table-td-action"></th>
+                                <th class="rai-table-td-action"></th>
+                                <th class="rai-table-td-toggle"></th>
+                            </tr>
+                        </thead>
+
+                        @if (Model.Programs.elencoProgrammi != null && Model.Programs.elencoProgrammi.Any())
+                        {
+                            foreach (var item in Model.Programs.elencoProgrammi.ToList())
+                            {
+                                <tbody class="@(Model.Programs.elencoProgrammi.Count == 1 ? "js-table-sections-header open" : "js-table-sections-header")">
+                                    <tr>
+                                        <td>
+                                            @item.id
+                                        </td>
+                                        <td>
+                                            @item.anno.Value
+                                        </td>
+                                        <td>
+                                            @{
+                                                if (!String.IsNullOrEmpty(item.titolo))
+                                                {
+                                                    @item.titolo.ToUpper()
+                                                }
+                                            }
+                                        </td>
+                                        <td>
+                                            @{
+                                                if (!String.IsNullOrEmpty(item.luogo))
+                                                {
+                                                    @item.luogo.ToUpper()
+                                                }
+                                            }
+                                        </td>
+                                        <td><a class="btn btn-action-icon" href="#" onclick="CancellaProgramma(@item.id)"><i class="fa fa-trash"></i></a></td>
+                                        <td>
+                                            <a href="#" class="btn btn-action-icon" onclick="ShowPopUpModProgramma(@item.id);" title="Modifica"><i class="fa fa-pencil"></i></a>
+                                        </td>
+                                        <td class="rai-table-td-toggle">
+                                            <i class="fa fa-angle-down"></i>
+                                        </td>
+
+                                    </tr>
+                                </tbody>
+                                <tbody class="tbodydata">
+                                    @foreach (var item1 in Model.Programs.elencoProgrammi.Where(x => x.id == item.id).ToList())
+                                    {
+                                        <tr>
+                                            <td colspan="8">
+                                                <div class="rai-table-info">
+                                                    <div class="row">
+                                                        <div class="col-xs-12 col-sm-4">
+                                                            <label>Amministratore:</label>
+                                                        </div>
+                                                        <div class="col-xs-12 col-sm-8">
+                                                            <label>@item1.amministrazione</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-xs-4 col-sm-4">
+                                                            <label>Capienza totale:</label>
+                                                        </div>
+                                                        <div class="col-xs-8 col-sm-8">
+                                                            <label>@item1.numero_medio</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-xs-4 col-sm-4">
+                                                            <label>Limite per evento:</label>
+                                                        </div>
+                                                        <div class="col-xs-8 col-sm-8">
+                                                            <label>@item1.numero_atteso</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-xs-4 col-sm-4">
+                                                            <label>Limite per programma</label>
+                                                        </div>
+                                                        <div class="col-xs-8 col-sm-8">
+                                                            <label>@item1.numero_massimo</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-xs-12 col-sm-4">
+                                                            <label>Matricole abilitate:</label>
+                                                        </div>
+                                                        <div class="col-xs-12 col-sm-8">
+                                                            <label>@String.Join("; ", item1.B2RaiPlace_Eventi_Utenti_Abilitati.Select(x => x.Matricola))</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-xs-12 col-sm-4">
+                                                            <label>Sedi abilitate:</label>
+                                                        </div>
+                                                        <div class="col-xs-12 col-sm-8">
+                                                            <label>@String.Join("; ", item1.B2RaiPlace_Eventi_Sede.Select(x => x.sede_gapp))</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                        </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            }
+                        }
+                        else
+                        {
+                            <tbody>
+                                @Html.Partial("_nodati")
+                            </tbody>
+                        }
+                    </table>
+                </div>
+
+            }
+        </div>
+    </div>
+</div>

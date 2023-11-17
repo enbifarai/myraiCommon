@@ -1,0 +1,361 @@
+﻿@using System;
+@model myRaiCommonModel.Gestionale.Budget
+
+@{
+    bool notNew = Model.IdCampagna.HasValue && Model.IdCampagna.Value > 0;
+}
+
+<style>
+    .value-modified {
+        border-color: red !important;
+    }
+
+    .just-vis {
+        pointer-events: none;
+        opacity: 0.6;
+    }
+</style>
+
+@using (Html.BeginModal("Gestione budget"))
+{
+    using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Impostazioni piano", false))
+    {
+        <div class="row">
+            <div class="col-sm-12">
+                <form id="form-budget">
+                    <div id="wiz-parent" tabindex="0" aria-labelledby="lblSceltaWizard" style="height:675px;">
+                        <div id="wiz-body" class="">
+                            <div class="js-wizard-classic-validation">
+                                <div id="newwizard" class="wizard-progress wizard-progress-llg wiznew" role="tablist">
+                                    <ul class="wizard-steps">
+                                        <li class="tabhead tabheadrich active" id="LiTab1" role="presentation">
+                                            <a role="tab" tabindex="-1" aria-label="Dividi il budget per area" aria-controls="wizbudget-step1" id="tab1" data-toggle="tab"><span>1</span>Importo per Area</a>
+                                        </li>
+                                        <li class="tabhead tabheadrich" id="LiTab2" role="presentation">
+                                            <a role="tab" tabindex="-1" aria-label="Riepilogo direzioni" aria-controls="wizbudget-step2" id="tab2" data-toggle="tab"><span>2</span>Riepilogo direzioni</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="block-content tab-content" style="overflow: visible; padding:0px; border: 0px; box-shadow: none">
+                                    <!-- Step 1 -->
+                                    <div class="tab-pane active text-left" id="wizbudget-step1" role="tabpanel" tabindex="0">
+                                        <div style="height:63vh;overflow-x:hidden;overflow-y:auto">
+                                            @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Dati piano"))
+                                            {
+                                                <div class="form-group">
+                                                    <div class="row push-10">
+                                                        <div class="col-sm-4">
+                                                            <label class="rai-caption">Nome piano <font color="#d2322d">*</font></label>
+                                                        </div>
+                                                        <div class="col-sm-8">
+                                                            <input class="form-control @(Model.EnableGest ? "" : "just-vis")" id="nome-campagna" value="@(notNew?Model.Nome:"")" required="required" />
+                                                        </div>
+                                                    </div>
+                                                    @if (!notNew && Model.abilDisponibili != null)
+                                                    {
+                                                        if (Model.abilDisponibili.Count == 1)
+                                                        {
+                                                            <input type="hidden" id="lvAbil" value="@Model.abilDisponibili.ElementAt(0).Item1">
+                                                        }
+                                                        else
+                                                        {
+                                                            <div class="row push-10">
+                                                                <div class="col-sm-4">
+                                                                    <label class=" rai-caption ">Tipo risorse <font color="#d2322d">*</font></label>
+                                                                </div>
+                                                                <div class="col-sm-8">
+                                                                    <select class=" form-control " id="lvAbil" required="required" name="lvAbil">
+                                                                        <option value="">Seleziona il tipo di risorse</option>
+                                                                        @foreach (var item in Model.abilDisponibili)
+                                                                        {
+                                                                            <option value="@item.Item1">@item.Item2</option>
+                                                                        }
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    }
+                                                    <div class="row push-10">
+                                                        <div class="col-sm-4">
+                                                            <label class=" rai-caption ">Data inizio <font color="#d2322d">*</font></label>
+                                                        </div>
+                                                        <div class="col-sm-4">
+                                                            <div class="input-group">
+                                                                <div class="input-group-addon" onclick="$('#data-start').click();">
+                                                                    <i class="fa fa-calendar"></i>
+                                                                </div>
+                                                                <input class="js-datetimepicker form-control @(notNew?"just-vis":"") @(Model.EnableGest?"":"just-vis")" data-format="DD/MM/YYYY" minData="@DateTime.Today.ToString("dd/MM/yyyy")" data-locale="it" id="data-start" name="data-start" placeholder="Selezionare una data" autocomplete="off" required="required" value="@(notNew?Model.DataInizio.ToString("dd/MM/yyyy"):"")" />
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-4">
+                                                            &nbsp;
+                                                        </div>
+                                                    </div>
+                                                    <div class="row push-10">
+                                                        <div class="col-sm-4">
+                                                            <label class=" rai-caption ">Data fine</label>
+                                                        </div>
+                                                        <div class="col-sm-4">
+                                                            <div class="input-group">
+                                                                <div class="input-group-addon" onclick="$('#data-end').click();">
+                                                                    <i class="fa fa-calendar"></i>
+                                                                </div>
+                                                                <input class="js-datetimepicker form-control required-min @(Model.EnableGest?"":"just-vis")" data-format="DD/MM/YYYY" minData="@DateTime.Today.ToString("dd/MM/yyyy")" data-locale="it" id="data-end" placeholder="Selezionare una data" autocomplete="off" value="@(notNew && Model.DataFine.HasValue?Model.DataFine.Value.ToString("dd/MM/yyyy"):"")" />
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-4">
+                                                            &nbsp;
+                                                        </div>
+                                                    </div>
+                                                    <div class="row push-10">
+                                                        <div class="col-sm-4">
+                                                            <label class=" rai-caption ">Riserva</label>
+                                                        </div>
+                                                        <div class="col-sm-8">
+                                                            <input class="form-control @(Model.EnableGest ? "" : "just-vis")" id="piano-riserva" value="@(notNew?Model.Riserva.GetValueOrDefault():0)" data-type="currency" pattern="^\\d{1,3}(.\\d{3})*(\\,\\d+)?$" placeholder="0,00" />
+                                                        </div>
+                                                    </div>
+
+                                                    @if (notNew)
+                                                    {
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-4">
+                                                                <label class=" rai-caption ">Date decorrenza <font color="#d2322d">*</font></label>
+                                                            </div>
+                                                            <div class="col-sm-4">
+                                                                <input data-decorrenza class="js-datetimepicker form-control  required-min just-vis" data-format="DD/MM/YYYY" data-locale="it" id="data-dec" placeholder="Selezionare una data" autocomplete="off" value="@Model.DateDecorrenza.First()" required="required" name="data-dec" />
+                                                            </div>
+                                                            <div class="col-sm-4">
+                                                                &nbsp;
+                                                            </div>
+                                                        </div>
+                                                        foreach (var data in Model.DateDecorrenza.Skip(1))
+                                                        {
+                                                            <div class="row push-10">
+                                                                <div class="col-sm-4">
+                                                                    &nbsp;
+                                                                </div>
+                                                                <div class="col-sm-4">
+                                                                    <input data-decorrenza class="js-datetimepicker form-control required-min just-vis" data-format="DD/MM/YYYY" data-locale="it" id="data-dec" placeholder="Selezionare una data" autocomplete="off" value="@data" />
+                                                                </div>
+                                                                <div class="col-sm-4">
+                                                                    &nbsp;
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-4">
+                                                                &nbsp;
+                                                            </div>
+                                                            <div class="col-sm-4">
+                                                                <input data-decorrenza class="js-datetimepicker form-control required-min" data-format="DD/MM/YYYY" data-locale="it" minData="@DateTime.Today.ToString("dd/MM/yyyy")" id="data-dec" placeholder="Selezionare una data" autocomplete="off" value="" />
+                                                            </div>
+                                                            <div class="col-sm-4">
+                                                                @if (Model.EnableGest)
+                                                                {
+                                                                    <a href="#" class="btn btn-action-icon push-10-t" onclick="GestAddRowDec()"><i class="fa fa-plus"></i></a>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-4">
+                                                                <label class=" rai-caption ">Date decorrenza <font color="#d2322d">*</font></label>
+                                                            </div>
+                                                            <div class="col-sm-4">
+                                                                <input data-decorrenza class="js-datetimepicker  form-control required-min" data-format="DD/MM/YYYY" minData="@DateTime.Today.ToString("dd/MM/yyyy")" data-locale="it" id="data-dec" placeholder="Selezionare una data" autocomplete="off" required="required" />
+                                                            </div>
+                                                            <div class="col-sm-4">
+                                                                <a href="#" class="btn btn-action-icon push-10-t" onclick="GestAddRowDec()"><i class="fa fa-plus"></i></a>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+
+                                            @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Budget disponibile per singola area"))
+                                            {
+                                                <div class="form-group">
+                                                    <div class="row">
+                                                        <div class="col-sm-4">
+                                                            <label class=" titleElements ">&nbsp;</label>
+                                                        </div>
+                                                        <div class="col-sm-4 text-center">
+                                                            <label class=" rai-caption ">Annuo</label>
+                                                        </div>
+                                                        <div class="col-sm-4 text-center">
+                                                            <label class=" rai-caption ">Periodo</label>
+                                                        </div>
+                                                    </div>
+
+                                                    @{
+                                                        foreach (var area in Model.Aree.OrderBy(x => x.Nome))
+                                                        {
+                                                            <div class="row push-10" data-area="@area.Id">
+                                                                <div class="col-sm-4">
+                                                                    <label class=" rai-caption ">@myRaiHelper.CommonHelper.ToTitleCase(area.Nome) <font color="#d2322d">*</font></label>
+                                                                </div>
+                                                                <div class="col-sm-4">
+                                                                    <input data-budget id="area-budget-@area.Id" name="area-budget-@area.Id" class="form-control text-right @(Model.EnableGest?"":"just-vis")" onblur="GestUpdateTot()" value="@(notNew ? String.Format("{0}", area.Importo) : "")" required="required" data-type="currency" pattern="^\\d{1,3}(.\\d{3})*(\\,\\d+)?$" placeholder="0,00" />
+                                                                </div>
+                                                                <div class="col-sm-4">
+                                                                    <input data-budget-periodo id="area-budget-periodo-@area.Id" name="area-budget-periodo-@area.Id" class="form-control text-right @(Model.EnableGest?"":"just-vis")" onblur="GestUpdateTot()" value="@(notNew?String.Format("{0}",area.ImportoPeriodo):"")" data-type="currency" pattern="^\\d{1,3}(.\\d{3})*(\\,\\d+)?$" placeholder="0,00" required="required" />
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    }
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-sm-4">
+                                                        <label class=" as-block-title">Totale</label>
+                                                    </div>
+                                                    <div class="col-sm-4 text-right">
+                                                        <h4 data-area-totale>@(notNew ? String.Format("{0:N2} €", Model.Aree.Sum(x => x.Importo)) : "0,00 €")</h4>
+                                                    </div>
+                                                    <div class="col-sm-4 text-right">
+                                                        <h4 data-area-periodo>@(notNew ? String.Format("{0:N2} €", Model.Aree.Sum(x => x.ImportoPeriodo)) : "0,00 €")</h4>
+                                                    </div>
+                                                </div>
+                                            }
+
+                                        </div>
+                                        <div class="row push-10-t">
+                                            <div class="col-sm-12 text-center">
+                                                @if (notNew || !Model.EnableGest)
+                                                {
+                                                    <button class="btn rai-btn-primary full-width" onclick="GestBudgetTab(2)">Prosegui</button>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn rai-btn-primary full-width" onclick="GestBudgetAree()">Prosegui</button>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @*</div>*@
+                                    <!-- END Step 1 -->
+                                    <!-- Step 2 -->
+                                    <div class="tab-pane " id="wizbudget-step2" role="tabpanel" tabindex="0">
+
+                                        <div class="block" id="direzioniBlock" style="margin-bottom:0px;">
+                                            <ul class="nav nav-tabs nav-tabs-alt nav-justified" data-toggle="tabs" role="tablist">
+                                                @{
+                                                    int index = 0;
+                                                    foreach (var area in Model.Aree.OrderBy(x => x.Nome))
+                                                    {
+                                                        <li class="@(index>0?"":"active")" role="presentation">
+                                                            <a href="#btab-@area.Id" class="rai-badge-anchor" tabindex="0" role="tab" aria-selected="true" aria-controls="btab-@area.Id">
+                                                                <span>@area.Nome</span>
+                                                                <div class="rai-badge-tab">
+                                                                    <span id="badge-@area.Id">@area.Direzioni.Count()</span>
+                                                                </div>
+                                                            </a>
+                                                        </li>
+
+                                                        index++;
+                                                    }
+                                                }
+                                            </ul>
+
+                                            <div class="block-content tab-content" style="padding:5px 5px 1px; height:500px; overflow-y:auto;">
+                                                @{
+                                                    int indexTab = 0;
+                                                    foreach (var area in Model.Aree.OrderBy(x => x.Nome))
+                                                    {
+                                                        <div class="tab-pane @(indexTab>0?"":"active")" id="btab-@area.Id" role="tabpanel">
+                                                            <table class="js-table-sections table table-hover rai-table rai-table-vcenter" style="" role="grid">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th style="width:40%;">Direzione</th>
+                                                                        <th style="width:10%;">Organico totale</th>
+                                                                        <th style="width:10%;">Organico budget</th>
+                                                                        <th style="width:20%;text-align:right;">Budget</th>
+                                                                        <th style="width:20%;text-align:right;">Budget periodo</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    @{
+                                                                        foreach (var dir in area.Direzioni)
+                                                                        {
+                                                                            <tr data-direzione-area="@area.Id" data-direzione-id="@dir.Id" data-direzione-organico="@dir.Organico" data-direzione-organico-m="@dir.OrganicoM" data-direzione-organico-f="@dir.OrganicoF">
+                                                                                <td>@dir.Codice - @dir.Nome</td>
+                                                                                <td>@dir.Organico</td>
+                                                                                <td>
+                                                                                    <input data-direzione-organico style="@(dir.OrganicoGiaProvv>0?"border-color:red !important;":"")" class=" form-control @(Model.EnableGest?"":"just-vis")" id="@dir.Id" data-rif="@(notNew?dir.OrganicoAD:dir.Organico - dir.OrganicoGiaProvv)" value="@(notNew?dir.OrganicoAD:dir.Organico - dir.OrganicoGiaProvv)" onblur="GestUpdateRif(this)" />
+                                                                                </td>
+                                                                                <td class="text-right">
+                                                                                    <input class=" form-control @(Model.EnableGest?"":"just-vis")" data-direzione-budget data-rif="" value="@(notNew?String.Format("{0}",dir.Budget):"")" onblur="GestUpdateRif(this)" data-type="currency" pattern="^\\d{1,3}(.\\d{3})*(\\,\\d+)?$" placeholder="0,00" />
+                                                                                </td>
+                                                                                <td class="text-right">
+                                                                                    <input class=" form-control @(Model.EnableGest?"":"just-vis")" data-direzione-budget-periodo data-rif="" value="@(notNew?String.Format("{0}",dir.BudgetPeriodo):"")" data-type="currency" pattern="^\\d{1,3}(.\\d{3})*(\\,\\d+)?$" placeholder="0,00" onblur="GestUpdateRif(this)">
+                                                                                </td>
+                                                                            </tr>
+                                                                        }
+                                                                    }
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                        indexTab++;
+                                                    }
+                                                }
+                                            </div>
+
+                                        </div>
+                                        <div class="row push-10-t">
+                                            <div class="col-sm-12">
+                                                <div class="rai-btn-fill" id="gestSaveButton">
+                                                    <button class="btn rai-btn-secondary" onclick="GestBudgetTab(1)">Indietro</button>
+                                                    @if (Model.EnableGest)
+                                                    {
+                                                        if (notNew)
+                                                        {
+                                                            <button class="btn rai-btn-primary" onclick="GestSaveModBudget(@Model.IdCampagna)">Prosegui</button>
+                                                        }
+                                                        else
+                                                        {
+                                                            <button class="btn rai-btn-primary" onclick="GestSaveBudget()">Prosegui</button>
+                                                        }
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- END Step 2 -->
+                                </div>
+                                <!-- END Steps Content -->
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+}
+
+
+<script language="javascript">
+    InitDatePicker();
+
+    $("input[data-type='currency']").on({
+        keyup: function () {
+            formatCurrency($(this));
+        },
+        blur: function () {
+            formatCurrency($(this), "blur");
+        },
+    });
+    function formatAllInput() {
+        var list = $("input[data-type='currency']");
+        for (var i = 0; i < list.length; i++) {
+            formatCurrency($(list[i]));
+        }
+    }
+    formatAllInput();
+    //$('#data-start').data("DateTimePicker").minDate(moment());
+    //$('#data-end').data("DateTimePicker").minDate(moment());
+    //$('#_dataapp').datepicker('option', 'mindate', 0);
+    //$('#_dataapp').datepicker('option', 'stepping', 15);
+</script>

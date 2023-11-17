@@ -1,0 +1,435 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel.Gestionale
+@using myRaiGestionale.Controllers
+@model CessazioneList
+
+@{
+
+    int currentPers = CommonHelper.GetCurrentIdPersona();
+    string matricolaAbil = CommonHelper.GetCurrentUserMatricola();
+    bool isGest = CessazioneHelper.EnabledToSubFunc(matricolaAbil, "GEST");
+
+    bool moreTypes = Model.GroupBy(x => x.Tipologia.DES_TIPOLOGIA).Count() > 1;
+
+    var parametriIncentivi = HrisHelper.GetParametriJson<myRaiData.Incentivi.XR_HRIS_PARAM>(HrisParam.IncentiviParametri);
+
+    Func<CessazioneModel, string> groupKeySelector = x => x.Tipologia.DES_TIPOLOGIA;
+    if (Model.Any(x => x.OpenFunction == "__SOLLECITI__"))
+    {
+        groupKeySelector = x => "Data richiesta " + x.Pratica.DTA_RICHIESTA.Value.ToString("dd/MM/yyyy");
+    }
+
+    var ultimoAgg = myRaiHelper.HrisHelper.GetParametro<string>(myRaiHelper.HrisParam.IncentiviEsecuzioneFNL930);
+
+    var parTipiVert = parametriIncentivi.FirstOrDefault(x => x.COD_PARAM == "TipologieVertenze");
+    var dictVert = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, string>>(parTipiVert.COD_VALUE1);
+
+    bool utenteIsAdmin = UtenteHelper.IsAdmin();
+}
+
+<style>
+    i[data-order-dir=""] {
+        display: none;
+    }
+
+    i[data-order-dir="up"] {
+        transform: rotate(180deg);
+    }
+
+    a[data-order-name]:hover > i[data-order-dir] {
+        display: inline-block;
+    }
+</style>
+
+<table class="table rai-table rai-table-vcenter rai-table-panel rai-table-collapsable">
+    <thead>
+        <tr>
+            <th colspan="3">
+                <div class="row">
+                    <div class="col-sm-6 col-xl-4 col-xs-6">
+                        <div style="display:inline-block;width:12rem;"><a href="#" onclick="RaiSortData(this)" title="Ordina per nominativo" data-order-group="@Model.Parent" data-order-name="nominativo" data-order-container="#@Model.Parent .panel-row-bordered">Nominativo <i class="fa fa-chevron-down" data-order-dir=""></i></a></div>
+                        <a href="#" onclick="RaiSortData(this)" title="Ordina per data cessazione" data-order-group="@Model.Parent" data-order-name="cessazione" data-order-container="#@Model.Parent .panel-row-bordered">Cessazione <i class="fa fa-chevron-down" data-order-dir=""></i></a>
+                    </div>
+                    <div class="col-sm-4 col-xl-3 col-xs-6">
+                        @if (Model.Any(x => x.OpenFunction == "AMM_CONT"))
+                        {
+                            <a href="#" onclick="RaiSortData(this)" title="Ordina per ultimo aggiornamento" data-order-group="@Model.Parent" data-order-name="lastUpdate" data-order-container="#@Model.Parent .panel-row-bordered">Ultimo aggiornamento <i class="fa fa-chevron-down" data-order-dir=""></i></a>
+                        }
+                        else
+                        {
+                            <a href="#" onclick="RaiSortData(this)" title="Ordina per stato" class="hidden-xl" data-order-group="@Model.Parent" data-order-name="stato-order" data-order-container="#@Model.Parent .panel-row-bordered">Stato <i class="fa fa-chevron-down" data-order-dir=""></i></a>
+                        }
+                    </div>
+                    <div class="col-xl-3 visible-xl">
+                        <a href="#" onclick="RaiSortData(this)" title="Ordina per stato" data-order-group="@Model.Parent" data-order-name="stato-order" data-order-container="#@Model.Parent .panel-row-bordered">Stato <i class="fa fa-chevron-down" data-order-dir=""></i></a>
+                    </div>
+                    <div class="col-sm-2 text-right">
+
+                    </div>
+                </div>
+            </th>
+        </tr>
+    </thead>
+    @foreach (var tipologia in Model.GroupBy(groupKeySelector))
+    {
+        int count = 0;
+
+        <tbody class="rai-table-collapsable-header @(moreTypes ? "" : "open")">
+            <tr>
+                <td style="width:100%"><label class="rai-font-lg">@tipologia.Key</label></td>
+                <td class="text-right"><label class="rai-label">@tipologia.Count()</label></td>
+                <td class="rai-table-td-toggle"><i class="fa fa-chevron-down"></i></td>
+            </tr>
+        </tbody>
+
+        <tbody>
+            <tr>
+                <td colspan="3" class="no-padding">
+                    @helper DrawTable(IEnumerable<CessazioneModel> models, int currentPers, List<myRaiData.Incentivi.XR_HRIS_PARAM> parametriIncentivi, string ultimoAgg, Dictionary<string, string> dictVert, bool utenteIsAdmin)
+                    {
+                        <div class="panel-row-bordered">
+                            @foreach (var inc in models)
+                            {
+                                var openFunction = inc.OpenFunction;
+                                string caption = null;
+                                if (openFunction == "__SOLLECITI__")
+                                {
+                                    openFunction = "";
+                                    caption = "Data richiesta " + inc.Pratica.DTA_RICHIESTA.Value.ToString("dd/MM/yyyy");
+                                }
+
+                                int numStato = -1;
+                                string stato = "";
+                                string icon = "";
+                                switch (openFunction)
+                                {
+                                    case "ANPAL":
+                                        if (inc.Pratica.DATA_RECESSO_ANPAL.HasValue)
+                                        {
+                                            stato = "Documento caricato";
+                                        }
+                                        else
+                                        {
+                                            stato = "Da verificare";
+                                        }
+                                        break;
+                                    case "TESSCONTR":
+                                        if (!inc.Stato.IND_INACTIVE_STATE.GetValueOrDefault())
+                                        {
+                                            if (inc.Pratica.DTA_ARR_TESS_CONTR.HasValue)
+                                            {
+                                                icon = "fa fa-check feedback-success-color";
+                                                stato = "Richiesta evasa";
+                                            }
+                                            else if (inc.Pratica.DTA_RICH_MATCON.HasValue)
+                                            {
+                                                if (inc.Pratica.DTA_ARR_MATCON.HasValue)
+                                                {
+                                                    stato = "Approfondimenti ricevuti";
+                                                }
+                                                else
+                                                {
+                                                    icon = "fa fa-clock-o feedback-warning-color";
+                                                    stato = "In attesa";
+                                                }
+                                            }
+                                            else
+                                            {
+                                                stato = "Da verificare";
+                                            }
+                                        }
+                                        else
+                                        {
+                                            icon = "fa fa-ban";
+                                            stato = inc.Stato.DESCRIZIONE;
+                                        }
+                                        break;
+                                    default:
+                                        if (inc.Stato != null)
+                                        {
+                                            numStato = inc.Stato.ID_STATO;
+                                            stato = inc.Stato.DESCRIZIONE;
+                                        }
+                                        break;
+                                }
+
+                                bool showApp = numStato == (int)IncStato.Appuntamento && inc.Pratica.DATA_APPUNTAMENTO.HasValue;
+
+                                string detail1 = "Cessazione: " + inc.Pratica.DATA_CESSAZIONE.Value.ToString("dd/MM/yyyy");
+                                string note = "";
+                                string noteTag = "";
+                                int noteCount = inc.NumNote;// inc.Pratica.XR_INC_DIPENDENTI_NOTE.Count();
+                                if (noteCount == 1)
+                                {
+                                    note = "È presente una nota";
+                                    noteTag = "1 nota";
+                                }
+                                else if (noteCount > 1)
+                                {
+                                    note = "Sono presenti " + noteCount.ToString() + " note";
+                                    noteTag = noteCount.ToString() + " note";
+                                }
+
+                                string inCarico = "";
+                                if (openFunction == "" && inc.InCarico != null && inc.InCarico.ID_PERSONA != currentPers)
+                                {
+                                    inCarico = "In carico a " + inc.InCarico.Nominativo();
+                                    if (utenteIsAdmin)
+                                    {
+                                        inCarico = "<a href='/home/Simula?m=" + inc.InCarico.COD_MATLIBROMAT + "' title='Simula " + inc.InCarico.Nominativo() + "'>" + inCarico + "</a>";
+                                    }
+                                }
+
+                                bool hasErrorAlert = false;
+                                string errorAlertText = "";
+
+                                bool showExpireDate = false;
+                                string expireText = "";
+                                string strDataScadenza = "";
+                                string altExpireText = "";
+
+                                if (inc.Scadenze.HasExpireSoonAlert)
+                                {
+                                    showExpireDate = true;
+                                    strDataScadenza = inc.Scadenze.DataScadenza.Value.ToString("yyyyMMdd");
+                                    altExpireText = inc.Scadenze.DataScadenza.Value.ToString("dd/MM/yyyy");
+                                    errorAlertText = inc.Scadenze.ExpireSoonAlert;
+                                }
+                                else if (inc.Scadenze.HasExpiredAlert)
+                                {
+                                    hasErrorAlert = true;
+                                    strDataScadenza = inc.Scadenze.DataScadenza.Value.ToString("yyyyMMdd");
+                                    altExpireText = inc.Scadenze.DataScadenza.Value.ToString("dd/MM/yyyy");
+                                    errorAlertText = inc.Scadenze.ExpiredAlert;
+                                }
+
+                                string nominativo = "";
+                                if (inc.Sintesi != null)
+                                {
+                                    nominativo = inc.Sintesi.Nominativo();
+                                }
+                                else if (inc.ANAGPERS != null)
+                                {
+                                    nominativo = inc.ANAGPERS.DES_COGNOMEPERS.TitleCase() + " " + inc.ANAGPERS.DES_NOMEPERS.TitleCase();
+                                }
+
+                                string lastUpdate = "";
+                                string strLastUpdate = "";
+                                if (inc.Pratica.DTA_AGG_CONT.HasValue)
+                                {
+                                    lastUpdate = inc.Pratica.DTA_AGG_CONT.Value.ToString("dd/MM/yyyy HH:mm");
+                                    strLastUpdate = inc.Pratica.DTA_AGG_CONT.Value.ToString("yyyyMMdd_HHmmss");
+                                }
+                                else
+                                {
+                                    lastUpdate = "";
+                                    strLastUpdate = "";
+                                }
+
+                                var strDtCessazione = "";
+                                if (inc.Pratica.DATA_CESSAZIONE.HasValue)
+                                {
+                                    strDtCessazione = inc.Pratica.DATA_CESSAZIONE.Value.ToString("yyyyMMdd");
+                                }
+
+                                <div class="row" role="row" style="padding: 10px;" data-id-incentivo="@inc.Pratica.ID_DIPENDENTE" data-order-item data-stato="@numStato" data-stato-order="@inc.Ordine.ORDINE" data-scadenza="@strDataScadenza" data-tipologia="@inc.Tipologia.ID_TIPOLOGIA" data-nominativo="@nominativo" data-cessazione="@strDtCessazione" data-lastupdate="@strLastUpdate">
+                                    <div class="col-sm-6 col-xl-4">
+                                        @Html.ProfileWidget(inc.Pratica.MATRICOLA, nominativo, null, detail1, inCarico)
+                                    </div>
+                                    <div class="col-sm-4 col-xl-3">
+                                        <div class="rai-font-md hidden-xl">
+                                            @if (!String.IsNullOrWhiteSpace(icon))
+                                            {
+                                                <span class="@icon"></span>
+                                            }
+                                            @stato
+                                            @if (inc.Pratica.PROGR_RICHIESTA.GetValueOrDefault() > 0)
+                                            {
+                                                <br />
+                                                <i class="rai-font-sm-neutral">Progressivo @inc.Pratica.PROGR_RICHIESTA.GetValueOrDefault()</i>
+                                            }
+                                            else if (inc.Pratica.ID_TIPOLOGIA == (int)CessazioneTipo.Incentivazione && inc.Pratica.COD_GRUPPO != "INCENTIVAZIONE2018")
+                                            {
+                                                <br />
+                                                <i class="rai-font-sm-neutral" title="Il progressivo sarà assegnato domani">Progressivo da assegnare</i>
+                                            }
+                                            @if (String.IsNullOrWhiteSpace(openFunction) || openFunction == "AMM_CONT")
+                                            {
+                                                if (showApp)
+                                                {
+                                                    <br />
+                                                    <i class="rai-font-sm-neutral"> @inc.Pratica.DATA_APPUNTAMENTO.Value.ToString("dd/MM/yyyy HH:mm")</i>
+                                                }
+                                                if (numStato == (int)IncStato.RichiestaAccettata)
+                                                {
+                                                    if (inc.Pratica.DATA_FIRMA_DIP_ACCETT_AZ.HasValue)
+                                                    {
+                                                        <br />
+                                                        <i class="rai-font-sm-neutral"> @String.Format("Accettazione firmata il {0:dd/MM/yyyy}", inc.Pratica.DATA_FIRMA_DIP_ACCETT_AZ)</i>
+                                                    }
+                                                    else if (inc.Pratica.DTA_ACCETT_AZ.HasValue)
+                                                    {
+                                                        <br />
+                                                        <i class="rai-font-sm-neutral"> @String.Format("Accettazione inviata il {0:dd/MM/yyyy}", inc.Pratica.DTA_ACCETT_AZ)</i>
+                                                    }
+                                                    else if (inc.Pratica.DATA_FIRMA_DIP.HasValue)
+                                                    {
+                                                        <br />
+                                                        <i class="rai-font-sm-neutral"> @String.Format("Proposta firmata il {0:dd/MM/yyyy}", inc.Pratica.DATA_FIRMA_DIP)</i>
+                                                    }
+                                                    else if (inc.Pratica.DATA_INVIO_PROP.HasValue)
+                                                    {
+                                                        <br />
+                                                        <i class="rai-font-sm-neutral"> @String.Format("Mail inviata il {0:dd/MM/yyyy}", inc.Pratica.DATA_INVIO_PROP)</i>
+                                                    }
+                                                }
+                                            }
+                                        </div>
+                                        <br class="hidden-xl" />
+                                        @if (String.IsNullOrWhiteSpace(openFunction) && hasErrorAlert)
+                                        {
+                                            @*<label class="rai-label rai-label-error" data-toggle="tooltip" data-placement="right" title="@errorAlertText">Decaduta</label>*@
+                                            <label class="rai-font-md" title="@errorAlertText"><span class="fa fa-warning feedback-error-color"></span> @altExpireText</label><br />
+                                        }
+                                        @if (String.IsNullOrWhiteSpace(openFunction)
+                                                && (showExpireDate || (inc.OpenFunction == "__SOLLECITI__" && inc.NotificaSollecito.HasValue))
+                                                && ((inc.Stato.ID_STATO == (int)IncStato.RichiestaInserita) || (inc.Stato.ID_STATO == (int)IncStato.RichiestaAccettata)))
+                                        {
+                                            if (showExpireDate)
+                                            {
+                                                <label class="rai-font-md" title="@errorAlertText"><span class="fa fa-clock-o feedback-warning-color"></span> @altExpireText</label>
+                                            }
+                                            if (inc.NotificaSollecito.HasValue)
+                                            {
+                                                if (showExpireDate)
+                                                {
+                                                    <br />
+                                                }
+                                                <span class="rai-font-sm"><i class="fa fa-envelope"></i> @inc.NotificaSollecito.Value.ToString("dd/MM/yyyy")</span>
+                                            }
+                                        }
+                                        else if (inc.OpenFunction == "AMM_CONT")
+                                        {
+                                            <i>@lastUpdate</i>
+                                        }
+                                        @if (String.IsNullOrWhiteSpace(openFunction) && noteCount > 0)
+                                        {
+                                            <label class="rai-label">@noteTag</label>
+                                        }
+                                        @if (!String.IsNullOrWhiteSpace(inc.Pratica.CAUSE_VERTENZE))
+                                        {
+                                            <label class="rai-label" data-toggle="tooltip" data-placement="right" title="@inc.Pratica.CAUSE_VERTENZE">Gestione manuale</label>
+                                        }
+                                        @if (!String.IsNullOrWhiteSpace(inc.Pratica.IND_TIPO_VERTENZE))
+                                        {
+                                            var token = inc.Pratica.IND_TIPO_VERTENZE.Split(';');
+                                            foreach (var item in token)
+                                            {
+                                                var elem = dictVert[item];
+                                                <label class="rai-label" data-toggle="tooltip" data-placement="right" title="@elem">@elem</label>
+                                            }
+
+                                        }
+
+                                    </div>
+                                    <div class="col-xl-3 visible-xl">
+                                        <div class="rai-font-md">
+                                            @if (!String.IsNullOrWhiteSpace(icon))
+                                            {
+                                                <span class="@icon"></span>
+                                            }
+                                            @stato
+                                            @if (inc.Pratica.PROGR_RICHIESTA.GetValueOrDefault() > 0)
+                                            {
+                                                <br />
+                                                <i class="rai-font-sm-neutral">Progressivo @inc.Pratica.PROGR_RICHIESTA.GetValueOrDefault()</i>
+                                            }
+                                            @if (String.IsNullOrWhiteSpace(openFunction))
+                                            {
+                                                if (showApp)
+                                                {
+                                                    <br />
+                                                    <i class="rai-font-sm-neutral"> @inc.Pratica.DATA_APPUNTAMENTO.Value.ToString("dd/MM/yyyy HH:mm")</i>
+                                                }
+                                                if (numStato == (int)IncStato.RichiestaAccettata)
+                                                {
+                                                    if (inc.Pratica.DATA_FIRMA_DIP_ACCETT_AZ.HasValue)
+                                                    {
+                                                        <br />
+                                                        <i class="rai-font-sm-neutral"> @String.Format("Accettazione firmata il {0:dd/MM/yyyy}", inc.Pratica.DATA_FIRMA_DIP_ACCETT_AZ)</i>
+                                                    }
+                                                    else if (inc.Pratica.DTA_ACCETT_AZ.HasValue)
+                                                    {
+                                                        <br />
+                                                        <i class="rai-font-sm-neutral"> @String.Format("Accettazione inviata il {0:dd/MM/yyyy}", inc.Pratica.DTA_ACCETT_AZ)</i>
+                                                    }
+                                                    else if (inc.Pratica.DATA_FIRMA_DIP.HasValue)
+                                                    {
+                                                        <br />
+                                                        <i class="rai-font-sm-neutral"> @String.Format("Proposta firmata il {0:dd/MM/yyyy}", inc.Pratica.DATA_FIRMA_DIP)</i>
+                                                    }
+                                                    else if (inc.Pratica.DATA_INVIO_PROP.HasValue)
+                                                    {
+                                                        <br />
+                                                        <i class="rai-font-sm-neutral"> @String.Format("Mail inviata il {0:dd/MM/yyyy}", inc.Pratica.DATA_INVIO_PROP)</i>
+                                                    }
+                                                }
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-2 text-right">
+                                        <a href="#" data-toggle="modal" data-target="#modal-incentivato" class="btn btn-sm rai-btn-small" onclick="ShowIncentivato(@inc.Pratica.ID_DIPENDENTE, '@(openFunction)');">Visualizza</a>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+
+
+                    @if (tipologia.First().Tipologia.ID_TIPOLOGIA == (int)CessazioneTipo.Pensione)
+                    {
+                        <table class="table rai-table rai-table-vcenter rai-table-panel rai-table-collapsable">
+                            @foreach (var month in tipologia.OrderBy(x => x.Pratica.DATA_CESSAZIONE).GroupBy(x => new DateTime(x.Pratica.DATA_CESSAZIONE.Value.Year, x.Pratica.DATA_CESSAZIONE.Value.Month, 1)))
+                            {
+                                <tbody class="rai-table-collapsable-header">
+                                    <tr>
+                                        <td style="width:100%"><label class="rai-font-lg">@month.Key.ToString("MMMM yyyy").TitleCase()</label></td>
+                                        <td class="text-right"><label class="rai-label">@month.Count()</label></td>
+                                        <td class="rai-table-td-toggle"><i class="fa fa-chevron-down"></i></td>
+                                    </tr>
+                                </tbody>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="3" class="no-padding">
+                                            @DrawTable(month.OrderBy(x => x.Ordine.ORDINE), currentPers, parametriIncentivi, ultimoAgg, dictVert, utenteIsAdmin)
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            }
+                        </table>
+                    }
+                    else
+                    {
+                        var sortData = tipologia.OrderBy(x => x.Ordine.ORDINE);
+                        if (Model.Any(x => x.OpenFunction == "TESSCONTR"))
+                        {
+                            sortData = tipologia.OrderBy(x => x.Stato != null && !x.Stato.IND_INACTIVE_STATE.GetValueOrDefault() ? 0 : 1)
+                                                .ThenBy(x => x.Stato != null && !x.Stato.IND_INACTIVE_STATE.GetValueOrDefault() ?
+                                                                (x.Pratica.DTA_ARR_TESS_CONTR.HasValue ? 3 : x.Pratica.DTA_ARR_MATCON.HasValue ? 2 : x.Pratica.DTA_RICH_MATCON.HasValue ? 1 : 0)
+                                                                : x.Pratica.PROGR_RICHIESTA)
+                                                .ThenBy(x => x.Pratica.DTA_RICH_MATCON);
+                        } else if (tipologia.First().Tipologia.ID_TIPOLOGIA == (int)CessazioneTipo.Incentivazione && AuthHelper.EnabledToSubFunc(CommonHelper.GetCurrentUserMatricola(), CessazioneHelper.INCENTIVI_INC_EXTRA, "CONTENZIOSO") && Model.All(x => x.OpenFunction == ""))
+                        {
+                            sortData = tipologia.OrderBy(x => x.Pratica.DATA_CESSAZIONE);
+                        }
+
+                        @DrawTable(sortData, currentPers, parametriIncentivi, ultimoAgg, dictVert, utenteIsAdmin)
+                    }
+                </td>
+            </tr>
+        </tbody>
+
+    }
+</table>
+
+

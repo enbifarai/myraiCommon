@@ -1,0 +1,84 @@
+﻿@using myRaiDataTalentia
+@using myRaiHelper
+@model IEnumerable<XR_HRIS_ABIL_PROFILO_ASSOCIAZIONI>
+
+
+@using (Html.BeginPanel(myRaiHelper.PanelType.PanelNoPadding, "Associazioni", false))
+{
+    <table class="table rai-table rai-table-panel rai-table-vcenter rai-table-collapsable">
+        @if (Model != null && Model.Any())
+        {
+            foreach (var gr in Model.GroupBy(x => x.ID_SUBFUNZ == null ? "P" : "SF"))
+            {
+                <tbody class="rai-table-collapsable-header">
+                    <tr>
+                        <td>
+                            @if (gr.Key == "P")
+                            {
+                                <span>PROFILI</span>
+                            }
+                            else
+                            {
+                                <span>
+                                    FUNZIONI
+                                </span>
+                            }
+                        </td>
+                        <td class="rai-table-td-toggle">
+                            @gr.Count()
+                        </td>
+                        <td class="rai-table-td-toggle">
+                            <span class="fa fa-chevron-down"></span>
+                        </td>
+                    </tr>
+                </tbody>
+                <tbody>
+                    @{
+                        var listItem = gr.ToList();
+                        if (gr.Key=="P")
+                        {
+                            listItem = listItem.OrderBy(x => x.IND_ATTIVO).ThenBy(x => x.XR_HRIS_ABIL_PROFILO1.COD_PROFILO).ToList();
+                        }
+                        else
+                        {
+                            listItem = listItem.OrderBy(x => x.IND_ATTIVO).ThenBy(x => x.XR_HRIS_ABIL_SUBFUNZIONE.XR_HRIS_ABIL_FUNZIONE.COD_FUNZIONE + "/" + x.XR_HRIS_ABIL_SUBFUNZIONE.COD_SUBFUNZIONE).ToList();
+                        }
+                    }
+
+
+                    @foreach (var item in gr)
+                    {
+                        <tr>
+                            <td class="full-width">
+                                @if (gr.Key == "P")
+                                {
+                                    <span class="rai-font-sm-neutral-bold">@item.XR_HRIS_ABIL_PROFILO1.COD_PROFILO</span>
+                                    <span class="rai-font-md">@item.XR_HRIS_ABIL_PROFILO1.DES_PROFILO</span>
+                                }
+                                else
+                                {
+                                    <span class="rai-font-sm-neutral-bold">@(item.XR_HRIS_ABIL_SUBFUNZIONE.XR_HRIS_ABIL_FUNZIONE.COD_FUNZIONE + "/" + item.XR_HRIS_ABIL_SUBFUNZIONE.COD_SUBFUNZIONE)</span><br />
+                                    <span class="rai-font-md">@(item.XR_HRIS_ABIL_SUBFUNZIONE.XR_HRIS_ABIL_FUNZIONE.DES_FUNZIONE.ToUpper() + item.XR_HRIS_ABIL_SUBFUNZIONE.DES_SUBFUNZIONE)</span>
+                                }
+
+                                @if (!item.IND_ATTIVO)
+                                {
+                                    <span>&nbsp;<span class="rai-label">Non attivo</span></span>
+                                }
+                            </td>
+                            <td class="rai-table-td-action">
+                                <button class="btn btn-action-icon" onclick=""><i class="fa fa-pencil"></i></button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            }
+        }
+        else
+        {
+            @Html.Partial("_NoDati")
+        }
+    </table>
+}
+
+

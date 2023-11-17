@@ -1,0 +1,184 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model ModelDash
+<table class="js-table-sections table table-hover">
+    @*<thead>
+            <tr>
+
+                <th style="width: 2%;"></th>
+                <th style="width: 20%;"></th>
+                <th class="hidden-xs" style="width: 40%;"></th>
+
+                <th style="width: 30%;"></th>
+                <th class="text-center" style="width: 70px;"></th>
+            </tr>
+        </thead>*@
+
+
+    @if ( Model.elencoProfilieSedi != null && Model.elencoProfilieSedi.elencoSediEccezioni.Count > 0 )
+    {
+        foreach ( daApprovareModel.sedegappAbilitata SedeAbil in Model.elencoProfilieSedi.elencoSediEccezioni.Where( f => f.Accesso_in_scrittura ) )
+        {
+
+            <tbody>
+                @foreach ( MyRaiServiceInterface.it.rai.servizi.digigappws.Eccezione eccezione in SedeAbil.eccezionidaValidare )
+                {
+                    <tr class="hidden-xs" data-idrichiesta="@eccezione.IdRichiestaPadre"
+                        data-ideccezione="@eccezione.IdEccezioneRichiesta"
+                        data-tr="@eccezione.ndoc" data-IsEditable="@SedeAbil.Accesso_in_scrittura">
+
+                        <td class="text-center"></td>
+                        <td class="font-w600 text-info">
+                            @eccezione.descrittiva_lunga
+
+                        @if ( eccezione.dalle != null && eccezione.dalle.ToString( ).Trim( ) != "00:00" )
+                        {
+                            <div class="text-muted">
+                                <em>dalle @eccezione.dalle.ToString( ).Trim( ) alle @eccezione.alle.ToString( ).Trim( )</em>
+                            </div>
+                        }
+                        @if ( eccezione.flg_storno.ToString( ).Trim( ) == "*" )
+                        {
+                            <div class="text-warning">
+                                <em>storno</em>
+                            </div>
+                        }
+
+                    </td>
+                    <td>
+                        <a class="font-w600" data-toggle="modal" data-target="#richiesta-modal" href="#">@eccezione.dipendente.nome @eccezione.dipendente.cognome</a>
+                        <div class="text-muted">
+                            <em>@eccezione.MotivoRichiesta</em>
+                        </div>
+
+                        @eccezione.PeriodoRichiesta
+
+                    </td>
+
+                    <th colspan="3" class="text-right" style="width: 100px;">
+
+                        @if ( eccezione.IdStato == 10 || eccezione.IdStato == 50 )
+                        {
+                            <button class="@eccezione.ndoc button-approva btn btn-lg btn-default btn-app-@eccezione.IdEccezioneRichiesta"
+                                    type="button">
+
+                                <i class="fa fa-fw fa-check text-success"></i>
+                            </button>
+                        }
+
+                        @if ( eccezione.IdStato == 10 || ( eccezione.IdStato == 20 && !eccezione.StornoInRichiesta ) )
+                        {
+                            <button class="@eccezione.ndoc button-rifiuta btn-rif-@eccezione.IdEccezioneRichiesta js-swal-confirm btn btn-lg btn-default"
+                                    type="submit">
+                                <i class="fa fa-fw fa-remove text-danger"></i>
+                            </button>
+                        }
+
+                        @if ( eccezione.IdStato == 10 || eccezione.IdStato == 20 || eccezione.IdStato == 50 )
+                        {
+                            <a href="#" data-toggle="modal" data-target="#giornata-modal" data-day="@eccezione.data" class="btn btn-lg btn-default button-osserva">
+                                <i class="fa fa-fw fa-eye text-info"></i>
+                            </a>
+                        }
+                    </th>
+                </tr>
+                <tr class="visible-xs" data-idrichiesta="@eccezione.IdRichiestaPadre"
+                    data-ideccezione="@eccezione.IdEccezioneRichiesta"
+                    data-tr="@eccezione.ndoc" data-IsEditable="@SedeAbil.Accesso_in_scrittura">
+                    <td class="text-center"></td>
+
+                    <td colspan="5">
+                        <div class="font-w600 text-info">
+                            @eccezione.descrittiva_lunga.Trim( )
+                            @if ( eccezione.dalle != null && eccezione.dalle.ToString( ).Trim( ) != "00:00" )
+                            {
+                                <div class="text-muted">
+                                    <em>dalle @eccezione.dalle.ToString( ).Trim( ) alle @eccezione.alle.ToString( ).Trim( )</em>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-muted">
+                                    <em>@(eccezione.qta)</em>
+                                </div>
+                            }
+
+                            @if ( eccezione.flg_storno.ToString( ).Trim( ) == "*" )
+                            {
+                                <div class="text-warning">
+                                    <em>storno</em>
+                                </div>
+                            }
+                        </div>
+
+                        <a class="font-w600" data-toggle="modal"
+                           data-target="#richiesta-modal" href="#">@eccezione.dipendente.nome@eccezione.dipendente.cognome</a>
+                        <div class="text-muted">
+                            <em>@eccezione.MotivoRichiesta</em>
+                        </div>
+
+                        @eccezione.PeriodoRichiesta
+                        <div>
+
+                            <button class="@eccezione.ndoc btn button-approva btn-lg btn-default  btn-app-@eccezione.IdEccezioneRichiesta"
+                                    data-ndoc="@eccezione.ndoc"
+                                    type="submit">
+                                <i class="fa fa-fw fa-check text-success"></i>
+                            </button>
+                            <button class="@eccezione.ndoc button-rifiuta btn btn-lg btn-default btn-rif-@eccezione.IdEccezioneRichiesta"
+                                    data-ndoc="@eccezione.ndoc"
+                                    type="submit">
+                                <i class="fa fa-fw fa-remove text-danger"></i>
+                            </button>
+                            <a href="#" data-toggle="modal" data-target="#giornata-modal" data-day="@eccezione.data" class="button-osserva btn btn-lg btn-default">
+                                <i class="fa fa-fw fa-eye text-info"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+            }
+
+
+                <tr>
+                    <td class="text-center"></td>
+                    <td class="font-w600 text-success"></td>
+                    <td></td>
+
+                    <td colspan="2" class="text"></td>
+                    <td></td>
+                </tr>
+
+            </tbody>
+        }
+    }
+    else
+    {
+        <tbody>
+            @Html.Partial( "_nodati" )
+        </tbody>
+    }
+
+
+
+
+
+
+
+</table>
+@if ( Model.elencoProfilieSedi.MaxRowsVisualizzabili != null && Model.elencoProfilieSedi.MaxRowsVisualizzabili < Model.elencoProfilieSedi.TotaleEccezioniRicerca )
+{
+    <table class="js-table-sections table table-hover">
+        <tbody>
+            <tr>
+                <td>
+                    <div>
+                        Numero ritrovamenti superiore al massimo visualizzabile. Usare i filtri per affinare la ricerca.
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+}

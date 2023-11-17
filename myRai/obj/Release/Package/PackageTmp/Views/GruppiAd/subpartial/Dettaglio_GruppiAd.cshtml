@@ -1,0 +1,110 @@
+﻿@using myRaiHelper
+@using myRai.Business
+@using myRai.Models
+@model GruppoAd
+
+
+<div class="row">
+    <div class="col-md-8">
+        @using (Html.BeginPanel(myRaiHelper.PanelType.PanelNoPadding, Model.Nome, false))
+        {
+            <table class="table rai-table rai-table-vcenter" id="dip-filter-row" style="display:none;">
+                <tr>
+                    <td class="bg-neutrals-xl-10">
+                        <label class="rai-font-md text-italic" id="dip-filter-counter"></label>
+                    </td>
+                    <td class="bg-neutrals-xl-10 text-right">
+                        <button class="btn rai-btn-small" disabled id="btn-disassoc-sel" onclick="DisassociaSelezionati('@Model.Nome')">Disassocia i selezionati</button>
+                    </td>
+                </tr>
+            </table>
+            <table class="table rai-table rai-table-vcenter">
+                <thead>
+                    <tr>
+                        <td class="rai-table-td-action" style="border-bottom:1px solid #ddd;">
+                            <div class="rai-checkbox">
+                                <input type="checkbox" data-check-group-all="dip-assoc-filter" onclick="ToggleAllDip('dip-assoc-filter', 'dip-assoc', 'btn-disassoc-sel');" />
+                                <label>&nbsp;</label>
+                            </div>
+                        </td>
+                        <td class="text-right" style="border-bottom:1px solid #ddd;">
+                            &nbsp;
+                        </td>
+                    </tr>
+                </thead>
+            </table>
+            <div style="overflow:hidden;overflow-y:auto;max-height:65vh;padding-right:2px; margin-right:1px;">
+                <table class="table rai-table rai-table-vcenter" id="dip-assoc">
+
+                    @foreach (var dip in Model.Persone.OrderBy(x => x.Matricola))
+                    {
+                        string sedeCont = dip.Sede;
+                        string servizio = dip.Servizio;
+
+                        bool notEditable = dip.Matricola.Contains("srv");
+
+                        <tr data-search="dip-assoc" data-search-name="@dip.Nominativo" data-search-matr="@dip.Matricola" data-search-sedecont="@sedeCont" data-search-dir="@servizio" aria-hidden="false">
+                            <td class="rai-table-td-action">
+                                <div class="rai-checkbox">
+                                    <input data-matr="@dip.Matricola" @(notEditable ? "disabled" : "") type="checkbox" data-check-group="@(notEditable ? "" : "dip-assoc-filter")"
+                                           onclick="@(notEditable ? "" : "ToggleSingleDip('dip-assoc-filter', 'dip-assoc', 'btn-disassoc-sel');")" />
+                                    <label>&nbsp;</label>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="rai-font-md"><b>@dip.Matricola</b> - @dip.Nominativo.TitleCase()</span>
+                                @if (!String.IsNullOrWhiteSpace(sedeCont))
+                                {
+                                <br />
+                                <span class="rai-font-sm">@sedeCont</span>
+                                }
+                                @if (!String.IsNullOrWhiteSpace(servizio))
+                                {
+                                <br />
+                                <span class="rai-font-sm-neutral">@servizio</span>
+                                }
+                            </td>
+                            <td>
+                                
+                            </td>
+                        </tr>
+                    }
+                </table>
+            </div>
+        }
+    </div>
+    <div class="col-md-4">
+        @Html.RenderWidget(WidgetType.Normal, "Importazione", "fa fa-upload", "Importa dipendenti da file", action: new ActionTemplate() { OnClick = "OpenModalImport('" + Model.Nome + "')", Text = "Aggiungi" })
+        @Html.RenderWidget(WidgetType.Normal, "Associazione", "fa fa-user", "Aggiungi nuovi dipendenti", action: new ActionTemplate() { OnClick = "OpenModalAdd('" + Model.Nome + "')", Text = "Aggiungi" })
+
+        @using (Html.BeginPanel(PanelType.Panel, "Ricerca", true))
+        {
+
+            <div class="rai form-group">
+                <div class="row push-10">
+                    <div class="col-sm-12">
+                        <label class="rai-caption">Matricola</label>
+                        <input type="text" class="form-control" placeholder="Filtra per matricola" data-search="dip-assoc" data-search-multi="on" data-search-attr="matr" onkeyup="RaiClickOnKeyUp('SearchAssoc')" />
+                    </div>
+                </div>
+                <div class="row push-10">
+                    <div class="col-sm-12">
+                        <label class="rai-caption">Nominativo</label>
+                        <input type="text" class="form-control" placeholder="Filtra per nominativo" data-search="dip-assoc" data-search-multi="on" data-search-attr="name" onkeyup="RaiClickOnKeyUp('SearchAssoc')" />
+                    </div>
+                </div>
+            </div>
+            <div class="row push-10">
+                <div class="col-sm-12">
+                    <div class="rai-btn-fill">
+                        <button class="btn rai-btn-secondary" onclick="AzzeraFiltri('dip-assoc-filter', 'dip-assoc', 'btn-disassoc-sel');">Azzera filtri</button>
+                        <button class="btn rai-btn-primary" id="SearchAssoc" onclick="ApplicaFiltri('dip-assoc-filter', 'dip-assoc', 'btn-disassoc-sel');">Cerca</button>
+                    </div>
+                </div>
+            </div>
+
+        }
+    </div>
+</div>
+
+

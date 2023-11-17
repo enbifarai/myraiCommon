@@ -1,0 +1,471 @@
+﻿@using myRaiCommonManager
+@using myRaiCommonModel
+@using myRaiHelper
+@model CercaDipendenteVM
+
+@{
+    string hrisAbil = AuthHelper.HrisFuncAbil(CommonHelper.GetCurrentUserMatricola());
+    if (String.IsNullOrWhiteSpace(hrisAbil))
+    {
+        hrisAbil = "HRCE";
+    }
+
+    string abilKey = "HRCE";
+    if (hrisAbil!="HRCE")
+    {
+        abilKey = "HRIS_PERS";
+    }
+    string currentMatr = CommonHelper.GetCurrentUserMatricola();
+    var abilInfo = AuthHelper.EnabledInfo(currentMatr, abilKey);
+
+    var azienda = AnagraficaManager.GetSocieta("", "", true, abilInfo.AbilSocieta, true, false);
+    var categorie = AnagraficaManager.GetCategorie("", "", true, abilInfo.AbilCat, null, true, "ND", "", false);
+    var tipiContr = AnagraficaManager.GetTipiContratto("", "", true);
+    var servizi = AnagraficaManager.GetServizi("", "", true, abilInfo.AbilDir, true, abilInfo.AbilSocieta, addDefault: false);
+    var sedi = AnagraficaManager.GetSedi("", "", true, abilInfo.AbilSedi, addDefault: false);
+
+    var albero = new myRaiCommonModel.Gestionale.IncarichiTreeModel("P");
+    albero.GetModel(new myRaiDataTalentia.TalentiaEntities(), DateTime.Now.ToString("dd/MM/yyyy"), abilInfo.AbilDir);
+   
+
+}
+
+@using (Html.BeginForm("RicercaDipendentiSearchBar", "Ricerca", FormMethod.Post, new { id = "form-searchbar", @class = "", role = "search" }))
+{
+    @Html.HiddenFor(m => m.Provenienza)
+    @Html.HiddenFor(m => m.Action)
+    @Html.HiddenFor(m => m.ActionText)
+    @Html.HiddenFor(m=>m.CampidaEsportare)
+    <div class="form-group" id="searchbar-int-cont">
+        <div class="searchbar bg-white">
+            <div class="searchbar-item text-item">
+                <div class="input-group">
+                    <div class="input-group-addon">
+                        <span class="fa fa-search"></span>
+                    </div>
+                    @Html.TextBoxFor(m => m.Filtri.Query, new { @class = "form-control", placeholder = "Inserisci nome o matricola di un dipendente" })
+                </div>
+            </div>
+            <div class="searchbar-item ws-nowrap">
+                <div class="searchbar-item-box" data-filter-container="ser" data-filter-selected="false">
+                    <a href="#searchbar-servizi" data-toggle="collapse" aria-expanded="false">Servizi&nbsp;<span class="rai-notification" data-filter-counter="ser" style="display:none">0</span>&nbsp;<i class="fa fa-chevron-down"></i></a>
+                    <div id="searchbar-servizi" class="collapse searchbar-item-box-popover form-group form-group-md">
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                <input class="form-control" type="text" data-search="searchbar-ser" onkeyup="RaiSearchData(this, 'searchbar-ser', 'name')" placeholder="Cerca un servizio..." />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12 no-padding-right">
+                                <div class="rai-checkbox-container" style="max-height:20em;overflow:hidden;overflow-y:auto;">
+                                    @foreach (var item in servizi)
+                                    {
+                                        <div class="rai-checkbox full-width push-10" data-search="searchbar-ser" data-search-name="@item.Text">
+                                            <input type="checkbox" id="ser-@item.Value" name="Filtri.Servizi" value="@item.Value" data-filter-element="ser" onclick="AnagSearchBarCheckFilter(this)" />
+                                            <label for="ser-@item.Value">@item.Text</label>
+                                        </div>
+                                    }
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="searchbar-item ws-nowrap">
+                <div class="searchbar-item-box" data-filter-container="cat" data-filter-selected="false">
+                    <a href="#searchbar-categoria" data-toggle="collapse" aria-expanded="false">Categoria&nbsp;<span class="rai-notification" data-filter-counter="cat" style="display:none">0</span>&nbsp;<i class="fa fa-chevron-down"></i></a>
+                    <div id="searchbar-categoria" class="collapse searchbar-item-box-popover form-group form-group-md">
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                <input class="form-control" type="text" data-search="searchbar-cat" onkeyup="RaiSearchData(this, 'searchbar-cat', 'name')" placeholder="Cerca una categoria..." />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12 no-padding-right">
+                                <div class="rai-checkbox-container" style="max-height:20em;overflow:hidden;overflow-y:auto;">
+                                    @foreach (var item in categorie)
+                                    {
+                                        <div class="rai-checkbox full-width push-10" data-search="searchbar-cat" data-search-name="@item.Text">
+                                            <input type="checkbox" id="cat-@item.Value" name="Filtri.Categoria" value="@item.Value" data-filter-element="cat" onclick="AnagSearchBarCheckFilter(this)" />
+                                            <label for="cat-@item.Value">@item.Text</label>
+                                        </div>
+                                    }
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="searchbar-item">
+                <div class="rai-checkbox rai-checkbox-inline">
+                    @Html.CheckBoxFor(m => m.Filtri.EscludiCessati)
+                    @Html.LabelFor(m => m.Filtri.EscludiCessati, "Escludi cessati")
+                </div>
+            </div>
+            <div class="searchbar-item filler no-border">
+
+            </div>
+            <div class="searchbar-item additional-item no-border">
+                <a href="#searchbar-additional" class="decorationnone" data-toggle="collapse" aria-expanded="false" onclick="$('#searchbar-int-cont .searchbar-item-box .collapse.in').collapse('toggle');"><i class="fa"></i>&nbsp;Ricerca avanzata&nbsp;<span class="rai-notification" data-filter-counter="avanzate" style="display:none">0</span>&nbsp;</a>
+            </div>
+            <div class="searchbar-item button-item">
+                <a style="min-width:100px;" onclick="AnagSearchClear()">Azzera filtri</a>
+            </div>
+            <div class="searchbar-item button-item no-border">
+                <button class="btn rai-btn-secondary" style="min-width:100px;" onclick="AnagSearchFromBar   ()">Ricerca</button>
+            </div>
+        </div>
+        <div class="searchbar collapse bg-white" id="searchbar-additional">
+            <div class="searchbar-item no-border">
+                <div class="searchbar-item-box" data-filter-container="info" data-filter-selected="false">
+                    <a href="#searchbar-info" data-toggle="collapse" aria-expanded="false">Informazioni personali&nbsp;<span class="rai-notification" data-filter-counter="info" style="display:none">0</span>&nbsp;<i class="fa fa-chevron-down"></i></a>
+                    <div id="searchbar-info" class="collapse searchbar-item-box-popover form-group form-group-md">
+                        <div class="row push-10">
+                            <div class="col-sm-12"><label class="rai-caption">Anno di nascita</label></div>
+                            <div class="col-sm-6">
+                                <div class="input-group">
+                                    <div class="input-group-addon">
+                                        <i class="fa fa-calendar"></i>
+                                    </div>
+                                    @Html.TextBoxFor(m => m.Filtri.NascitaDa, new { @class = "form-control js-datetimepicker", data_format = "YYYY", style = "width:5em", data_filter_element = "info", onchange = "AnagSearchBarCheckFilter(this)", placeholder = "Dal" })
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="input-group">
+                                    <div class="input-group-addon">
+                                        <i class="fa fa-calendar"></i>
+                                    </div>
+                                    @Html.TextBoxFor(m => m.Filtri.NascitaA, new { @class = "form-control js-datetimepicker", data_format = "YYYY", style = "width:5em", data_filter_element = "info", onchange = "AnagSearchBarCheckFilter(this)", placeholder = "Al" })
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row push-10">
+                            <div class="col-sm-12"><label class="rai-caption">Sesso</label></div>
+                            <div class="col-sm-12">
+                                <div class="rai-checkbox-container rai-checkbox-inline">
+                                    <div class="rai-checkbox">
+                                        <input type="checkbox" id="Sesso-M" name="Filtri.Sesso" value="M" data-filter-element="info" onclick="AnagSearchBarCheckFilter(this)" />
+                                        <label for="Sesso-M">Uomo</label>
+                                    </div>
+                                    <div class="rai-checkbox">
+                                        <input type="checkbox" id="Sesso-F" name="Filtri.Sesso" value="F" data-filter-element="info" onclick="AnagSearchBarCheckFilter(this)" />
+                                        <label for="Sesso-F">Donna</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12">
+                                @Html.TextBoxFor(m => m.Filtri.CodiceFiscale, new { @class = "form-control", placeholder = "Codice Fiscale", style = "min-width:17em", data_filter_element = "info", onchange = "AnagSearchBarCheckFilter(this)" })
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="searchbar-item">
+                <div class="searchbar-item-box" data-filter-container="contr" data-filter-selected="false">
+                    <a href="#searchbar-contratto" data-toggle="collapse" aria-expanded="false">Contratto&nbsp;<span class="rai-notification" data-filter-counter="contr" style="display:none">0</span>&nbsp;<i class="fa fa-chevron-down"></i></a>
+                    <div id="searchbar-contratto" class="collapse searchbar-item-box-popover form-group form-group-md no-padding-left no-padding-right ws-nowrap" style="min-width:650px">
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <div class="row push-20">
+                                    <div class="col-sm-12">
+                                        <label class="rai-caption">Assunzione</label>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <div class="input-group">
+                                            <div class="input-group-addon">
+                                                <i class="fa fa-calendar"></i>
+                                            </div>
+                                            @Html.TextBoxFor(m => m.Filtri.AssunzioneDa, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY", data_locale = "it", style = "width:8em", data_filter_element = "contr", onchange = "AnagSearchBarCheckFilter(this)", placeholder = "Dal" })
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <div class="input-group">
+                                            <div class="input-group-addon">
+                                                <i class="fa fa-calendar"></i>
+                                            </div>
+                                            @Html.TextBoxFor(m => m.Filtri.AssunzioneA, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY", data_locale = "it", style = "width:8em", data_filter_element = "contr", onchange = "AnagSearchBarCheckFilter(this)", placeholder = "Al" })
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <label class="rai-caption">Cessazione</label>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <div class="input-group">
+                                            <div class="input-group-addon">
+                                                <i class="fa fa-calendar"></i>
+                                            </div>
+                                            @Html.TextBoxFor(m => m.Filtri.CessazioneDa, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY", data_locale = "it", style = "width:8em", data_filter_element = "contr", onchange = "AnagSearchBarCheckFilter(this)", placeholder = "Dal" })
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <div class="input-group">
+                                            <div class="input-group-addon">
+                                                <i class="fa fa-calendar"></i>
+                                            </div>
+                                            @Html.TextBoxFor(m => m.Filtri.CessazioneA, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY", data_locale = "it", style = "width:8em", data_filter_element = "contr", onchange = "AnagSearchBarCheckFilter(this)", placeholder = "Al" })
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6 no-padding">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <label class="rai-caption">Tipo di contratto</label>
+                                    </div>
+                                    <div class="col-sm-12">
+                                        <div class="rai-checkbox-container" style="max-height:9em;overflow:hidden;overflow-y:auto;">
+                                            @foreach (var item in tipiContr)
+                                            {
+                                                <div class="rai-checkbox full-width push-10">
+                                                    <input type="checkbox" id="cat-@item.Value" name="Filtri.TipiContratto" value="@item.Value" data-filter-element="contr" onclick="AnagSearchBarCheckFilter(this)" />
+                                                    <label for="cat-@item.Value">@item.Text</label>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="searchbar-item">
+                <div class="searchbar-item-box" data-filter-container="azi" data-filter-selected="false">
+                    <a href="#searchbar-azienda" data-toggle="collapse" aria-expanded="false">Azienda&nbsp;<span class="rai-notification" data-filter-counter="azi" style="display:none">0</span>&nbsp;<i class="fa fa-chevron-down"></i></a>
+                    <div id="searchbar-azienda" class="collapse searchbar-item-box-popover">
+                        <div class="row">
+                            <div class="col-sm-12 no-padding-right">
+                                <div class="rai-checkbox-container" style="max-height:20em;overflow:hidden;overflow-y:auto;">
+                                    @foreach (var item in azienda)
+                                    {
+                                        <div class="rai-checkbox full-width push-10">
+                                            <input type="checkbox" id="az-@item.Value" name="Filtri.Azienda" value="@item.Value" data-filter-element="azi" onclick="AnagSearchBarCheckFilter(this)" />
+                                            <label for="az-@item.Value">@item.Text</label>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="searchbar-item  ws-nowrap">
+                <div class="searchbar-item-box" data-filter-container="sed" data-filter-selected="false">
+                    <a href="#searchbar-sedi" data-toggle="collapse" aria-expanded="false">Sedi&nbsp;<span class="rai-notification" data-filter-counter="sed" style="display:none">0</span>&nbsp;<i class="fa fa-chevron-down"></i></a>
+                    <div id="searchbar-sedi" class="collapse searchbar-item-box-popover form-group form-group-md">
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                <input class="form-control" type="text" data-search="searchbar-sed" onkeyup="RaiSearchData(this, 'searchbar-sed', 'name')" placeholder="Cerca una sede..." />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12 no-padding-right">
+                                <div class="rai-checkbox-container" style="max-height:20em;overflow:hidden;overflow-y:auto;">
+                                    @foreach (var item in sedi)
+                                    {
+                                        <div class="rai-checkbox full-width push-10" data-search="searchbar-sed" data-search-name="@item.Text">
+                                            <input type="checkbox" id="sed-@item.Value" name="Filtri.Sedi" value="@item.Value" data-filter-element="sed" onclick="AnagSearchBarCheckFilter(this)" />
+                                            <label for="sed-@item.Value">@item.Text</label>
+                                        </div>
+                                    }
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="searchbar-item  ws-nowrap" data-filter-container="str" data-filter-selected="false">
+                <div class="searchbar-item-box">
+                    <a href="#searchbar-strorg" data-toggle="collapse" aria-expanded="false">Sezione&nbsp;<span class="rai-notification" data-filter-counter="str" style="display:none">0</span>&nbsp;<i class="fa fa-chevron-down"></i></a>
+                    <div id="searchbar-strorg" class="collapse searchbar-item-box-popover" style="max-width:510px;">
+                        @{
+                            string icon_l1 = "fa fa-home";
+                        }
+
+                        @helper DrawTree(myRaiCommonModel.Gestionale.IncarichiTreeModel albero, myRaiCommonModel.Gestionale.TAlberoSezioneModel node)
+                        {
+                            bool hasChild = albero.AlberoItems.Any(x => x.subordinato_a == node.id);
+                            string treeIcon = "";
+                            if (!hasChild)
+                            {
+                                treeIcon = "fa fa-file";
+                            }
+                            else
+                            {
+                                treeIcon = "fa fa-folder";
+                            }
+
+                            <li data-jstree='{"icon":"@treeIcon"}' data-codice="@node.codice_visibile" data-idsezione="@node.id">
+                                @node.descrizione_lunga
+                                @if (hasChild)
+                                {
+                                    <ul>
+                                        @foreach (var child in albero.AlberoItems.Where(x => x.subordinato_a == node.id).OrderBy(x => x.num_ordina))
+                                        {
+                                            @DrawTree(albero, child)
+                                        }
+                                    </ul>
+                                }
+                            </li>
+                        }
+
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                <input class="form-control" type="text" data-search="searchbar-str" onkeyup="AnagSearchOrgCheckCont(this)" placeholder="Cerca una sezione..." />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12 no-padding-left no-padding-right">
+                                <div style="max-height:25em;width:500px;overflow:hidden;overflow-y:auto;padding-left:15px;" id="sb-jstree">
+                                    @foreach (var item in albero.AlberoItems.Where(x => x.id == x.subordinato_a).OrderBy(x => x.codice_visibile))
+                                    {
+                                        <ul>
+                                            <li data-jstree='{"icon":"@icon_l1"}' data-codice="@item.codice_visibile" data-idsezione="@item.id">
+                                                @item.descrizione_lunga
+
+                                                @if (albero.AlberoItems.Any(x => x.subordinato_a == item.id && x.subordinato_a != x.id))
+                                                {
+                                                    <ul>
+                                                        @foreach (var child in albero.AlberoItems.Where(x => x.subordinato_a == item.id && x.subordinato_a != x.id).OrderBy(x => x.num_ordina))
+                                                        {
+                                                            @DrawTree(albero, child)
+                                                        }
+                                                    </ul>
+                                                }
+
+                                            </li>
+                                        </ul>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @if (Model.Filtri.RicercaDinamicaItems!=null&& Model.Filtri.RicercaDinamicaItems.Any())
+            {
+                <div class="searchbar-item  ws-nowrap">
+                    <div class="searchbar-item-box" data-filter-container="din" data-filter-selected="false">
+                        <a href="#searchbar-din" data-toggle="collapse" aria-expanded="false">Dinamiche&nbsp;<span class="rai-notification" data-filter-counter="din" style="display:none">0</span>&nbsp;<i class="fa fa-chevron-down"></i></a>
+                        <div id="searchbar-din" class="collapse searchbar-item-box-popover form-group form-group-md">
+                            <div class="row push-10">
+                                <div class="col-sm-12">
+                                    <input class="form-control" type="text" data-search="searchbar-din" onkeyup="RaiSearchData(this, 'searchbar-din', 'name')" placeholder="Seleziona una opzione..." />
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-12 no-padding-right">
+                                    <div class="rai-checkbox-container" style="max-height:20em;overflow:hidden;overflow-y:auto;">
+                                        @foreach (var item in Model.Filtri.RicercaDinamicaItems)
+                                        {
+                                            <div class="rai-checkbox full-width push-10" data-search="searchbar-din" data-search-name="@item.ItemText">
+                                                <input type="checkbox" id="din-@item.ItemCode" name="Filtri.Dinamiche" value="@item.ItemCode" data-filter-element="din" onclick="AnagSearchBarCheckFilter(this)" />
+                                                <label for="din-@item.ItemCode">@item.ItemText</label>
+                                            </div>
+                                        }
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            @foreach (var filtro in Model.Filtri.FiltriAggiuntivi.GroupBy(x => x.NomeFiltro))
+            {
+                var nomefiltro = @filtro.Key.TrimEnd();
+                <div class="searchbar-item  ws-nowrap">
+                    <div class="searchbar-item-box" data-filter-container="@nomefiltro" data-filter-selected="false">
+                        <a href="#searchbar-@nomefiltro" data-toggle="collapse" aria-expanded="false">@nomefiltro&nbsp;<span class="rai-notification" data-filter-counter="@nomefiltro" style="display:none">0</span>&nbsp;<i class="fa fa-chevron-down"></i></a>
+                        <div id="searchbar-@nomefiltro" class="collapse searchbar-item-box-popover form-group form-group-md">
+                            <div class="row push-10">
+                                <div class="col-sm-12">
+                                    <input class="form-control" type="text" data-search="searchbar-@(nomefiltro)1" onkeyup="RaiSearchData(this, 'searchbar-@(nomefiltro)1', 'name')" placeholder="Cerca @(nomefiltro)..." />
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-12 no-padding-right">
+                                    <div class="rai-checkbox-container" style="max-height:20em;overflow:hidden;overflow-y:auto;">
+                                        @foreach (var item in filtro)
+                                        {
+                                            <div class="rai-checkbox full-width push-10" data-search="searchbar-@(nomefiltro)1" data-search-name="@item.Descrizione">
+                                                <input type="checkbox" id="@item.Valore" name="Filtri.Aggiuntivi" value="@item.Valore" data-filter-element="@(nomefiltro)" onclick="AnagSearchBarCheckFilter(this)" />
+                                                <label for="sed-@item.Valore">@item.Descrizione</label>
+                                            </div>
+                                        }
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+            }
+        </div>
+    </div>
+}
+
+
+<script>
+    InitDatePicker();
+
+    $("#sb-jstree")
+        .on('open_node.jstree', function (e, data) {
+            if (data.node.icon != 'fa fa-home') {
+                data.node.icon = 'fa fa-folder-open';
+                $('#' + data.node.id + '_anchor i.jstree-icon').removeClass('fa-folder').addClass('fa-folder-open');
+            }
+        })
+        .on('close_node.jstree', function (e, data) {
+            if (data.node.icon != 'fa fa-home') {
+                data.node.icon = 'fa fa-folder';
+                $('#' + data.node.id + '_anchor i.jstree-icon').removeClass('fa-folder-open').addClass('fa-folder');
+            }
+        })
+        .on('select_node.jstree', function (node, selected, event) {
+            let cont = 'str';
+            let countSelElem = $('#sb-jstree').jstree().get_selected(true).length;
+            $('[data-filter-container="' + cont + '"]').attr('data-filter-selected', countSelElem > 0);
+            $('[data-filter-counter="' + cont + '"]').text(countSelElem);
+            if (countSelElem > 0) {
+                $('[data-filter-counter="' + cont + '"]').show();
+            } else {
+                $('[data-filter-counter="' + cont + '"]').hide();
+            }
+        })
+        .on('deselect_node.jstree', function (node, selected, event) {
+            let cont = 'str';
+            let countSelElem = $('#sb-jstree').jstree().get_selected(true).length;
+            $('[data-filter-container="' + cont + '"]').attr('data-filter-selected', countSelElem > 0);
+            $('[data-filter-counter="' + cont + '"]').text(countSelElem);
+            if (countSelElem > 0) {
+                $('[data-filter-counter="' + cont + '"]').show();
+            } else {
+                $('[data-filter-counter="' + cont + '"]').hide();
+            }
+        })
+        .jstree({
+            'search': {
+                'show_only_matches': true,
+                'show_only_matches_children': true
+            },
+            'checkbox': {
+                //'three_state': false,
+                "keep_selected_style": false
+            },
+            "plugins": ["checkbox", "search"]
+        });
+
+
+    $("#sb-jstree").show();
+</script>

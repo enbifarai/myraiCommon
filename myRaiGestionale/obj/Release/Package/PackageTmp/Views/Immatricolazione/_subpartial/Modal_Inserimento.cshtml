@@ -1,0 +1,491 @@
+﻿@model myRaiCommonModel.ImmatricolazioniVM
+
+<div class="row">
+    <div class="col-sm-8">
+        @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Dati Anagrafici", false))
+        {
+            <form id="add-imm" onsubmit="return false;">
+                @Html.Hidden("IdEvento", Model.IdEvento)
+                @Html.Hidden("IdPersona", Model.IdPersona)
+                <div class="form-group">
+                    <div id="wiz-parent">
+                        <div id="wiz-body">
+                            <div class="js-wizard-classic-validation">
+                                <div id="newwizard" class="wizard-progress wizard-progress-llg wiznew">
+                                    <ul class="wizard-steps">
+                                        <li class="tabhead tabheadrich active disable" id="LiTabGenerale" role="presentation">
+                                            <a role="tab" tabindex="-1" aria-label="" aria-controls="wizgenerale" id="tab1" data-toggle="tab" href="#wizgenerale"><span>1</span>DATI ANAGRAFICI</a>
+                                        </li>
+                                        <li class="tabhead tabheadrich disable" id="LiTabCategoria" role="presentation">
+                                            <a role="tab" tabindex="-1" aria-label="" aria-controls="wizfiltro-contratto" id="tab2" data-toggle="tab" href="#wizfiltro-categoria"><span>2</span>DATI CONTRATTUALI</a>
+                                        </li>
+                                        <li class="tabhead tabheadrich disable" id="LiTabRiepilogo" role="presentation">
+                                            <a role="tab" tabindex="-1" aria-label="Riepilogo" aria-controls="wizriepilogo" id="tab3" data-toggle="tab" href="#wizriepilogo"><span>3</span>RIEPILOGO</a>
+                                        </li>
+                                    </ul>
+                                    <div class="block-content tab-content" style="overflow: visible; padding:0px; border: 0px; box-shadow: none">
+                                        <div class="tab-pane active text-left" id="wizgenerale" role="tabpanel" tabindex="0">
+                                            <div>
+                                                <div class="row push-10">
+                                                    <div class="col-sm-6 ">
+                                                        @Html.LabelForRequiredObbl(model => model.Cognome, "Cognome", new { @class = "rai-caption" })
+                                                        @Html.TextBoxFor(m => m.Cognome, new { @class = " form-control form-control-value", style = "width: 100%", placeholder = "Cognome", required = "required", @onkeyup = "InputToUpper(this);" })
+                                                    </div>
+                                                    <div class="col-sm-6 ">
+                                                        @Html.LabelForRequiredObbl(model => model.Nome, "Nome", new { @class = "rai-caption" })
+                                                        @Html.TextBoxFor(m => m.Nome, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Nome", required = "required", @onkeyup = "InputToUpper(this);" })
+                                                    </div>
+                                                    @*<div class="col-sm-6">
+                                                            @Html.LabelFor(model => model.SecondoCognome, "Secondo Cognome", new { @class = "rai-caption" })
+                                                            @Html.TextBoxFor(m => m.SecondoCognome, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Secondo Cognome" })
+                                                        </div>*@
+                                                </div>
+                                                <div class="row push-10">
+                                                    <div class="col-sm-6">
+                                                        @Html.LabelForRequiredObbl(model => model.DataNascita, "Data di nascita", new { @class = "rai-caption", placeholder = "Data di Nascita" })
+                                                        <div class="input-group">
+                                                            <span class="input-group-addon" style="cursor: pointer" onclick="$('#DataNascita').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                                                            @Html.TextBoxFor(m => m.DataNascita, new { @class = "js-datetimepicker form-control form-control-value", data_format = "DD/MM/YYYY", minData = DateTime.Today.ToString("dd/MM/yyyy"), data_locale = "it", style = "width: 100%", placeholder = "Data di nascita" })
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        @Html.LabelForRequiredObbl(model => model.Genere, "Genere", new { @class = "rai-caption" })
+                                                        <br />
+                                                        <div class="rai-radio radio-inline">
+                                                            @Html.RadioButtonFor(model => model.Genere, "M", htmlAttributes: new { id = "GenereM" })
+                                                            <label for="GenereM">Maschio</label>
+                                                        </div>
+                                                        <div class="rai-radio radio-inline">
+                                                            @Html.RadioButtonFor(model => model.Genere, "F", htmlAttributes: new { id = "GenereF" })
+                                                            <label for="GenereF">Femmina</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                @*<div class="row push-10">
+
+                                                    </div>*@
+                                                <div class="row push-10">
+                                                    <div class="col-sm-6">
+                                                        @Html.LabelForRequiredObbl(model => model.LuogoDiNascita, "Comune", new { @class = "rai-caption" })
+                                                        @Html.RaiAsyncSelectFor(model => model.LuogoDiNascita, Url.Action("GetComuni", "Immatricolazione"), 1, "Seleziona un comune", "Cerca", true, "decodProvincia()", tipoFiltro: myRaiHelper.SelectFilterType.StartsWith)
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        @Html.Label("Provincia", new { @class = "rai-caption" })
+                                                        <div class="input-group">
+                                                            @if (Model.IdEvento == 0)
+                                                            {
+                                                                @Html.TextBox("Provincia", Model.CodiceISTAT, new { id = "Provincia", @readonly = "readonly", style = "width:100%", @class = "form-control form-control-value", placeholder = "Provincia" })
+                                                            }
+                                                            else
+                                                            {@Html.TextBox("Provincia", Model.CodiceISTAT, new { id = "Provincia", @readonly = "readonly", style = "width:100%", @class = "form-control form-control-value", placeholder = "Provincia" })}
+
+                                                            <span class="input-group-addon"><i class="fa fa-lock"></i></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="row  push-10">
+                                                    <div class="col-sm-6">
+                                                        @Html.LabelForRequiredObbl(model => model.Cittadinanza, "Cittadinanza", new { @class = "rai-caption" })
+                                                        @Html.RaiAsyncSelectFor(m => m.Cittadinanza, Url.Action("GetNazioni", "Immatricolazione"), 1, "Seleziona una nazione", "Cerca", true, tipoFiltro: myRaiHelper.SelectFilterType.StartsWith)
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        @Html.LabelFor(model => model.CodiceFiscale, "Codice Fiscale", new { @class = "rai-caption" })
+                                                        @Html.TextBoxFor(m => m.CodiceFiscale, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Codice Fiscale", @onmouseup = "cancelBorderRed()" })
+                                                    </div>
+
+                                                    @*<div class="col-sm-6">
+                                                            <input type="submit" id="btnCalcola" class="btn rai-btn-small " style=" margin-top:40px;" title="Calcola" value="Calcola" onclick="CalcolaCodiceFiscale()" />
+                                                        </div>*@
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="tab-pane text-left rai-loader" id="wizfiltro-categoria" role="tabpanel" tabindex="0">
+                                            <div>
+
+                                                <div class="row push-10-t">
+                                                    <div class="col-md-6 push-10">
+                                                        @Html.LabelFor(model => model.Matricola, "Matricola", new { @class = "rai-caption" })
+                                                        <div class="input-group">
+                                                            @Html.TextBoxFor(model => model.Matricola, new { @class = "rai-font-md-bold form-control form-control-value", @readonly = "readonly" })
+                                                            <span class="input-group-addon"><i class="fa fa-lock"></i></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-md-6 push-10 ">
+                                                        @Html.LabelForRequiredObbl(model => model.SelectedAzienda, "Azienda", new { @class = "rai-caption" })
+                                                        @Html.RaiAsyncSelectFor(model => model.SelectedAzienda, Url.Action("GetImprese", "Immatricolazione"), 1, "Seleziona una azienda", "Cerca", true, onSelectchange: "changeSelectAzienda()", tipoFiltro: myRaiHelper.SelectFilterType.StartsWith)
+                                                    </div>
+                                                    <div class="col-md-6 push-10">
+                                                        @Html.LabelForRequiredObbl(model => model.SelectedSede, "Sede", new { @class = "rai-caption" })
+                                                        @Html.RaiAsyncSelectFor(model => model.SelectedSede, Url.Action("GetSedi", "Immatricolazione"), 1, "Seleziona una sede", "Cerca", true, tipoFiltro: myRaiHelper.SelectFilterType.AllStartsWith, showCodeInDropdown: true)
+                                                    </div>
+                                                </div>
+                                                <div class="row ">
+                                                    <div class="col-md-6 push-10" id="serv">
+                                                        @Html.LabelForRequiredObbl(model => model.SelectedServizio, "Servizio", new { @class = "rai-caption" })
+                                                        @Html.RaiAsyncSelectFor(model => model.SelectedServizio, Url.Action("GetServizi", "Immatricolazione"), 1, "Seleziona un servizio", "Cerca", true, getParametersFunction: "getParametriServizi()", onSelectchange: "changeSelectServizio()", tipoFiltro: myRaiHelper.SelectFilterType.AllStartsWith, showCodeInDropdown: true)
+                                                    </div>
+                                                    <div class="col-md-6 push-10" id="sezione">
+                                                        @Html.LabelForRequiredObbl(model => model.SelectedSezione, "Sezione", new { @class = "rai-caption" })
+                                                        @Html.RaiAsyncSelectFor(model => model.SelectedSezione, Url.Action("GetSezioni", "Immatricolazione"), 1, "Seleziona una sezione", "Cerca", true, getParametersFunction: "getParametriSezioni()", tipoFiltro: myRaiHelper.SelectFilterType.AllStartsWith, showCodeInDropdown: true)
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-md-6 push-10">
+                                                        @Html.LabelFor(model => model.SelectedRapplavoro, "Rapporto di lavoro", new { @class = "rai-caption" })
+                                                        @Html.RaiSelectFor(model => model.SelectedRapplavoro, myRaiGestionale.Controllers.ImmatricolazioneController.GetListItems("rapplav"), "Seleziona contratto", "Cerca", false, "changeSelectedRappLavoro()", false, null, true)
+                                                    </div>
+                                                    <div class="col-md-6 push-10">
+                                                        @Html.LabelForRequiredObbl(model => model.SelectedCategoria, "Categoria", new { @class = "rai-caption" })
+                                                        @Html.RaiAsyncSelectFor(model => model.SelectedCategoria, Url.Action("GetQualifiche", "Immatricolazione"), 1, "Seleziona una categoria", "Cerca", true, tipoFiltro: myRaiHelper.SelectFilterType.AllStartsWith, showCodeInDropdown: true)
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-md-6 push-10 ">
+                                                        @Html.LabelForRequiredObbl(model => model.DataInizio, "Data inizio contratto", new { @class = "rai-caption" })
+                                                        <div class="input-group">
+                                                            <span class="input-group-addon" style="cursor: pointer" onclick="$('#DataInizio').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                                                            @Html.TextBoxFor(m => m.DataInizio, new { @onchange = "UpdateMinDateEnd()", @class = "js-datetimepicker form-control form-control-value", data_format = "DD/MM/YYYY", style = "width: 100%", placeholder = "Data inizio", required = "required" })
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6 push-10 ">
+                                                        @Html.LabelForRequiredObbl(model => model.DataFine, "Data Fine contratto", new { @class = "rai-caption", style = "padding-left:0px;" })
+                                                        <div class="input-group">
+                                                            <span class="input-group-addon" style="cursor: pointer" onclick="$('#DataFine').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                                                            @Html.TextBoxFor(m => m.DataFine, new { @class = "js-datetimepicker form-control form-control-value", data_format = "DD/MM/YYYY", style = "width: 100%", placeholder = "Data Fine", required = "required" })
+                                                        </div>
+                                                        <span class="rai-caption">Solo per contratti a tempo determinato</span>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+                                        </div>
+
+                                        <div class="tab-pane text-left" id="wizriepilogo" role="tabpanel" tabindex="0">
+                                            <div>
+                                                @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Dati Anagrafici"))
+                                                {
+                                                    <div class="rai-table-info">
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-6 col-lg-3">
+                                                                <label>Nome</label>
+                                                            </div>
+                                                            <div class="col-sm-6 col-lg-9">
+                                                                <label id="lblNome"></label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-6 col-lg-3">
+                                                                <label>Cognome</label>
+                                                            </div>
+                                                            <div class="col-sm-6 col-lg-9">
+                                                                <label id="lblCognome"></label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-6 col-lg-3">
+                                                                <label>Data di Nascita</label>
+                                                            </div>
+                                                            <div class="col-sm-6 col-lg-9">
+                                                                <label id="lblDataNascita"></label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-6 col-lg-3">
+                                                                <label>Genere</label>
+                                                            </div>
+                                                            <div class="col-sm-6 col-lg-9">
+                                                                <label id="lblGenere"></label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-6 col-lg-3">
+                                                                <label>Luogo di Nascita</label>
+                                                            </div>
+                                                            <div class="col-sm-6 col-lg-9">
+                                                                <label id="lblComune"></label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-6 col-lg-3">
+                                                                <label>Provincia</label>
+                                                            </div>
+                                                            <div class="col-sm-6 col-lg-9">
+                                                                <label id="lblProvincia"></label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-6 col-lg-3">
+                                                                <label>Cittadinanza</label>
+                                                            </div>
+                                                            <div class="col-sm-6 col-lg-9">
+                                                                <label id="lblCittadinanza"></label>
+                                                            </div>
+
+                                                        </div>
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-6 col-lg-3">
+                                                                <label>Codice Fiscale</label>
+                                                            </div>
+                                                            <div class="col-sm-6 col-lg-9">
+                                                                <label id="lblCodiceFiscale"></label>
+                                                            </div>
+
+                                                        </div>
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-6 col-lg-3">
+                                                                <label>Matricola</label>
+                                                            </div>
+                                                            <div class="col-sm-6 col-lg-9">
+                                                                <label id="lblMatricola"></label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                }
+                                                @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Dati Contrattuali"))
+                                                {
+                                                    <div class="rai-table-info">
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-6 col-lg-3">
+                                                                <label>Azienda</label>
+                                                            </div>
+                                                            <div class="col-sm-6">
+                                                                <label id="lblAzienda"></label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-6 col-lg-3">
+                                                                <label>Sede</label>
+                                                            </div>
+                                                            <div class="col-sm-6">
+                                                                <label id="lblSede"></label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-6 col-lg-3">
+                                                                <label>Servizio</label>
+                                                            </div>
+                                                            <div class="col-sm-6">
+                                                                <label id="lblServizio"></label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-6 col-lg-3">
+                                                                <label>Sezione</label>
+                                                            </div>
+                                                            <div class="col-sm-6">
+                                                                <label id="lblSezione"></label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-6 col-lg-3">
+                                                                <label>Categoria</label>
+                                                            </div>
+                                                            <div class="col-sm-6">
+                                                                <label id="lblCategoria"></label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-6 col-lg-3">
+                                                                <label>Rapporto di lavoro</label>
+                                                            </div>
+                                                            <div class="col-sm-6">
+                                                                <label id="lblRappLavoro"></label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-6 col-lg-3">
+                                                                <label>Data</label>
+                                                            </div>
+                                                            <div class="col-sm-6">
+                                                                <label id="lblDataInizioFine"></label>
+                                                            </div>
+                                                        </div>
+
+                                                    </div>
+                                                }
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </form>
+
+            <div class="row push-20-t">
+                <div class="col-sm-12">
+                    <div class="rai-btn-fill">
+                        <button class="btn rai-btn-secondary disable" onclick="GotoPreviousTab()" id="btnPrevTab">Indietro</button>
+                        <input type="button" id="btnProsegui" class="btn btn-primary full-width" title="Prosegui" value="Continua" onclick="GotoNextTab()" />
+                        <input type="button" id="btnProsegui_" style="display:none;" class="btn btn-primary full-width" title="Continuas" value="Continua" onclick="GotoNextTab1()" />
+                        <input type="button" id="btnSave" class="btn btn-primary full-width" style="display:none;" title="Salva" value="Conferma" onclick="SaveDipendente()" />
+                    </div>
+                </div>
+            </div>
+
+
+
+        }
+    </div>
+    <div class="col-sm-4">
+        @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Note", true))
+        {
+
+            <div class="row">
+                <div class="col-md-12">
+                    <p class="rai-font-md"><i class="fa fa-info-circle neutrals-md-40-color" style="padding-right:5px;"></i>I campi contrassegnati con * sono obbligatori.</p><br />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <p class="rai-font-md"><i class="fa fa-info-circle neutrals-md-40-color" style="padding-right:5px;"></i>I dati inseriti sono dati previsionali e possono essere modificati in qualsiasi momento.</p><br />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <p class="rai-font-md"><i class="fa fa-info-circle neutrals-md-40-color" style="padding-right:5px;"></i>La matricola verrà generata alla fine del processo di immatricolazione.</p><br />
+                </div>
+            </div>
+           @* <div class="row">
+                <div class="col-md-12">
+                    <p class="rai-font-md"> <i class="fa fa-info-circle neutrals-md-40-color" style="padding-right:5px;"></i>Al termine del processo potrai scaricare e stampare il contratto di assunzione.</p><br />
+                </div>
+            </div>*@
+        }
+
+    </div>
+</div>
+
+<script type="text/javascript">
+
+    var today = new Date();
+    var dd = String(today.getDate()).padStart(2, '0');
+    var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+    var yyyy = today.getFullYear();
+    today = dd + '/' + mm + '/' + yyyy;
+    $(function () {
+        InitDatePicker();
+        var modelDataFine = @Html.Raw(Json.Encode(Model.DataFine.GetValueOrDefault().ToShortDateString()));
+        var modelDataInizio =  @Html.Raw(Json.Encode(Model.DataInizio.ToShortDateString()));
+        var modelDataNascita = @Html.Raw(Json.Encode(Model.DataNascita.ToShortDateString()));
+        var modelIdEvento = @Html.Raw(Json.Encode(Model.IdEvento));
+        if (modelIdEvento != 0) {
+            
+            $('#DataNascita').val(modelDataNascita);
+            $('#DataInizio').val(modelDataInizio);
+            if ($('#SelectedRapplavoro').val() == "TI" ||$('#SelectedRapplavoro').val() == "CO" ) {
+                $('#DataFine').val('');
+                $('#DataFine').prop('disabled', true);
+            }else{
+                $('#DataFine').prop('disabled', false);
+                $('#DataFine').val(modelDataFine);
+            }
+
+        }else {
+            if (modelDataNascita) {
+                $('#DataNascita').val(modelDataNascita);
+            }
+            else {
+                $('#DataNascita').val('');
+            }
+            $('#DataInizio').val(today);
+            $('#DataFine').val(today);
+        }
+    });
+    function cancelBorderRed() {
+        document.getElementById("CodiceFiscale").style = "border:  1px solid #c2cfd6";
+    }
+    function decodProvincia() {
+        
+        $.ajax({
+                url: '@Url.Action("DecodProvincia", "Immatricolazione")',
+                    type: "POST",
+                    dataType: 'json',
+                data: {
+                    cod: $('#LuogoDiNascita').val()
+                    },
+                    success: function (data) {
+                        if (data.Esito == true) {
+                            $('#Provincia').val(data.codice);
+                        }
+                        else {
+                            swal("Errore", "error")
+                        }
+                        console.log("ok");
+                    },
+
+                    error: function (e, ex, ec) {
+                        console.log(e, ex, ec);
+                    }
+
+            });
+
+    }
+    function changeSelectedRappLavoro() {
+        $('#DataInizio').trigger("reset").val(today);
+        $('#DataFine').trigger("reset").val(today);
+         var contrattoSelezionato = $('#SelectedRapplavoro').val();
+         if (contrattoSelezionato == "TI") {
+             //$('#DataFine').attr('readonly', 'readonly');
+             $('#DataFine').val('');
+             //$('#DataFine').addClass('disable');
+             $("#DataFine").prop("disabled", true);
+         } else {
+             $("#DataFine").prop("disabled", false);
+             $('#DataFine').val(today);
+         }
+
+    }
+        function changeSelectAzienda() {
+            
+            $("#SelectedServizio").find("option").empty();
+
+            $("#serv").find("span").empty();
+           // changeSelectServizio();
+
+        }
+    function changeSelectServizio() {
+        
+        $("#SelectedSezione").find("option").empty();
+        $("#sezione").find("span").empty();
+        getParametriSezioni();
+
+    }
+
+    function getParametriServizi() {
+        
+        return {
+            azienda: $('#SelectedAzienda').val()
+                    };
+    }
+
+    function getParametriSezioni() {
+        
+        return {
+            azienda: $('#SelectedAzienda').val(),
+            servizio: $('#SelectedServizio').val()
+        };
+    }
+    function InputToUpper(obj) {
+        if (obj.value != "") {
+            obj.value = obj.value.toUpperCase();
+        }
+    }
+    function UpdateMinDateEnd() {
+        var value = $('#DataInizio').val();
+        $('#DataFine').data('DateTimePicker').minDate(value);
+        if (value > $('#DataFine').val()) {
+            $('#DataFine').val(value);
+        }
+
+    }
+</script>
+

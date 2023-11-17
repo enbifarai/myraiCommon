@@ -1,0 +1,662 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+@using MVCProject.Custom_Helpers
+@model AnagraficaModel
+
+@{
+    /**/
+
+    bool isSmartWorker = Model.DatiStatiRapporti.Eventi.Any(x => x.Codice == "SW" && x.DataInizio <= DateTime.Now && DateTime.Now < x.DataFine);
+}
+
+<style>
+    #comp-l td {
+        padding: 4px;
+        border: solid 1px #ddd;
+        text-align: center;
+    }
+</style>
+@using (Html.BeginPanel(myRaiHelper.PanelType.PanelNoPadding, "Dati personali", true))
+{
+    <div class="block block-transparent" style="margin-bottom:0px;">
+        <ul class="nav nav-tabs nav-tabs-alt nav-justified" data-toggle="tabs" role="tablist">
+            <li class="active" role="presentation">
+                <a href="#anag" class="rai-badge-anchor" id="hrefAnag" tabindex="0" role="tab" aria-selected="true" aria-controls="anag">
+                    Dati anagrafici
+                </a>
+            </li>
+
+            @if (Model.DatiResidenzaDomicilio.IsEnabled)
+            {
+                <li class="" role="presentation">
+                    <a href="#resDom" class="rai-badge-anchor" id="hrefResDom" tabindex="0" role="tab" aria-selected="false" aria-controls="resDom">
+                        Residenza e domicilio
+                    </a>
+                </li>
+            }
+
+
+            @if (Model.DatiRecapiti.IsEnabled)
+            {
+                <li class="" role="presentation">
+                    <a href="#recapiti" class="rai-badge-anchor" id="hrefrecapiti" tabindex="0" role="tab" aria-selected="false" aria-controls="recapiti">
+                        Recapiti
+                    </a>
+                </li>
+            }
+
+            @if (Model.DatiTitoliStudio.IsEnabled)
+            {
+                <li class="" role="presentation">
+                    <a href="#studies" class="rai-badge-anchor" id="hrefStudies" tabindex="0" role="tab" aria-selected="false" aria-controls="studies">
+                        Titoli di studio
+                    </a>
+                </li>
+            }
+
+        </ul>
+
+        <div class="block-content tab-content" style="padding:15px 15px 0px 15px">
+            <div class="tab-pane active" id="anag" role="tabpanel">
+                @Html.Partial("subpartial/Tab_DatiAnagrafici", Model.DatiAnagrafici)
+            </div>
+            @if (Model.DatiResidenzaDomicilio.IsEnabled)
+            {
+                <div class="tab-pane" id="resDom" role="tabpanel">
+                    @Html.Partial("subpartial/Tab_DatiResidenzaDomicilio", Model.DatiResidenzaDomicilio)
+                </div>
+            }
+            @if (Model.DatiRecapiti.IsEnabled)
+            {
+                <div class="tab-pane" id="recapiti" role="tabpanel">
+                    @Html.Partial("subpartial/Tab_DatiRecapiti", Model.DatiRecapiti)
+                </div>
+            }
+            @if (Model.DatiTitoliStudio.IsEnabled)
+            {
+                <div class="tab-pane" id="studies" role="tabpanel">
+                    @Html.Partial("subpartial/Tab_DatiTitoliStudio", Model.DatiTitoliStudio)
+                </div>
+            }
+        </div>
+    </div>
+
+
+}
+
+@if (Model.isAbilitatoGestionale)
+{
+    using (Html.BeginPanel(myRaiHelper.PanelType.PanelNoPadding, "Competenze", true))
+    {
+        <div class="block block-transparent" style="margin-bottom:0px;" id="compdig">
+            <span style="margin-left:18px" class="rai-font-md-neutral">Autocertificate nel CV del dipendente</span>
+            <ul class="nav nav-tabs nav-tabs-alt nav-justified" data-toggle="tabs" role="tablist">
+
+                <li class="active" role="presentation">
+                    <a href="#lingue" class="rai-badge-anchor" id="hreflingue" tabindex="0" role="tab" aria-selected="false" aria-controls="resDom">
+                        Lingue
+                    </a>
+                </li>
+
+
+                <li class="" role="presentation">
+                    <a href="#cd" class="rai-badge-anchor" id="hrefcd" tabindex="0" role="tab" aria-selected="false" aria-controls="recapiti">
+                        Competenze digitali
+                    </a>
+                </li>
+            </ul>
+
+            <div class="block-content tab-content" style="padding:15px 15px 0px 15px">
+
+                <div class="tab-pane active" id="lingue" role="tabpanel">
+                    <div class="rai-table-info">
+                        @if (Model.Lingue != null && Model.Lingue.Any())
+                        {
+                            <div class="row push-10-t" style="margin-bottom: 16px;">
+                                <div class="col-sm-4 col-lg-3 col-xl-2">
+                                    &nbsp;
+                                </div>
+                                <div class="col-sm-8 col-lg-9 col-xl-10">
+                                    <table style="width:100%" id="comp-l">
+                                        <tr>
+                                            <td style="width:20%;padding:4px"><span>Ascolto</span></td>
+                                            <td style="width:20%;padding:4px"><span>Lettura</span></td>
+                                            <td style="width:20%;padding:4px"><span>Interazione</span></td>
+                                            <td style="width:20%;padding:4px"><span>Produzione orale</span></td>
+                                            <td style="width:20%;padding:4px"><span>Scritto</span></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                            foreach (var lingua in Model.Lingue)
+                            {
+
+                                <div class="row push-10-t" style="margin-bottom: 16px;">
+                                    <div class="col-sm-4 col-lg-3 col-xl-2">
+                                        <span>@(lingua._descLingua.Substring(0, 1).ToUpper() + lingua._descLingua.Substring(1))</span>
+                                    </div>
+                                    <div class="col-sm-8 col-lg-9 col-xl-10">
+                                        <table style="width:100%" id="comp-l">
+
+                                            <tr>
+                                                <td>
+                                                    <span><b>@(!string.IsNullOrEmpty(lingua._livAscolto) ? lingua._livAscolto : "nd")</b></span>
+                                                </td>
+                                                <td>
+                                                    <span><b>@(!string.IsNullOrEmpty(lingua._livInterazione) ? lingua._livInterazione : "nd")</b></span>
+                                                </td>
+                                                <td>
+                                                    <span><b>@(!string.IsNullOrEmpty(lingua._livAscolto) ? lingua._livAscolto : "nd")</b></span>
+                                                </td>
+                                                <td>
+                                                    <span><b>@(!string.IsNullOrEmpty(lingua._livProdOrale) ? lingua._livProdOrale : "nd")</b></span>
+                                                </td>
+                                                <td>
+                                                    <span><b>@(!string.IsNullOrEmpty(lingua._livScritto) ? lingua._livScritto : "nd")</b></span>
+                                                </td>
+                                            </tr>
+
+                                        </table>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <span>Nessun dato trovato</span>
+                        }
+
+                    </div>
+                </div>
+
+                <div class="tab-pane" id="cd" role="tabpanel">
+                    <div class="rai-table-info">
+                        @if (Model.Cdigitali != null && Model.Cdigitali.Any())
+                        {
+                            foreach (var cd in Model.Cdigitali)
+                            {
+                                <div class="row push-10-t" style="margin-bottom: 16px;">
+                                    <div class="col-sm-4 col-lg-3 col-xl-2">
+                                        <span>@cd._descCompDigit </span>
+                                    </div>
+                                    <div class="col-sm-8 col-lg-9 col-xl-10">
+                                        <span><b>@cd._descCompDigitLiv</b></span>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <span>Nessun dato trovato</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            debugger
+            $("#compdig").closest("section").addClass("panel-collapsed")
+        </script>
+    }
+
+}
+
+@if (Model.DatiBancari.IsEnabled)
+{
+    <section id="panel-bank" class="panel panel-collapsed">
+        <div class="panel-heading" data-panel-toggle="">
+            <label class="panel-title">Dati bancari</label>
+            <div class="panel-actions rai-panel-actions">
+                <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" style="display:none;" aria-label="Dati bancari" aria-expanded="false"></a>
+                <span class="panel-action rai-uploading"></span>
+            </div>
+        </div>
+        <div class="panel-body bg-neutrals-xl-10">
+            <div id="bank">
+
+            </div>
+        </div>
+    </section>
+}
+
+@if (Model.DatiContratti.IsEnabled || Model.DatiSedi.IsEnabled || Model.DatiServizi.IsEnabled || Model.DatiQualifiche.IsEnabled || Model.DatiRuoli.IsEnabled || Model.DatiSezioni.IsEnabled)
+{
+    <section id="panel-carriera" class="panel panel-collapsed">
+        <div class="panel-heading" data-panel-toggle="">
+            <label class="panel-title">Dati contrattuali</label>
+            <div class="panel-actions rai-panel-actions">
+                <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" style="display:none;" aria-label="Dati contrattuali" aria-expanded="false"></a>
+                <span class="panel-action rai-uploading"></span>
+            </div>
+        </div>
+        <div class="panel-body">
+            <div id="carriera">
+
+            </div>
+        </div>
+    </section>
+}
+
+@if (Model.DatiContenzioso.IsEnabled)
+{
+    <section id="panel-contenzioso" class="panel panel-collapsed">
+        <div class="panel-heading" data-panel-toggle="">
+            <label class="panel-title">Dati contenzioso</label>
+            <div class="panel-actions rai-panel-actions">
+                <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" style="display:none;" aria-label="Dati contenzioso" aria-expanded="false"></a>
+                <span class="panel-action rai-uploading"></span>
+            </div>
+        </div>
+        <div class="panel-body panel-body-nopadding">
+            <div id="contenzioso">
+
+            </div>
+        </div>
+    </section>
+}
+
+@if (Model.DatiRedditi.IsEnabled)
+{
+    <section id="panel-retrib" class="panel panel-collapsed">
+        <div class="panel-heading" data-panel-toggle="" onclick="UpdateGraficoRetrib()">
+            <label class="panel-title">Dati retribuzione</label>
+            <div class="panel-actions rai-panel-actions">
+                <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" style="display:none;" aria-label="Dati retribuzione" aria-expanded="false" onclick="UpdateGraficoRetrib()"></a>
+                <span class="panel-action rai-uploading"></span>
+            </div>
+        </div>
+        <div class="panel-body">
+            <div id="retribuzione">
+
+            </div>
+        </div>
+    </section>
+}
+
+@if (Model.DatiCedolini.IsEnabled)
+{
+    <section id="panel-cedo" class="panel panel-collapsed">
+        <div class="panel-heading" data-panel-toggle="">
+            <label class="panel-title">Dati cedolini</label>
+            <div class="panel-actions rai-panel-actions">
+                <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" style="display:none;" aria-label="Dati cedolini" aria-expanded="false"></a>
+                <span class="panel-action rai-uploading"></span>
+            </div>
+        </div>
+        <div class="panel-body">
+            <div id="cedolini">
+
+            </div>
+        </div>
+    </section>
+}
+
+@if (Model.DatiSituazioneDebitoria.IsEnabled)
+{
+    <section id="panel-sitdebit" class="panel panel-collapsed">
+        <div class="panel-heading" data-panel-toggle="">
+            <label class="panel-title">Situazione debitoria</label>
+            <div class="panel-actions rai-panel-actions">
+                <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" style="display:none;" aria-label="Situazione debitoria" aria-expanded="false"></a>
+                <span class="panel-action rai-uploading"></span>
+            </div>
+        </div>
+        <div class="panel-body">
+            <div id="sitdebit">
+
+            </div>
+        </div>
+    </section>
+}
+
+@if (Model.DatiFormazione.IsEnabled)
+{
+    <section id="panel-formazione" class="panel panel-collapsed">
+        <div class="panel-heading" data-panel-toggle="">
+            <label class="panel-title">Dati formazione</label>
+            <div class="panel-actions rai-panel-actions">
+                <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" style="display:none;" aria-label="Dati formazione" aria-expanded="false"></a>
+                <span class="panel-action rai-uploading"></span>
+            </div>
+        </div>
+        <div class="panel-body">
+            <div id="formazione">
+
+            </div>
+        </div>
+    </section>
+}
+@if (Model.DatiFamiliari != null && Model.DatiFamiliari.IsEnabled)
+{
+    <section id="panel-formazione" class="panel panel-collapsed">
+        <div class="panel-heading" data-panel-toggle="">
+            <label class="panel-title">Dati nucleo familiare</label>
+            <div class="panel-actions rai-panel-actions">
+                <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" style="display:none;" aria-label="Dati formazione" aria-expanded="false"></a>
+                <span class="panel-action rai-uploading"></span>
+            </div>
+        </div>
+        <div class="panel-body">
+            <div id="nucleo-familiare">
+
+            </div>
+        </div>
+    </section>
+}
+@if (Model.DatiPresenze.IsEnabled)
+{
+    <section id="panel-presenze" class="panel panel-collapsed">
+        <div class="panel-heading" data-panel-toggle="" onclick="UpdateGraficoAssenze()">
+            <label class="panel-title">Dati presenze</label>
+            <div class="panel-actions rai-panel-actions">
+                <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" style="display:none;" aria-label="Dati presenze" aria-expanded="false" onclick="UpdateGraficoAssenze()"></a>
+                <span class="panel-action rai-uploading"></span>
+            </div>
+        </div>
+        <div class="panel-body">
+            <div id="presenze">
+
+            </div>
+        </div>
+    </section>
+}
+
+@if (Model.DematerializzazioneMieiDocumenti != null && Model.DematerializzazioneMieiDocumenti.IsEnabled)
+{
+    <section id="panel-DematerializzazioneMieiDocumenti" class="panel panel-collapsed">
+        <div class="panel-heading" data-panel-toggle="" onclick="UpdateDematerializzazioneMieiDocumenti()">
+            <label class="panel-title">Pratiche</label>
+            <div class="panel-actions rai-panel-actions">
+                <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" style="display:none;" aria-label="Pratiche" aria-expanded="false" onclick="UpdateDematerializzazioneMieiDocumenti()"></a>
+                <span class="panel-action rai-uploading"></span>
+            </div>
+        </div>
+        <div class="panel-body panel-body-nopadding">
+            <div id="DematerializzazioneMieiDocumenti">
+
+            </div>
+        </div>
+    </section>
+}
+
+@if (Model.DatiTrasferte.IsEnabled)
+{
+    <section id="panel-cedo" class="panel panel-collapsed">
+        <div class="panel-heading" data-panel-toggle="">
+            <label class="panel-title">Trasferte</label>
+            <div class="panel-actions rai-panel-actions">
+                <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" style="display:none;" aria-label="Dati trasferte" aria-expanded="false"></a>
+                <span class="panel-action rai-uploading"></span>
+            </div>
+        </div>
+        <div class="panel-body panel-body-nopadding">
+            <div id="trasferte">
+
+            </div>
+        </div>
+    </section>
+}
+@if (Model.DatiSpeseProduzione.IsEnabled)
+{
+    <section id="panel-cedo" class="panel panel-collapsed">
+        <div class="panel-heading" data-panel-toggle="">
+            <label class="panel-title">Spese di produzione</label>
+            <div class="panel-actions rai-panel-actions">
+                <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" style="display:none;" aria-label="Dati spese di produzione" aria-expanded="false"></a>
+                <span class="panel-action rai-uploading"></span>
+            </div>
+        </div>
+        <div class="panel-body panel-body-nopadding">
+            <div id="speseproduzione">
+
+            </div>
+        </div>
+    </section>
+}
+@*@#@#*@
+@if (Model.DatiDocumenti.IsEnabled)
+{
+    <section id="panel-documentiAmministrativiePersonali" class="panel panel-collapsed">
+        <div class="panel-heading" data-panel-toggle="">
+            <label class="panel-title">Cartelle personali</label>
+            <div class="panel-actions rai-panel-actions">
+                <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" style="display:none;" aria-label="Documenti" aria-expanded="false"></a>
+                <span class="panel-action rai-uploading"></span>
+            </div>
+        </div>
+        <div class="panel-body panel-body-nopadding">
+            <div id="documentiAmministrativiePersonali">
+
+            </div>
+        </div>
+    </section>
+}
+
+<script>
+    function HideLoading(id) {
+        $('#panel-' + id + ' .panel-action.rai-uploading').hide();
+        $('#panel-' + id + ' .panel-action[data-panel-toggle]').show();
+    }
+
+    function UpdateGraficoRetrib() {
+        var timer;
+        var timer = setTimeout(function () {
+            clearInterval(timer);
+            $('#chart-reddito')[0].__chartist__.update();
+        }, 201);
+    }
+
+    function UpdateGraficoAssenze() {
+        var timer;
+        var timer = setTimeout(function () {
+            clearInterval(timer);
+            $('#chart-assenze')[0].__chartist__.update();
+        }, 201);
+    }
+
+    function LoadDocumentiAmministrativi() {
+        var codiceDoc = $('#DocAmm_TipoDocumento').find(":selected").val();
+        var anno = $('#DocAmm_AnnoDocumento').find(":selected").val();
+        RaiUpdateWidget('divListaDocumentiAmministrativi', '@Url.Action("Load_ElencoDocumentiAmministrativi", "Anagrafica")', 'html', { m: '@Model.Matricola', codice: codiceDoc,  anno: anno, customFunc: '@Model.CustomFunc' }, false, function () { HideLoading('documentiAmministrativi') });
+    }
+
+    function ScaricaDocumentoPersonale(event, id, matricola) {
+        event.preventDefault();
+        window.location.href = '@Url.Action("ScaricaDocumentoPersonale")' + "?id=" + id + "&matricola=" + matricola
+    }
+
+    function LoadDocumentiPersonali() {
+        var codiceDoc = $('#DocPer_TipoDocumento').find(":selected").val();
+        RaiUpdateWidget('divListaDocumentiPersonali', '@Url.Action("Load_ElencoDocumentiPersonali", "Anagrafica")', 'html', { m: '@Model.Matricola', codice: codiceDoc, customFunc: '@Model.CustomFunc' }, false, function () { HideLoading('documentiAmministrativi') });
+    }
+
+    function PdfDocPrev() {
+        var idPdf = $("#idpdfcurrent").val();
+        var ind = getIndexModelLByIdDocumento(idPdf);
+        $("#pdfnext").removeAttr("disabled");
+        if (parseInt(ind) == 1) {
+            $("#pdfprev").attr("disabled", "disabled");
+        }
+        $("#idpdfcurrent").val(jsmodel[parseInt(ind) - 1].ID);
+        UpdateIframeDocSource(parseInt(ind) - 1, $("#tipodoc").val());
+    }
+
+    function PdfDocNext() {
+        var idPdf = $("#idpdfcurrent").val();
+        var ind = getIndexModelLByIdDocumento(idPdf);
+        $("#pdfprev").removeAttr("disabled");
+        if (parseInt(ind) == (jsmodel.length - 2)) {
+            $("#pdfnext").attr("disabled", "disabled");
+        }
+        $("#idpdfcurrent").val(jsmodel[parseInt(ind) + 1].ID);
+        UpdateIframeDocSource(parseInt(ind) + 1, $("#tipodoc").val());
+    }
+
+    function getIndexModelLByIdDocumento(IdDocumento) {
+        console.log(jsmodel);
+        for (var x = 0; x < jsmodel.length; x++) {
+            if (jsmodel[x].ID == IdDocumento) return x.toString();
+        }
+        return '0';
+    }
+
+    function UpdateIframeDocSource(ind, tipodoc) {
+        $("#myframe").attr("src", "/ANAGRAFICA/ScaricaDocumentoPersonale?id=" + $("#idpdfcurrent").val() + "&matricola=" + matricolaDoc);
+        UpdateIntestazioneDocIframe(ind, tipodoc);
+    }
+
+    function UpdateIntestazioneDocIframe(ind, tipodoc) {
+        $("#attesa").show();
+        moment.locale('IT');
+        if (tipodoc == "00") {
+            $("#int2").html(moment(jsmodel[ind].DataContabile.substring(0, 6) + '01').format('MMMM YYYY'));
+            $("#dataCompetenza").html("Data Competenza: <b>" + moment(jsmodel[ind].DataCompetenza.substring(0, 6) + '01').format('MMMM YYYY') + "</b>");
+            $("#dataPubblicazione").html("Data Pubblicazione: <b>" + moment(jsmodel[ind].DataPubblicazione).format('DD/MM/YYYY') + "</b>");
+            $("#Nota").html(jsmodel[ind].Nota);
+        }
+        else {
+            $("#int2").html(jsmodel[ind].DescrittivaTipoDoc);
+            var competenza = "";
+            if (jsmodel[ind].DataCompetenza.length == 4) {
+                competenza = jsmodel[ind].DataCompetenza;
+            }
+
+            if (jsmodel[ind].DataCompetenza.length == 6) {
+                if (jsmodel[ind].DataContabile.substring(4) == "00") {
+
+                    competenza = jsmodel[ind].DataContabile.substring(0, 4);
+                }
+                else {
+                    competenza = moment(jsmodel[ind].DataCompetenza.substring(0, 6) + '01').format('MMMM YYYY');
+                }
+
+            }
+
+            if (jsmodel[ind].DataCompetenza.length == 8) {
+                if (jsmodel[ind].DataContabile.substring(4) == "0000") {
+                    competenza = jsmodel[ind].DataContabile.substring(0, 4);
+                }
+                else if (jsmodel[ind].DataContabile.substring(6) == "00") {
+                    competenza = moment(jsmodel[ind].DataContabile.substring(0, 6) + '01').format('MMMM YYYY');
+                }
+                else {
+                    competenza = moment(jsmodel[ind].DataContabile).format('DD/MM/YYYY')
+                }
+            }
+
+            $("#dataCompetenza").html("Data Competenza: <b>" + competenza + "</b>");
+            $("#dataPubblicazione").html("Data Pubblicazione: <b>" + moment(jsmodel[ind].DataPubblicazione).format('DD/MM/YYYY') + "</b>");
+            $("#Nota").html(jsmodel[ind].Nota);
+        }
+    }
+
+    function onMyFrameLoad() {
+        $("#attesa").hide();
+        $("#myframe").height($("#pdfcontent").height()-$("#pdfDivNota").height()-220);
+    };
+
+    function ShowPdfDoc(idPdf, datacompetenza, datacontabile, datapubblicazione, nota, titolo, nomefile) {
+        $.ajax({
+            beforeSend: function () { $("#page-loaderR").show(); },
+            complete: function () { $("#page-loaderR").hide(); },
+            url: '/anagrafica/getpdf',
+            type: "GET",
+            dataType: "html",
+            data: { matricola: matricolaDoc, idPdf: idPdf, datacompetenza: datacompetenza, datacontabile: datacontabile, datapubblicazione: datapubblicazione, nota: nota, titolo: titolo, nomefile: nomefile },
+            success: function (data) {
+                if (data.indexOf("*") == 0) {
+                    swal({
+                        title: 'Errore',
+                        type: 'error',
+                        html: '<div style="overflow:scroll">' + data + '</div>',
+                        showCloseButton: true,
+                        confirmButtonText: ' OK'
+                    });
+                }
+                else {
+                    $("#pdf-modalDoc").modal("show");
+                    $("#pdfcontent").html(data);
+                    //console.log(jsmodel);
+                    $("#idpdfcurrent").val(idPdf);
+                    if (jsmodel[0].ID == idPdf) {
+                        //console.log(" Scritto ");
+                        $("#pdfprev").attr("disabled", "disabled");
+                    }
+                    if (jsmodel[jsmodel.length - 1].ID == idPdf)
+                        $("#pdfnext").attr("disabled", "disabled");
+                }
+            },
+            error: function (a, b, c) {
+                swal('Errore', a + b + c, 'error');
+            }
+        });
+    }
+
+
+</script>
+
+@if (Model.DatiFamiliari != null && Model.DatiFamiliari.IsEnabled)
+{
+    <script>$("#nucleo-familiare").load("/anagrafica/load_datifamiliari?m=@Model.Matricola")</script>
+}
+@if (Model.DatiContratti.IsEnabled || Model.DatiSedi.IsEnabled || Model.DatiServizi.IsEnabled || Model.DatiQualifiche.IsEnabled || Model.DatiRuoli.IsEnabled || Model.DatiSezioni.IsEnabled)
+{
+    <script>RaiUpdateWidget('carriera', '/Anagrafica/Load_DatiContrattuali', 'html', { m: '@Model.Matricola', idPersona: @Model.IdPersona, isNeoMatr: @(Model.IsNeoMatr ? "true" : "false"), customFunc: '@Model.CustomFunc' }, false, function () { HideLoading('carriera') });</script>
+}
+@if (Model.DatiBancari.IsEnabled)
+{
+    <script>RaiUpdateWidget('bank', '/Anagrafica/Load_DatiIban', 'html', { m: '@Model.Matricola', customFunc: '@Model.CustomFunc' }, false, function () { HideLoading('bank') });</script>
+}
+@if (Model.DatiSituazioneDebitoria.IsEnabled)
+{
+    <script>RaiUpdateWidget('sitdebit', '/Anagrafica/Load_SitDebit', 'html', { m: '@Model.Matricola', customFunc: '@Model.CustomFunc' }, false, function () { HideLoading('sitdebit') });</script>
+}
+@if (Model.DatiRedditi.IsEnabled)
+{
+    <script>RaiUpdateWidget('retribuzione', '/Anagrafica/Load_DatiRetribuzione', 'html', { m: '@Model.Matricola', customFunc: '@Model.CustomFunc' }, false, function () { HideLoading('retrib') });</script>
+}
+@if (Model.DatiCedolini.IsEnabled)
+{
+    <script>RaiUpdateWidget('cedolini', '/Anagrafica/Load_DatiCedolini', 'html', { m: '@Model.Matricola', customFunc: '@Model.CustomFunc' }, false, function () { HideLoading('cedo') });</script>
+}
+@if (Model.DatiFormazione.IsEnabled)
+{
+    <script>RaiUpdateWidget('formazione', '/Anagrafica/Load_DatiFormazione', 'html', { m: '@Model.Matricola', customFunc: '@Model.CustomFunc' }, false, function () { HideLoading('formazione') });</script>
+}
+@if (Model.DatiPresenze.IsEnabled)
+{
+    <script>RaiUpdateWidget('presenze', '/Anagrafica/Load_DatiPresenze', 'html', { m: '@Model.Matricola', customFunc: '@Model.CustomFunc' }, false, function () { HideLoading('presenze') });</script>
+}
+@if (Model.DatiContenzioso.IsEnabled)
+{
+    <script>RaiUpdateWidget('contenzioso', '/Anagrafica/Load_Contenzioso', 'html', { m: '@Model.Matricola', customFunc: '@Model.CustomFunc' }, false, function () { HideLoading('contenzioso') });</script>
+}
+
+@if (Model.DematerializzazioneMieiDocumenti != null && Model.DematerializzazioneMieiDocumenti.IsEnabled)
+{
+    <script>RaiUpdateWidget('DematerializzazioneMieiDocumenti', '/Anagrafica/Load_DematerializzazioneMieiDocumenti', 'html', { m: '@Model.Matricola', customFunc: '@Model.CustomFunc' }, false, function () { HideLoading('DematerializzazioneMieiDocumenti') });</script>
+}
+@if (Model.DatiTrasferte.IsEnabled)
+{
+    <script>RaiUpdateWidget('trasferte', '/Anagrafica/Load_DatiTrasferte', 'html', { m: '@Model.Matricola', customFunc: '@Model.CustomFunc' }, false, function () { HideLoading('cedo') });</script>
+}
+@if (Model.DatiSpeseProduzione.IsEnabled)
+{
+    <script>RaiUpdateWidget('speseproduzione', '/Anagrafica/Load_DatiSpeseProduzione', 'html', { m: '@Model.Matricola', customFunc: '@Model.CustomFunc' }, false, function () { HideLoading('cedo') });</script>
+}
+
+@if (Model.DatiDocumenti.IsEnabled)
+{
+    <script>
+        RaiUpdateWidget('documentiAmministrativiePersonali', '@Url.Action("Load_Documenti", "Anagrafica")', 'html', { m: '@Model.Matricola', customFunc: '@Model.CustomFunc' }, false, function () { HideLoading('documentiAmministrativiePersonali') });
+    </script>
+}
+
+<div class="modal fade right" id="pdf-modalDoc" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-popin modal-lg">
+        <div class="modal-content" id="pdfcontent"></div>
+    </div>
+</div>
+
+
+@Html.Raw(TempData["script"])

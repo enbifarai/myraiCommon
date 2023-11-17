@@ -1,0 +1,151 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiCommonModel
+@using myRaiHelper
+@model RichiestaDoc
+
+@{
+    /**/
+
+    string title = "Posiziona protocollo";
+}
+
+@using ( Html.BeginModal( title ) )
+{
+    <div id="newwizard" style="margin-top:0px" class="rai wizard-progress wizard-progress-llg wiznew remove-margin-t" role="tablist">
+        <ul class="wizard-steps">
+            <li class="tabhead tabheadrich active" id="tab-mat-1" role="presentation" style="max-width:none">
+                <a role="tab" aria-label="Scegli il tipo di richiesta" aria-controls="validation-classic-step1" id="tab1" onclick="" href="#validation-classic-step1" data-toggle="tab" aria-selected="true" tabindex="0" aria-expanded="true"><span>1</span>TIPO RICHIESTA</a>
+            </li>
+            <li class="tabhead tabheadrich" id="tab-mat-2" role="presentation">
+                <a role="tab" tabindex="-1" aria-label="Scegli i dettagli" aria-controls="validation-classic-step2" id="tab2" onclick="" href="#div-tipologiaDocumentale-VSDIP" data-toggle="tab" aria-selected="false"><span>2</span>DETTAGLI</a>
+            </li>
+            <li class="tabhead tabheadrich" id="tab-mat-3" role="presentation">
+                <a role="tab" tabindex="-1" aria-label="Inserisci i documenti" aria-controls="validation-classic-step3" id="tab3" onclick="" href="#validation-classic-step3" data-toggle="tab" aria-selected="false"><span>3</span>PROTOCOLLO</a>
+            </li>
+        </ul>
+    </div>
+
+    <label id="textLeft" class="rai-caption" style="display:none;"></label>
+    <label id="textTop" class="rai-caption" style="display:none;"></label>
+
+    <label id="textLeftData" class="rai-caption" style="display:none;"></label>
+    <label id="textTopData" class="rai-caption" style="display:none;"></label>
+
+    <div id="draggableData" class="text-center" style="height: 20px; width: 70px; border: 1px solid dashed #0026ff; position: absolute; z-index: 999; background-color: white;">
+        <label class="rai-caption"> XX/XX/XXXX </label>
+    </div>
+    <div id="draggable" class="text-center" style="height: 20px; width: 150px; border: 1px solid red; position: absolute; z-index: 999; background-color: white;">
+        <label class="rai-caption"> XXX/X/0000/0000000/X/X </label>
+    </div>
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="row">
+                <div class="col-xs-12" style="height:80vh; background-color:gray; overflow-y:auto;">
+                    <img id="ItemPreview" src="data:image/png;base64,@(Model.PNGBase64)" style="width:595px; height:842px; display: block; margin-left: auto; margin-right: auto;" />
+                </div>
+            </div>
+        </div>
+    </div>
+    @*<div class="row">
+            <div class="col-sm-12 push-20-t">
+                <button class="btn rai-btn-primary full-width" onclick="SetPosizioneProtocollo()">Salva</button>
+            </div>
+        </div>*@
+
+    <div id="">
+        <div class="rai-btn-fill">
+            <button type="button" class="btn rai-btn-secondary" onclick="ChiudiInserimento()">Indietro</button>
+            <button type="button" id="continua-privacy" onclick="" class="btn rai-btn-primary">Salva</button>
+        </div>
+    </div>
+}
+
+<script type="text/javascript">
+    function SetPosizioneProtocollo() {
+        debugger;
+        var $newPosX = $('#textLeft').text();
+        var $newPosY = $('#textTop').text();
+        $newPosX = $newPosX.replace(".", ",");
+        $newPosY = $newPosY.replace(".", ",");
+
+        var $newPosXData = $('#textLeftData').text();
+        var $newPosYData = $('#textTopData').text();
+        $newPosXData = $newPosXData.replace(".", ",");
+        $newPosYData = $newPosYData.replace(".", ",");
+
+        $.ajax({
+            url: "/Dematerializzazione/SetPosizioneProtocollo",
+            type: "POST",
+            data: JSON.stringify({
+                matricola: '@(Model.Matricola)',
+                idPersona: '@(Model.IdPersona)',
+                idDoc: '@Model.Documento.Id',
+                posLeft: $newPosX,
+                posTop: $newPosY,
+                posLeftData: $newPosXData,
+                posTopData: $newPosYData
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: 'html',
+            success: function (data) {
+                swal({
+                    title: 'Posizione protocollo salvata con successo',
+                    type: 'success',
+                    //confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+                $('#modal-viewerDoc').modal('hide');
+            },
+            error: function (xhr, status) {
+                swal({
+                    title: xhr.statusText,
+                    type: 'error',
+                    //confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                })
+            }
+        });
+    }
+
+    $(function () {
+        $("#draggable").draggable({
+            containment: "#ItemPreview",
+        });
+
+        //$("#draggableData").draggable({
+        //    containment: "#ItemPreview",
+        //});
+
+        $("#draggableData").draggable({
+            containment: "#ItemPreview",
+            scroll: true,
+            start: function (e, ui) {
+                $(this).css('margin-top', '0px;');
+            },
+            stop: function (e, ui) {
+
+            }
+        });
+
+        $("#ItemPreview").droppable({
+            drop: function (event, ui) {
+                var $newPosX = ui.offset.left - $(this).offset().left;
+                var $newPosY = ui.offset.top - $(this).offset().top;
+
+                var id = ui.draggable.attr('id');
+                if (id == "draggable") {
+                    $('#textLeft').text($newPosX);
+                    $('#textTop').text($newPosY);
+                }
+                else {
+                    $('#textLeftData').text($newPosX);
+                    $('#textTopData').text($newPosY);
+                }
+            }
+        });
+    });
+</script>

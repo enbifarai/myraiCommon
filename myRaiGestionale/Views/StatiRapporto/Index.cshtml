@@ -1,0 +1,345 @@
+﻿@using myRai.Business;
+@using myRaiHelper
+@using myRaiGestionale.Controllers
+@model RicercaStati
+
+
+@{
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    ViewBag.Title = "HRIS - Gestione stati";
+}
+
+<style>
+    .tooltip [data-sw-cat] span {
+        color: white !important;
+    }
+
+        .tooltip [data-sw-cat] span + br,
+        .tooltip [data-sw-cat] span + br + span {
+            display: inline;
+        }
+
+    .rai-select-value [data-sw-cat] br {
+        display: none;
+    }
+
+        .rai-select-value [data-sw-cat] br + span {
+            display: none;
+        }
+</style>
+
+<script src="~/assets/js/myMatCon.js"></script>
+<section role="main" class="content-body">
+    <main id="main-container">
+        <input id="scroll-skip" type="hidden" value="0" />
+        <div class="content">
+            <div id="anag-container">
+                <div class="row">
+                    <div class="col-sm-8">
+                        @using (Html.BeginPanel(PanelType.PanelNoPadding, "Elenco dipendenti", false))
+                        {
+                            <div class="row bg-neutrals-xl-10" style="margin:0px">
+                                <div class="col-sm-12 text-right push-10 push-10-t">
+                                    <div class="rai-checkbox" style="display:inline-block;margin-top:7px;">
+                                        <input data-val="true" id="includi-dettagli" name="SoloAttivi" type="checkbox">
+                                        <input id="includi-dettagli-int" name="IncludiDettagli" type="hidden" value="false">
+                                        <label for="IncludiDettagli" class="rai-font-sm-neutral" style="font-size:88%">Includi dettagli</label>
+                                    </div>
+                                    <button class="btn rai-btn-small" onclick="StatiExport()">Esporta</button>
+                                </div>
+                            </div>
+
+                            <div class="row push-5-t push-5">
+                                <div class="col-sm-12 text-right">
+                                    <label id="totRow" class="text-italic push-5-r"></label>
+                                </div>
+                            </div>
+                            <div style="min-height:100px;max-height:75vh;overflow:hidden;overflow-y:auto;padding-right:5px;margin-right:2px">
+                                <div id="elenco-dip">
+
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <div class="col-sm-4">
+                        @if (AuthHelper.EnabledToSubFunc(CommonHelper.GetCurrentUserMatricola(), StatiRapportoController.GetSWAbilFunc(), "SWKCLIC"))
+                        {
+                            var db = new myRaiData.Incentivi.IncentiviEntities();
+                            var lastRun = myRaiHelper.Task.TaskHelper.UltimaEsecuzione(db, "BatchRunner", "Smartworking");
+                            int lastReq = 0;
+                            var hasReq = myRaiHelper.Task.TaskHelper.CheckExistingTask(db, "BatchRunner", "Smartworking", out lastReq);
+                            using (Html.BeginPanel(PanelType.NoHeader))
+                            {
+                                <div class="row">
+                                    <div class="col-sm-12"><span class="rai-font-lg-bold">Aggiornamento ClicLavoro</span>&nbsp;<button class="btn rai-btn-small" id="btnRunClick" @(hasReq ? "disabled" : "") onclick="RichiediEsecuzioneClic()">Richiedi</button></div>
+                                </div>
+                                if (hasReq)
+                                {
+                                    <div class="row">
+                                        <div class="col-sm-12"><i class="rai-font-sm">Richiesta aggiornamento in corso</i></div>
+                                    </div>
+                                }
+                                else if (lastRun != null)
+                                {
+                                    <div class="row">
+                                        <div class="col-sm-12"><i class="rai-font-sm">Ultima esecuzione @((lastRun.DATA_ESECUZIONE_FINE ?? lastRun.DATA_ESECUZIONE).Value.ToString("dd/MM/yyyy HH:mm"))</i></div>
+                                    </div>
+                                }
+                            }
+                        }
+                        @using (Html.BeginPanel(PanelType.NoHeaderNoPadding))
+                        {
+                            <table class="table rai-table rai-table-panel">
+                                <tr>
+                                    <td><label class="rai-font-lg-bold push-5-t">Report accordi consensuali</label></td>
+                                    <td class="text-right"><a href="/StatiRapporto2/report?tipologia=Consensuale" target="_blank" class="btn rai-btn-small" title="Scarica il reporto relativo agli accordi consensuali">Scarica</a></td>
+                                </tr>
+                            </table>
+                        }
+
+                        @{
+                            string abilitatoImportazioneDatiSW = CommonManager.GetParametro<string>(EnumParametriSistema.AbilitatoImportazioneDatiSW);
+
+                            if (abilitatoImportazioneDatiSW.Contains(CommonHelper.GetCurrentUserMatricola()))
+                            {
+                                @Html.RenderWidget(WidgetType.Normal, "Importa dati", "fa fa-upload", "Importa dei nuovi dati da file", action: new ActionTemplate()
+                                {
+                                   Text = "Importa",
+                                   OnClick = "ShowImportModal()"
+                                })
+                            }
+                        }
+
+
+                        @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Cerca dipendente", false))
+                        {
+                            var formId = "form-ricerca-dipendente";
+
+                            using (Ajax.BeginForm("RicercaDipendente", "StatiRapporto", null, new AjaxOptions
+                            {
+                                InsertionMode = InsertionMode.Replace,
+                                HttpMethod = "POST",
+                                OnBegin = "$('#elenco-dip').addClass('rai-loader');",
+                                UpdateTargetId = "elenco-dip",
+                                OnSuccess = "AfterSearch()"
+                            }, new { id = formId, @class = "", role = "search" }))
+                            {
+                                var listStati = new myRaiDataTalentia.TalentiaEntities().XR_TB_STATO_RAPPORTO.OrderBy(x => x.ORDINE).ToList();
+                                var selectList = new List<SelectListItem>();
+                                selectList.Add(new SelectListItem() { Value = "", Text = "Seleziona un codice" });
+                                selectList.AddRange(listStati.Select(x => new SelectListItem() { Value = x.COD_STATO_RAPPORTO, Text = x.DES_STATO_RAPPORTO }));
+
+                                var selectListAcc = new List<SelectListItem>();
+                                selectListAcc.Add(new SelectListItem() { Value = "", Text = "Seleziona un tipo di accordo" });
+                                selectListAcc.Add(new SelectListItem() { Value = "Unilaterale", Text = "Unilaterale" });
+                                selectListAcc.Add(new SelectListItem() { Value = "Consensuale", Text = "Consensuale" });
+                                selectListAcc.Add(new SelectListItem() { Value = "Deroga", Text = "Consensuale in deroga" });
+
+                                var selectListRichAgg = new List<SelectListItem>();
+                                selectListRichAgg.Add(new SelectListItem() { Value = "", Text = "Seleziona un valore" });
+                                selectListRichAgg.Add(new SelectListItem() { Value = "NO", Text = "Nessuna richiesta" });
+                                selectListRichAgg.Add(new SelectListItem() { Value = "SI", Text = "Con richiesta" });
+
+                                <input id="scroll-take" name="take" type="hidden" value="100" />
+                                <div class="form-group">
+                                    <div class="row">
+                                        <div class="col-xs-12 push-10">
+                                            @Html.LabelFor(model => model.Matricola, "Matricola", new { @class = "rai-caption" })
+                                            @Html.TextBoxFor(m => m.Matricola, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Inserisci la matricola" })
+                                        </div>
+                                        <div class="col-xs-12 push-10">
+                                            @Html.LabelFor(model => model.NominativoDipendente, "Nominativo", new { @class = "rai-caption" })
+                                            @Html.TextBoxFor(m => m.NominativoDipendente, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Nominativo" })
+                                        </div>
+                                        <div class="col-xs-12 push-10">
+                                            @Html.LabelFor(model => model.Codice, "Codice", new { @class = "rai-caption" })
+                                            @Html.RaiSelectFor(m => m.Codice, selectList)
+                                        </div>
+                                        <div class="col-xs-12 push-10">
+                                            @Html.LabelFor(model => model.TipoAccordo, "Tipologia accordo", new { @class = "rai-caption" })
+                                            @Html.RaiSelectFor(m => m.TipoAccordo, selectListAcc)
+                                        </div>
+                                        <div class="col-xs-12 push-10">
+                                            @Html.LabelFor(model => model.RichiestaGiorniAggiuntivi, "Richiesta giorni aggiuntivi", new { @class = "rai-caption" })
+                                            @*@Html.RaiSelectFor(m => m.RichiestaGiorniAggiuntivi, selectListRichAgg)*@
+                                            @Html.RaiSelectFor(m => m.CatRichieste, StatiRapportoController.GetRichiesteCat(), multiple: true)
+                                        </div>
+                                        <div class="col-xs-12 push-10 push-5-t">
+                                            @Html.RaiCheckBoxLabelFor(m => m.SoloAttivi, "Solo stati attivi", "")
+                                        </div>
+                                        <div class="col-xs-12 push-10 push-5-t">
+                                            @Html.RaiCheckBoxLabelFor(m => m.IncludiAccordiNonSottoscritti, "Includi accordi rifiutati o scaduti", "")
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <div class="rai-btn-fill">
+                                                <input type="submit" id="btnCerca" class="btn btn-primary" title="Cerca" value="Cerca" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- end: page -->
+</section>
+
+@Html.RenderModal("ricerca", size: ModalSize.Half)
+@Html.RenderModal("dipendente", size: ModalSize.Half)
+@Html.RenderModal("gest-stato", size: ModalSize.Half)
+@Html.RenderModal("richiesta-sw", size: ModalSize.Half)
+@*@Html.RenderModal("dipendente")*@
+@Html.RenderModal("stati-rapporto", size: ModalSize.Half)
+
+@Html.RenderModal("aggiunta-massiva", size: ModalSize.Half)
+@Html.RenderModal("recesso", size: ModalSize.Half)
+
+<div class="modal  fade " id="modal-testo-ipotesi" role="dialog" aria-hidden="true" style="display: none; ">
+    <div class="modal-dialog modal-dialog-popin " style="">
+        <div class="modal-content ">
+            <div id="modal-testo-ipotesi-internal" data-modal-wrapper="">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <h3 id="oggetto-ipotesi" style="margin:10px"></h3>
+                        <div id="testo-ipotesi" style="text-align:justify;max-height:70vh;overflow:hidden;overflow-y:auto;padding-right:5px;margin:10px 0 10px 10px"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@Html.Partial("~/Views/MaternitaCongedi/popupvisgest.cshtml")
+
+<script>
+    function AfterSearch() {
+        $('#elenco-dip').removeClass('rai-loader');
+    }
+
+    function SWDettaglioRichiesta(id) {
+        RaiOpenAsyncModal('modal-richiesta-sw', '/StatiRapporto/Modal_Richiesta', { idRichiesta: id }, null, 'POST');
+    }
+
+
+    function RichiediEsecuzioneClic() {
+        $.ajax({
+            url: '/StatiRapporto/RichiediEsecuzioneClic',
+            type: "POST",
+            cache: false,
+            dataType: 'html',
+            success: function (data) {
+                switch (data) {
+                    case "OK":
+                        swal("Esecuzione richiesta", "L'aggiornamento verrà effettuato a breve", "success");
+                        $('#btnRunClick').prop('disabled', 'disabled');
+                        break;
+                    default:
+                        swal("Oops...", data, 'error');
+                        $('#btnRunClick').prop('disabled', 'disabled');
+                        break;
+                }
+            },
+            error: function (a, b, c) {
+            }
+        });
+    }
+
+    function StatiCaricaAltri(button) {
+        let countRow = $('.to-append:not(.load-more)').length;
+        $(button).addClass('rai-loader disable');
+        let formData = new FormData($('#form-ricerca-dipendente')[0]);
+        formData.append('skip', countRow);
+        $.ajax({
+            url: '/StatiRapporto/RicercaDipendente',
+            type: "POST",
+            cache: false,
+            dataType: 'html',
+            contentType: false,
+            processData: false,
+            data: formData,
+            success: function (data) {
+                $('#elenco-dip-table .to-append.load-more').remove();
+
+                $('#AfterLoad').html('');
+                $(data).find('.to-append').each(function () {
+                    $('#elenco-dip-table').append($(this));
+                });
+
+                let temp = document.createElement('div');
+                temp.innerHTML=data;
+                let showed = temp.querySelector('#showed').value;
+                let totN = temp.querySelector('#totNumber').value;
+                UpdateNumber(showed, totN);
+            },
+            error: function (a, b, c) {
+            }
+        });
+    }
+
+    function ShowImportModal() {
+        RaiOpenAsyncModal('modal-aggiunta-massiva', '@Url.Action("Modal_AggiuntaMassiva","StatiRapporto")', null);
+    }
+
+    function StatiExport() {
+        let formData = new FormData($('#form-ricerca-dipendente')[0]);
+        formData.delete('take');
+        let urlParam = new URLSearchParams(formData).toString();
+        debugger
+        if ($("#includi-dettagli").prop("checked")) {
+            urlParam += "&IncludiDettagli=true";
+        }
+        window.open('@Url.Action("Esporta2", "StatiRapporto2")?' + urlParam);
+    }
+
+    function StatiGest(idPersona, idEvento) {
+        RaiOpenAsyncModal('modal-gest-stato', '/StatiRapporto2/Modal_GestStatoRapporto', { idPersona: idPersona, idEvento: idEvento });
+    }
+
+    function StatiModalRecesso(idPersona, idEvento) {
+        RaiOpenAsyncModal('modal-recesso', '/StatiRapporto/Modal_Recesso', { idPersona: idPersona, idEvento: idEvento }, null, 'POST');
+    }
+</script>
+
+<div id="scriptMat">
+
+</div>
+
+<div class="modal right fade" id="modal-api" role="dialog" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-popin modal-half-dialog">
+        <div class="modal-content">
+            <div id="modal-api-internal" data-modal-wrapper="">
+
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@section afterjs{
+    @Html.Raw(TempData["script"])
+
+    <script>
+        $('#btnCerca').click();
+    </script>
+
+    <script>
+        function UpdateNumber(showed, totRow) {
+            if (showed === 1) {
+                $('#totRow').text("1 risultato");
+            } else if (showed === totRow) {
+                $('#totRow').text(showed + " risultati");
+            } else {
+                $('#totRow').text(showed + " di " + totRow + " risultati");
+            }
+            $('#showed').remove();
+            $('#totNumber').remove();
+        }
+    </script>
+}

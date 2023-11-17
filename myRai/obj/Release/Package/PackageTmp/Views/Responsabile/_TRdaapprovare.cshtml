@@ -1,0 +1,191 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+@using MyRaiServiceInterface.it.rai.servizi.digigappws;
+
+@model Eccezione
+
+@{
+    string ariaLabel = CommonHelper.ToTitleCase( Model.dipendente.nome ) + " " + CommonHelper.ToTitleCase( Model.dipendente.cognome );
+    ariaLabel += " ha una richiesta ";
+    if ( Model.IsUrgent )
+    { ariaLabel += "URGENTE"; }
+    if ( Model.IsOverdue )
+    { ariaLabel += "SCADUTA"; }
+    ariaLabel += " di " + Model.cod;
+    ariaLabel += " per il " + Model.PeriodoRichiesta;
+    if ( Model.dalle != null && Model.dalle.ToString( ).Trim( ) != "00:00" )
+    {
+        if ( Model.dalle != "00.00" && Model.alle != "00.00" )
+        {
+            if ( Model.alle != null )
+            {
+                ariaLabel += " dalle " + Model.dalle.ToString( ).Trim( ) + " alle " + Model.alle.ToString( ).Trim( );
+            }
+            else
+            {
+                ariaLabel += " dalle " + Model.dalle.ToString( ).Trim( );
+            }
+        }
+
+    }
+    else if ( !String.IsNullOrWhiteSpace( Model.qta ) )
+    {
+        ariaLabel += " per una quantità pari a " + Model.qta;
+    }
+}
+
+<tr tabindex="-1" role="row" aria-label="@ariaLabel" style="height: 90px;" class="trdata visible-lg @(Model.IsUrgent ? "urgenti" : Model.IsOverdue ? "scadute" : "")"
+    data-idrichiesta="@Model.IdRichiestaPadre"
+    data-ideccezione="@Model.IdEccezioneRichiesta"
+    data-eccez-data="@Model.data"
+    data-tr="@Model.ndoc"
+    data-livello-richiedente="@Model.LivelloRichiedenteEccezione"
+    onfocus="onFocusRowShowCtrl(this)"
+    onblur="onBlurRowShowCtrl(this)">
+    <td class="text-center">
+        <label class="css-input css-checkbox css-checkbox-rounded css-checkbox-sm css-checkbox-info">
+            <input tabindex="-1" onchange="SelTr(this)" class="seltr @Model.sedeGapp" type="checkbox" />
+            <span></span>
+        </label>
+
+    </td>
+    <td class="font-w600 " style="font-weight: bold;">
+        @if ( Model.IsUrgent )
+        {<div class="text-muted">
+                <span style="font-weight: 500;font-size: 9px;color:#ec9639;">URGENTE</span>
+            </div>
+        }
+        @if ( Model.IsOverdue )
+        {<div class="text-muted">
+                <span style="font-weight: 500;font-size: 9px;color: #ec3c4d;">SCADUTA</span>
+            </div>
+        }
+
+        <b>@Model.cod</b><br />
+        @CommonHelper.ToTitleCase( Model.descrittiva_lunga )
+
+        @if ( Model.flg_storno.ToString( ).Trim( ) == "*" )
+        {
+            <div class="text-muted">
+                <em style="font-weight: 400;">storno</em>
+            </div>
+        }
+        else
+        {
+            <div class="text-muted">
+                <em style="font-weight: 500;">&nbsp;</em>
+            </div>
+        }
+
+    </td>
+    <td>
+        <div class="row font-w600" style="font-weight: bold;"> @Model.PeriodoRichiesta</div>
+        @if ( Model.dalle != null && Model.dalle.ToString( ).Trim( ) != "00:00" )
+        {
+            <div class="text-muted">
+                @if ( Model.dalle != "00.00" && Model.alle != "00.00" )
+                {
+                    if ( Model.alle != null )
+                    {
+                        <span>
+                            dalle @Model.dalle.ToString( ).Trim( ) alle @Model.alle.ToString( ).Trim( )
+                        </span>
+                    }
+                    else
+                    {
+                        <span>@Model.dalle.ToString( ).Trim( )</span>
+                    }
+                }
+            </div>
+        }
+        else
+        {
+            <div class="text-muted">
+                <span>@Model.qta</span>
+            </div>
+        }
+
+    </td>
+    <td colspan="2">
+
+        <div class="row">
+            <div class="col-sm-2">
+                <div class="widget-profile-info">
+                    <div class="profile-picture">
+                        <img style="width: 45px; height: 45px"
+                             src="@CommonHelper.GetUrlFoto(Model.matricola)" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-8" style="padding-left:30px">
+                <a tabindex="-1" class="font-w600" style="font-weight: bold;" data-toggle="modal" data-target="#giornata-modal" data-day="@Model.data" href="#">@CommonHelper.ToTitleCase( Model.dipendente.nome ) @CommonHelper.ToTitleCase( Model.dipendente.cognome )</a>
+                <div class="text-muted">
+                    <span>@Model.MotivoRichiesta</span>
+                </div>
+
+
+            </div>
+            <div class="col-sm-1">
+                @if ( Model.IdDocumentoAssociato != null )
+                {
+                    @Html.Partial( "DocIcon" , "ShowDoc(" + Model.IdDocumentoAssociato + ")" )
+                }
+            </div>
+        </div>
+
+    </td>
+
+    <td class="text-right" role="toolbar" +>
+
+        @Html.Partial( "_approvaRifiutaButtons" )
+
+        @* @if (Model.IdStato == (int)myRaiHelper.EnumStatiRichiesta.InApprovazione)
+            {
+
+
+            <button role="link" aria-label="Rifiuta richiesta" tabindex="-1" style="border: solid 1px #eaeaea;" class="pad6 @Model.ndoc button-rifiuta btn btn-lg btn-default btn-rif-@Model.IdEccezioneRichiesta"
+                                            type="submit">
+                <i class="glyphicon glyphicon-remove text-danger" ></i>
+            </button>
+            <button role="link" aria-label="Approva richiesta" tabindex="-1" style="border: solid 1px #eaeaea;"  class="pad6 @Model.ndoc button-approva btn btn-lg btn-default btn-app-@Model.IdEccezioneRichiesta"
+                                            type="submit">
+                <i class="fa fa-fw fa-check text-success"></i>
+            </button>
+            }*@
+
+    </td>
+</tr>
+
+<tr class="trdata hidden-lg @(Model.IsUrgent ? "warning" : "")" data-idrichiesta="@Model.IdRichiestaPadre" data-ideccezione="@Model.IdEccezioneRichiesta" data-tr="@Model.ndoc">
+    <td class="text-center"></td>
+    <td class="font-w600 text-info">@Model.descrittiva_lunga</td>
+    <td colspan="5">
+        <a class="font-w600" data-toggle="modal" data-target="#giornata-modal" data-day="@Model.data" href="#">@Model.dipendente.nome @Model.dipendente.cognome</a>
+        <div class="text-muted">
+            <em>@Model.MotivoRichiesta</em>
+        </div>
+
+        @Model.PeriodoRichiesta
+        <div>
+
+
+            @Html.Partial( "_approvaRifiutaButtons" )
+
+
+            @*     @if (Model.IdStato == (int)myRaiHelper.EnumStatiRichiesta.InApprovazione)
+                {
+                    <button class="pad6@Model.ndoc button-approva btn btn-lg btn-default  btn-app-@Model.IdEccezioneRichiesta"
+                                               type="submit">
+                        <i class="fa fa-fw fa-check text-success"></i>
+                    </button>
+                    <button class="pad6 Model.ndoc btn button-rifiuta btn-lg btn-default btn-rif-@Model.IdEccezioneRichiesta"
+                                                type="submit">
+                        <i class="fa fa-fw fa-remove text-danger"></i>
+                    </button>
+                     }*@
+
+        </div>
+    </td>
+</tr>

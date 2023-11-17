@@ -1,0 +1,115 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel.Gestionale
+@using myRaiGestionale.Controllers
+@model CessazioneModel
+
+<div id="insMan" class="row push-10 push-20-t">
+    <div class="col-sm-12 text-left rai-font-md-neutral">
+        <em>Selezionare '<strong>Inserimento manuale</strong>' in caso di campi non valorizzati</em>
+    </div>
+</div>
+
+@using (Html.BeginForm("ModificaDatiBozza", "Cessazione", FormMethod.Post, new { @id = "form-modificaBozza", novalidate = "novalidate" }))
+{
+    @Html.HiddenFor(x => x.Pratica.ID_DIPENDENTE)
+
+    <div class="form-group">
+        <div class="row push-5">
+            <div class="col-sm-4  text-left">
+                @Html.LabelFor(m => m.Pratica.DATA_APPUNTAMENTO, "Data appuntamento", new { @class = "rai-caption" })
+            </div>
+            <div class="col-sm-8 ">
+                <div class="input-group">
+                    <span class="input-group-addon" style="cursor: pointer" onclick="$('#_dataapp').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                    @Html.TextBoxFor(m => m.Pratica.DATA_APPUNTAMENTO, new { @class = "js-datetimepicker  form-control required-min", data_format = "DD/MM/YYYY HH:mm", minData = DateTime.Today.ToString("dd/MM/yyyy"), data_locale = "it", id = "_dataapp", placeholder = "Selezionare una data", autocomplete = "off" })
+                </div>
+                @Html.ValidationMessageFor(m => m.Pratica.DATA_APPUNTAMENTO, "La data di appuntamento è obbligatoria", new { @class = "field-validation-error hidden" })
+            </div>
+        </div>
+        <div class="row push-5">
+            <div class="col-sm-4 text-left">
+                @Html.LabelFor(m=>m.Pratica.NOT_LUOGO_APPUNTAMENTO, "Luogo appuntamento", new { @class="rai-caption"})
+            </div>
+            <div class="col-sm-8">
+                @Html.TextBoxFor(m=>m.Pratica.NOT_LUOGO_APPUNTAMENTO, new { @class="form-control"})
+            </div>
+        </div>
+        <div class="row push-5">
+            <div class="col-sm-4 text-left">
+                @Html.LabelFor(m=>m.Pratica.NUM_BOZZA_GIORNI, "Numero giorni limite per ricezione", new { @class = "rai-caption" })
+            </div>
+            <div class="col-sm-8">
+                @Html.TextBoxFor(m=>m.Pratica.NUM_BOZZA_GIORNI, new { @class = "form-control" })
+            </div>
+        </div>
+        <div class="row push-5 push-10-t">
+            <div class="col-sm-12">
+                @Html.RaiCheckBoxLabelFor(m=>m.IndItl, "Genitore bambino fino a 3 anni", "")
+            </div>
+        </div>
+    </div>
+    <div class="block block-content-table block-transparent">
+        <div class="block-header">
+            <label class="block-title">Gestione mail</label>
+        </div>
+        <div class="block-content">
+            <div class="row">
+                @if (myRaiHelper.HrisHelper.GetParametro<string>(myRaiHelper.HrisParam.IncentiviAbilitaMailVerbale) == "TRUE")
+                {
+                    <div class="col-sm-12 push-10">
+                        <button class="btn rai-btn-small full-width" onclick="OpenBozzaVerbale(@Model.Pratica.ID_DIPENDENTE)">Gestione mail</button>
+                    </div>
+                }
+
+                <div class="col-sm-6 push-10">
+                    @if (!Model.Pratica.DATA_BOZZA_INVIO.HasValue)
+                    {
+                        @Html.LabelFor(m => m.Pratica.DATA_BOZZA_INVIO, "Data invio", new { @class = "text-italic" })
+                        <div class="input-group">
+                            <div class="input-group-addon" onclick="$('#Pratica_DATA_BOZZA_INVIO').datetimepicker('show')"><i class="fa fa-calendar"></i></div>
+                            @Html.TextBoxFor(m => m.Pratica.DATA_BOZZA_INVIO, new { @class = "js-datetimepicker form-control form-control-value", style = "width: 100%", data_format = "DD/MM/YYYY" })
+                        </div>
+                    }
+                    else
+                    {
+                        @Html.LabelFor(m => m.Pratica.DATA_BOZZA_INVIO, "Data invio", new { @class = "text-italic" })
+                        <div class="input-group">
+                            @Html.TextBoxFor(m => m.Pratica.DATA_BOZZA_INVIO, new { @class = "js-datetimepicker form-control form-control-value", style = "width: 100%", data_format = "DD/MM/YYYY", @readonly = "readonly" })
+                            <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                        </div>
+                    }
+                    @if (Model.Pratica.DATA_INVIO_PROP.HasValue && !String.IsNullOrWhiteSpace(Model.Pratica.NOT_BOZZA_INVIO))
+                    {
+                        <i class="rai-font-sm-neutral">@Model.Pratica.NOT_BOZZA_INVIO</i>
+                    }
+                </div>
+
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(m => m.Pratica.DATA_BOZZA_RICEZIONE, "Data ricevuta", new { @class = "text-italic" })
+                    <div class="input-group">
+                        <div class="input-group-addon" onclick="$('#Pratica_DATA_FIRMA_DIP').datetimepicker('show')"><i class="fa fa-calendar"></i></div>
+                        @Html.TextBoxFor(m => m.Pratica.DATA_BOZZA_RICEZIONE, new { @class = "js-datetimepicker form-control form-control-value", style = "width: 100%", data_format = "DD/MM/YYYY" })
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row push-5 push-20-t">
+        <div class="col-sm-12">
+            <button type="submit" class="btn rai-btn-small full-width" onclick="SubmitModificaBozzaVerbale(@Model.Pratica.ID_DIPENDENTE, false)">Salva</button>
+        </div>
+    </div>
+    <div class="row push-5">
+        <div class="col-sm-12">
+            <div class="rai-btn-fill">
+                <button class="btn rai-btn-secondary" type="button" onclick="InvalidaStato(@Model.Pratica.ID_DIPENDENTE, @Model.OperStato.ID_OPER)">Annulla conteggio</button>
+                <button type="submit" class="btn rai-btn-primary" onclick="SubmitModificaBozzaVerbale(@Model.Pratica.ID_DIPENDENTE, true)">Prosegui</button>    
+            </div>
+        </div>
+    </div>
+}
+
+<script language="javascript">
+    InitDatePicker();
+</script>

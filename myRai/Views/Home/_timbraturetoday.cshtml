@@ -1,0 +1,178 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model ModelDash
+
+@{
+    MyRaiServiceInterface.OrarioUscitaModel orario = null;
+    string dtim = "";
+    string dpu = "";
+    if ( Model.dettaglioGiornata != null &&
+        Model.dettaglioGiornata.timbrature != null &&
+        Model.dettaglioGiornata.timbrature.Count( ) > 0 )
+    {
+        string entrato = "";
+
+        if ( Model.dettaglioGiornata.timbrature.First( ).entrata != null )
+        {
+            entrato = Model.dettaglioGiornata.timbrature.First( ).entrata.orario;
+        }
+        else
+        {
+            entrato = Model.dettaglioGiornata.orario.hh_entrata_48;
+        }
+        // string entrato = Model.dettaglioGiornata.timbrature.First().entrata.orario;
+        orario =
+            CommonHelper.GetOrarioDiUscita( entrato ,
+            Model.dettaglioGiornata.orario.cod_orario ,
+            Model.dettaglioGiornata.giornata.data.ToString( "ddMMyyyy" ) , Model.dettaglioGiornata );
+        dtim = CommonHelper.calcolaMinuti( orario.OrarioDiIngresso ).ToString( );
+        dpu = CommonHelper.calcolaMinuti( orario.OrarioDiUscita ).ToString( );
+
+    }
+
+}
+<div id="timbraturetoday"
+     data-desc-turno="@(Model.dettaglioGiornata.orario !=null ? Model.dettaglioGiornata.orario.desc_orario :"")"
+     data-orario-entrata-hh="@(Model.dettaglioGiornata.orario !=null ? Model.dettaglioGiornata.orario.hhmm_entrata_48.Split(':')[0] : "")"
+     data-orario-entrata-mm="@(Model.dettaglioGiornata.orario !=null ? Model.dettaglioGiornata.orario.hhmm_entrata_48.Split(':')[1] : "")"
+     data-orario-uscita-hh="@(Model.dettaglioGiornata.orario !=null ? Model.dettaglioGiornata.orario.hhmm_uscita_48.Split(':')[0] : "")"
+     data-orario-uscita-mm="@(Model.dettaglioGiornata.orario !=null ? Model.dettaglioGiornata.orario.hhmm_uscita_48.Split(':')[1] : "")"
+     @if ( Model.dettaglioGiornata.orario != null ) { @: data-entrata-tot-min="@((Convert.ToInt32(Model.dettaglioGiornata.orario.hhmm_entrata_48.Split(':')[0])*60)+(Convert.ToInt32(Model.dettaglioGiornata.orario.hhmm_entrata_48.Split(':')[1])))"
+      @: data-uscita-tot-min="@((Convert.ToInt32(Model.dettaglioGiornata.orario.hhmm_uscita_48.Split(':')[0])*60)+(Convert.ToInt32(Model.dettaglioGiornata.orario.hhmm_uscita_48.Split(':')[1])))"
+     } else { @: data-entrata-tot-min=""
+      @: data-uscita-tot-min=""
+     }
+     data-codice-orario="@(Model.dettaglioGiornata.orario !=null ? Model.dettaglioGiornata.orario.cod_orario : "")"
+     data-orario-teorico="@(Model.dettaglioGiornata.giornata != null ? Model.dettaglioGiornata.giornata.orarioTeorico : "")"
+     data-orario-reale="@(Model.dettaglioGiornata.giornata != null ? Model.dettaglioGiornata.giornata.orarioReale : "")"
+     data-intervallo-mensa="@(Model.dettaglioGiornata.orario!=null? Model.dettaglioGiornata.orario.intervallo_mensa:"")"
+     data-timbratura-ingresso="@(orario!=null?orario.OrarioDiIngresso:"")"
+     data-proiezione-uscita="@(orario!=null?orario.OrarioDiUscita:"")"
+     data-timbratura-ingresso-min="@dtim"
+     data-proiezione-uscita-min="@dpu">
+
+
+
+    @Html.Partial( "../scrivania/subpartial/timbrature" , Model.dettaglioGiornata )
+    @*@Html.RenderBlock(BlockType.ContentTable, "Timbrature", "../scrivania/subpartial/timbrature", Model.dettaglioGiornata)*@
+
+    <!--
+
+
+    <div class="block-header bg-gray-lighter ">
+        <ul class="block-options">
+
+            <li>
+                @if (Model.dettaglioGiornata !=null &&  ! Model.dettaglioGiornata.HideRefresh)
+                {
+                <button type="button" data-toggle="block-option" data-action="refresh_toggle"
+                    data-refreshurl="/home/refreshDettaglioGiornata" data-parentdiv="timbraturetoday"
+                    data-refreshelements="timbraturecontent"
+                    data-action-mode="demo">
+                    <i class="si si-refresh"></i>
+                </button>
+                }
+
+            </li>
+            <li>
+                <button type="button" data-toggle="block-option" data-action="content_toggle"></button>
+            </li>
+
+        </ul>
+
+        <span class="font-w600">Timbrature</span>
+    </div>
+
+
+
+     <table class="table table-striped push-30-t" id="timbraturecontent">
+            <tbody>
+            @if (Model.dettaglioGiornata != null && Model.dettaglioGiornata.timbrature != null && Model.dettaglioGiornata.timbrature.Count()>0)
+            {
+                foreach (MyRaiServiceInterface.it.rai.servizi.digigappws.Timbrature timbratura in Model.dettaglioGiornata.timbrature)
+                {
+                    if (timbratura.entrata != null && timbratura.uscita != null
+                    && timbratura.entrata.insediamento != timbratura.uscita.insediamento)
+                    {
+                        <tr>
+                            <td class="text-center" style="width: 5px;" ><i class="di di-entrata fa-2x h4"></i></td>
+                            <td class="font-w300 h4" style="width: 5px;"><span class="h4">@timbratura.entrata.orario</span></td>
+                            <td class="text-center h5 font-w300">@System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(timbratura.entrata.descrittivaInsediamento.ToLower());
+                            </td>
+                            <td class="font-w300 h4" style="width: 10px;">--:--</td>
+                            <td class="text-center" style="width: 5px;"><i class="di di-uscita fa-2x text-danger h4"></i></td>
+                        </tr>
+                         <tr>
+                            <td class="text-center" style="width: 5px;" ><i class="di di-entrata fa-2x h4"></i></td>
+                            <td class="font-w300 h4" style="width: 5px;"><span class="h4">08:20</span></td>
+                            <td class="text-center h5 font-w300"> @timbratura.uscita.descrittivaInsediamento
+                            </td>
+                            <td class="font-w300 h4" style="width: 10px;">@timbratura.uscita.orario</td>
+                            <td class="text-center" style="width: 5px;"><i class="di di-uscita fa-2x h4"></i></td>
+                        </tr>
+                    }
+                    else
+                    {
+
+                         <tr>
+                            <td class="text-center" style="width: 5px;" ><i class="di di-entrata fa-2x h4 @(timbratura.entrata == null ? "text-danger" : "")"></i></td>
+                            <td class="font-w300 h4" style="width: 5px;"><span class="h4">@if (timbratura.entrata != null){@timbratura.entrata.orario}</span></td>
+                            <td class="text-center h5 font-w300">@if (timbratura.entrata != null)
+                    {
+                        @System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(timbratura.entrata.descrittivaInsediamento.ToLower());
+
+                    }
+                            </td>
+                            <td class="font-w300 h4" style="width: 10px;">
+                                 @if (timbratura.uscita != null)
+                        {
+                            if (timbratura.uscita.OraGiornoSuccessivo == null)
+                            {
+                            @timbratura.uscita.orario
+                            }
+                            else
+                            {
+                            @timbratura.uscita.OraGiornoSuccessivo<br />
+                                 if (timbratura.uscita != null && timbratura.uscita.OraGiornoSuccessivo !=null)
+                                {
+                                 <span style="position:absolute;right:4px;bottom:2px;font-size:80%">Giorno successivo</span>
+                                }
+                            }
+
+                        }
+
+                            </td>
+                            <td class="text-center" style="width: 5px;"><i class="di di-uscita fa-2x h4 @(timbratura.uscita == null ? "text-danger" : "")"></i></td>
+                        </tr>
+                    }
+
+                 }
+            }
+            else
+            {
+
+
+             @*<table class="table table-striped">
+                <tr>
+                 <td class="text-center" style="width: 25%;"><span class="my-card-loading-block" style="width: 60%; height: 38px;"></span></td>
+                 <td class="text-center" style="width: 50%;"><span class="my-card-loading-block" style="width: 100%; height: 14px;"></span></td>
+                 <td class="text-center" style="width: 25%;"><span class="my-card-loading-block" style="width: 60%; height: 38px;"></span></td>
+                 </tr>
+            </table>*@
+
+
+                    @Html.Partial("_nodati")
+
+            }
+          </tbody>
+        </table>
+
+        -->
+
+
+
+</div>
+<!-- END Email Center Widget -->

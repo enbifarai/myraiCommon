@@ -1,0 +1,105 @@
+﻿@using myRaiCommonModel
+@model SceltaDestinazioneTfrViewModel
+
+@if (Model != null)
+{
+    <div class="row" style="margin-top: 1.5rem;">
+        <div class="col-12">
+            <span class="rai-font-md">La scelta dovrà essere approvata dal dipendente nella sezione dedicata in Rai per Me</span>
+        </div>
+    </div>
+
+    <div class="block-content" style="padding-top: 15px;">
+        <div class="row">
+            <div class="col-sm-12">
+                <section class="rai panel">
+                    <div class="rai panel-body" style="">
+                        <div class="row">
+                            <div class="col-xs-12">
+                                <div class="col-xs-12" id="modulo-content-body-1" style="background-color:gray; overflow-y:auto;">
+                                    <iframe style="width:100%; height:76vh!important;" src="@Url.Action("GetDocumentoCompilato","SceltaDestinazioneTfr")?matricola=@ViewBag.MatricolaUtente"></iframe>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    using (Html.BeginForm("PostStep3", "SceltaDestinazioneTfr", FormMethod.Post, new { id = "StepForm" }))
+    {
+        @* Hidden field fissi dell'utente *@
+        <input type="hidden" value="@ViewBag.MatricolaUtente" id="matricolaUtente" name="matricolaUtente" />
+        <input type="hidden" value="@ViewBag.IdUtente" id="idUtente" name="idUtente" />
+        <input type="hidden" value="@ViewBag.IdRecordScelta" id="idRecordScelta" name="idRecordScelta" />
+        <input type="hidden" asp-for="Model.SceltaEffettuata" id="hdnSceltaEffettuata" />
+
+        <div style="margin-top: 3rem;">
+            <div class="rai-btn-fill">
+                <button type="button" id="btnAnnulla" class="btn rai-btn-secondary" onclick="TornaIndietro()">Indietro</button>
+                <button type="button" id="btnContinua" onclick="postForm()" class="btn rai-btn-primary">Avanti</button>
+            </div>
+        </div>
+    }
+}
+
+<script>
+    /**
+     * Funzione che esegue il post del form
+     * */
+    function postForm() {
+
+        var dati = $('#StepForm').serialize();
+
+        $.ajax({
+            type: 'POST',
+            cache: false,
+            url: "/SceltaDestinazioneTfr/PostStep3",
+            data: dati,
+            success: function (data) {
+                // Aggiorno il content del div principale
+                $('#div-modulo-trattamento-fine-rapporto').html(data);
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                swal({
+                    title: jqXHR.statusText,
+                    type: 'error',
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+            }
+        });
+    }
+
+    /**
+     * Funzione che esegue torna allo step precedente
+     * */
+    function TornaIndietro() {
+
+        var dati = $('#StepForm').serialize();
+
+        $.ajax({
+            type: 'POST',
+            cache: false,
+            url: "/SceltaDestinazioneTfr/BackStep2",
+            data: dati,
+            success: function (data) {
+                // Aggiorno il content del div principale
+                $('#div-modulo-trattamento-fine-rapporto').html(data);
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                swal({
+                    title: jqXHR.statusText,
+                    type: 'error',
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+            }
+        });
+    }
+</script>

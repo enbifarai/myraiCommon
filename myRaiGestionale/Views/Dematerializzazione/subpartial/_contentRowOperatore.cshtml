@@ -1,0 +1,114 @@
+﻿@using myRaiCommonModel;
+@using myRaiHelper;
+@using Newtonsoft.Json;
+@using myRaiCommonManager;
+@using System.ComponentModel;
+@model myRaiCommonModel.XR_DEM_DOCUMENTI_EXT
+@{
+    var r = Model;
+    if(r.Avanzamento > 100) { r.Avanzamento = 100; }
+    string descrizione = DematerializzazioneManager.GetNextOrdineWKF(r.Id_Stato, r.Id_WKF_Tipologia, r.Descrizione);
+
+
+    if (descrizione.ToLower() == "ufficio destinatario")
+    {
+        if (r.Id_Richiesta.HasValue)
+        {
+            descrizione = "Amministrazione";
+        }
+        else
+        {
+            descrizione = DematerializzazioneManager.GetDescrizioneAbilitazione2(r);
+        }
+    }
+
+    if (descrizione == "" && r.Avanzamento == 100) { descrizione = "Pratica Chiusa"; }
+    if (descrizione.ToLower() == "visto")
+    {
+        descrizione = "Visione";
+    }
+
+    if (r.Avanzamento != 100 && !string.IsNullOrEmpty(descrizione)) { descrizione = "In " + descrizione; }
+}
+
+<tr>
+    <td>
+        @Html.Partial("~/Views/Dematerializzazione/subpartial/_contentRow_Destinatario.cshtml", r)
+    </td>
+    <td>
+        @Html.Partial("~/Views/Dematerializzazione/subpartial/_contentRow_Descrizione.cshtml", r)
+    </td>
+
+    <td>
+        @{
+
+            if (r.Id_Stato == (int)StatiDematerializzazioneDocumenti.Bozza)
+            {
+                <div class="col-sm-12" style="padding:0px; padding-left: 5px; padding-top:5px">
+                    <label class="rai-font-sm-bold feedback-warning-color" style="margin-left:4px">@StatiDematerializzazioneDocumenti.Bozza.GetDescription()</label>
+                </div>
+            }
+            else if (r.Id_Stato == (int)StatiDematerializzazioneDocumenti.RifiutatoDalDipendente)
+            {
+                <div class="col-sm-12" style="padding:0px; padding-left: 5px; padding-top:5px">
+                    <label class="rai-font-sm-bold feedback-error-color" style="margin-left:4px">@StatiDematerializzazioneDocumenti.RifiutatoDalDipendente.GetDescription()</label>
+                </div>
+            }
+            else if (r.Id_Stato == (int)StatiDematerializzazioneDocumenti.RifiutatoFirma)
+            {
+                <div class="col-sm-12" style="padding:0px; padding-left: 5px; padding-top:5px">
+                    <label class="rai-font-sm-bold feedback-error-color" style="margin-left:4px">@StatiDematerializzazioneDocumenti.RifiutatoFirma.GetDescription()</label>
+                </div>
+            }
+            else if (r.Id_Stato == (int)StatiDematerializzazioneDocumenti.RifiutoApprovatore)
+            {
+                <div class="col-sm-12" style="padding:0px; padding-left: 5px; padding-top:5px">
+                    <label class="rai-font-sm-bold feedback-error-color" style="margin-left:4px">@StatiDematerializzazioneDocumenti.RifiutoApprovatore.GetDescription()</label>
+                </div>
+            }
+            else
+            {              
+                <span>@descrizione</span>                
+                <div class="col-sm-9" style="padding:0px; padding-top:5px">
+                    <div class="rai progress progress-xs m-2 light" style="margin-bottom:0px">
+                        <div class="progress-bar progress-bar-info" role="progressbar" aria-valuemin="0" aria-valuemax="100" style="width: @r.Avanzamento%;">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-3" style="padding:0px">
+                    <label class="rai-font-md" style="margin-left:4px">@r.Avanzamento%</label>
+                </div>
+            }
+        }
+    </td>
+
+    @if (r.Id_Stato == (int)StatiDematerializzazioneDocumenti.Bozza)
+    {
+        <td class="text-right">
+            <button style="margin-top:1px;" class="rai button-approva btn-action-icon" aria-label="Elimina pratica" onclick="Dematerializzazione_EliminaPratica(@UtenteHelper.Matricola(),0,@r.Id)" title="Elimina pratica">
+                <i class="fa fa-trash-o"></i>
+            </button>
+            <button class="btn rai-btn-small" aria-label="Visualizza" onclick="Dematerializzazione_ModificaPratica('@r.Id')" title="Visualizza" style="min-width:80px;">
+                Riprendi
+            </button>
+        </td>
+    }
+    else
+    {
+        <td class="text-right">
+            @*@{
+                    if (r.IsDuplicable)
+                    {
+                        <button style="margin-top:1px;" class="rai button-approva btn-action-icon" aria-label="Duplica" onclick="Dematerializzazione_DuplicaPratica(@UtenteHelper.Matricola(),0,@r.Id)" title="Duplica pratica">
+                            <i class="fa fa-copy"></i>
+                        </button>
+                    }
+                }*@
+            <button class="btn rai-btn-small" aria-label="Visualizza" onclick="GetDettaglio_Operatore(@r.Id)" title="Visualizza" style="min-width:80px;">
+                Visualizza
+            </button>
+        </td>
+    }
+</tr>
+
+

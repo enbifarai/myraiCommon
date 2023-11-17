@@ -1,0 +1,647 @@
+﻿@using myRaiCommonModel.Gestionale
+@using myRaiCommonManager.Cessazione
+@using myRaiHelper
+@model CessazioneModel
+
+@{
+    var parLimiti = HrisHelper.GetParametriJson<myRaiData.Incentivi.XR_HRIS_PARAM>(HrisParam.IncentiviParametri);
+    var parTipiVert = parLimiti.FirstOrDefault(x => x.COD_PARAM == "TipologieVertenze");
+    List<SelectListItem> tipiVert = new List<SelectListItem>();
+    tipiVert.Add(new SelectListItem() { Value = "", Text = "Seleziona tipologia" });
+    tipiVert.AddRange(Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, string>>(parTipiVert.COD_VALUE1)
+            .Select(x => new SelectListItem() { Value = x.Key, Text = x.Value }));
+
+    bool hasErrorAlert = false;
+    string errorAlertText = "";
+
+    //if (!Model.Pratica.DATA_ARRIVO_DOC.HasValue && Model.Pratica.DTA_RICHIESTA.Value.AddDays(limitDataArrivo) < DateTime.Today)
+    //{
+    //    hasErrorAlert = true;
+    //    errorAlertText = "Scadenza termine consegna estratti";
+    //}
+    //else
+
+    if (Model.Scadenze.HasExpiredAlert)
+    {
+        hasErrorAlert = true;
+        errorAlertText = Model.Scadenze.ExpiredAlert;
+    }
+
+    var tipologieList = CessazioneManager.GetTipologiaUscita();
+
+
+    var ultimoAggDatiCont = "";
+    var param = myRaiHelper.HrisHelper.GetParametro<string>(myRaiHelper.HrisParam.IncentiviEsecuzioneFNL930);
+    if (!String.IsNullOrWhiteSpace(param))
+    {
+        ultimoAggDatiCont = "Aggiornamento dati contabili: " + param;
+    }
+
+    var partTimeList = new List<SelectListItem>()
+{
+new SelectListItem(){Value="", Text="No"},
+new SelectListItem(){Value="Verticale", Text="Verticale"},
+new SelectListItem(){Value="Orizzontale", Text="Orizzontale"}
+};
+}
+
+<div id="modAvvioPrat">
+    @if (hasErrorAlert)
+    {
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="alert alert-danger">
+                    <label class="text-bold">Scadenza termine</label><br />
+                    <span>@errorAlertText</span>
+                </div>
+            </div>
+        </div>
+
+    }
+    <form id="form-avvioPratica" class="form-group">
+        @Html.HiddenFor(m => m.Pratica.ID_DIPENDENTE)
+        @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Dati dipendente", collapsable: true))
+        {
+            <div class="row ">
+                <div class="col-sm-6 push-10">
+                    @Html.LabelForRequiredObbl(model => model.Pratica.DATA_ANZIANITA, "Data Anzianità", new { @class = "rai-caption" })
+                    @Html.TextBoxFor(m => m.Pratica.DATA_ANZIANITA, new { @class = "js-datetimepicker form-control form-control-value", style = "width: 100%", placeholder = "Data Anzianità", data_format = "DD/MM/YYYY", required = "required" })
+                </div>
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(model => model.Pratica.PART_TIME, "Part-Time", new { @class = "rai-caption" })
+                    @*@Html.TextBoxFor(m => m.Pratica.PART_TIME, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Part-Time" })*@
+                    @Html.RaiSelectFor(m => m.Pratica.PART_TIME, partTimeList, hideSearch: true)
+                </div>
+                <div class="col-sm-12 push-10">
+                    @Html.LabelFor(model => model.TipiVertenze, "Tipologia vertenza/stragiudiziale/contenzioso", new { @class = "rai-caption" })
+                    @Html.RaiSelectFor(m => m.TipiVertenze, tipiVert, multiple: true)
+                </div>
+                <div class="col-sm-12 push-10">
+                    @Html.LabelFor(model => model.Pratica.CAUSE_VERTENZE, "Cause/Vertenze", new { @class = "rai-caption" })
+                    @Html.TextBoxFor(m => m.Pratica.CAUSE_VERTENZE, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Cause/Vertenze" })
+                </div>
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(model => model.Pratica.CELLULARE, "Numero Telefono", new { @class = "rai-caption" })
+                    @Html.TextBoxFor(m => m.Pratica.CELLULARE, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Nome" })
+                </div>
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(model => model.Pratica.MAIL, "Mail", new { @class = "rai-caption" })
+                    @Html.TextBoxFor(m => m.Pratica.MAIL, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Mail" })
+                </div>
+                @if (Model.Pratica.SINTESI1.COD_QUALIFICA == "A01")
+                {
+                    <div class="col-sm-12">
+                        <label class="rai-caption">Vettura aziendale</label>
+                    </div>
+                    <div class="col-sm-6 push-10">
+                        @Html.LabelFor(model => model.VeicoloTipologia, "Tipo vettura", new { @class = "text-italic" })
+                        @Html.TextBoxFor(m => m.VeicoloTipologia, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Tipo vettura" })
+                    </div>
+
+                    <div class="col-sm-6 push-10">
+                        @Html.LabelFor(model => model.VeicoloTarga, "Targa", new { @class = "text-italic" })
+                        @Html.TextBoxFor(m => m.VeicoloTarga, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Mail" })
+                    </div>
+                }
+                @if (Model.Pratica.SINTESI1.COD_QUALIFICA.StartsWith("M")
+                    || Model.Pratica.SINTESI1.COD_QUALIFICA.StartsWith("A7"))
+                {
+                    <div class="col-sm-6 push-10 push-5-t">
+                        <div class="rai-checkbox">
+                            @Html.CheckBoxFor(m => m.TfrAnte2007FPGCI)
+                            <label for="TfrAnte2007FPGCI">Trasferisce il TFR Ante 2007 al FPGCI</label>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        @using (Html.BeginBlock(BlockType.ContentTable, "Dati cessazione", collapsable: true))
+        {
+            <div class="row">
+                <div class="col-sm-6 push-10">
+
+                    @if (!Model.Pratica.DATA_INVIO_PROP.HasValue)
+                    {
+                        @Html.LabelForRequiredObbl(model => model.Pratica.DATA_CESSAZIONE, "Data Cessazione", new { @class = "rai-caption" })
+                        <div class="input-group">
+                            <div class="input-group-addon" onclick="$('#Pratica_DATA_CESSAZIONE').datetimepicker('show')"><i class="fa fa-calendar"></i></div>
+                            @Html.TextBoxFor(m => m.Pratica.DATA_CESSAZIONE, new { @class = "js-datetimepicker form-control form-control-value", style = "width: 100%", placeholder = "Data Cessazione", data_format = "DD/MM/YYYY", required = "required", onchange = "IncAggiornaPagamenti()" })
+                        </div>
+                    }
+                    else
+                    {
+                        @Html.LabelFor(model => model.Pratica.DATA_CESSAZIONE, "Data Cessazione", new { @class = "rai-caption" })
+                        <div class="input-group">
+                            @Html.TextBoxFor(m => m.Pratica.DATA_CESSAZIONE, new { @class = "js-datetimepicker form-control form-control-value", style = "width: 100%", placeholder = "Data Cessazione", data_format = "DD/MM/YYYY", required = "required", @readonly = "readonly" })
+                            <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                        </div>
+                    }
+                </div>
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(model => model.Pratica.DATA_PAGAMENTO, "Data Pagamento", new { @class = "rai-caption" })
+                    @*@Html.TextBoxFor(m => m.Pratica.DATA_PAGAMENTO, new { @class = "js-datetimepicker form-control form-control-value", style = "width: 100%", placeholder = "Data Pagamento", data_format = "DD/MM/YYYY" })*@
+                    @Html.RaiSelectFor(m => m.Pratica.DATA_PAGAMENTO, myRaiCommonManager.Cessazione.CessazioneManager.GetDatePagamenti(Model.Pratica.DATA_CESSAZIONE.Value))
+                </div>
+            </div>
+            <div class="row" data-tipologia="1">
+                <div class="col-sm-6 push-10">
+                    @*@Html.LabelForRequiredObbl(model => model.Pratica.UNA_TANTUM_LORDA, "Importo Una Tantum", new { @class = "rai-caption" })*@
+                    @Html.LabelFor(model => model.Pratica.UNA_TANTUM_LORDA, "Importo Una Tantum", new { @class = "rai-caption" })
+                    <div class="input-group">
+                        @Html.TextBoxFor(m => m.Pratica.UNA_TANTUM_LORDA, new { @class = "form-control form-control-value", style = "width: 100%", data_type = "currency", pattern = @"^\d{1,3}(\.\d{3})*(,\d+)?$", placeholder = "Una Tantum", required = "required", @readonly = "readonly" })
+                        <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                    </div>
+                </div>
+                <div class="col-sm-6 push-10">
+                    @*@Html.LabelForRequiredObbl(model => model.Pratica.INCENTIVO_LORDO, "Importo Incentivo Lordo", new { @class = "rai-caption" })*@
+                    @Html.LabelFor(model => model.Pratica.INCENTIVO_LORDO, "Importo Incentivo Lordo", new { @class = "rai-caption" })
+                    <div class="input-group">
+                        @Html.TextBoxFor(m => m.Pratica.INCENTIVO_LORDO, new { @class = "form-control form-control-value", style = "width: 100%", data_type = "currency", pattern = @"^\d{1,3}(\.\d{3})*(,\d+)?$", placeholder = "Incentivo Lordo", required = "required", @readonly = "readonly" })
+                        <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="row" data-tipologia="1">
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(m => m.Pratica.TFR_LORDO_INPS_IP, "TFR Lordo INPS", new { @class = "rai-caption" })
+                    <div class="input-group">
+                        @Html.TextBoxFor(m => m.Pratica.TFR_LORDO_INPS_IP, new { @class = "form-control form-control-value", style = "width: 100%", data_type = "currency", pattern = @"^\d{1,3}(\.\d{3})*(,\d+)?$", @readonly = "readonly" })
+                        <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                    </div>
+                </div>
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(m => m.Pratica.TFR_LORDO_AZ_IP, "TFR Lordo Azienda", new { @class = "rai-caption" })
+                    <div class="input-group">
+                        @Html.TextBoxFor(m => m.Pratica.TFR_LORDO_AZ_IP, new { @class = "form-control form-control-value", style = "width: 100%", data_type = "currency", pattern = @"^\d{1,3}(\.\d{3})*(,\d+)?$", @readonly = "readonly" })
+                        <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="row" data-tipologia="1">
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(m => m.Pratica.TFR_NETTO, "TFR Netto", new { @class = "rai-caption" })
+                    <div class="input-group">
+                        @Html.TextBoxFor(m => m.Pratica.TFR_NETTO, new { @class = "form-control form-control-value", style = "width: 100%", data_type = "currency", pattern = @"^\d{1,3}(\.\d{3})*(,\d+)?$", @readonly = "readonly" })
+                        <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                    </div>
+                </div>
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(m => m.Pratica.ALIQ_TFR, "Aliquota TFR", new { @class = "rai-caption" })
+                    <div class="input-group">
+                        @Html.TextBoxFor(m => m.Pratica.ALIQ_TFR, new { @class = "form-control form-control-value", style = "width: 100%", data_type = "currency", pattern = @"^\d{1,3}(\.\d{3})*(,\d+)?$", @readonly = "readonly" })
+                        <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="row" data-tipologia="1">
+                <div class="col-sm-12">
+                    <label class="rai-caption">Mensilità incentivo</label>
+                </div>
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(m => m.Pratica.NUM_MENS_PRINC_DEC, "principali", new { @class = "text-italic" })
+                    <div class="input-group">
+                        @Html.TextBoxFor(m => m.Pratica.NUM_MENS_PRINC_DEC, new { @class = "form-control", @readonly = "readonly" })
+                        <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                    </div>
+                </div>
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(m => m.Pratica.NUM_MENS_AGG_DEC, "aggiuntive", new { @class = "text-italic" })
+                    <div class="input-group">
+                        @Html.TextBoxFor(m => m.Pratica.NUM_MENS_AGG_DEC, new { @class = "form-control", @readonly = "readonly" })
+                        <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="row" data-tipologia="1">
+                <div class="col-sm-6 push-10">
+                    @if (Model.Pratica.SINTESI1.COD_QUALIFICA == "A01")
+                    {
+                        @Html.LabelFor(model => model.Pratica.EX_FISSA, "Preavviso", new { @class = "rai-caption" })
+                    }
+                    else
+                    {
+                        @Html.LabelFor(model => model.Pratica.EX_FISSA, "Accordo 13.03.2018", new { @class = "rai-caption" })
+
+                    }
+                    <div class="input-group">
+                        @Html.TextBoxFor(model => model.Pratica.EX_FISSA, new { @class = "form-control form-control-value", style = "width: 100%", data_type = "currency", pattern = @"^\d{1,3}(\.\d{3})*(,\d+)?$", placeholder = "Accordo 13.03.2018", @readonly = "readonly" })
+                        <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Proposta inviata in bozza al dipendente", collapsable: true))
+        {
+            <div class="row">
+                @if (myRaiHelper.HrisHelper.GetParametro<string>(myRaiHelper.HrisParam.IncentiviAbilitaMail) == "TRUE")
+                {
+                    <div class="col-sm-12 push-10">
+                        <button class="btn rai-btn-small full-width" onclick="OpenBozza(@Model.Pratica.ID_DIPENDENTE)">Gestione mail</button>
+                    </div>
+                }
+
+                <div class="col-sm-6 push-5">
+                    @Html.LabelFor(m => m.Pratica.DATA_INVIO_PROP, "Data invio", new { @class = "text-italic" })
+                    <div class="input-group">
+                        <div class="input-group-addon" onclick="$('#Pratica_DATA_INVIO_PROP').click()"><i class="fa fa-calendar"></i></div>
+                        @Html.TextBoxFor(m => m.Pratica.DATA_INVIO_PROP, new { @class = "js-datetimepicker form-control form-control-value", data_locale = "it", style = "width: 100%", data_format = "DD/MM/YYYY", required = "required" })
+                    </div>
+                    @Html.ValidationMessageFor(m => m.Pratica.DATA_INVIO_PROP)
+                </div>
+
+                <div class="col-sm-6 push-5">
+                    @Html.LabelFor(m => m.Pratica.DATA_FIRMA_DIP, "Data firma", new { @class = "text-italic", id = "lblFirmaProp" })
+                    <div class="input-group">
+                        <div class="input-group-addon" onclick="$('#Pratica_DATA_FIRMA_DIP').datetimepicker('show')"><i class="fa fa-calendar"></i></div>
+                        @Html.TextBoxFor(m => m.Pratica.DATA_FIRMA_DIP, new { @class = "js-datetimepicker form-control form-control-value", data_locale = "it", style = "width: 100%", data_format = "DD/MM/YYYY", required = "required" })
+                    </div>
+                    @Html.ValidationMessageFor(m => m.Pratica.DATA_FIRMA_DIP)
+                </div>
+
+                @if (Model.Pratica.DATA_INVIO_PROP.HasValue)
+                {
+                    <div class="col-sm-12 push-10">
+                        @if (!String.IsNullOrWhiteSpace(Model.Pratica.NOT_INVIO_PROP))
+                        {
+                            <i class="rai-font-sm-neutral">@Model.Pratica.NOT_INVIO_PROP</i>
+                        }
+                        @if (!Model.Pratica.DTA_ACCETT_AZ.HasValue)
+                        {
+                            <i class="rai-font-sm"> - Per annullare la proposta, <a onclick="IncResetProposta(@Model.Pratica.ID_DIPENDENTE)">clicca qui</a></i>
+                        }
+                    </div>
+
+                    if (!Model.Pratica.DTA_ACCETT_AZ.HasValue)
+                    {
+                        <div class="col-sm-6">
+                            @Html.LabelFor(m => m.Scadenze.LimiteProposta, "Data scadenza proposta", new { @class = "text-italic" })
+                            <div class="input-group">
+                                <div class="input-group-addon" onclick="$('#Scadenze_LimiteProposta').click()"><i class="fa fa-calendar"></i></div>
+                                @Html.TextBoxFor(m => m.Scadenze.LimiteProposta, new { @class = "js-datetimepicker form-control form-control-value", data_locale = "it", style = "width: 100%", data_format = "DD/MM/YYYY", required = "required" })
+                            </div>
+                            @Html.ValidationMessageFor(m => m.Scadenze.LimiteProposta)
+                        </div>
+                    }
+                }
+            </div>
+
+            <div id="wdgt-allegati@((int)IncStato.TempFileProposta)" class="bg-neutrals-xl-10" style="margin:20px -15px 10px -15px;padding:10px 25px;">
+                @if (Model.AllegatiProp != null)
+                {
+                    @Html.Partial("subpartial/widget_allegati", Model.AllegatiProp)
+                }
+            </div>
+        }
+
+
+
+        @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Comunicazione al dipendente dell'Accettazione", collapsable: true))
+        {
+            <div class="row">
+                @if (!Model.Pratica.DTA_ACCETT_AZ.HasValue)
+                {
+                    var template = CessazioneHelper.GetTemplate(new myRaiData.Incentivi.IncentiviEntities(), "Accettazione", Model.Pratica.ID_DIPENDENTE, "Accettazione", true, Model.Pratica.SINTESI1.COD_QUALIFICA);
+
+                    <div class="col-sm-12 push-10">
+                        @if (!Model.Pratica.DATA_FIRMA_DIP.HasValue)
+                        {
+                            <em class="rai-font-sm">Sarà possibile comunicare la accettazione solo dopo la ricezione della proposta firmata.</em>
+                        }
+                        @if (template != null && Model.HasRuoloAccettazione)
+                        {
+                            if (!Model.Pratica.DTA_ACCETT_AZ.HasValue)
+                            {
+                                if (!Model.Pratica.GetField<DateTime?>("DataProtocolloAccettazione").HasValue)
+                                {
+                                    <button class="btn rai-btn-small full-width push-5" onclick="IncGeneraAccettazione(@(Model.Pratica.ID_DIPENDENTE))" @(Model.Pratica.DATA_FIRMA_DIP.HasValue ? "" : "disabled")>Genera accettazione</button>
+                                }
+                                else
+                                {
+                                    <button class="btn rai-btn-small full-width push-5" onclick="IncInviaAccettazioneSep(@(Model.Pratica.ID_DIPENDENTE))" @(Model.Pratica.DATA_FIRMA_DIP.HasValue ? "" : "disabled")>Invia accettazione</button>
+                                    <br />
+                                    <input style="display:none" type="file" id="extAccettazione" onchange="IncExtAccettazione(@(Model.Pratica.ID_DIPENDENTE))" />
+                                    <em class="rai-font-sm">Per caricare una versione esterna dell'accettazione, <a onclick="IncShowExtAccettazione()">clicca qui</a></em>
+                                    <i class="rai-font-sm"> - Per annullare, <a onclick="IncResetAccettazione(@Model.Pratica.ID_DIPENDENTE)">clicca qui</a></i>
+                                }
+                                @*<button class="btn rai-btn-small full-width push-5" onclick="IncInviaAccettazione(@(Model.Pratica.ID_DIPENDENTE))" @(Model.Pratica.DATA_FIRMA_DIP.HasValue ? "" : "disabled")>Invia accettazione</button>*@
+                            }
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="col-sm-6 push-10">
+                        @Html.LabelFor(m => m.Pratica.DTA_ACCETT_AZ, "Data invio", new { @class = "text-italic" })
+                        <div class="input-group">
+                            @*<div class="input-group-addon" onclick="$('#Pratica_DTA_ACCETT_AZ').datetimepicker('show')"><i class="fa fa-calendar"></i></div>*@
+                            @Html.TextBoxFor(m => m.Pratica.DTA_ACCETT_AZ, new { @class = "js-datetimepicker form-control form-control-value", data_locale = "it", style = "width: 100%", data_format = "DD/MM/YYYY", required = "required", @readonly = "readonly" })
+                            <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                        </div>
+                        @Html.ValidationMessageFor(m => m.Pratica.DTA_ACCETT_AZ)
+                    </div>
+                    <div class="col-sm-6 push-10">
+                        @Html.LabelFor(m => m.Pratica.DATA_FIRMA_DIP_ACCETT_AZ, "Data controfirma", new { @class = "text-italic", id = "lblFirmaDip" })
+                        <div class="input-group">
+                            @*<div class="input-group-addon" onclick="$('#Pratica_DATA_FIRMA_DIP_ACCETT_AZ').datetimepicker('show')"><i class="fa fa-calendar"></i></div>*@
+                            @Html.TextBoxFor(m => m.Pratica.DATA_FIRMA_DIP_ACCETT_AZ, new { @class = "js-datetimepicker form-control form-control-value", data_locale = "it", style = "width: 100%", data_format = "DD/MM/YYYY", required = "required", @readonly = "readonly" })
+                            <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                        </div>
+                        @Html.ValidationMessageFor(m => m.Pratica.DATA_FIRMA_DIP_ACCETT_AZ)
+                    </div>
+                    <div class="col-sm-6 push-10">
+                        @Html.LabelForRequiredObbl(m => m.Pratica.DTA_RECESSO, "Data recesso online", new { @class = "text-italic", id = "lblRecesso" })
+                        <div class="input-group">
+                            <div class="input-group-addon" onclick="$('#Pratica_DTA_RECESSO').datetimepicker('show')"><i class="fa fa-calendar"></i></div>
+                            @Html.TextBoxFor(m => m.Pratica.DTA_RECESSO, new { @class = "form-control js-datetimepicker", data_locale = "it", data_format = "DD/MM/YYYY", required = "required" })
+                        </div>
+                        @Html.ValidationMessageFor(m => m.Pratica.DTA_RECESSO)
+                    </div>
+
+                    <div class="col-sm-12">
+                        <i class="rai-font-sm">Per annullare l'accettazione, <a onclick="IncResetAccettazione(@Model.Pratica.ID_DIPENDENTE)">clicca qui</a></i>
+                    </div>
+                }
+            </div>
+
+            <div id="wdgt-allegati@((int)IncStato.TempFileAccettazione)" class="bg-neutrals-xl-10" style="margin:20px -15px 10px -15px; padding:10px 25px;">
+                @if (Model.AllegatiAccett != null)
+                {
+                    @Html.Partial("subpartial/widget_allegati", Model.AllegatiAccett)
+                }
+            </div>
+        }
+
+
+        <div class="row form-button">
+            <div class="col-sm-12 push-10 rai-btn-fill">
+                <button class="btn rai-btn-small" onclick="SubmitAvviaPratica(false, false,'')">Salva</button>
+            </div>
+            <div class="col-sm-12 rai-btn-fill push-10">
+                <button class="btn btn-action-icon btn-action-icon-text feedback-error-color" onclick="SubmitAvviaPratica(true, false, 'r')">
+                    <i class="fa fa-times"></i>
+                    Richiesta rifiutata
+                </button>
+            </div>
+            @if (Model.Pratica.DATA_INVIO_PROP.HasValue)
+            {
+                <div class="col-sm-12 rai-btn-fill push-10">
+                    <button class="btn btn-action-icon btn-action-icon-text feedback-warning-color" onclick="SubmitAvviaPratica(true, false, 'd', )">
+                        <i class="fa fa-clock-o"></i>
+                        Decaduta
+                    </button>
+                    <button class="btn btn-action-icon btn-action-icon-text feedback-error-color" onclick="SubmitAvviaPratica(true, false, 'pr', )">
+                        <i class="fa fa-minus-square"></i>
+                        Proposta rifiutata
+                    </button>
+                </div>
+            }
+            <div class="col-sm-12 rai-btn-fill">
+                @{
+                    bool showInvio = CessazioneHelper.GetTemplate(new myRaiData.Incentivi.IncentiviEntities(), "TemplateMail", Model.Pratica.ID_DIPENDENTE, "RecessoEffettuato", true, Model.Pratica.SINTESI1.COD_QUALIFICA) != null;
+                }
+                <button class="btn btn-action-icon btn-action-icon-text feedback-success-color" onclick="SubmitAvviaPratica(true, true,'', true, @(showInvio?"true":"false"))">
+                    <i class="fa fa-check"></i>
+                    Avvia
+                </button>
+            </div>
+        </div>
+    </form>
+    <script>
+        InitDatePicker();
+        $("input[data-type='currency']").on({
+            keyup: function () {
+                formatCurrency($(this));
+            },
+            blur: function () {
+                formatCurrency($(this), "blur");
+            }
+        });
+        function formatAllCurrency() {
+            var list = $('input[data-type="currency"]');
+            for (var i = 0; i < list.length; i++) {
+                formatCurrency($(list[i]));
+            }
+        }
+        formatAllCurrency();
+
+        function IncGeneraAccettazione(idDip) {
+            event.preventDefault();
+            swal({
+                title: 'Sei sicuro?',
+                text: "Vuoi generare l'accettazione?",
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Confermo',
+                cancelButtonText: 'Annulla',
+                customClass: 'rai',
+                reverseButtons: 'true'
+            }).then(function () {
+                $.ajax({
+                    url: "/Cessazione/GeneraAccettazione",
+                    type: "POST",
+                    data: { idDip: idDip },
+                    async: false,
+                    success: function (data) {
+                        switch (data) {
+                            case "OK":
+                                swal("Accettazione generata con successo", "", "success");
+                                ShowIncentivato(idDip, '');
+                                break;
+                            default:
+                                swal("Errore: " + data);
+                                break;
+                        }
+                    },
+                    error: function (result) {
+                        swal("Errore: " + result);
+                    }
+                });
+            });
+        }
+
+        function IncInviaAccettazioneSep(idDip) {
+            event.preventDefault();
+            swal({
+                title: 'Sei sicuro?',
+                text: "La comunicazione verrà resa disponibile al dipendente sul portale Rai Per Me.",
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Confermo',
+                cancelButtonText: 'Annulla',
+                customClass: 'rai',
+                reverseButtons: 'true'
+            }).then(function () {
+                $.ajax({
+                    url: "/Cessazione/InviaAccettazioneSep",
+                    type: "POST",
+                    data: { idDip: idDip },
+                    async: false,
+                    success: function (data) {
+                        switch (data) {
+                            case "OK":
+                                swal("Accettazione inviata con successo", "", "success");
+                                ShowIncentivato(idDip, '');
+                                CercaIncentivato();
+                                break;
+                            default:
+                                swal("Errore: " + data);
+                                break;
+                        }
+                    },
+                    error: function (result) {
+                        swal("Errore: " + result);
+                    }
+                });
+            });
+        }
+
+        function IncInviaAccettazione(idDip) {
+            event.preventDefault();
+
+            swal({
+                title: 'Sei sicuro?',
+                text: "La comunicazione verrà resa disponibile al dipendente sul portale Rai Per Me.",
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Confermo',
+                cancelButtonText: 'Annulla',
+                customClass: 'rai',
+                reverseButtons: 'true'
+            }).then(function () {
+                $.ajax({
+                    url: "/Cessazione/InviaAccettazione",
+                    type: "POST",
+                    data: { idDip: idDip },
+                    async: false,
+                    success: function (data) {
+                        switch (data) {
+                            case "OK":
+                                swal("Accettazione inviata con successo", "", "success");
+                                ShowIncentivato(idDip, '');
+                                CercaIncentivato();
+                                break;
+                            default:
+                                swal("Errore: " + data);
+                                break;
+                        }
+                    },
+                    error: function (result) {
+                        swal("Errore: " + result);
+                    }
+                });
+            });
+        }
+
+        function IncResetProposta(idDip) {
+            event.preventDefault();
+            swal({
+                title: 'Sei sicuro?',
+                text: "La proposta verrà annullata e sarà possibile effettuare un nuovo invio.",
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Confermo',
+                cancelButtonText: 'Annulla',
+                customClass: 'rai',
+                reverseButtons: 'true'
+            }).then(function () {
+                $.ajax({
+                    url: "/Cessazione/ResetProposta",
+                    type: "POST",
+                    data: { idDip: idDip },
+                    async: false,
+                    success: function (data) {
+                        switch (data) {
+                            case "OK":
+                                swal("Proposta annullata con successo", "", "success");
+                                ShowIncentivato(idDip, '');
+                                CercaIncentivato();
+                                break;
+                            default:
+                                swal("Errore: " + data);
+                                break;
+                        }
+                    },
+                    error: function (result) {
+                        swal("Errore: " + result);
+                    }
+                });
+            });
+        }
+        function IncResetAccettazione(idDip) {
+            event.preventDefault();
+            swal({
+                title: 'Sei sicuro?',
+                text: "L'accettazione verrà annullata e sarà crearne una nuova versione.",
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Confermo',
+                cancelButtonText: 'Annulla',
+                customClass: 'rai',
+                reverseButtons: 'true'
+            }).then(function () {
+                $.ajax({
+                    url: "/Cessazione/ResetAccettazione",
+                    type: "POST",
+                    data: { idDip: idDip },
+                    async: false,
+                    success: function (data) {
+                        switch (data) {
+                            case "OK":
+                                swal("Accettazione annullata con successo", "", "success");
+                                ShowIncentivato(idDip, '');
+                                CercaIncentivato();
+                                break;
+                            default:
+                                swal("Errore: " + data);
+                                break;
+                        }
+                    },
+                    error: function (result) {
+                        swal("Errore: " + result);
+                    }
+                });
+            });
+        }
+
+        function IncAggiornaPagamenti() {
+            RaiSelectOption('', 'Pratica_DATA_PAGAMENTO', false, false);
+            RaiSelectExtLoadAsyncData('Pratica_DATA_PAGAMENTO', '/Cessazione/GetDatePagamento', { dataCessazione: $('#Pratica_DATA_CESSAZIONE').val() }, true, null);
+        }
+
+        function IncShowExtAccettazione() {
+            event.preventDefault();
+            $('#extAccettazione').click();
+        }
+        function IncExtAccettazione(idDip) {
+            var formdata = new FormData();
+            formdata.append('idDip', idDip)
+            formdata.append('_file', $("#extAccettazione")[0].files[0]);
+            $('#wdgt-allegati@((int)IncStato.TempFileAccettazione)').addClass('rai-loader');
+            var request = new XMLHttpRequest();
+            request.onreadystatechange = function () {
+
+                if (this.readyState == 4 && this.status == 200) {
+                    if (this.responseText=="OK")
+                        RaiUpdateWidget('wdgt-allegati@((int)IncStato.TempFileAccettazione)', '/Cessazione/Widget_allegati', 'html', { idDip: idDip, stato: @((int)IncStato.TempFileAccettazione) });
+                    else
+                        swal(this.responseText);
+                }
+            };
+            request.upload.addEventListener('progress', function (e) {
+
+            });
+
+            request.open('post', '/cessazione/UploadFileAccettazione');
+            request.timeout = 45000;
+            request.send(formdata);
+        }
+    </script>
+</div>

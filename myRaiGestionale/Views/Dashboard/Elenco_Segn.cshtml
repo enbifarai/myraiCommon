@@ -1,0 +1,91 @@
+﻿@using myRaiData.Incentivi
+@model List<XR_HRIS_SEGNALAZIONE>
+
+
+<div class="block block-content-table block-transparent remove-margin-bottom">
+    <div class="block-header">
+        <label class="block-title">Elenco</label>
+        <div class="block-options">
+            <span class="rai-notification">@Model.Count()</span>
+        </div>
+    </div>
+    <div class="block-content">
+        <div class="row">
+            <div class="col-sm-12">
+                <div style="overflow:hidden;overflow-y:auto;max-height:460px;padding-right:2px;">
+                    <table class="table rai-table rai-table-vcenter table-striped">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Tipologia/Ambito</th>
+                                <th>Matricola</th>
+                                <th>Stato</th>
+                                <th>Testo</th>
+                                <th class="rai-table-td-action">
+                                </th>
+                            </tr>
+                        </thead>
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                @Html.Partial("_NoDati")
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var item in Model.OrderByDescending(x => x.DTA_INSERIMENTO))
+                            {
+                                <tr>
+                                    <td class="ws-nowrap">
+                                        @item.DTA_INSERIMENTO.ToString("dd/MM/yyyy")
+                                        <br />
+                                        @item.DTA_INSERIMENTO.ToString("HH:mm:ss")
+                                    </td>
+                                    <td>
+                                        <label class="push-5">@Html.Raw(item.DES_AMBITO)</label>
+                                        <br /><span class="rai-label">@Html.Raw(item.COD_TIPOLOGIA)</span>
+                                    </td>
+                                    <td class="ws-nowrap">@item.MATR_INSERIMENTO</td>
+                                    <td class="ws-nowrap">
+                                        @if (!item.IND_ESITO.HasValue)
+                                        {
+                                            if (String.IsNullOrWhiteSpace(item.MATR_INCARICO))
+                                            {
+                                                <span class="rai-label rai-label-warning">Da verificare</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="rai-label">In carico a @item.MATR_INCARICO</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            switch (item.IND_ESITO.Value)
+                                            {
+                                                case 0:
+                                                    <span class="rai-label rai-label-success">Risolta</span>
+                                                    break;
+                                                case 1:
+                                                    <span class="rai-label rai-label-error">Respinta</span>
+                                                    break;
+                                                default:
+                                                    <span class="rai-label">Stato non riconosciuto</span>
+                                                    break;
+                                            }
+                                        }
+                                    </td>
+                                    <td >
+                                        <div style="max-height:2rem;width:35em;text-overflow:ellipsis;white-space:nowrap; overflow:hidden;padding-right:2px;">
+                                            @Html.Raw(item.NOT_SEGNALAZIONE)
+                                        </div>
+                                    </td>
+                                    <td><button class="btn btn-action-icon" onclick="HrisSegnDetail(@item.ID_SEGNALAZIONE)"><i class="fa fa-search"></i></button></td>
+                                </tr>
+                            }
+                        }
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

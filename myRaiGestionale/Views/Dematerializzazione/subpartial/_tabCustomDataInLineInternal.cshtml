@@ -1,0 +1,484 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiCommonModel
+@using myRaiHelper
+@using Newtonsoft.Json
+@using System.Web.Script.Serialization
+
+@model AttributiAggiuntivi
+
+@{
+    Layout = null;
+}
+
+@{
+    var a = Model;
+    string visibile = a.Visible ? "" : "display:none;";
+
+    string divID = "";
+
+    if (a.Tipo == TipologiaAttributoEnum.InLine)
+    {
+        divID = String.Format("id={0}", a.Id);
+    }
+    else if (a.Tipo != TipologiaAttributoEnum.Check && a.Tipo != TipologiaAttributoEnum.Radio)
+    {
+        divID = String.Format("id=row_{0}", a.Id);
+    }
+    else
+    {
+        divID = String.Format("group-id=row_{0}", a.Id);
+    }
+
+    if (a.Tipo == TipologiaAttributoEnum.Button || a.Tipo == TipologiaAttributoEnum.ActionButton)
+    {
+        string lbID = "lb_" + a.Id;
+        string DBRefAttribute = a.DBRefAttribute;
+
+        string dataAttr = "";
+        if (a.DataAttributeElements != null && a.DataAttributeElements.Any())
+        {
+            foreach (var at in a.DataAttributeElements)
+            {
+                string t = String.Format("data-{0}=\"{1}\"", at.Nome, at.Valore);
+                dataAttr += Html.Raw(t);
+                dataAttr += " ";
+            }
+        }
+
+        if (a.Tipo == TipologiaAttributoEnum.Button)
+        {
+            <button data-hideinreadonly="@(a.HideInReadOnly)" data-posizione="@(a.Ordinamento)" id="@a.Id" class="@(a.Classe != null ? a.Classe : "")" aria-label="@(a.Label)" title="@(a.Title)" style="min-width:80px; float:right; @(visibile)" onclick="@(a.OnClick)" @(Html.Raw(dataAttr))>@(a.Title)</button>
+        }
+
+        if (a.Tipo == TipologiaAttributoEnum.ActionButton)
+        {
+            <button data-hideinreadonly="@(a.HideInReadOnly)" data-posizione="@(a.Ordinamento)" id="@a.Id" class=" @(a.Classe != null ? a.Classe : "")" aria-label="@(a.Label)" onclick="@(a.OnClick)" title="@(a.Title)" style="@(visibile)" @(Html.Raw(dataAttr))>
+                <i class="@(a.ClasseImg != null ? a.ClasseImg : "")"></i>
+            </button>
+        }
+
+        if (a.Azioni != null && a.Azioni.Any())
+        {
+            foreach (var az in a.Azioni)
+            {
+                string evento = az.Event.GetDescription();
+                if (az.Functions != null && az.Functions.Any())
+                {
+                    foreach (var f in az.Functions)
+                    {
+                        <text>
+                            <script type="text/javascript">
+                                        @{
+                                            string fxName = "";
+                                            if (!String.IsNullOrEmpty(f.CallerArguments))
+                                            {
+                                                fxName = String.Format("{0}({1})", f.Name, f.Arguments);
+                                            }
+                                            else
+                                            {
+                                                fxName = String.Format("{0}()", f.Name);
+                                            }
+
+                                            <text>
+
+                                            var @(f.Name) = new Function("@f.Arguments", @(Html.Raw(Json.Encode(f.Body))));
+
+                                            </text>
+                                        }
+
+                                        $('#@(az.TargetID)').on('@(evento)', function () {
+                                            @{
+                                                if (!String.IsNullOrEmpty(f.CallerArguments))
+                                                {
+                                                    <text>
+                                                    var fx = @(Html.Raw(Json.Encode(String.Format("{0}('{1}')", f.Name, f.CallerArguments))));
+                                                    </text>
+                                                }
+                                                else
+                                                {
+                                                    <text>
+                                                    var fx = @(Html.Raw(Json.Encode(String.Format("{0}()", f.Name))));
+                                                    </text>
+
+                                                }
+                                            }
+                                            eval(fx);
+                                        });
+                            </script>
+                        </text>
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        <div class="col-xs-12" @(divID) style="padding-left: 0px; padding-right: 0px; @(!a.Visible ? "display:none" : "")">
+            @{
+                string lbID = "lb_" + a.Id;
+                string DBRefAttribute = a.DBRefAttribute;
+
+
+
+                if (a.RaggruppaConLabel)
+                {
+                    <div class="col-xs-12" style="padding-left: 0px; padding-right: 0px; ">
+                        @{
+                            if (a.Required)
+                            {
+
+                                @Html.LabelForRequiredObbl(x => a.Label, a.Label, new { @class = "rai-caption", id = lbID, title = a.Label })
+                            }
+                            else
+                            {
+                                @Html.Label(a.Id, a.Label, new { @class = "rai-caption", id = lbID, title = a.Label })
+                            }
+
+                            if (a.Tipo == TipologiaAttributoEnum.Data)
+                            {
+                                bool compilato = false;
+                                if (!String.IsNullOrEmpty(a.ValoreInModifica))
+                                {
+                                    compilato = true;
+                                }
+                                <div id="calendario_@(a.Id)" class="input-group mb-md">
+                                    <span onclick="$('#@(a.Id)').datetimepicker('show')" class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                                    <input data-hideinreadonly="@(a.HideInReadOnly)" data-compilato="@(compilato.ToString().ToLower())" data-posizione="@(a.Ordinamento)" data-dbrefattribute="@(DBRefAttribute)" data-divparent="@(divID)" data-tipo="@((int)a.Tipo)" class="dem-customdata js-datetimepicker form-control" onchange="Dematerializzazione_MarkCompilato('@(a.Id)')" data-format="DD/MM/YYYY" data-locale="it" type="text" id="@(a.Id)" placeholder="@(a.Title)" value="@(a.ValoreInModifica)" @(a.Required && !a.ReadOnly ? "required=\"required\"" : "") @(a.ReadOnly ? "readonly":"")>
+                                    @if (a.ReadOnly)
+                                    {
+                                        <span class="input-group-addon"><i class="fa fa-lock"></i></span>
+                                    }
+                                </div>
+                            }
+                            else if (a.Tipo == TipologiaAttributoEnum.Numero)
+                            {
+                                <input data-hideinreadonly="@(a.HideInReadOnly)" data-posizione="@(a.Ordinamento)" data-dbrefattribute="@(DBRefAttribute)" data-divparent="@(divID)" style="width:100%;" data-tipo="@((int)a.Tipo)" id="@(a.Id)" name="@(a.Nome)" type="number" class="dem-customdata form-control form-control-value" placeholder="@(a.Title)" value="@(a.ValoreInModifica)" @(a.Required ? "required=\"required\"" : "") onchange="Dematerializzazione_MarkCompilato('@(a.Id)')" />
+                            }
+                            else if (a.Tipo == TipologiaAttributoEnum.Testo)
+                            {
+
+                                if (!String.IsNullOrEmpty(a.UrlLoadData))
+                                {
+                                    if (a.Required)
+                                    {
+                                        @Html.RaiAsyncSelectFor(x => a.ValoreInModifica, a.UrlLoadData, minCharInput: 1, expandView: false, tipoFiltro: SelectFilterType.StartsWith, showCodeInDropdown: false, attributes: new { required = (a.Required ? "required" : ""), data_divparent = divID, data_tipo = (int)a.Tipo, id = a.Id, @class = "dem-customdata", data_dbrefattribute = DBRefAttribute, data_posizione = a.Ordinamento, data_hideinreadonly = a.HideInReadOnly }, onSelectchange: (a.Required ? "Dematerializzazione_MarkCompilato('" + a.Id + "')" : ""))
+                                    }
+                                    else
+                                    {
+                                        @Html.RaiAsyncSelectFor(x => a.ValoreInModifica, a.UrlLoadData, minCharInput: 1, expandView: false, tipoFiltro: SelectFilterType.StartsWith, showCodeInDropdown: false, attributes: new { data_divparent = divID, data_tipo = (int)a.Tipo, id = a.Id, @class = "dem-customdata", data_dbrefattribute = DBRefAttribute, data_posizione = a.Ordinamento, data_hideinreadonly = a.HideInReadOnly })
+                                    }
+                                }
+                                else
+                                {
+                                    <input data-hideinreadonly="@(a.HideInReadOnly)" data-posizione="@(a.Ordinamento)" data-dbrefattribute="@(DBRefAttribute)" data-divparent="@(divID)" style="width:100%;" data-tipo="@((int)a.Tipo)" id="@(a.Id)" minlength="@(a.MinLength > 0 ? a.MinLength.ToString() : "")" maxlength="@(a.MaxLength > 0 ? a.MaxLength.ToString() : "")" type="text" class="dem-customdata form-control form-control-value dem-customdata" placeholder="@(a.Title)" value="@(a.ValoreInModifica)" @(a.Required ? "required=\"required\"" : "") onchange="Dematerializzazione_MarkCompilato('@(a.Id)')" />
+                                }
+                            }
+                            else if (a.Tipo == TipologiaAttributoEnum.Select)
+                            {
+                                @Html.DropDownList(a.Id,
+                                                            a.SelectListItems,
+                                                            a.Title,
+                                                            new { @class = "form-control dem-customdata", data_dbrefattribute = DBRefAttribute, data_divparent = divID, data_posizione = a.Ordinamento, data_tipo = a.Tipo, data_hideinreadonly = a.HideInReadOnly })
+                            }
+                            else if (a.Tipo == TipologiaAttributoEnum.Nota)
+                            {
+                                <textarea data-hideinreadonly="@(a.HideInReadOnly)" data-posizione="@(a.Ordinamento)" data-divparent="@(divID)" data-dbrefattribute="@(DBRefAttribute)" style="" minlength="@(a.MinLength > 0 ? a.MinLength.ToString() : "")" maxlength="@(a.MaxLength > 0 ? a.MaxLength.ToString() : "")" data-tipo="@((int)a.Tipo)" id="@a.Id" class="dem-customdata form-control" title="@a.Title" rows="5" cols="200" @(a.Required ? "required=\"required\"" : "") onchange="Dematerializzazione_MarkCompilato('@(a.Id)')">@a.ValoreInModifica</textarea>
+                            }
+                            else if (a.Tipo == TipologiaAttributoEnum.Radio)
+                            {
+                                if (a.SelectListItems != null && a.SelectListItems.Any())
+                                {
+                                    int count = 0;
+                                    foreach (var s in a.SelectListItems)
+                                    {
+                                        count++;
+                                        <div data-check-group="scelta-@(a.Nome)" class="form-check radio-custom radio-info primary" style="margin-top:10px;">
+                                            <input data-hideinreadonly="@(a.HideInReadOnly)" data-posizione="@(a.Ordinamento)" data-divparent="@(divID)" data-dbrefattribute="@(DBRefAttribute)" data-originalid="@(a.Id)" data-tipo="@((int)a.Tipo)" id="@(a.Id)_@(count)" name="@(a.Nome)" class="dem-customdata" data-check-group="scelta-@(a.Nome)" type="radio" value="@(s.Value)" @(s.Selected ? "checked=\"checked\"" : "") @(a.Required ? "required=\"required\"" : "") onchange="Dematerializzazione_MarkCompilato('@(a.Id)_@(count)')" />
+                                            <label id="radio_@(a.Id)_@(count)" for="@(a.Nome)" class="rai-font-md">
+                                                @(s.Text)
+                                            </label>
+                                        </div>
+
+                                        <text>
+                                            <script type="text/javascript">
+
+                                                    $('#@(a.Id)_@(count)').on('change', function () {
+                                                        Dematerializzazione_MarkCompilato('@(a.Id)_@(count)');
+                                                    });
+                                            </script>
+                                        </text>
+                                    }
+                                }
+                            }
+                            else if (a.Tipo == TipologiaAttributoEnum.Importo)
+                            {
+                                string txImporto = "0.00";
+
+                                if (!String.IsNullOrEmpty(a.Valore))
+                                {
+                                    txImporto = a.Valore;
+                                }
+                                txImporto = Convert.ToDouble(txImporto).ToString("N2");
+                                int tipo = (int)a.Tipo;
+
+                                if (a.Required)
+                                {
+                                    @Html.TextBoxFor(x => a.Id, new { id = a.Id, @class = "dem-customdata form-control form-control-value dem-importo", style = " width: 100%", data_divparent = divID, data_type = "currency", data_hideinreadonly = a.HideInReadOnly, pattern = @"^\d{1,3}(.\d{3})*(\,\d+)?$", placeholder = a.Title, required = "required", value = a.ValoreInModifica, data_tipo = tipo, data_dbrefattribute = DBRefAttribute, data_posizione = a.Ordinamento })
+                                }
+                                else
+                                {
+                                    @Html.TextBoxFor(x => a.Id, new { id = a.Id, @class = "dem-customdata form-control form-control-value dem-importo", style = "width: 100%", data_divparent = divID, data_type = "currency", data_hideinreadonly = a.HideInReadOnly, pattern = @"^\d{1,3}(.\d{3})*(\,\d+)?$", placeholder = a.Title, value = a.ValoreInModifica, data_tipo = tipo, data_dbrefattribute = DBRefAttribute, data_posizione = a.Ordinamento })
+                                }
+                            }
+                            else if (a.Tipo == TipologiaAttributoEnum.FixedHiddenValue)
+                            {
+                                <input data-hideinreadonly="@(a.HideInReadOnly)" data-posizione="@(a.Ordinamento)" data-divparent="@(divID)" data-dbrefattribute="@(DBRefAttribute)" style="display:none; width:100%;" data-tipo="@((int)a.Tipo)" id="@(a.Id)" minlength="@(a.MinLength > 0 ? a.MinLength.ToString() : "")" maxlength="@(a.MaxLength > 0 ? a.MaxLength.ToString() : "")" type="text" class="dem-customdata form-control form-control-value" placeholder="@(a.Title)" value="@(a.Valore)" @(a.Required ? "required=\"required\"" : "") onchange="Dematerializzazione_MarkCompilato('@(a.Id)')" />
+                            }
+
+                            <text>
+                                <script type="text/javascript">
+                                        $('#@(a.Id)').on('change', function () {
+                                            Dematerializzazione_MarkCompilato('@(a.Id)');
+                                        });
+                                </script>
+                            </text>
+
+                            if (a.Azioni != null && a.Azioni.Any())
+                            {
+                                foreach (var az in a.Azioni)
+                                {
+                                    string evento = az.Event.GetDescription();
+                                    if (az.Functions != null && az.Functions.Any())
+                                    {
+                                        foreach (var f in az.Functions)
+                                        {
+                                            <text>
+                                                <script type="text/javascript">
+                                                                @{
+                                                                    string fxName = "";
+                                                                    if (!String.IsNullOrEmpty(f.CallerArguments))
+                                                                    {
+                                                                        fxName = String.Format("{0}({1})", f.Name, f.Arguments);
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        fxName = String.Format("{0}()", f.Name);
+                                                                    }
+
+                                                                    <text>
+
+                                                                    var @(f.Name) = new Function("@f.Arguments", @(Html.Raw(Json.Encode(f.Body))));
+
+                                                                    </text>
+                                                                }
+
+                                                                $('#@(az.TargetID)').on('@(evento)', function () {
+                                                                    @{
+                                                                        if (!String.IsNullOrEmpty(f.CallerArguments))
+                                                                        {
+                                                                            <text>
+                                                                            var fx = @(Html.Raw(Json.Encode(String.Format("{0}('{1}')", f.Name, f.CallerArguments))));
+                                                                            </text>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <text>
+                                                                            var fx = @(Html.Raw(Json.Encode(String.Format("{0}()", f.Name))));
+                                                                            </text>
+
+                                                                        }
+                                                                    }
+                                                                    eval(fx);
+                                                                });
+                                                </script>
+                                            </text>
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="col-xs-6" style="padding-left: 0px; padding-right: 0px; ">
+                        @{
+                            if (a.Required)
+                            {
+
+                                @Html.LabelForRequiredObbl(x => a.Label, a.Label, new { @class = "rai-caption", id = lbID, title = a.Label })
+                            }
+                            else
+                            {
+                                @Html.Label(a.Id, a.Label, new { @class = "rai-caption", id = lbID, title = a.Label })
+                            }
+                        }
+                    </div>
+                    <div class="col-xs-6" style="padding-left: 0px; padding-right: 0px; ">
+                        @{
+                            if (a.Tipo == TipologiaAttributoEnum.Data)
+                            {
+                                bool compilato = false;
+                                if (!String.IsNullOrEmpty(a.ValoreInModifica))
+                                {
+                                    compilato = true;
+                                }
+                                <div id="calendario_@(a.Id)" class="input-group mb-md">
+                                    <span onclick="$('#@(a.Id)').datetimepicker('show')" class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                                    <input data-hideinreadonly="@(a.HideInReadOnly)" data-compilato="@(compilato.ToString().ToLower())" data-posizione="@(a.Ordinamento)" data-dbrefattribute="@(DBRefAttribute)" data-divparent="@(divID)" data-tipo="@((int)a.Tipo)" class="dem-customdata js-datetimepicker form-control" onchange="Dematerializzazione_MarkCompilato('@(a.Id)')" data-format="DD/MM/YYYY" data-locale="it" type="text" id="@(a.Id)" placeholder="@(a.Title)" value="@(a.ValoreInModifica)" @(a.Required ? "required=\"required\"" : "")>
+                                </div>
+                            }
+                            else if (a.Tipo == TipologiaAttributoEnum.Numero)
+                            {
+                                <input data-hideinreadonly="@(a.HideInReadOnly)" data-posizione="@(a.Ordinamento)" data-dbrefattribute="@(DBRefAttribute)" data-divparent="@(divID)" style="width:100%;" data-tipo="@((int)a.Tipo)" id="@(a.Id)" name="@(a.Nome)" type="number" class="dem-customdata form-control form-control-value" placeholder="@(a.Title)" value="@(a.ValoreInModifica)" @(a.Required ? "required=\"required\"" : "") onchange="Dematerializzazione_MarkCompilato('@(a.Id)')" />
+                            }
+                            else if (a.Tipo == TipologiaAttributoEnum.Testo)
+                            {
+
+                                if (!String.IsNullOrEmpty(a.UrlLoadData))
+                                {
+                                    if (a.Required)
+                                    {
+                                        @Html.RaiAsyncSelectFor(x => a.ValoreInModifica, a.UrlLoadData, minCharInput: 1, expandView: false, tipoFiltro: SelectFilterType.StartsWith, showCodeInDropdown: false, attributes: new { required = (a.Required ? "required" : ""), data_divparent = divID, data_tipo = (int)a.Tipo, id = a.Id, @class = "dem-customdata", data_dbrefattribute = DBRefAttribute, data_hideinreadonly = a.HideInReadOnly, data_posizione = a.Ordinamento }, onSelectchange: (a.Required ? "Dematerializzazione_MarkCompilato('" + a.Id + "')" : ""))
+                                    }
+                                    else
+                                    {
+                                        @Html.RaiAsyncSelectFor(x => a.ValoreInModifica, a.UrlLoadData, minCharInput: 1, expandView: false, tipoFiltro: SelectFilterType.StartsWith, showCodeInDropdown: false, attributes: new { data_divparent = divID, data_tipo = (int)a.Tipo, id = a.Id, @class = "dem-customdata", data_dbrefattribute = DBRefAttribute, data_posizione = a.Ordinamento, data_hideinreadonly = a.HideInReadOnly })
+                                    }
+                                }
+                                else
+                                {
+                                    <input data-hideinreadonly="@(a.HideInReadOnly)" data-posizione="@(a.Ordinamento)" data-dbrefattribute="@(DBRefAttribute)" data-divparent="@(divID)" style="width:100%;" data-tipo="@((int)a.Tipo)" id="@(a.Id)" minlength="@(a.MinLength > 0 ? a.MinLength.ToString() : "")" maxlength="@(a.MaxLength > 0 ? a.MaxLength.ToString() : "")" type="text" class="dem-customdata form-control form-control-value dem-customdata" placeholder="@(a.Title)" value="@(a.ValoreInModifica)" @(a.Required ? "required=\"required\"" : "") onchange="Dematerializzazione_MarkCompilato('@(a.Id)')" />
+                                }
+                            }
+                            else if (a.Tipo == TipologiaAttributoEnum.Select)
+                            {
+                                @Html.DropDownList(a.Id,
+                                                            a.SelectListItems,
+                                                            a.Title,
+                                                            new { @class = "form-control dem-customdata", data_dbrefattribute = DBRefAttribute, data_hideinreadonly = a.HideInReadOnly, data_divparent = divID, data_posizione = a.Ordinamento, data_tipo = a.Tipo })
+                            }
+                            else if (a.Tipo == TipologiaAttributoEnum.Nota)
+                            {
+                                <textarea data-hideinreadonly="@(a.HideInReadOnly)" data-posizione="@(a.Ordinamento)" data-divparent="@(divID)" data-dbrefattribute="@(DBRefAttribute)" style="" minlength="@(a.MinLength > 0 ? a.MinLength.ToString() : "")" maxlength="@(a.MaxLength > 0 ? a.MaxLength.ToString() : "")" data-tipo="@((int)a.Tipo)" id="@a.Id" class="dem-customdata form-control" title="@a.Title" rows="5" cols="200" @(a.Required ? "required=\"required\"" : "") onchange="Dematerializzazione_MarkCompilato('@(a.Id)')">@a.ValoreInModifica</textarea>
+                            }
+                            else if (a.Tipo == TipologiaAttributoEnum.Radio)
+                            {
+                                if (a.SelectListItems != null && a.SelectListItems.Any())
+                                {
+                                    int count = 0;
+                                    foreach (var s in a.SelectListItems)
+                                    {
+                                        count++;
+                                        <div data-check-group="scelta-@(a.Nome)" class="form-check radio-custom radio-info primary" style="margin-top:10px;">
+                                            <input data-hideinreadonly="@(a.HideInReadOnly)" data-posizione="@(a.Ordinamento)" data-divparent="@(divID)" data-dbrefattribute="@(DBRefAttribute)" data-originalid="@(a.Id)" data-tipo="@((int)a.Tipo)" id="@(a.Id)_@(count)" name="@(a.Nome)" class="dem-customdata" data-check-group="scelta-@(a.Nome)" type="radio" value="@(s.Value)" @(s.Selected ? "checked=\"checked\"" : "") @(a.Required ? "required=\"required\"" : "") onchange="Dematerializzazione_MarkCompilato('@(a.Id)_@(count)')" />
+                                            <label id="radio_@(a.Id)_@(count)" for="@(a.Nome)" class="rai-font-md">
+                                                @(s.Text)
+                                            </label>
+                                        </div>
+
+                                        <text>
+                                            <script type="text/javascript">
+
+                                                    $('#@(a.Id)_@(count)').on('change', function () {
+                                                        Dematerializzazione_MarkCompilato('@(a.Id)_@(count)');
+                                                    });
+                                            </script>
+                                        </text>
+                                    }
+                                }
+                            }
+                            else if (a.Tipo == TipologiaAttributoEnum.Importo)
+                            {
+                                string txImporto = "0.00";
+
+                                if (!String.IsNullOrEmpty(a.Valore))
+                                {
+                                    txImporto = a.Valore;
+                                }
+                                txImporto = Convert.ToDouble(txImporto).ToString("N2");
+                                int tipo = (int)a.Tipo;
+
+                                if (a.Required)
+                                {
+                                    @Html.TextBoxFor(x => a.Id, new { id = a.Id, @class = "dem-customdata form-control form-control-value dem-importo", style = " width: 100%", data_divparent = divID, data_hideinreadonly = a.HideInReadOnly, data_type = "currency", pattern = @"^\d{1,3}(.\d{3})*(\,\d+)?$", placeholder = a.Title, required = "required", value = a.ValoreInModifica, data_tipo = tipo, data_dbrefattribute = DBRefAttribute, data_posizione = a.Ordinamento })
+                                }
+                                else
+                                {
+                                    @Html.TextBoxFor(x => a.Id, new { id = a.Id, @class = "dem-customdata form-control form-control-value dem-importo", style = "width: 100%", data_divparent = divID, data_hideinreadonly = a.HideInReadOnly, data_type = "currency", pattern = @"^\d{1,3}(.\d{3})*(\,\d+)?$", placeholder = a.Title, value = a.ValoreInModifica, data_tipo = tipo, data_dbrefattribute = DBRefAttribute, data_posizione = a.Ordinamento })
+                                }
+                            }
+                            else if (a.Tipo == TipologiaAttributoEnum.FixedHiddenValue)
+                            {
+                                <input data-hideinreadonly="@(a.HideInReadOnly)" data-posizione="@(a.Ordinamento)" data-divparent="@(divID)" data-dbrefattribute="@(DBRefAttribute)" style="display:none; width:100%;" data-tipo="@((int)a.Tipo)" id="@(a.Id)" minlength="@(a.MinLength > 0 ? a.MinLength.ToString() : "")" maxlength="@(a.MaxLength > 0 ? a.MaxLength.ToString() : "")" type="text" class="dem-customdata form-control form-control-value" placeholder="@(a.Title)" value="@(a.Valore)" @(a.Required ? "required=\"required\"" : "") onchange="Dematerializzazione_MarkCompilato('@(a.Id)')" />
+                            }
+
+                            <text>
+                                <script type="text/javascript">
+                                        $('#@(a.Id)').on('change', function () {
+                                            Dematerializzazione_MarkCompilato('@(a.Id)');
+                                        });
+                                </script>
+                            </text>
+
+                            if (a.Azioni != null && a.Azioni.Any())
+                            {
+                                foreach (var az in a.Azioni)
+                                {
+                                    string evento = az.Event.GetDescription();
+                                    if (az.Functions != null && az.Functions.Any())
+                                    {
+                                        foreach (var f in az.Functions)
+                                        {
+                                            <text>
+                                                <script type="text/javascript">
+                                                                @{
+                                                                    string fxName = "";
+                                                                    if (!String.IsNullOrEmpty(f.CallerArguments))
+                                                                    {
+                                                                        fxName = String.Format("{0}({1})", f.Name, f.Arguments);
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        fxName = String.Format("{0}()", f.Name);
+                                                                    }
+
+                                                                    <text>
+
+                                                                    var @(f.Name) = new Function("@f.Arguments", @(Html.Raw(Json.Encode(f.Body))));
+
+                                                                    </text>
+                                                                }
+
+                                                                $('#@(az.TargetID)').on('@(evento)', function () {
+                                                                    @{
+                                                                        if (!String.IsNullOrEmpty(f.CallerArguments))
+                                                                        {
+                                                                            <text>
+                                                                            var fx = @(Html.Raw(Json.Encode(String.Format("{0}('{1}')", f.Name, f.CallerArguments))));
+                                                                            </text>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <text>
+                                                                            var fx = @(Html.Raw(Json.Encode(String.Format("{0}()", f.Name))));
+                                                                            </text>
+
+                                                                        }
+                                                                    }
+                                                                    eval(fx);
+                                                                });
+                                                </script>
+                                            </text>
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    </div>
+                }
+
+            }
+        </div>
+    }
+}

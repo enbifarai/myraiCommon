@@ -1,0 +1,516 @@
+﻿@using myRaiData;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model ModelDash
+<div id="mierichieste">
+    <h2 class="content-heading">Le mie richieste </h2>
+    <div class="block">
+        <ul class="nav nav-tabs nav-tabs-alt" data-toggle="tabs">
+            <li class="active">
+                <a href="#btabswo-static-home">
+                    In approvazione
+                    <span id="" style="margin-left: 5px;margin-top: -4px;" class="badge bg-primary"></span>
+                </a>
+            </li>
+            <li class="">
+                <a href="#btab4">Esiti</a>
+            </li>
+            <li class="pull-right">
+                <ul class="block-options push-10-t push-10-r">
+
+                    <li>
+                        <button type="button" data-toggle="block-option" data-action="refresh_toggle" id="refresh-mie-richieste"
+                                data-refreshurl="/home/refreshMierichieste" data-parentdiv="mierichieste" data-refreshelements="btabswo-static-home,btabswo-static-profile,btab3,btab4"
+                                data-action-mode="demo">
+                            <i class="si si-refresh"></i>
+                        </button>
+                    </li>
+
+                    <li>
+                        <button type="button" data-toggle="block-option" data-action="content_toggle"></button>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+        <div class="block-content tab-content">
+            <div data-toggle="slimscroll" data-height="50px" data-color="#46c37b" data-always-visible="true" style="overflow: hidden; width: auto;"
+                 class="tab-pane active" id="btabswo-static-home">
+                <table class="js-table-sections table table-hover">
+                    <thead>
+                        <tr>
+                            <th style="width: 2%;"></th>
+                            <th style="width: 18%;">Data</th>
+                            <th style="width: 50%;">Richiesta</th>
+                            <th class="hidden-xs" style="width: 20%;">Stato</th>
+                            <th style="width: 15%;"></th>
+                        </tr>
+                    </thead>
+
+                    @if ( Model.MieRichieste != null && Model.MieRichieste
+                        .Where( x => x.IdStatoRichiesta == ( int ) EnumStatiRichiesta.InApprovazione ).Any( ) )
+                    {
+                        foreach ( var item in Model.MieRichieste.Where( x => x.IdStatoRichiesta == ( int ) EnumStatiRichiesta.InseritoSegreteria
+                              || x.IdStatoRichiesta == ( int ) EnumStatiRichiesta.InApprovazione
+                              || x.IdStatoRichiesta == ( int ) EnumStatiRichiesta.InProgressSegreteria
+                            ) )
+                        {
+                            if ( item.IsStorno )
+                            {
+                                @Html.Raw( "<tbody onclick=\"$(this).toggleClass('open')\" class=\"js-table-sections-header\">" )
+                            }
+                            <tr data-richparent="@item.IdRichiesta" data-ndocu="@item.NdocChildrenCsv">
+                                <td class="text-center">
+                                    @if ( item.IsStorno )
+                                    {
+                                        <i class="fa fa-angle-right"></i>
+                                    }
+                                </td>
+                                <td class="font-w600"><em class="text-muted">@item.Data.ToString( "dd MMMM yyyy" )</em></td>
+                                <td>
+                                    <span class="font-w600">@item.TestoRichiesta</span>
+
+                                    <div class="text-warning font-w600">
+                                        @if ( item.IsStorno )
+                                        {
+                                            <em>storno</em>
+                                        }
+                                    </div>
+
+
+                                    @item.Periodo
+                                </td>
+                                <td class=" hidden-xs">
+                                    @if ( item.IdStatoRichiesta == ( int ) EnumStatiRichiesta.InApprovazione )
+                                    {
+                                        <span class="label label-warning">In approvazione</span>
+                                    }
+                                    @if ( item.IdStatoRichiesta == ( int ) EnumStatiRichiesta.InseritoSegreteria )
+                                    {
+                                        <span class="label label-primary">Inserito Segreteria</span>
+                                    }
+                                    @if ( item.IdStatoRichiesta == ( int ) EnumStatiRichiesta.InProgressSegreteria )
+                                    {
+                                        <span class="label label-primary">In Progress Segreteria</span>
+                                    }
+                                </td>
+                                <td>
+                                    @*Se inProgressSegreteria non puo cancellarla piu*@
+                                    @if ( item.IdStatoRichiesta != ( int ) EnumStatiRichiesta.InProgressSegreteria )
+                                    {
+                                        <button onclick="CancellaRichiesta( @item.IdRichiesta,true )" class="js-swal-confirm btn btn-lg btn-default push-5-r" type="button"><i class="fa fa-trash text-danger"></i></button>
+                                    }
+                                </td>
+                            </tr>
+                            if ( item.IsStorno )
+                            {
+                                @Html.Raw( "</tbody>" )
+                            }
+                            if ( item.IsStorno )
+                            {
+                                <tbody>
+                                    <tr>
+                                        <td class="text-center"></td>
+                                        <td colspan="4">
+                                            <ul class="list list-timeline pull-t">
+                                                @if ( item.EccezioneDiRiferimentoPerStorno != null && item.EccezioneDiRiferimentoPerStorno.data_validazione_primo_livello != null )
+                                                {
+                                                    <li>
+                                                        <div class="list-timeline-time">@(( ( DateTime ) item.EccezioneDiRiferimentoPerStorno.data_validazione_primo_livello ).ToString( "dd/MM/yyyy alle HH:mm" ))</div>
+                                                        <i class="fa fa-check list-timeline-icon bg-success"></i>
+                                                        <div class="list-timeline-content">
+                                                            <p class="font-w600">Approvato da parte di @item.EccezioneDiRiferimentoPerStorno.nominativo_primo_livello </p>
+                                                            @if ( !( String.IsNullOrWhiteSpace( item.EccezioneDiRiferimentoPerStorno.nota_rifiuto_o_approvazione ) ) )
+                                                            {
+                                                                <p class="font-s13">Nota: @item.EccezioneDiRiferimentoPerStorno.nota_rifiuto_o_approvazione</p>
+                                                            }
+                                                        </div>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            }
+                        }
+                    }
+                    else
+                    {
+                        @Html.Partial( "_nodati" )
+                    }
+                </table>
+            </div>
+            <!--
+                       <div class="tab-pane" id="btabswo-static-profile">
+                           <table class="js-table-sections table table-hover">
+                               <thead>
+                                   <tr>
+                                       <th style="width: 2%;"></th>
+                                       <th style="width: 18%;">Data</th>
+                                       <th style="width: 50%;">Richiesta</th>
+                                       <th class="hidden-xs" style="width: 20%;">Stato</th>
+                                       <th style="width: 15%;"></th>
+                                   </tr>
+                               </thead>
+
+                               @if (Model.MieRichieste != null && Model.MieRichieste.Where(x => x.IdStatoRichiesta == (int)EnumStatiRichiesta.Approvata).Any())
+                               {
+                                   foreach (var item in Model.MieRichieste.Where(x => x.IdStatoRichiesta == (int)EnumStatiRichiesta.Approvata))
+                                   {
+                                       //myRai.Models.MiaRichiesta rif = null;
+                                       //if (item.IsStorno) rif= Model.MieRichieste.Where (x=>x.num
+                                       if (item.IsStorno)
+                                       {
+            @Html.Raw("<tbody onclick=\"$(this).toggleClass('open')\" class=\"js-table-sections-header\">")
+                                       }
+                                   <tr>
+                                       <td class="text-center">
+                                           @if (item.IsStorno)
+                                           {
+                                               <i class="fa fa-angle-right"></i>
+                                           }
+                                       </td>
+                                       <td class="font-w600"><em class="text-muted">@item.Data.ToString("dd MMMM yyyy")</em></td>
+                                       <td><span class="font-w600">@item.TestoRichiesta</span>
+                                           <div class="text-warning font-w600">
+                                               @if (item.IsStorno)
+                                               {
+                                                   <em>storno</em>
+                                               }
+                                           </div>
+                                           @item.Periodo
+                                       </td>
+                                       <td class=" hidden-xs">
+                                           <span class="label label-success"><i class="fa fa-check"></i>Approvato</span>
+                                       </td>
+                                       <td>
+                                           @if (!item.IsStorno)
+                                           {
+                                               <button onclick="CancellaRichiesta( @item.IdRichiesta ,true)"
+                                                   class="js-swal-confirm btn btn-lg btn-default push-5-r" type="button">
+                                                   <i class="fa fa-trash text-danger"></i>
+                                               </button>
+                                           }
+
+                                       </td>
+                                   </tr>
+                                           if (item.IsStorno)
+                                           {
+                                   @Html.Raw("</tbody>")
+                                           }
+                                           if (item.IsStorno)
+                                           {
+                                   <tbody>
+                                       <tr>
+                                           <td class="text-center"></td>
+                                           <td colspan="3">
+                                               @if (item.EccezioneDiRiferimentoPerStorno != null)
+                                               {
+                                                   if (item.EccezioneDiRiferimentoPerStorno.data_validazione_primo_livello != null)
+                                                   {
+                                                   <span>Approvazione richiesta 1° liv: @(((DateTime)item.EccezioneDiRiferimentoPerStorno.data_validazione_primo_livello).ToString("dd/MM/yyyy alle HH:mm"))</span>
+                                                   }
+
+                                                   <span>da @item.EccezioneDiRiferimentoPerStorno.nominativo_primo_livello</span>
+                                                   if (!(String.IsNullOrWhiteSpace(item.EccezioneDiRiferimentoPerStorno.nota_rifiuto_o_approvazione)))
+                                                   {
+                                                   <br /> <span>Nota: @item.EccezioneDiRiferimentoPerStorno.nota_rifiuto_o_approvazione</span>
+                                                   }
+                                               }
+                                           </td>
+                                       </tr>
+                                   </tbody>
+                                           }
+                                   }
+                               }
+                               else
+                               {
+                                   @Html.Partial("_nodati")
+                               }
+                           </table>
+                       </div>
+
+                       <div class="tab-pane" id="btab3">
+                           <table class="js-table-sections table table-hover">
+                               <thead>
+                                   <tr>
+                                       <th style="width: 2%;"></th>
+                                       <th style="width: 18%;">Data</th>
+                                       <th style="width: 50%;">Richiesta</th>
+                                       <th class="hidden-xs" style="width: 20%;">Stato</th>
+                                       <th style="width: 15%;"></th>
+                                   </tr>
+                               </thead>
+
+                               @if (Model.MieRichieste != null && Model.MieRichieste.Where(x => x.IdStatoRichiesta == (int)EnumStatiRichiesta.Rifiutata).Any())
+                               {
+                                   foreach (var item in Model.MieRichieste.Where(x => x.IdStatoRichiesta == (int)EnumStatiRichiesta.Rifiutata))
+                                   {
+
+                                   <tbody onclick="$(this).toggleClass('open')" class="js-table-sections-header">
+                                       <tr>
+                                           <td class="text-center">
+                                               <i class="fa fa-angle-right"></i>
+                                           </td>
+                                           <td class="font-w600"><em class="text-muted">@item.Data.ToString("dd MMMM yyyy")</em></td>
+                                           <td><span class="font-w600">@item.TestoRichiesta</span>
+
+                                               <div class="text-warning font-w600">
+                                                   @if (item.IsStorno)
+                                                   {
+                                                       <em>storno</em>
+                                                   }
+                                               </div>
+                                               @item.Periodo
+                                           </td>
+                                           <td class=" hidden-xs">
+
+
+                                               <span class="label label-danger"><i class="fa fa-close"></i>Rifiutato</span>
+
+                                           </td>
+                                           <td></td>
+                                       </tr>
+                                   </tbody>
+                                   <tbody>
+                                       <tr>
+                                           <td class="text-center"></td>
+                                           <td colspan="4">
+                                               <span>Rifiutata il: @(((DateTime)item.DataRifiutoLiv1).ToString("dd/MM/yyyy alle HH:mm"))</span>
+                                               <span>da @item.NominativoLiv1</span>
+
+                                               <br />
+                                               <span>Nota: @item.NotaRifiutoOApprovazione</span>
+
+                                           </td>
+                                       </tr>
+                                   </tbody>
+                                   }
+                               }
+                               else
+                               {
+                                   @Html.Partial("_nodati")
+                               }
+
+
+                           </table>
+                       </div>
+                       -->
+            <div class="tab-pane" id="btab4">
+                <table class="js-table-sections table table-hover">
+                    <thead>
+                        <tr>
+                            <th style="width: 2%;"></th>
+                            <th style="width: 18%;">Data</th>
+                            <th style="width: 50%;">Richiesta</th>
+                            <th class="hidden-xs" style="width: 20%;">Stato</th>
+                            <th style="width: 15%;"></th>
+                        </tr>
+                    </thead>
+                    @if ( Model.MieRichieste != null && Model.MieRichieste.Where( x =>
+                           x.IdStatoRichiesta == ( int ) EnumStatiRichiesta.Rifiutata
+                          || x.IdStatoRichiesta == ( int ) EnumStatiRichiesta.Approvata
+                         ).Any( ) )
+                    {
+                        foreach ( var item in Model.MieRichieste.Where( x =>
+                              x.IdStatoRichiesta == ( int ) EnumStatiRichiesta.Rifiutata
+                           || x.IdStatoRichiesta == ( int ) EnumStatiRichiesta.Approvata
+                            ) )
+                        {
+                            if ( item.IdStatoRichiesta == ( int ) EnumStatiRichiesta.Rifiutata )
+                            {
+                                <tbody onclick="$(this).toggleClass('open')" class="js-table-sections-header">
+                                    <tr>
+                                        <td class="text-center">
+                                            <i class="fa fa-angle-right"></i>
+                                        </td>
+                                        <td class="font-w600"><em class="text-muted">@item.Data.ToString( "dd MMMM yyyy" )</em></td>
+                                        <td>
+                                            <span class="font-w600">@item.TestoRichiesta</span>
+
+                                            <div class="text-warning font-w600">
+                                                @if ( item.IsStorno )
+                                                {
+                                                    <em>storno</em>
+                                                }
+                                            </div>
+                                            @item.Periodo
+                                        </td>
+                                        <td class=" hidden-xs">
+
+
+                                            <span class="label label-danger">Rifiutato</span>
+
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </tbody>
+                                <tbody>
+                                    <tr>
+                                        <td class="text-center"></td>
+                                        <td colspan="4">
+                                            <ul class="list list-timeline pull-t">
+                                                <li>
+                                                    <div class="list-timeline-time">@(( ( DateTime ) item.DataRifiutoLiv1 ).ToString( "dd/MM/yyyy alle HH:mm" ))</div>
+                                                    <i class="fa fa-remove  list-timeline-icon bg-danger"></i>
+                                                    <div class="list-timeline-content">
+                                                        <p class="font-w600">Rifiutata da parte di @item.NominativoLiv1 </p>
+                                                        <p class="font-s13">Nota: @item.NotaRifiutoOApprovazione</p>
+                                                    </div>
+                                                </li>
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            }
+
+                            if ( item.IdStatoRichiesta == ( int ) EnumStatiRichiesta.Approvata )
+                            {
+
+                                if ( item.IsStorno || true )
+                                {
+                                    @Html.Raw( "<tbody onclick=\"$(this).toggleClass('open')\" class=\"js-table-sections-header\">" )
+                                }
+                                <tr data-id-rich="@item.EccezioneCorrenteDaDB.MyRai_Richieste.id_richiesta">
+                                    <td class="text-center">
+                                        @if ( item.IsStorno || true )
+                                        {
+                                            <i class="fa fa-angle-right"></i>
+                                        }
+                                    </td>
+                                    <td class="font-w600"><em class="text-muted">@item.Data.ToString( "dd MMMM yyyy" )</em></td>
+                                    <td>
+                                        <span class="font-w600">@item.TestoRichiesta</span>
+                                        <div class="text-warning font-w600">
+                                            @if ( item.IsStorno && item.EccezioneCorrenteDaDB.data_rifiuto_primo_livello == null )
+                                            {
+                                                <em>storno</em>
+                                            }
+                                        </div>
+                                        @item.Periodo
+                                    </td>
+                                    <td class=" hidden-xs">
+                                        <span class="label label-success">Approvato</span>
+                                    </td>
+                                    <td>
+                                        @if ( !item.IsStorno )
+                                        {
+                                            <button onclick="CancellaRichiesta( @item.IdRichiesta ,true)"
+                                                    class="js-swal-confirm btn btn-lg btn-default push-5-r" type="button">
+                                                <i class="fa fa-trash text-danger"></i>
+                                            </button>
+                                        }
+                                    </td>
+                                </tr>
+
+                                @Html.Raw( "</tbody>" )
+
+                                <tbody>
+                                    <tr>
+                                        <td class="text-center"></td>
+                                        <td colspan="4">
+                                            <ul class="list list-timeline pull-t">
+
+                                                @if ( !item.IsStorno )
+                                                {
+                                                    if ( item.EccezioneCorrenteDaDB.id_stato == ( int ) EnumStatiRichiesta.Approvata )
+                                                    {
+
+                                                        <li>
+                                                            <div class="list-timeline-time">
+                                                                @if ( item.EccezioneCorrenteDaDB.data_validazione_primo_livello != null )
+                                                                {
+                                                                    @(( ( DateTime ) item.EccezioneCorrenteDaDB.data_validazione_primo_livello ).ToString( "dd/MM/yyyy alle HH:mm" ))
+                                                                }
+                                                            </div>
+                                                            <i class="fa fa-check list-timeline-icon bg-success"></i>
+                                                            <div class="list-timeline-content">
+                                                                <p class="font-w600">Approvata da parte di @item.EccezioneCorrenteDaDB.nominativo_primo_livello         </p>
+                                                            </div>
+                                                        </li>
+                                                    }
+                                                }
+
+                                                @if ( item.EccezioneDiRiferimentoPerStorno != null )
+                                                {
+                                                    <li>
+                                                        <div class="list-timeline-time">
+                                                            @if ( item.EccezioneDiRiferimentoPerStorno.data_validazione_primo_livello != null )
+                                                            {
+                                                                @(( ( DateTime ) item.EccezioneDiRiferimentoPerStorno.data_validazione_primo_livello ).ToString( "dd/MM/yyyy alle HH:mm" ))
+                                                            }
+                                                        </div>
+                                                        <i class="fa fa-check list-timeline-icon bg-success"></i>
+                                                        <div class="list-timeline-content">
+                                                            <p class="font-w600">Approvata da parte di @item.EccezioneDiRiferimentoPerStorno.nominativo_primo_livello                  </p>
+                                                            @if ( !( String.IsNullOrWhiteSpace( item.EccezioneDiRiferimentoPerStorno.nota_rifiuto_o_approvazione ) ) )
+                                                            {
+                                                                <p class="font-s13">Nota: @item.EccezioneDiRiferimentoPerStorno.nota_rifiuto_o_approvazione</p>
+                                                            }
+                                                        </div>
+                                                    </li>
+                                                }
+
+                                        @if (item.EccezioneCorrenteDaDB .id_stato== (int)EnumStatiRichiesta.Approvata)
+                                        {
+                                       
+                                            
+                                            <li>
+                                            <div class="list-timeline-time">
+                                            @if (item.EccezioneCorrenteDaDB.data_validazione_primo_livello != null)
+                                            {
+                                                @(((DateTime)item.EccezioneCorrenteDaDB.data_validazione_primo_livello).ToString("dd/MM/yyyy alle HH:mm"))
+                                            }  </div>
+                                            <i class="fa fa-remove list-timeline-icon bg-success"></i>
+                                            <div class="list-timeline-content">
+                                            <p class="font-w600">Storno approvato da parte di @item.EccezioneCorrenteDaDB.nominativo_primo_livello                  </p>
+                                                                                        
+                                               @if (!(String.IsNullOrWhiteSpace(item.EccezioneCorrenteDaDB.nota_rifiuto_o_approvazione)))
+                                                { 
+                                       
+                                                <p class="font-s13">Nota: @item.EccezioneCorrenteDaDB.nota_rifiuto_o_approvazione</p>
+                                                }
+                                            
+                                            </div>
+                                        </li>
+                                            
+                                            
+                                        }
+
+                                        
+                                        @if (item.EccezioneCorrenteDaDB .id_stato== (int)EnumStatiRichiesta.Rifiutata)
+                                                {
+                                                    <li>
+                                                        <div class="list-timeline-time">
+                                                            @if ( item.EccezioneCorrenteDaDB.data_validazione_primo_livello != null )
+                                                            {
+                                                                @(( ( DateTime ) item.EccezioneCorrenteDaDB.data_validazione_primo_livello ).ToString( "dd/MM/yyyy alle HH:mm" ))
+                                            }  </div>
+                                                        <i class="fa fa-remove list-timeline-icon bg-danger"></i>
+                                                        <div class="list-timeline-content">
+                                                            <p class="font-w600">Storno rifiutato da parte di @item.EccezioneCorrenteDaDB.nominativo_primo_livello                  </p>
+                                                            @if ( !( String.IsNullOrWhiteSpace( item.EccezioneCorrenteDaDB.nota_rifiuto_o_approvazione ) ) )
+                                                            {
+                                                                <p class="font-s13">Nota: @item.EccezioneCorrenteDaDB.nota_rifiuto_o_approvazione</p>
+                                                            }
+                                                        </div>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            }
+                        }
+                    }
+                    else
+                    {
+                        @Html.Partial( "_nodati" )
+                    }
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

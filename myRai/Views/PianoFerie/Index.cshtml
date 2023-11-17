@@ -1,0 +1,91 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model PianoFerieVM
+
+@{
+    Layout = "~/Views/Shared/_layout2.cshtml";
+    string[] mess = CommonHelper.GetParametri<string>( EnumParametriSistema.MessaggioChiusura );
+}
+
+<section class="body">
+    @Html.Partial( "../Shared/header2" , new NotifichePopupModel( CommonHelper.GetCurrentUserMatricola( ) ) )
+    <div class="inner-wrapper">
+        @Html.Partial( "../Shared/sidebar3" , myRaiHelper.UtenteHelper.getSidebarModel(  ) )
+        <section role="main" class="content-body" style="padding:10px">
+            <main id="main-container">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div id="myPianoFerie">
+                            @Html.Partial( "~/Views/PianoFerie/_box_skeleton.cshtml" )
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </section>
+    </div>
+
+    <aside id="sidebar-right" class="sidebar-right">
+        <div class="nano has-scrollbar">
+            <div class="nano-content" tabindex="0" style="right: -17px;">
+            </div>
+        </div>
+        <div class="nano-pane" style="opacity: 1; visibility: visible;">
+            <div class="nano-slider" style="height: 583px; transform: translate(0px, 0px);"></div>
+        </div>
+    </aside>
+</section>
+@section afterjs {
+
+    @Html.Raw( TempData["script"] )
+
+    <script type="text/javascript">
+
+        function @(Model.WidgetId)_caricaMese( mese, anno, sede )
+        {
+            $( '#@(Model.WidgetId)_tableBody' ).html('<div style="text-align: center;"><i class="fa fa-refresh fa-spin" style="font-size: 22px; color: #ebebeb;"></i></div>');
+            $.ajax( {
+                url: '@Url.Action("GetSituazioneFerie","PianoFerie")',
+                type: "POST",
+                data: {
+                    mese: mese,
+                    anno: anno,
+                    sede: sede
+                },
+                cache: false,
+                success: function ( result )
+                {
+                    $( '#myPianoFerie' ).html( result );
+                }
+            } );
+        }
+
+        function @(Model.WidgetId)_cambiaSede( mese, anno )
+        {
+            var sede = $( '#sediGappSelector option:selected' ).val();
+            $( '#@(Model.WidgetId)_tableBody' ).html( '<div style="text-align: center;"><i class="fa fa-refresh fa-spin" style="font-size: 22px; color: #ebebeb;"></i></div>' );
+
+            $.ajax( {
+                url: '@Url.Action("GetSituazioneFerie","PianoFerie")',
+                type: "POST",
+                data: {
+                    mese: mese,
+                    anno: anno,
+                    sede: sede
+                },
+                cache: false,
+                success: function ( result )
+                {
+                    $( '#myPianoFerie' ).html( result );
+                }
+            } );
+        }
+
+        $( document ).ready( function ()
+        {
+            $( '#myPianoFerie' ).load( "/pianoferie/calendario" );
+        });
+    </script>
+}

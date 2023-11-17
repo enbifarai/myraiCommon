@@ -1,0 +1,488 @@
+﻿@using myRaiGestionale.Controllers;
+@using myRaiHelper
+@model myRaiCommonModel.Gestionale.Valutazione
+
+@{
+    string matricola = Model.Persona.COD_MATLIBROMAT;
+    string nominativo = Model.Persona.DES_COGNOMEPERS + " " + Model.Persona.DES_NOMEPERS;
+    string details1 = Model.Persona.DES_DENOMUNITAORG;
+
+    bool isSuperior = Model.VistaResponsabile;
+
+    string delega = "";
+    if (Model.Delegante != null)
+    {
+        delega = "Delegato a " + Model.Delegante.DELEGATO.SINTESI1.Nominativo();
+    }
+    else if (Model.Delegato != null)
+    {
+        delega = "Delegato da " + Model.Delegato.DELEGANTE.SINTESI1.Nominativo();
+    }
+
+    bool isVisionata = Model.NotaResponsabile != null;
+
+    int minwidth = Model.CanModify ? 70 : 100;
+
+    List<XR_VAL_EVAL_RATING_OWNER> elencoOwner = new List<XR_VAL_EVAL_RATING_OWNER>();
+    if (Model.Rating != null && Model.Rating.Any())
+    {
+        elencoOwner.AddRange(Model.Rating.Select(x => x.XR_VAL_EVAL_RATING_OWNER).Distinct());
+    }
+    else
+    {
+        elencoOwner.Add(new XR_VAL_EVAL_RATING_OWNER() { NAME = Model.Owner, DESCRIPTION = Model.Owner });
+    }
+}
+
+<style>
+    .block-options a[data-toggle="collapse"]:not(.collapsed) i {
+        transform: rotate(180deg);
+    }
+
+    .answers-container {
+        display: flex;
+        align-items: center;
+    }
+
+        .answers-container > .answer-item {
+            min-width: 85px;
+            flex-grow: 1;
+            flex-shrink: 1;
+            flex-basis: 0;
+            text-align: center;
+        }
+
+            .answers-container > .answer-item > .rai-radio {
+                margin-left: 7px;
+            }
+
+            .answers-container > .answer-item.answer-item-graph > div {
+                width: 100%;
+                height: 14px;
+                margin: 2px 0px;
+}
+
+
+
+    .tooltip {
+        z-index: 9999;
+        margin-left: -4px;
+    }
+
+</style>
+
+@*@using (Html.BeginModal("Scheda valutazione"))*@
+@{
+<div class="row">
+        @*<div class="col-sm-12">*@
+        <div class="col-sm-8">
+        <section class="rai panel">
+            <header class="panel-heading">
+                <h2 class="panel-title">Valutazione</h2>
+            </header>
+            <div class="panel-body">
+                <div class="row push-10-t">
+                    <div class="col-sm-5 col-xl-4">
+                        @Html.ProfileWidget(matricola, nominativo, null, details1, delega, "")
+                    </div>
+                    <div class="col-sm-3 col-xl-4">
+                        <div style="float:left;">
+                                @{
+                                    ValutazioniState stato = (ValutazioniState)Model.Stato;
+                                }
+
+                                @switch (stato)
+                                {
+                                    case ValutazioniState.Convalidata:
+                                        break;
+                                    case ValutazioniState.Analizzata:
+                                        break;
+                                    case ValutazioniState.PresaVisione:
+                                        break;
+                                    case ValutazioniState.SviluppoCompilato:
+                                        if (((PianoSviluppo_Base)Model.PianoSviluppo).CanApprove)
+                                        {
+                                            <span class="rai-font-md-bold">Stato</span><br />
+                                            <span class="rai-font-md"><i class="fa fa-warning feedback-warning-color"></i> Richiesta appprovazione del piano di sviluppo</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="rai-font-md-bold">Stato</span><br />
+                                            <span class="rai-font-md">Piano di sviluppo in approvazione</span>
+                                        }
+                                        break;
+                                    case ValutazioniState.SviluppoApprovato:
+                                        break;
+                                    case ValutazioniState.Consolidata:
+                                        break;
+                                    default:
+                                        <span class="rai-font-md-bold">Da compilare entro</span><br />
+                            <span class="rai-font-md">@Model.CampagnaScheda.XR_VAL_CAMPAIGN.DTA_END.ToString("dd MMMM yyyy")</span>
+                                        break;
+                                }
+
+                        </div>
+                        @*<button class="btn rai-btn-small visible-xl-inline-block" style="margin:5px;">Invia un reminder</button>
+                        <button class="btn btn-action-icon hidden-xl" style="margin:5px;"><i class="fa fa-bell"></i></button>*@
+                    </div>
+                        <div class="@(Model.Owner=="Autovalutazione"?"col-sm-4 col-xl-4":"col-sm-2 col-xl-2 ") text-right">
+                            @*<span class="rai-font-md-bold">Valutazione</span><br />*@
+                            @if (elencoOwner.Count() == 1)
+                            {
+                                <div>
+                                    <span class="rai-font-md">Valutazione:</span>
+                                    <label class="rai-font-md" data-val-total="" data-val-total-weight="100" data-val-total-type="@(elencoOwner[0].NAME.ToLower())">-</label>
+                    </div>
+                            }
+                            else
+                            {
+                                foreach (var item in elencoOwner.OrderBy(x => x.ORDER))
+                                {
+                                    <div>
+                                        <span class="rai-font-md">@item.DESCRIPTION:</span>
+                                        <label class="rai-font-md-bold" data-val-total="" data-val-total-weight="100" data-val-total-type="@item.NAME.ToLower()">-</label>
+                                    </div>
+                                }
+                            }
+                        </div>
+                        @if (Model.Owner != "Autovalutazione" || Model.Persona.ID_PERSONA != myRai.Business.CommonManager.GetCurrentIdPersona())
+                        {
+                    <div class="col-sm-2 col-xl-2 text-right">
+                                <a href="#" class="btn btn-action-icon" title="Vai alla scheda precedente" onclick="ValGoToPreviousEval(@(isSuperior ? "true" : "false"), @Model.CampagnaScheda.ID_CAMPAIGN_SHEET, @Model.IdValutazione)"><i class="fa fa-chevron-left"></i></a>
+                                <a href="#" class="btn btn-action-icon" title="Vai alla scheda successiva" onclick="ValGoToNextEval(@(isSuperior ? "true" : "false"), @Model.CampagnaScheda.ID_CAMPAIGN_SHEET, @Model.IdValutazione)"><i class="fa fa-chevron-right"></i></a>
+                    </div>
+                        }
+                </div>
+                    @if (Model.CanModify && Model.ValutatoreEsterno != null)
+                {
+                    @Html.RenderBlock(BlockType.ContentTable, "Valutatore esterno", "subpartial/Modal_Valutazione_ValutatoreEsterno", Model.ValutatoreEsterno)
+                }
+
+                    @if (Model.VistaResponsabile || (Model.ValutatoreEsterno == null && Model.Delegante == null))
+                    {
+                        if (Model.CanModify && Model.Persona.ID_PERSONA != myRai.Business.CommonManager.GetCurrentIdPersona() && Model.AnalizzataDaRuo.HasValue && Model.AnalizzataDaRuo.Value == 0)
+                        {
+                            <div class="rai block block-content-table block-transparent">
+                                <div class="block-header block-content-mini">
+                                    <label class="rai-font-table-heading">Analisi RUO</label>&nbsp;<i class="rai-font-sm-neutral">Inserita il @Model.NotaAnalisiRuo.TMS_TIMESTAMP.ToString("dd/MM/yyyy HH:mm")</i>
+                                </div>
+                                <div class="block-content block-content-mini">
+                                    <div class="rai-table-info">
+                                        <div class="row">
+                                            <div class="col-sm-4">
+                                                <span>Attuale riscontro</span>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                @if (!Model.NotaAnalisiRuo.IND_APPROVED.GetValueOrDefault())
+                                                {
+                                                    <span><i class="fa fa-circle feedback-error-color"></i> Da rivalutare</span>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="row push-10">
+                                            <div class="col-sm-4">
+                                                <label>Nota</label>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                <label>@Model.NotaAnalisiRuo.NOT_TEXT</label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        }
+
+                        @Html.Partial("subpartial/Modal_Valutazione_Scheda", Model)
+
+                }
+                else
+                {
+                    <div class="block" style="margin-bottom:0px;">
+                        <ul class="nav nav-tabs nav-tabs-alt nav-justified" data-toggle="tabs" role="tablist">
+                            <li class="active" role="presentation">
+                                <a href="#tab1" class="rai-badge-anchor" id="hrefTab1" tabindex="0" role="tab" aria-selected="true" aria-controls="tab1">
+                                    La mia valutazione
+                                </a>
+                            </li>
+
+                            @if (Model.Delegante != null)
+                            {
+                                <li class="" role="presentation">
+                                    <a href="#tab2" class="rai-badge-anchor" id="hrefTab2" tabindex="0" role="tab" aria-selected="false" aria-controls="tab2">
+                                        Delegato
+                                    </a>
+                                </li>
+                            }
+
+                            @if (Model.ValutatoreEsterno != null && Model.ValutatoreEsterno.Approved.GetValueOrDefault())
+                            {
+                                <li class="" role="presentation">
+                                    <a href="#tab3" class="rai-badge-anchor" id="hrefTab3" tabindex="0" role="tab" aria-selected="false" aria-controls="tab3">
+                                        Valutatore Esterno
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+
+                        <div class="block-content tab-content">
+                            <div class="tab-pane active" id="tab1" role="tabpanel">
+                                @using (Html.BeginForm("Save_Valutazione", "Valutazioni", FormMethod.Post, new { @id = "form-valutazione" }))
+                                {
+                                    @Html.Partial("subpartial/Modal_Valutazione_Scheda", Model)
+                                }
+                            </div>
+                            @if (Model.Delegante != null)
+                            {
+                                <div class="tab-pane" id="tab2" role="tabpanel">
+                                        @Html.Partial("subpartial/Modal_Valutazione_Scheda", ValutazioniController.Modal_Valutazione_Other(Model.IdValutazione, "Delegato"))
+                                </div>
+                            }
+                            @if (Model.ValutatoreEsterno != null && Model.ValutatoreEsterno.Approved.GetValueOrDefault())
+                            {
+                                <div class="tab-pane" id="tab3" role="tabpanel">
+                                        @Html.Partial("subpartial/Modal_Valutazione_Scheda", ValutazioniController.Modal_Valutazione_Other(Model.IdValutazione, "Valutatore esterno"))
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                    @if (isSuperior && Model.CanRespModify)
+                {
+                        <div class="rai block block-content-table block-transparent push-10-t" id="block-manager" style="@(isSuperior ? "" : "display:none;")">
+                        <div class="block-header block-content-mini">
+                            <label class="rai-font-table-heading">Area responsabile</label>
+                        </div>
+                        <div class="block-content block-content-mini">
+                            @using (Html.BeginForm("Save_Valutazione_PresaVisione", "Valutazioni", FormMethod.Post, new { @id = "form-valutazione-nota" }))
+                                {
+                                    if (isVisionata)
+                            {
+                                <div class="row push-10">
+                                    <div class="col-sm-4">
+                                                <span>Attuale riscontro</span>
+                                    </div>
+                                            <div class="col-sm-8">
+                                                @if (Model.NotaResponsabile.IND_APPROVED.GetValueOrDefault())
+                                                {
+                                                    <span><i class="fa fa-circle feedback-success-color"></i> In accordo</span>
+                                                }
+                                                else
+                                                {
+                                                    <span><i class="fa fa-circle feedback-error-color"></i> In disaccordo</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                    <div class="row push-10">
+                                        <div class="col-sm-4">
+                                            <label class="rai-font-md">Nota <span class="rai-font-sm-neutral">(facoltativa)</span></label>
+                                        </div>
+                                    <div class="col-sm-8">
+                                            <textarea rows="4" id="valNotaResp" class="form-control">@(isVisionata?Model.NotaResponsabile.NOT_TEXT:"")</textarea>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="rai-btn-fill">
+                                            @*<button class="btn btn-md rai-btn-primary" onclick="ValSalvaValutazionePresaVisione(this,'form-valutazione-nota', @Model.IdValutazione, @Model.CampagnaScheda.ID_CAMPAIGN_SHEET)">
+                                        Invia
+                                    </button>*@
+                                            <button class="btn btn-md btn-action-icon text-danger" onclick="ValSalvaValutazionePresaVisione(this,'form-valutazione-nota', @Model.IdValutazione, @Model.CampagnaScheda.ID_CAMPAIGN_SHEET, false)">
+                                                <i class="glyphicon glyphicon-remove"></i>
+                                                Non sono d'accordo
+                                            </button>
+                                                <button class="btn btn-md btn-action-icon text-success" onclick="ValSalvaValutazionePresaVisione(this,'form-valutazione-nota', @Model.IdValutazione, @Model.CampagnaScheda.ID_CAMPAIGN_SHEET, true)">
+                                                <i class="fa fa-fw fa-check"></i>
+                                                Sono d'accordo
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                    else if (isSuperior && !Model.CanRespModify)
+                    {
+
+                        using (Html.BeginBlock(BlockType.ContentTable, "Area responsabile"))
+                        {
+
+                            <div class="rai-table-info">
+                                <div class="row push-10">
+                                    <div class="col-sm-3">
+                                        <span>Riscontro</span>
+                                    </div>
+                                    <div class="col-sm-9">
+                                        @if (Model.NotaResponsabile.IND_APPROVED.GetValueOrDefault())
+                                        {
+                                            <span><i class="fa fa-circle feedback-success-color"></i> In accordo</span>
+                                        }
+                                        else
+                                        {
+                                            <span><i class="fa fa-circle feedback-error-color"></i> In disaccordo</span>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-3">
+                                        <label>Nota <span class="rai-font-sm-neutral">(facoltativa)</span></label>
+                                    </div>
+                                    <div class="col-sm-9">
+                                        <span>@Model.NotaResponsabile.NOT_TEXT</span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                    }
+            </div>
+        </section>
+    </div>
+
+        <div class="col-sm-4">
+            <div class="panel rai">
+                <div class="panel-heading">
+                    <label class="panel-title">Declaratorie</label>
+                </div>
+                <div class="panel-body rai-font-md">
+                    <div style="overflow:hidden;overflow-y:auto;max-height:77.7vh;padding:2px;" id="tableDecl">
+                        <table class="table rai-table-info rai-table-vcenter table-striped" data-decl="TRASVERSALI">
+                            <tr>
+                                <td colspan="3" class="bg-neutrals-xl-40 text-center">
+                                    <span class="text-bold">Competenze trasversali</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="bg-neutrals-xl-20 rai-font-sm-bold">Scala</td>
+                                <td class="bg-neutrals-xl-20 rai-font-sm-bold">Livello di possesso</td>
+                                <td class="bg-neutrals-xl-20 rai-font-sm-bold">Descrizione</td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">1</td>
+                                <td>Mai</td>
+                                <td>Non mette mai in pratica il comportamento</td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">2</td>
+                                <td>Raramente</td>
+                                <td>Mette in pratica il comportamento solo in alcune occasioni, sporadicamente</td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">3</td>
+                                <td>Mediamente</td>
+                                <td>Mette in pratica il comportamento mediamente/abitualmente</td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">4</td>
+                                <td>Spesso</td>
+                                <td>Mette in pratica il comportamento nella maggior parte delle situazioni</td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">5</td>
+                                <td>Sempre</td>
+                                <td>Mette in pratica il comportamento in tutte le occasioni che si presentano, con costanza</td>
+                            </tr>
+                        </table>
+                        <table class="table rai-table-info rai-table-vcenter table-striped" data-decl="SPECIALISTICHE">
+                            <tr>
+                                <td colspan="3" class="bg-neutrals-xl-40 text-center">
+                                    <span class="text-bold">Competenze specialistiche</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="bg-neutrals-xl-20 rai-font-sm-bold">Scala</td>
+                                <td class="bg-neutrals-xl-20 rai-font-sm-bold">Livello di possesso</td>
+                                <td class="bg-neutrals-xl-20 rai-font-sm-bold">Descrizione</td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">1</td>
+                                <td>Base</td>
+                                <td>Conoscenza della materia di base, applicazione non autonoma nello svolgimento delle attività subordinata al coordinamento operativo da parte di supervisori</td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">2</td>
+                                <td>Parziale</td>
+                                <td>Possesso della competenza sufficiente per una applicazione operativa in situazioni standardizzate di cui sia prevedibile l’evoluzione, in presenza di una figura che ne indirizzi l’applicazione</td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">3</td>
+                                <td>Adeguata</td>
+                                <td>Padronanza della materia che consente di operare pienamente, di produrre risultati in sostanziale autonomia anche in situazioni non prettamente ordinarie</td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">4</td>
+                                <td>Avanzata</td>
+                                <td>Conoscenza elevata dei diversi aspetti che caratterizzano la competenza, tale da consentire il raggiungimento di risultati anche in situazioni di complessità elevata ed in contesti di incertezza</td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">5</td>
+                                <td>Eccellente</td>
+                                <td>Padronanza della materia a livello di riferimento professionale all’interno dell’azienda tale da consentire la diffusione della materia stessa e da permettere il miglioramento continuo</td>
+                            </tr>
+                        </table>
+                        <table class="table rai-table-info rai-table-vcenter table-striped" data-decl="PRESTAZIONE">
+                            <tr>
+                                <td colspan="3" class="bg-neutrals-xl-40 text-center">
+                                    <span class="text-bold">Prestazioni</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="bg-neutrals-xl-20 rai-font-sm-bold">Scala</td>
+                                <td class="bg-neutrals-xl-20 rai-font-sm-bold">Livello di<br /> efficacia</td>
+                                <td class="bg-neutrals-xl-20 rai-font-sm-bold">Descrizione</td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">1</td>
+                                <td>Mai</td>
+                                <td>Non risulta efficace in nessuna occasione</td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">2</td>
+                                <td>Raramente</td>
+                                <td>Efficace solo in alcune occasioni</td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">3</td>
+                                <td>Mediamente</td>
+                                <td>Mediamente efficace</td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">4</td>
+                                <td>Spesso</td>
+                                <td>Efficace nella maggior parte delle situazioni</td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">5</td>
+                                <td>Sempre</td>
+                                <td>Sempre efficace</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+</div>
+
+
+
+        </div>
+    </div>
+}
+
+<script language="javascript">
+    InitDatePicker();
+
+    function CalcMedia() {
+        var list = $('label[data-val-total-type]');
+        for (var i = 0; i < list.length; i++) {
+            var owner = $(list[i]).attr('data-val-total-type');
+            ValCalcMediaPond(owner);
+        }
+    }
+    CalcMedia();
+
+    ValModalValutazioneUpdateStatus();
+    //$('#_dataStart').data("DateTimePicker").minDate(moment());
+    //$('#_dataEnd').data("DateTimePicker").minDate(moment());
+</script>

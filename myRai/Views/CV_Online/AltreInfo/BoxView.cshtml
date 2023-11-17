@@ -1,0 +1,300 @@
+﻿@model myRaiCommonModel.cvModels.cvModel
+@using myRaiCommonManager
+@using myRaiHelper;
+@using System.Data;
+@{
+    var lista = Model.altreInformazioni;
+
+    string[] AccountUtenteServizio = CommonHelper.GetParametri<string>(EnumParametriSistema.AccountUtenteServizio);
+    myRai.it.rai.servizi.hrce.hrce_ws hrcews = new myRai.it.rai.servizi.hrce.hrce_ws();
+    myRai.it.rai.servizi.hrce.retData retdata = new myRai.it.rai.servizi.hrce.retData();
+    hrcews.Credentials = new System.Net.NetworkCredential(AccountUtenteServizio[0], AccountUtenteServizio[1], "RAI");
+    List<string> matricole = new List<string>();
+    matricole.Add(myRaiHelper.CommonHelper.GetCurrentUserMatricola());
+    string[] AppKeyhrce = CommonHelper.GetParametri<string>(EnumParametriSistema.AppKeyhrce);
+
+    Boolean usaServ = CommonHelper.GetParametro<Boolean>(EnumParametriSistema.UsaServizioPerProfiloPersonale);
+    if (usaServ)
+    {
+        retdata = hrcews.getDatiUtente(AppKeyhrce[0], matricole.ToArray());
+    }
+    else
+    {
+        retdata.ds = ProfiloPersonaleManager.GetProfiloPersonaleFromDB(myRaiHelper.CommonHelper.GetCurrentUserMatricola());
+    }
+    //retdata = hrcews.getDatiUtente(AppKeyhrce[0], matricole.ToArray());
+
+    //Se il profilo non è stato caricato ci deve essere stato qualche errore nel caricamento. 
+    //Per quanto riguarda il caricamento da db, da problemi su sviluppo, generando un'eccezione loggata su db
+    //Quindi, se i dati sono nulli non ha senso far generare un'eccezione anche qui
+    //if (retdata.ds == null)
+    //{
+    //    return;
+    //}
+
+    DataTable dr_recapiti = new DataTable();
+    try
+    {
+        if (retdata != null && retdata.ds != null)
+        {
+            dr_recapiti = retdata.ds.Tables["Table1"];
+        }
+        else
+        {
+            dr_recapiti = null;
+        }
+    }
+    catch (Exception ex)
+    {
+        dr_recapiti = null;
+    }
+
+    string matricolaUtente = myRaiHelper.CommonHelper.GetCurrentUserMatricola();
+    if (dr_recapiti!=null && (dr_recapiti.Rows.Count==0 || dr_recapiti.Rows[0]["Matricola"].ToString() != matricolaUtente))
+    {
+        dr_recapiti = null;
+    }
+
+}
+
+<section class="rai panel">
+    <header class="panel-heading bg-primary">
+        <h2 class="panel-title">
+            Dati Personali
+            <span tabindex="-1" id="popDatiPers" data-popover-content="#myPopover" class="push-5-l" data-toggle="popover" data-html="true" data-container="body" data-placement="right" title="" data-content="<ul><li>Nella sezione sono visualizzati i dati anagrafici come presenti negli archivi aziendali.</li><li>Per eventuali chiarimenti o modifiche rivolgersi al proprio Ufficio Personale.</li><li>Ti ricordiamo che i titolari del trattamento dei dati sono le funzioni del Personale, come già specificato nel testo della Privacy</li></ul>" data-original-title="&nbsp;" data-trigger="focus">
+                <i id="" class="fa fa-info-circle"></i>
+            </span>
+        </h2>
+        <div class="panel-actions rai-panel-actions">
+            <button href="#" class="btn btn-action-icon" data-toggle="modal" data-target="#frkModalAltreInfo" onclick="CaricaAltreInfoModal();"><span class="fa fa-plus"></span></button>
+        </div>
+    </header>
+
+    <div class="panel-body panel-body-nopadding-xs ">
+        <table class="js-table-sections table table-hover rai-table rai-table-vcenter">
+            <tbody>
+                @{
+                    
+                    string primo_elemento = "";
+
+                    <tr>
+                        <td class="text-left">
+                            <p class="text-bold " >Residenza</p>
+                            @if (dr_recapiti!=null)
+                            {
+                            <p class="">@dr_recapiti.Rows[0]["Indirizzores"].ToString()</p>
+                            }
+                            else
+                            {
+                            <p class="">-</p>   
+                            }
+                        </td>
+                        <td class="@primo_elemento rai-table-td-action" style="vertical-align:top!important">
+                            <a class="btn-action-icon" href="#" data-toggle="modal" data-target="#frkModalAltreInfo"><i class="fa fa-pencil"></i></a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">
+                            <p class="text-bold " style="">Citt&agrave; Residenza</p>
+                            @if (dr_recapiti!=null)
+                            {
+                            <p class="">@dr_recapiti.Rows[0]["cittares"].ToString() (@dr_recapiti.Rows[0]["provres"].ToString())</p>
+                            }
+                            else
+                            {
+                            <p class="">-</p>   
+                            }
+                        </td>
+                        <td class=" rai-table-td-action" style="vertical-align:top!important">
+                            <a class="btn-action-icon" href="#" data-toggle="modal" data-target="#frkModalAltreInfo"><i class="fa fa-pencil"></i></a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">
+                            <p class="text-bold " style="">CAP Residenza</p>
+                            @if (dr_recapiti!=null)
+                            {
+                            <p class="">@dr_recapiti.Rows[0]["capres"].ToString()</p>
+                            }
+                            else
+                            {
+                            <p class="">-</p>   
+                            }
+                        </td>
+                        <td class=" rai-table-td-action" style="vertical-align:top!important">
+                            <a class="btn-action-icon" href="#" data-toggle="modal" data-target="#frkModalAltreInfo"><i class="fa fa-pencil"></i></a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <div class="collapse" id="collAltreInfo">
+            <table class="js-table-sections table table-hover rai-table" style="border-top: 1px solid #ddd;">
+                <tbody>
+                    <tr>
+                        <td class="text-left full-width">
+                            <p class="text-bold " style="">Domicilio</p>
+                            @if (dr_recapiti!=null)
+                            {
+                            <p class="">@dr_recapiti.Rows[0]["Indirizzodom"].ToString()</p>
+                            }
+                            else
+                            {
+                            <p class="">-</p>   
+                            }
+                        </td>
+                        <td class=" rai-table-td-action" style=" vertical-align:top!important">
+                            <a class="btn-action-icon" href="#" data-toggle="modal" data-target="#frkModalAltreInfo"><i class="fa fa-pencil"></i></a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-left full-width">
+                            <p class="text-bold " style="">Citt&agrave; Domicilio</p>
+                            @if (dr_recapiti!=null)
+                            {
+                            <p class="">@dr_recapiti.Rows[0]["cittadom"].ToString() (@dr_recapiti.Rows[0]["provdom"].ToString())</p>
+                            }
+                            else
+                            {
+                            <p class="">-</p>   
+                            }
+                        </td>
+                        <td class=" rai-table-td-action" style=" vertical-align:top!important">
+                            <a class="btn-action-icon" href="#" data-toggle="modal" data-target="#frkModalAltreInfo"><i class="fa fa-pencil"></i></a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-left full-width">
+                            <p class="text-bold " style="">CAP Domicilio</p>
+                            @if (dr_recapiti!=null)
+                            {
+                            <p class="">@dr_recapiti.Rows[0]["capdom"].ToString()</p>
+                            }
+                            else
+                            {
+                            <p class="">-</p>   
+                            }
+                        </td>
+                        <td class=" rai-table-td-action" style="vertical-align:top!important">
+                            <a class="btn-action-icon" href="#" data-toggle="modal" data-target="#frkModalAltreInfo"><i class="fa fa-pencil"></i></a>
+                        </td>
+                    </tr>
+                    @if (@lista._numTel1 !=null && lista._tipoTel1!= null)
+                    {
+                    <tr>
+                        <td class="text-left full-width">
+                            <p class="text-bold " style="">Contatto Telefonico (1)</p>
+                            <p class="">@lista._tipoTel1: @lista._numTel1</p>
+                        </td>
+                        <td class=" rai-table-td-action" style="vertical-align:top!important">
+                            <a class="btn-action-icon" href="#" data-toggle="modal" data-target="#frkModalAltreInfo"><i class="fa fa-pencil"></i></a>
+                        </td>
+                    </tr>
+                    }
+                    @if (@lista._numTel2 != null && @lista._tipoTel2 != null)
+                    {
+                    <tr>
+                        <td class="text-left full-width">
+                            <p class="text-bold " style="">Contatto Telefonico (2)</p>
+                            <p class="">@lista._tipoTel2: @lista._numTel2</p>
+                        </td>
+                        <td class=" rai-table-td-action" style="vertical-align:top!important">
+                            <a class="btn-action-icon" href="#" data-toggle="modal" data-target="#frkModalAltreInfo"><i class="fa fa-pencil"></i></a>
+                        </td>
+                    </tr>
+                    }
+                    @if (@lista._email !=null)
+                    {
+                    <tr>
+                        <td class="text-left full-width">
+                            <p class="text-bold " style="">Email</p>
+                            <p class="">@lista._email</p>
+                        </td>
+                        <td class=" rai-table-td-action" style="vertical-align:top!important">
+                            <a class="btn-action-icon" href="#" data-toggle="modal" data-target="#frkModalAltreInfo"><i class="fa fa-pencil"></i></a>
+                        </td>
+                    </tr>
+                    }
+                    @if (@lista._sitoWeb !=null)
+                    {
+                    <tr>
+                        <td class="text-left full-width">
+                            <p class="text-bold " style="">Sito Web</p>
+                            <p class="">@lista._sitoWeb</p>
+                        </td>
+                        <td class=" rai-table-td-action" style=" vertical-align:top!important">
+                            <a class="btn-action-icon" href="#" data-toggle="modal" data-target="#frkModalAltreInfo"><i class="fa fa-pencil"></i></a>
+                        </td>
+                    </tr>
+                    }
+                    @if (@lista._note !=null)
+                    {
+                    <tr>
+                        <td class="text-left full-width">
+                            <p class="text-bold " style="">Altre Informazioni</p>
+                            <p class="">@lista._note</p>
+                        </td>
+                        <td class=" rai-table-td-action" style="vertical-align:top!important">
+                            <a class="btn-action-icon" href="#" data-toggle="modal" data-target="#frkModalAltreInfo"><i class="fa fa-pencil"></i></a>
+                        </td>
+                    </tr>
+                    }
+                    @{
+                        if (lista._tipoPatente != null)
+                        {
+                            var lista_patenti = lista._tipoPatente.ToList();
+
+                            foreach (var elem in lista_patenti)
+                            {
+                        <tr>
+                            <td class="text-left full-width">
+                                <p class="text-bold " style="">Patente</p>
+                                <p class="">@elem.DescTipoPatente</p>
+                            </td>
+                            <td class=" rai-table-td-action" style="vertical-align:top!important">
+                                <a class="btn-action-icon" href="#" data-toggle="modal" data-target="#frkModalAltreInfo"><i class="fa fa-pencil"></i></a>
+                            </td>
+                        </tr>
+                            }
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+
+        <div class="rai section-bottom">
+            <a id="toggle-AltreInfo" data-toggle="collapse" data-target="#collAltreInfo" class="apri-panel" onclick="toggleAngle('toggle-AltreInfo')"><i class="fa fa-2x push-5-t font-w600 fa-angle-down text-white"></i></a>
+        </div>
+    </div>
+</section>
+
+<div class="rai modal fade right modalCheck" id="frkModalAltreInfo" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="rai modal-content" id="divModalContainer">
+            @Html.Partial("AltreInfo/partials/_modalInserimento", Model.altreInformazioni)
+        </div>
+    </div>
+</div>
+
+<script>
+    $('[data-toggle="popover"]').popover({
+        template: '<div class="popover"><div class="arrow"></div><div><span style="float:left; width:100%; display:inline;" class="popover-title"></span><span class="customPopOverCloser" style="float:right; width:5%; margin-top: -30px; margin-left: -3px; dispay:inline; cursor:pointer;">x</span></div><div class="clearfix"></div><div class="popover-content"></div></div>',
+        html: true
+    });
+
+    function CaricaAltreInfoModal() {
+        $('#divModalContainer').html('');
+        $.ajax({
+            url: '@Url.Action("CaricaAltreInfoModal", "CV_Online")',
+            type: "POST",
+            async: false,
+            success: function (data) {
+                $('#divModalContainer').html(data);
+                InizializzaTuttoDopoAjax('contatti');
+            },
+            error: function (result) {
+            }
+        });
+    }
+</script>

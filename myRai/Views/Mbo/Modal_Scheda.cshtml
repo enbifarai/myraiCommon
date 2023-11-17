@@ -1,0 +1,999 @@
+﻿@using MVCProject.Custom_Helpers
+@using myRaiHelper
+@using myRaiCommonModel.Gestionale
+@using myRai.Business
+@model MboScheda
+
+@{
+    var currentIdPersona = CommonManager.GetCurrentIdPersona();
+
+    var obQuant = Model.Obiettivi.Where(x => x.Tipo == "quantitativo");
+    var obQual = Model.Obiettivi.Where(x => x.Tipo == "qualitativo");
+
+    int countQual = obQual != null ? obQual.Count() : 0;
+    int countQuant = obQuant != null ? obQuant.Count() : 0;
+
+    int countOb = Model.Obiettivi.Count();
+    int minOb = 2;
+    int maxOb = 5;
+
+    var minValOb = 1;
+    var maxValOb = 99;
+    var stepOb = 1;
+
+    var minConsValOb = 1;
+    var maxConsValOb = 100;
+    var stepConsOb = 1;
+
+    decimal sumPesi = Model.Obiettivi.Sum(x => x.PesoSpecifico);
+
+    var currentState = Model.OperStato;
+
+    bool showButton = Model.IdPersonaValutato != currentIdPersona && ((Model.IsSecondoRiporto && currentState.ID_STATO == (int)MboState.ObiettiviSottopostiAlDir)
+                        || (!Model.IsSecondoRiporto && Model.IdPersonaResp == currentIdPersona && (currentState.ID_STATO == (int)MboState.DaCompilare || currentState.ID_STATO == (int)MboState.Convalidati)));
+
+    bool editConsuntivazione = (!Model.IsSecondoRiporto && Model.IdPersonaResp == currentIdPersona && (currentState.ID_STATO == (int)MboState.Convalidati));
+    bool showConsuntivazione = (!Model.IsSecondoRiporto && Model.IdPersonaResp == currentIdPersona && (currentState.ID_STATO == (int)MboState.Convalidati || currentState.ID_STATO == (int)MboState.Consutivati));
+
+}
+
+@using (Html.BeginModal("Dettaglio scheda"))
+{
+    <input type="hidden" value="@Model.Id" id="idScheda" />
+    <input type="hidden" value="7" id="idTipologia" />
+    using (Html.BeginOnePageNav("bc-scheda", Model.PersValutato.Nominativo))
+    {
+        <input type="hidden" id="_hasRiporto" value="@(Model.IdPersonaSecRiporto.HasValue?"true":"false")" />
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="panel rai">
+                    <div class="panel-heading">
+                        <span class="panel-title">Dettaglio scheda</span>
+                    </div>
+                    <div class="panel-body" style="@(!showButton?"padding-bottom:0px;":"")">
+                        @*@Html.Partial("../Anagrafica/Header_DatiDipendente", Model.Anagrafica)*@
+                        <div class="row">
+                            <div class="col-xs-12">
+                                <div class="row push-20-t">
+                                    <div class="col-xl-1 col-md-3 col-sm-4" style="padding-top:5px;">
+                                        @Html.ProfileWidget(Model.PersValutato.Matricola, htmlImgAttributes: new { @class = "img-doubled" })
+                                    </div>
+
+                                    <div class="col-xl-11 col-md-9 col-sm-8">
+                                        <div class="row push-10">
+                                            <div class="col-xs-12">
+                                                <span class="rai-font-text-heading-bold">@Model.PersValutato.Nome  @Model.PersValutato.Cognome</span><br />
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-xl-3 col-sm-6 push-10">
+                                                <span class="rai-font-md-bold">Matricola</span><br />
+                                                <span class="rai-font-md-neutral-bold">@Model.PersValutato.Matricola</span>
+                                            </div>
+                                            <div class="col-xl-3 col-sm-6 push-10">
+                                                <span class="rai-font-md-bold">Servizio</span><br />
+                                                <span class="rai-font-md-neutral-bold">@Model.PersValutato.DesServizio</span>
+                                            </div>
+                                            <div class="col-xl-3 col-sm-6 push-10">
+                                                <span class="rai-font-md-bold">Struttura</span><br />
+                                                <span class="rai-font-md-neutral-bold">@Model.PersValutato.DesStruttura</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @*@if (Model.Subalterni.Any())
+                            {
+                                <div class="rai block block-content-table">
+                                    <div class="block-header">
+                                        <label class="rai block-title">Incarichi</label>
+                                    </div>
+                                    <div class="block-content  rai" style="padding-top:0px;">
+                                        <div class="row">
+                                            <div class="col-sm-12">
+                                                <table class="table rai-table rai-table-vcenter js-table-sections">
+                                                    @foreach (var item in Model.Subalterni.GroupBy(x => x.CodStruttura))
+                                                    {
+                                                        <tbody class="js-table-sections-header">
+                                                            <tr style="height:auto">
+                                                                <td>
+                                                                    <label class="rai-font-md">@item.First().DesStruttura</label>
+                                                                </td>
+                                                                <td class="text-right">
+                                                                    <span class="rai-font-md">@item.Count() risorse</span>
+                                                                </td>
+                                                                <td class="rai-table-td-toggle">
+                                                                    <i class="fa fa-chevron-down"></i>
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                        <tbody>
+                                                            @foreach (var sub in item)
+                                                            {
+                                                                <tr>
+                                                                    <td colspan="3">
+                                                                        @Html.ProfileWidget(sub.Matricola, sub.Nominativo)
+                                                                    </td>
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    }
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }*@
+
+                        @if (Model.Note.Count > 0)
+                        {
+                            <div class="rai block block-transparent block-content-table" style="@(Model.Note.Count()>0?"margin-left:-15px;margin-right:-15px;":"")">
+                                <div class="block-header block-content-mini" style="@(Model.Note.Count()>0?"border:none;padding-left:15px;padding-right:15px;":"")">
+                                    <label class="block-title">Note</label>
+                                </div>
+                                <div class="block-content block-content-mini bg-neutrals-xl-10" style="padding-left:15px;padding-right:15px;">
+                                    @foreach (var item in Model.Note)
+                                    {
+                                        string nominativo = item.Autore.Nominativo;
+                                        if (item.Autore.Matricola == CommonManager.GetCurrentUserMatricola())
+                                        {
+                                            nominativo = "Tu";
+                                        }
+
+                                        <div class="row push-10-t push-10">
+                                            <div class="col-sm-12">
+                                                <div class="rai panel">
+                                                    <div class="panel-body">
+                                                        <div class="row">
+                                                            <div class="col-sm-12">
+                                                                @Html.ProfileWidget(item.Autore.Matricola, nominativo, null, String.Format("{0:dd/MM/yyyy} alle {0:HH:mm}", item.DataInserimento))
+                                                            </div>
+                                                        </div>
+                                                        @if (item.Stato != null)
+                                                        {
+                                                            <div class="row">
+                                                                <div class="col-sm-12">
+                                                                    <div class="border-left-80" style="margin-left:46px; margin-top:5px; padding:5px 10px;line-height:18px;">
+                                                                        <span class="rai-font-sm-bold">@item.Stato.NOMINATIVO</span><br />
+                                                                        <span class="rai-font-sm-neutral">@item.Stato.XR_MBO_STATI.DES_DESCRIZIONE</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                        @if (item.IdObiettivo != null && Model.Obiettivi.Any(x => x.Id == item.IdObiettivo))
+                                                        {
+                                                            var ob = Model.Obiettivi.FirstOrDefault(x => x.Id == item.IdObiettivo);
+                                                            <div class="row">
+                                                                <div class="col-sm-12">
+                                                                    <div class="border-left-80" style="margin-left:46px; margin-top:5px; padding:5px 10px;line-height:18px;">
+                                                                        <span class="rai-font-sm-bold">Obiettivo @ob.Tipo</span><br />
+                                                                        <span class="rai-font-sm-neutral">@ob.Descrizione</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                        <div class="row">
+                                                            <div class="col-sm-12">
+                                                                <p class="rai-font-md push-10-t" style="margin-left:46px;">@item.Testo</p>
+                                                            </div>
+                                                        </div>
+                                                        @if (item.IdPersonaDest.HasValue)
+                                                        {
+                                                            <div class="row">
+                                                                <div class="col-sm-12 text-right">
+                                                                    <span class="rai-font-sm-neutral"><i class="fa fa-user"></i> Visibile solo a @(item.Destinatario.Matricola == CommonManager.GetCurrentUserMatricola() ? "te" : item.Destinatario.Nominativo)</span>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        @if (Model.Allegati != null && Model.Allegati.Any())
+                        {
+                            <div class="block block-content-table rai">
+                                <div class="block-header">
+                                    <label class="block-title">Allegati</label>
+                                </div>
+                                <div class="block-content">
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <table class="table rai-table rai-table-bordered rai-table-vcenter">
+                                                @foreach (var item in Model.Allegati)
+                                                {
+                                                    <tr>
+                                                        <td>
+                                                            <span class="rai-font-md-bold">@item.COD_TITLE</span>
+                                                            @if (!String.IsNullOrWhiteSpace(item.DES_ALLEGATO))
+                                                            {
+                                                                <br />
+                                                                <span class="rai-font-sm">@item.DES_ALLEGATO</span>
+                                                            }
+                                                        </td>
+                                                        <td class="text-right">
+                                                            <a href="@Url.Action("GetDoc","Mbo", new { idDoc=item.ID_ALLEGATO })" target="_blank" class="btn rai-btn-small">Vedi</a>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="row" id="alertPerc" style="@(Model.Obiettivi.Count()>0 && (Model.Obiettivi.Count()<minOb || sumPesi != 100)?"":"display:none")">
+                            <div class="col-sm-12">
+                                <div class="alert alert-danger">
+                                    @*<h4 style="margin:0px;"><b>Attenzione</b></h4><br/>*@
+                                    <div id="divAlertOb" style="@(Model.Obiettivi.Count()<minOb?"":"display:none")">
+                                        <span><b>Obiettivi insufficienti</b></span><br />
+                                        <span>Devono essere indicati almeno @minOb obiettivi</span>
+                                    </div>
+                                    <div id="divAlertPerc" style="@(Model.Obiettivi.Count() >= minOb && sumPesi != 100?"":"display:none")">
+                                        <span><b>Totale pesi</b></span><br />
+                                        <span>La somma dei pesi specifici deve raggiungere quota 100. <span id="spanPerc"></span></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="elencoObiettivi" class="rai block block-transparent block-content-table remove-margin-bottom" style="@(countOb>0?"margin-left:-15px;margin-right:-15px;":"")">
+                            <div class="block-header block-content-mini" style="@(countOb>0?"border:none;padding-left:15px;padding-right:15px;":"")">
+                                <label class="block-title">Elenco obiettivi</label>
+                                @if (currentState.ID_STATO == (int)MboState.DaCompilare && !Model.IsSecondoRiporto && Model.IdPersonaResp == currentIdPersona)
+                                {
+                                    <span class="rai-font-sm-neutral text-italic">(Minimo @minOb)</span>
+                                }
+                                <div class="block-options">
+                                    @if (Model.Obiettivi != null && Model.Obiettivi.Any())
+                                    {
+                                        <a class="btn rai-btn-small" href="@Url.Action("GetSchedaPDF", "Mbo", new { idScheda = Model.Id })"><i class="fa fa-external-link"></i>  Esporta in PDF</a>
+                                    }
+                                    @if (currentState.ID_STATO == (int)MboState.DaCompilare && !Model.IsSecondoRiporto && Model.IdPersonaResp == currentIdPersona)
+                                    {
+                                        <button class="btn btn-action-icon  @(countOb >= maxOb ? "disable" : "")" onclick="MboDettaglioObiettivo(@Model.Id, 'qualitativo', 0)"><i class="fa fa-plus"></i></button>
+                                    }
+                                </div>
+                            </div>
+                            @if (countOb > 0)
+                            {
+                                decimal coeffRiparto = 0;
+                                if (editConsuntivazione && Model.Obiettivi.Any(x => x.Annullato))
+                                {
+                                    decimal totDaRipartire = Model.Obiettivi.Where(x => x.Annullato).Sum(x => x.PesoSpecifico);
+                                    decimal totAttivi = Model.Obiettivi.Where(x => !x.Annullato).Sum(x => x.PesoSpecifico);
+                                    coeffRiparto = totDaRipartire / totAttivi;
+                                }
+
+                                <div class="block-content block-content-mini bg-neutrals-xl-10" style="padding-left:15px;padding-right:15px;">
+                                    @foreach (var item in Model.Obiettivi)
+                                    {
+                                        <div class="row push-10-t push-10 ">
+                                            <div class="col-sm-12">
+                                                <div class="panel">
+                                                    <div class="panel-body">
+                                                        <div class="row push-5">
+                                                            <div class="col-sm-6">
+                                                                <span class="rai-font-md-bold">Obiettivo @item.Tipo</span>
+                                                            </div>
+                                                            <div class="col-sm-6 text-right">
+                                                                @if (!showConsuntivazione)
+                                                                {
+                                                                    if ((currentState.ID_STATO == (int)MboState.DaCompilare) && !Model.IsSecondoRiporto && Model.IdPersonaResp == currentIdPersona)
+                                                                    {
+                                                                        <div style="display:inline-block;width:32px;height:32px;padding-top: 5px;vertical-align:middle;text-align: right;padding-right: 5px;cursor: pointer;" class="interactive-primary-color fa fa-minus" onclick="MboObMinus(@item.Id)"></div>
+                                                                    }
+                                                                    <input style="display:inline-block;width:150px;margin-top:2px" @((currentState.ID_STATO == (int)MboState.DaCompilare) && !Model.IsSecondoRiporto && Model.IdPersonaResp == currentIdPersona ? "" : "disabled=\"disabled\"") type="range" min="0" max="100" step="1" value="@item.PesoSpecifico.ToString("0")" data-ob-id="@item.Id" aria-labelledby="ob-label-@item.Id" oninput="MboUpdatePerc(this)" onchange="MboUpdatePerc(this)" />
+                                                                    if ((currentState.ID_STATO == (int)MboState.DaCompilare) && !Model.IsSecondoRiporto && Model.IdPersonaResp == currentIdPersona)
+                                                                    {
+                                                                        <div style="display:inline-block;width:32px;height:32px;padding-top: 5px;vertical-align:middle;text-align: left;padding-left: 5px;cursor: pointer;" class="interactive-primary-color fa fa-plus" onclick="MboObPlus(@item.Id)"></div>
+                                                                    }
+                                                                }
+                                                                else
+                                                                {
+                                                                    <em class="rai-font-md push-5-r">Peso:</em>
+                                                                }
+
+                                                                <label class="rai-label rai-label-interactive" style="min-width:5em" id="ob-label-@item.Id">
+                                                                    @if (!item.Annullato)
+                                                                    {
+                                                                        decimal pesoEffettivo = Math.Round(coeffRiparto * (item.Annullato ? 0 : 1) * item.PesoSpecifico + item.PesoSpecifico, 1);
+                                                                        <span>@pesoEffettivo.ToString("F1", System.Globalization.CultureInfo.GetCultureInfo("it-IT"))%</span>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span>-</span>
+                                                                    }
+                                                                </label>
+
+                                                            </div>
+                                                        </div>
+                                                        <div class="row push-5">
+                                                            <div class="col-sm-12">
+                                                                <span class="rai-font-sm-neutral-bold">Descrizione</span>
+                                                            </div>
+                                                            <div class="col-sm-12">
+                                                                <span class="rai-font-md">@item.Descrizione</span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row push-5">
+                                                            <div class="col-sm-12">
+                                                                <span class="rai-font-sm-neutral-bold">Risultato atteso</span>
+                                                            </div>
+                                                            <div class="col-sm-12">
+                                                                <span class="rai-font-md">@item.RisultatoAtteso</span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-sm-12">
+                                                                <span class="rai-font-sm-neutral-bold">Strategico per direzione</span>
+                                                            </div>
+                                                            <div class="col-sm-12">
+                                                                @if (String.IsNullOrWhiteSpace(item.StrategicoDirezione))
+                                                                {
+                                                                    <span class="rai-font-md">-</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span class="rai-font-md">@item.StrategicoDirezione</span>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            @if (Model.IdPersonaValutato != currentIdPersona && !Model.IsSecondoRiporto && Model.IdPersonaResp == currentIdPersona && (currentState.ID_STATO == (int)MboState.DaCompilare))
+                                                            {
+                                                                <div class="col-sm-12 text-right">
+                                                                    <button class="btn rai-btn-small" onclick="MboDettaglioObiettivo(@Model.Id, '@item.Tipo', @item.Id)">Modifica</button>
+                                                                    <button class="btn btn-action-icon" onclick="MboEliminaObiettivo(@item.Id, @Model.Id)"><i class="fa fa-trash"></i></button>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </div>
+
+                                                    @if (showConsuntivazione)
+                                                    {
+                                                        <div class="panel-footer" style="border-top:1px solid #F6F8F8">
+                                                            <div class="row">
+                                                                <div class="col-sm-12 text-right">
+                                                                    @if (editConsuntivazione)
+                                                                    {
+                                                                        <input type="hidden" data-cons-ob-ann="@item.Id" value="@item.Annullato" />
+                                                                    }
+
+                                                                    @if (!item.Annullato)
+                                                                    {
+                                                                        <span class="rai-font-md-neutral-bold">Completamento</span>
+                                                                        <div data-cont-cons-compl="@item.Id" class="form-group form-group-sm rai" style="display:inline-block;">
+                                                                            @*@if (editConsuntivazione)
+                                                                                {
+                                                                                    <div style="display:inline-block;width:32px;height:32px;padding-top: 5px;vertical-align:middle;text-align: right;padding-right: 5px;cursor: pointer;" class="interactive-primary-color fa fa-minus" onclick="MboConsObMinus(@item.Id)"></div>
+                                                                                }
+                                                                                <input style="display:inline-block;width:150px;margin-top:2px" type="range" min="0" max="100" step="1" value="@item.Completamento.GetValueOrDefault().ToString("0")" data-cons-ob-id="@item.Id" aria-labelledby="ob-cons-label-@item.Id" oninput="MboConsUpdatePerc(this)" onchange="MboConsUpdatePerc(this)" />
+                                                                                @if (editConsuntivazione)
+                                                                                {
+                                                                                    <div style="display:inline-block;width:32px;height:32px;padding-top: 5px;vertical-align:middle;text-align: left;padding-left: 5px;cursor: pointer;" class="interactive-primary-color fa fa-plus" onclick="MboConsObPlus(@item.Id)"></div>
+                                                                                }
+                                                                                <label class="rai-label rai-label-interactive" style="min-width:5em;margin-top:-2px;" id="ob-cons-label-@item.Id">@item.Completamento.GetValueOrDefault().ToString("0")%</label>*@
+                                                                            <input type="text" pattern="((100)|([0-9]{1,2}(,[0-9])?))" data-allowedchar="[0-9,]" placeholder="0,0"
+                                                                                   class="form-control rai" style="width:4em; display:inline-block;" required="required"
+                                                                                   data-cons-ob-id="@item.Id" aria-labelledby="ob-cons-label-@item.Id"
+                                                                                   @if (item.Completamento.HasValue) { @: value="@item.Completamento.Value.ToString("F1",System.Globalization.CultureInfo.GetCultureInfo("it-IT"))"
+                                                                                   }
+                                                                                   onkeyup="MboConsUpdatePerc()" />
+                                                                            <span class="rai-font-md">%</span>
+                                                                            @if (editConsuntivazione)
+                                                                            {
+                                                                                <button class="btn btn-action-icon feedback-error-color push-5-l" style="margin-top:-4px" title="Annulla obiettivo" onclick="MboToggleAnnullaObiettivo(@item.Id, @Model.Id, true)"><i class="fa fa-times"></i></button>
+                                                                            }
+                                                                        </div>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <div data-cont-cons-ann="@item.Id" style="display:inline-block;">
+                                                                            <label class="rai-font-sm-bold feedback-error-color">Annullato</label>
+                                                                            @if (editConsuntivazione)
+                                                                            {
+                                                                                <button class="btn btn-action-icon push-5-l" style="margin-top:-4px" title="Ripristina obiettivo" onclick="MboToggleAnnullaObiettivo(@item.Id, @Model.Id, false)"><i class="fa fa-undo"></i></button>
+                                                                            }
+                                                                        </div>
+                                                                    }
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="block-content block-content-mini">
+                                    <div class="row push-10-t push-10">
+                                        <div class="col-sm-12 text-center"><span class="rai-font-md-neutral">Non ci sono dati da visualizzare</span></div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        @if (Model.IdPersonaValutato != currentIdPersona && currentState.ID_STATO == (int)MboState.DaCompilare && !Model.IsSecondoRiporto && Model.IdPersonaResp == currentIdPersona)
+                        {
+                            <div class="row push-10-t">
+                                <div class="col-sm-12">
+                                    <div class="rai-btn-fill">
+                                        <button class="btn rai-btn-secondary disable" id="btnSaveObPerc" onclick="MboSaveObPerc(true)">Salva modifiche</button>
+                                        <button class="btn rai-btn-primary @(countOb < minOb || sumPesi != 100 ? "disable" : "") " id="btnConfermaAssegn" onclick="MboConfermaAssegnazione(@Model.Id)">Conferma assegnazione</button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        @if (Model.IdPersonaValutato != currentIdPersona && currentState.ID_STATO == (int)MboState.ObiettiviSottopostiAlDir && Model.IsSecondoRiporto && Model.IdPersonaSecRiporto == currentIdPersona)
+                        {
+                            <div class="row push-10-t">
+                                <div class="col-sm-12">
+                                    <div class="rai-btn-fill">
+                                        <button class="btn btn-action-icon btn-action-icon-text feedback-error-color" onclick="MboCheckDir(@Model.Id, false)"><i class="fa fa-times"></i> Rifiuta</button>
+                                        <button class="btn btn-action-icon btn-action-icon-text feedback-success-color" onclick="MboCheckDir(@Model.Id, true)"><i class="fa fa-check"></i> Accetta</button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        @if (editConsuntivazione)
+                        {
+                            <div class="row push-10-t">
+                                <div class="col-sm-12">
+                                    <div class="rai-btn-fill">
+                                        <button class="btn rai-btn-secondary" disabled="disabled" id="btnSaveConsObPerc" onclick="MboSaveObPerc(true, 'cons')">Salva modifiche</button>
+                                        <button class="btn rai-btn-primary" @(Model.Obiettivi.All(x => x.Annullato || x.Completamento.HasValue) ? "" : "disabled=\"disabled\"") id="btnConfermaCons" onclick="MboConfermaConsuntivazione(@Model.Id)">Conferma consuntivazione</button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    }
+}
+
+
+<script>
+    function MboObMinus(idOb) {
+        var valOb = parseInt($('[data-ob-id="' + idOb + '"]').val());
+        if (valOb > @minValOb) {
+            valOb = valOb - @stepOb;
+            $('[data-ob-id="' + idOb + '"]').val(valOb);
+            MboUpdatePerc($('[data-ob-id="' + idOb + '"]'));
+        }
+    }
+    function MboObPlus(idOb) {
+        var valOb = parseInt($('[data-ob-id="' + idOb + '"]').val());
+        if (valOb < @maxValOb) {
+            valOb = valOb + @stepOb;
+            $('[data-ob-id="' + idOb + '"]').val(valOb);
+            MboUpdatePerc($('[data-ob-id="' + idOb + '"]'));
+        }
+    }
+    function MboConsObMinus(idOb) {
+        event.preventDefault();
+        var valOb = parseInt($('[data-cons-ob-id="' + idOb + '"]').val());
+        if (valOb > @minConsValOb) {
+            valOb = valOb - @stepConsOb;
+            $('[data-cons-ob-id="' + idOb + '"]').val(valOb);
+            MboConsUpdatePerc($('[data-cons-ob-id="' + idOb + '"]'));
+        }
+    }
+    function MboConsObPlus(idOb) {
+        event.preventDefault();
+        var valOb = parseInt($('[data-cons-ob-id="' + idOb + '"]').val());
+        if (valOb < @maxConsValOb) {
+            valOb = valOb + @stepConsOb;
+            $('[data-cons-ob-id="' + idOb + '"]').val(valOb);
+            MboConsUpdatePerc($('[data-cons-ob-id="' + idOb + '"]'));
+        }
+    }
+
+    function MboConfermaAssegnazione(idScheda) {
+        event.preventDefault();
+
+        swal({
+            title: 'Sei sicuro?',
+            text: "Vuoi confermare l'assegnazione degli obiettivi?",
+            type: 'question',
+            customClass: 'rai',
+            showCancelButton: true,
+            confirmButtonText: 'Conferma',
+            cancelButtonText: 'Annulla',
+            reverseButtons: true
+        }).then(function () {
+            MboSaveObPerc(false);
+
+            $.ajax({
+                url: "/Mbo/Scheda_ConfermaAssegnazione",
+                type: "POST",
+                cache: false,
+                dataType: 'html',
+                data: { idScheda: idScheda },
+                success: function (data) {
+                    switch (data) {
+                        case "OK":
+                            var hasRiporto = $('#_hasRiporto').val();
+                            var textMessage = "La scheda è pronta per essere sottoposta a RUO";
+                            if (hasRiporto=='true') {
+                                textMessage = "La scheda è stata sottoposta al Direttore";
+                            }
+
+                            swal({
+                                title: "Salvataggio effettuato",
+                                text: textMessage,
+                                type: 'success',
+                                customClass: 'rai'
+                            });
+                            $('#modal-mbo-half').modal('hide');
+                            $('#btnCerca').click();
+
+                            break;
+                        default:
+                            swal({
+                                title: "Oops...",
+                                text: data,
+                                type: 'error',
+                                customClass: 'rai'
+                            });
+                    }
+                },
+                error: function (a, b, c) {
+                    swal({
+                        title: "Oops...",
+                        text: c,
+                        type: 'error',
+                        customClass: 'rai'
+                    });
+                }
+            });
+        });
+    }
+
+    function MboConfermaConsuntivazione(idScheda) {
+        event.preventDefault();
+
+        swal({
+            title: 'Sei sicuro?',
+            text: "Vuoi confermare la consuntivazione degli obiettivi?",
+            type: 'question',
+            customClass: 'rai',
+            showCancelButton: true,
+            confirmButtonText: 'Conferma',
+            cancelButtonText: 'Annulla',
+            reverseButtons: true
+        }).then(function () {
+            MboSaveObPerc(false);
+
+            $.ajax({
+                url: "/Mbo/Scheda_ConfermaConsuntivazione",
+                type: "POST",
+                cache: false,
+                dataType: 'html',
+                data: { idScheda: idScheda },
+                success: function (data) {
+                    switch (data) {
+                        case "OK":
+                            var textMessage = "La scheda è stata consuntivata";
+
+                            swal({
+                                title: "Salvataggio effettuato",
+                                text: textMessage,
+                                type: 'success',
+                                customClass: 'rai'
+                            });
+                            $('#modal-mbo-half').modal('hide');
+                            $('#btnCerca').click();
+
+                            break;
+                        default:
+                            swal({
+                                title: "Oops...",
+                                text: data,
+                                type: 'error',
+                                customClass: 'rai'
+                            });
+                    }
+                },
+                error: function (a, b, c) {
+                    swal({
+                        title: "Oops...",
+                        text: c,
+                        type: 'error',
+                        customClass: 'rai'
+                    });
+                }
+            });
+        });
+    }
+
+    function MboDettaglioObiettivo(idScheda, tipo, idOb) {
+        var title = "Dettaglio obiettivo " + tipo;
+        if (idOb == 0) {
+            title = "Nuovo obiettivo"; + tipo;
+        }
+
+        RaiOPNavGoToNext("bc-scheda", "bc-scheda-obb", title, '/Mbo/Dettaglio_Obiettivo', {
+            idScheda: idScheda,
+            tipo: tipo,
+            idOb: idOb
+        }, "POST");
+    }
+
+    function MboUpdatePerc(input) {
+        var label = $(input).attr('aria-labelledby');
+        $('#' + label).text($(input).val() + "%");
+
+        MboCheckPerc();
+    }
+    function MboConsUpdatePerc(input) {
+        var label = $(input).attr('aria-labelledby');
+        $('#' + label).text($(input).val() + "%");
+
+        MboCheckConsPerc();
+    }
+
+
+
+    function MboCheckPerc() {
+        var sumPerc = 0;
+        var list = $('[data-ob-id]');
+        for (var i = 0; i < list.length; i++) {
+            sumPerc += parseInt($(list[i]).val());
+        }
+
+        var showAlertPerc = false;
+        var showAlertNumOb = false;
+
+        if (list.length >=@minOb) {
+            showAlertNumOb = false;
+
+            if (sumPerc != 100) {
+                showAlertPerc = true;
+            } else {
+                showAlertPerc = false;
+            }
+
+        } else {
+            showAlertNumOb = true;
+        }
+
+        if (showAlertPerc || showAlertNumOb) {
+            $('#alertPerc').show();
+            $('#btnConfermaAssegn').addClass('disable');
+
+            if (showAlertPerc) {
+                //$('#spanPerc').text('Valore attuale: '+sumPerc+'%');
+                $('#divAlertPerc').show();
+            }
+            else
+                $('#divAlertPerc').hide();
+
+            if (showAlertNumOb)
+                $('#divAlertOb').show();
+            else
+                $('#divAlertOb').hide();
+
+            if (showAlertPerc && showAlertNumOb)
+                $('#hrAlert').show();
+            else
+                $('#hrAlert').hide();
+        } else {
+            $('#alertPerc').hide();
+            $('#btnConfermaAssegn').removeClass('disable');
+        }
+
+        $('#btnSaveObPerc').removeClass('disable');
+    }
+
+    function MboCheckConsPerc() {
+        let list = $('[data-cons-ob-id]');
+        let obOk = 0;
+        for (let i = 0; i < list.length; i++) {
+            let idOb = list[i].getAttribute('data-cons-ob-id');
+            if (list[i].value != '')
+                obOk++;
+            else if ($('[data-cons-ob-ann="' + idOb + '"]').val() == 'true') {
+                obOk++;
+            }
+        }
+        if (obOk == list.length)
+            $('#btnConfermaCons').prop('disabled', false);
+        else
+            $('#btnConfermaCons').prop('disabled', true);
+
+        $('#btnSaveConsObPerc').prop('disabled', false);
+    }
+
+    function MboSaveObPerc(async, tipo) {
+        let obSelector = '[data-ob-id]';
+        let urlSave = '/Mbo/Save_ObiettiviPerc';
+        if (tipo=='cons') {
+            obSelector = '[data-cons-ob-id]';
+            urlSave = '/Mbo/Save_ConsObiettiviPerc';
+        }
+        let attrName = obSelector.replace('[', '').replace(']', '');
+
+        let idOb = new Array();
+        let valueOb = new Array();
+        let annOb = new Array();
+
+        let list = $(obSelector);
+        for (let i = 0; i < list.length; i++) {
+            let id = $(list[i]).attr(attrName);
+            idOb.push(id);
+            valueOb.push($(list[i]).val());
+            if (tipo == 'cons') {
+                annOb.push($('input[data-cons-ob-ann="' + id + '"]').val());
+            }
+        }
+
+        let dataObj = null;
+        if (tipo == 'cons') {
+            dataObj = JSON.stringify({ ids: idOb, values: valueOb, annullati:annOb });
+        }
+        else {
+            dataObj = JSON.stringify({ ids: idOb, values: valueOb });
+        }
+
+        $.ajax({
+            async: async,
+            url: urlSave,
+            type: "POST",
+            cache: false,
+            contentType: 'application/json',
+            data: dataObj,
+            success: function (data) {
+                switch (data) {
+                    case "OK":
+                        if (async != false) {
+                            swal({
+                                title: "Salvataggio effettuato",
+                                text: "Gli obiettivi sono stati aggiornati correttamente",
+                                type: 'success',
+                                customClass: 'rai'
+                            });
+                            if (tipo != 'cons') {
+                            $('#btnSaveObPerc').addClass('disable');
+                            }
+                        }
+                        break;
+                    default:
+                        swal({
+                            title: 'Oops...',
+                            text: data,
+                            type: 'error',
+                            customClass: 'rai'
+                        });
+                }
+            }
+        });
+    }
+
+    function MboCheckDir(idScheda, approva) {
+        if (approva) {
+            swal({
+                title: 'Sei sicuro?',
+                text: "Vuoi approvare gli obbiettivi?",
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sì!',
+                cancelButtonText: 'Annulla',
+                reverseButtons: 'true',
+                customClass: 'rai'
+            }).then(function () {
+                InternalMboCheckDir(idScheda, approva, '');
+            });
+        } else {
+            swal({
+                title: 'Sei sicuro?',
+                text: "Inserisci una nota per rifiutare l'assegnazione",
+                input: 'textarea',
+                showCancelButton: true,
+                confirmButtonText: 'Conferma',
+                cancelButtonText: 'Annulla',
+                reverseButtons: 'true',
+                customClass: 'rai',
+                preConfirm: function (value) {
+                    return new Promise(function (resolve, reject) {
+                        if (value == "") {
+                            reject("Inserisci il testo della nota")
+                        }
+                        else {
+                            resolve()
+                        }
+                    });
+                }
+            }).then(function (result) {
+                var nota = result;
+                InternalMboCheckDir(idScheda, approva, nota);
+            });
+        }
+    }
+    function InternalMboCheckDir(idScheda, approva, nota) {
+        $.ajax({
+            url: "/Mbo/Save_ValutazioneDirettore",
+            type: "POST",
+            cache: false,
+            dataType: 'html',
+            data: { idScheda:idScheda, parere: approva, nota:nota},
+            success: function (data) {
+                switch (data) {
+                    case "OK":
+                        var alertMsg = '';
+                        if (approva) {
+                            alertMsg = "La scheda è pronta per essere sottoposta a RUO";
+                        } else {
+                            alertMsg = "La scheda è tornata in compilazione";
+                        }
+                        swal({ title: "OK", text:alertMsg, type:'success', customClass:'rai'});
+
+                        $('#modal-mbo-half').modal('hide');
+                        $('#btnCerca').click();
+
+                        break;
+                    default:
+                        swal({ title: "Oops...", text: data, type: 'error', customClass: 'rai' });
+                }
+            }
+        });
+    }
+
+
+    function MboEliminaObiettivo(idOb, idScheda) {
+        event.preventDefault();
+
+        swal({
+            title: 'Sei sicuro?',
+            text: "Vuoi eliminare l'obiettivo?",
+            type: 'question',
+            customClass: 'rai',
+            showCancelButton: true,
+            confirmButtonText: 'Conferma',
+            cancelButtonText: 'Annulla',
+            reverseButtons: true
+        }).then(function () {
+            //var idOb = $('#form-obiettivo #Id').val()
+            if (idOb > 0) {
+                $.ajax({
+                    url: "/Mbo/Elimina_Obiettivo",
+                    type: "POST",
+                    cache: false,
+                    dataType: 'html',
+                    data: { idOb: idOb },
+                    success: function (data) {
+                        switch (data) {
+                            case "OK":
+                                swal({
+                                    title: "Salvataggio effettuato",
+                                    text: "L'obiettivo è stato eliminato correttamente",
+                                    type: 'success',
+                                    customClass: 'rai'
+                                });
+
+                                debugger
+                                //var idScheda = $('#form-obiettivo #IdScheda').val();
+                                //MboOpenModalScheda(idScheda);
+                                RaiUpdateWidget("elencoObiettivi", "@Url.Action("Modal_Scheda","Mbo")", "replaceId", { idScheda: idScheda, loadIncarichi: false }, false, function () { MboCheckPerc(); }, null, "POST");
+                                RaiOPGotoMain("bc-scheda");
+                                break;
+                            default:
+                                swal({
+                                    title: "Ops...",
+                                    text: data,
+                                    type: 'error',
+                                    customClass: 'rai'
+                                });
+                        }
+                    },
+                    error: function (a, b, c) {
+                        swal({
+                            title: "Oops...",
+                            text: c,
+                            type: 'error',
+                            customClass: 'rai'
+                        });
+                    }
+                });
+            } else {
+                //RaiUpdateWidget("elencoObiettivi", "@Url.Action("Modal_Scheda","Mbo")", "html", { idScheda: idScheda }, null, null, null, "POST");
+                RaiOPGotoMain("bc-scheda");
+            }
+        });
+    }
+
+    function MboToggleAnnullaObiettivo(idOb, idScheda, annulla) {
+        event.preventDefault();
+        if (annulla) {
+            swal({
+                title: 'Sei sicuro?',
+                text: "Inserisci una nota per annullare l'obiettivo",
+                input: 'textarea',
+                showCancelButton: true,
+                confirmButtonText: 'Conferma',
+                cancelButtonText: 'Annulla',
+                reverseButtons: 'true',
+                customClass: 'rai',
+                preConfirm: function (value) {
+                    return new Promise(function (resolve, reject) {
+                        if (value == "") {
+                            reject("Inserisci il testo della nota")
+                        }
+                        else {
+                            resolve();
+                        }
+                    });
+                }
+            }).then(function (result) {
+                MboSaveObPerc(false, 'cons');
+                var nota = result;
+                InternalAnnullaObiettivo(idOb, idScheda, annulla, nota);
+            });
+        } else {
+            swal({
+                title: 'Sei sicuro?',
+                text: "Vuoi ripristinare l'obiettivo?",
+                type: 'question',
+                customClass: 'rai',
+                showCancelButton: true,
+                confirmButtonText: 'Conferma',
+                cancelButtonText: 'Annulla',
+                reverseButtons: true
+            }).then(function () {
+                MboSaveObPerc(false, 'cons');
+                InternalAnnullaObiettivo(idOb, idScheda, annulla, null);
+            });
+        }
+    }
+
+    function InternalAnnullaObiettivo(idOb, idScheda, annulla, nota) {
+        $.ajax({
+            url: "/Mbo/Annulla_Obiettivo",
+            type: "POST",
+            cache: false,
+            dataType: 'html',
+            data: { idOb: idOb, idScheda:idScheda, annulla:annulla, nota:nota },
+            success: function (data) {
+                switch (data) {
+                    case "OK":
+                        swal({
+                            title: "Salvataggio effettuato",
+                            text: annulla?"L'obiettivo è stato annullato correttamente":"L'obiettivo è stato ripristinato correttamente",
+                            type: 'success',
+                            customClass: 'rai'
+                        });
+                        RaiUpdateWidget("bc-scheda", "@Url.Action("Modal_Scheda","Mbo")", "replaceId", { idScheda: idScheda, loadIncarichi: false }, false, null, null, "POST");
+                        break;
+                    default:
+                        swal({
+                            title: "Ops...",
+                            text: data,
+                            type: 'error',
+                            customClass: 'rai'
+                        });
+                }
+            },
+            error: function (a, b, c) {
+                swal({
+                    title: "Oops...",
+                    text: c,
+                    type: 'error',
+                    customClass: 'rai'
+                });
+            }
+        });
+    }
+</script>

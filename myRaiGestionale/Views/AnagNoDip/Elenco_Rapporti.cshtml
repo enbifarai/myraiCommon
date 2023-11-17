@@ -1,0 +1,83 @@
+﻿@using myRaiCommonModel
+@using myRaiHelper
+@model AnagNoDipRapporti
+
+@using (Html.BeginPanel(PanelType.Panel, "Elenco rapporti", true))
+{
+    if (Model.Elenco != null && Model.Elenco.Any())
+    {
+        <div cass="row push-20">
+            <div class="col-sm-12">
+                <table class="table rai-table rai-table-vcenter">
+                    <thead>
+                        <tr>
+                            <th class="no-padding-left"><span>Tipologia</span></th>
+                            <th><span>Anno rif.</span></th>
+                            <th><span>Periodo</span></th>
+                            <th><span>Società</span></th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var rapp in Model.Elenco.OrderByDescending(x => x.RappDataInizio).ThenByDescending(x => x.RappDataFine))
+                        {
+                            <tr>
+                                <td class="no-padding-left">
+                                    <span>@rapp.Codice - @rapp.Descrizione @(rapp.NumErede ?? "" )</span>
+                                    @if (!String.IsNullOrWhiteSpace(rapp.MatricolaCollegata))
+                                    {
+                                        <br />
+                                        <span class="rai-font-sm-neutral">Matricola collegata: @rapp.MatricolaCollegata - @CommonHelper.GetNominativoPerMatricola(rapp.MatricolaCollegata)</span>
+                                    }
+                                </td>
+                                <td class="ws-nowrap">
+                                    @if (rapp.RappAnnoRiferimento.HasValue)
+                                    {
+                                        <span>@rapp.RappAnnoRiferimento.Value</span>
+                                    }
+                                    else
+                                    {
+                                        <span>-</span>
+                                    }
+                                </td>
+                                <td class="ws-nowrap">
+                                    <span>@rapp.RappDataInizio.ToString("dd/MM/yyyy") - @rapp.RappDataFine.ToString("dd/MM/yyyy")</span>
+                                </td>
+                                <td class="ws-nowrap">
+                                    <span>@rapp.DesSocieta</span>
+                                </td>
+                                <td class="text-right no-padding-right" style="width:1%;white-space:nowrap;">
+                                    @if (Model.CanModify)
+                                    {
+                                        <button class="btn btn-action-icon rapp-edit" onclick="AnagNoDipModalRapp('@rapp.Codice', '@rapp.Societa', '@rapp.RappDataInizio')"><i class="fa fa-pencil"></i></button>
+                                    }
+                                    @if (Model.CanDelete)
+                                    {
+                                        <button class="btn btn-action-icon rapp-del" onclick="AnagNoDipDelRapp('@rapp.Codice', '@rapp.Societa', '@rapp.RappDataInizio')"><i class="fa fa-trash-o"></i></button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row push-20">
+            @Html.Partial("_NoDatiDiv")
+        </div>
+    }
+
+
+
+    <div class="row rapp-add">
+        <div class="col-sm-12">
+            @if (Model.CanAdd)
+            {
+                <button class="btn rai-btn-small full-width" onclick="AnagNoDipModalRapp(0)">Aggiungi nuovo rapporto</button>
+            }
+        </div>
+    </div>
+}

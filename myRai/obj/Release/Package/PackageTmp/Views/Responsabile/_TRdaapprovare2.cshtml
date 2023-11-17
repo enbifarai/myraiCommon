@@ -1,0 +1,384 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model EccezioneApprovatoreVM
+
+@{
+    Boolean NonPuoVistare = Model.RichiedeVisto && Model.Eccezione.dataCompleta < Model.DataChiusura;
+    string ariaLabel = CommonHelper.ToTitleCase( Model.Eccezione.dipendente.nome ) + " " + CommonHelper.ToTitleCase( Model.Eccezione.dipendente.cognome );
+    ariaLabel += " ha una richiesta ";
+    if (Model.Eccezione.IsUrgent) { ariaLabel += "URGENTE"; }
+    if (Model.Eccezione.IsOverdue) { ariaLabel += "SCADUTA"; }
+    ariaLabel += " di " + Model.Eccezione.cod;
+    ariaLabel += " per il " + Model.Eccezione.PeriodoRichiesta;
+    if ( Model.Eccezione.dalle != null && Model.Eccezione.dalle.ToString( ).Trim( ) != "00:00" )
+    {
+        if ( Model.Eccezione.dalle != "00.00" && Model.Eccezione.alle != "00.00" )
+        {
+            if ( Model.Eccezione.alle != null )
+            {
+                ariaLabel += " dalle " + Model.Eccezione.dalle.ToString( ).Trim( ) + " alle " + Model.Eccezione.alle.ToString( ).Trim( );
+            }
+            else
+            {
+                ariaLabel += " dalle " + Model.Eccezione.dalle.ToString( ).Trim( );
+            }
+        }
+
+    }
+    else if ( !String.IsNullOrWhiteSpace( Model.Eccezione.qta ) )
+    {
+        ariaLabel += " per una quantità pari a " + Model.Eccezione.qta;
+    }
+}
+@{
+    string TestoEccezioniSostitutive = "";
+
+    if (!String.IsNullOrWhiteSpace(Model.Eccezione.EccezioneSostitutivaCodice))
+    {
+
+        TestoEccezioniSostitutive = "Sostituito con " + Model.Eccezione.EccezioneSostitutivaCodice + " " +
+    (!String.IsNullOrWhiteSpace(Model.Eccezione.EccezioneSostitutivaDalle) ? Model.Eccezione.EccezioneSostitutivaDalle : "")
+    +
+    (!String.IsNullOrWhiteSpace(Model.Eccezione.EccezioneSostitutivaAlle) ? "/" + Model.Eccezione.EccezioneSostitutivaAlle : "");
+
+        if (Model.Eccezione.EccezioneSostitutivaCodice.EndsWith("Q") || Model.Eccezione.EccezioneSostitutivaCodice.EndsWith("P") || Model.Eccezione.EccezioneSostitutivaCodice.EndsWith("M"))
+        {
+            if (Model.Eccezione.EccezioneSostitutivaSWH == false)
+            {
+                TestoEccezioniSostitutive += " + Lavoro in presenza";
+            }
+            else
+            {
+                TestoEccezioniSostitutive += " + Lavoro da remoto";
+            }
+        }
+    }
+}
+<tr tabindex="-1" role="row" aria-label="@ariaLabel" style="height: 90px;" class="trdata hidden-xs  @(Model.Eccezione.IsUrgent ? "urgenti" : Model.Eccezione.IsOverdue ? "scadute" : "")"
+    data-idrichiesta="@Model.Eccezione.IdRichiestaPadre"
+    data-ideccezione="@Model.Eccezione.IdEccezioneRichiesta"
+    data-eccez-data="@Model.Eccezione.data"
+    data-tr="@Model.Eccezione.ndoc"
+    data-livello-richiedente="@Model.Eccezione.LivelloRichiedenteEccezione"
+    onfocus="onFocusRowShowCtrl(this)"
+    onblur="ifBlurRowShowCtrl(this)">
+    @*<td>&nbsp;</td>*@
+    <td colspan="2" class="text-center" @*style="vertical-align:top;"*@>
+
+        @{
+            if ( Model.Visualizzato )
+            {
+                <div title="VISUALIZZATO" style="position: relative; top: -7px; background-color: #eeeeee">
+                    <span style="font-weight: 500;font-size: 9px;color:#000000;" title="Visualizzato da @Model.Visualizzatore">VISUALIZZATO</span>
+                </div>
+            }
+        }
+        @{
+            if (Model.Eccezione.HasNotaSegreteria)
+            {
+                <div title="NOTA" class="div rai-div-primary">
+                    <span style="font-weight: 500;font-size: 9px;" title="NOTA">NOTA</span>
+                </div>
+            }
+        }
+        @*@{
+              var attceiton = myRai.Business.CommonManager.GetAttivitaCeiton(Model.Eccezione.IdRichiestaPadre);
+            }*@
+
+        @if ( Model.attivitaCeiton != null )
+        {
+            <div data-toggle="tooltip" class="rai-ceiton-tag labelceiton" title="@Model.attivitaCeiton.Titolo - @Model.attivitaCeiton.AttivitaPrimaria">
+                <span style="cursor:pointer;font-weight: 500;font-size: 9px;">ATT.CEITON</span>
+            </div>
+        }
+        @if ( NonPuoVistare || ( Model.RichiedeVisto &&
+                ( Model.Eccezione.DataVistoNegativo != null || Model.Eccezione.DataVistoPositivo != null ) ) )
+
+        {
+
+        }
+        else
+        {
+            <label class="css-input css-checkbox css-checkbox-rounded css-checkbox-sm css-checkbox-info">
+                <input data-selezionatutte="1" tabindex="-1" onchange="SelTr(this)" class="seltr @Model.Eccezione.sedeGapp" type="checkbox" />
+                <span></span>
+            </label>
+        }
+
+    </td>
+    <td colspan="2">
+        @if ( Model.Eccezione.IsUrgent )
+        {
+            <div class="text-muted">
+                <span style="font-weight: 500;font-size: 9px;color:#ec9639;">URGENTE</span>
+            </div>
+        }
+        @if ( Model.Eccezione.IsOverdue )
+        {
+            <div class="text-muted">
+                <span style="font-weight: 500;font-size: 9px;color: #ec3c4d;">SCADUTA</span>
+            </div>
+        }
+        <span class="rai-font-md-bold">@Model.Eccezione.cod</span><span class="rai-font-md"> - @CommonHelper.ToTitleCase( Model.Eccezione.descrittiva_lunga )</span>
+        @if ( Model.Eccezione.flg_storno.ToString( ).Trim( ) == "*" )
+        {
+            <div class="text-muted">
+                <em style="font-weight: 400;">storno</em>
+            </div>
+        }
+
+        @{
+            var descrRichiesta = Model.Eccezione.PeriodoRichiesta;
+            if ( Model.Eccezione.dalle != null && Model.Eccezione.dalle.ToString( ).Trim( ) != "00:00" && Model.Eccezione.dalle.ToString( ).Trim( ) != "00.00" )
+            {
+                if ( Model.Eccezione.dalle != "00.00" && Model.Eccezione.alle != "00:00" )
+                {
+                    if ( !String.IsNullOrEmpty( Model.Eccezione.alle ) )
+                    {
+                        descrRichiesta += " dalle " + Model.Eccezione.dalle.ToString( ).Trim( ) + " alle " + Model.Eccezione.alle.ToString( ).Trim( );
+                    }
+                    else
+                    {
+                        descrRichiesta += " dalle " + Model.Eccezione.dalle.ToString( ).Trim( );
+                    }
+                }
+                else
+                {
+                    descrRichiesta += " " + Model.Eccezione.dalle.ToString( ).Trim( );
+                }
+            }
+            else
+            {
+                if ( !String.IsNullOrWhiteSpace( Model.Eccezione.qta ) )
+                {
+                    descrRichiesta += " " + Model.Eccezione.qta + Model.Eccezione.unita_mis;
+                }
+            }
+        }
+        <br /><span class="rai-font-sm">@descrRichiesta</span>
+        @{
+            if ( Model.Eccezione.IdStato == ( int ) EnumStatiRichiesta.Approvata &&
+                !String.IsNullOrEmpty( Model.Eccezione.DescrizioneApprovatorePrimoLivello ) )
+            {
+                if ( Model.Eccezione.matricola == Model.Eccezione.matricolaPrimoLivello )
+                {
+                    <br /><span class="rai-font-sm bold">Approvata automaticamente</span>
+                }
+                else
+                {
+                    <br /><span class="rai-font-sm bold">Approvata da @Model.Eccezione.DescrizioneApprovatorePrimoLivello</span>
+                }
+            }
+        }
+    </td>
+
+    <td colspan="2">
+        <div class="row" style="position:relative">
+            <div class="col-sm-10">
+                @if ( Model.Eccezione.DataVistoPositivo != null )
+                {
+                    <div class="label-visto">Visto<i class="fa fa-fw fa-check feedback-success-color"></i></div>
+                }
+                @if ( Model.Eccezione.DataVistoNegativo != null )
+                {
+                    <div class="label-visto">Visto <i class="glyphicon glyphicon-remove feedback-error-color"></i></div>
+
+                }
+                @{
+                    var subTitle = Model.Eccezione.MotivoRichiesta;
+                    var subTitle2 = "";
+
+                    if ( Model.Eccezione.cod.Trim( ) == "POH" )
+                    {
+                        string txPOHMese = "";
+
+                        if ( Model.POH > 0 )
+                        {
+                            txPOHMese = String.Format( "{0}° nel mese corr." , Model.POH );
+                        }
+                        else
+                        {
+                            txPOHMese = String.Format( "{0} nel mese corr." , Model.POH );
+                        }
+
+                        if ( !String.IsNullOrWhiteSpace( subTitle ) )
+                        { subTitle2 = txPOHMese; }
+                        else
+                        { subTitle = txPOHMese; }
+
+                    }
+                }
+                @{
+                    if ( ! String.IsNullOrWhiteSpace(TestoEccezioniSostitutive))
+                    {
+                        if (String.IsNullOrWhiteSpace(subTitle))
+                        {
+                            subTitle = TestoEccezioniSostitutive;
+                        }
+                        else
+                        {
+                            subTitle = TestoEccezioniSostitutive + " <br /> " + subTitle;
+                        }
+                    }
+                    //if (!String.IsNullOrWhiteSpace(Model.Eccezione.EccezioneSostitutivaCodice))
+                    //{
+                    //    string note = subTitle;
+
+                    //    subTitle = "SW sostituito da " + Model.Eccezione.EccezioneSostitutivaCodice + " " +
+                    //        (!String.IsNullOrWhiteSpace(Model.Eccezione.EccezioneSostitutivaDalle) ? Model.Eccezione.EccezioneSostitutivaDalle : "")
+                    //        +
+                    //        (!String.IsNullOrWhiteSpace(Model.Eccezione.EccezioneSostitutivaAlle) ? "/" + Model.Eccezione.EccezioneSostitutivaAlle : "");
+
+                    //    if (Model.Eccezione.EccezioneSostitutivaCodice.EndsWith("Q") || Model.Eccezione.EccezioneSostitutivaCodice.EndsWith("P") || Model.Eccezione.EccezioneSostitutivaCodice.EndsWith("M"))
+                    //    {
+                    //        if (Model.Eccezione.EccezioneSostitutivaSWH == false)
+                    //        {
+                    //            subTitle += " - Lavoro in presenza";
+                    //        }
+                    //        else
+                    //        {
+                    //            subTitle += " - Lavoro da remoto";
+                    //        }
+                    //    }
+                    //    if (!String.IsNullOrWhiteSpace(note))
+                    //    {
+                    //        subTitle += " - " + note;
+                    //    }
+
+                    //}
+                }
+                @Html.ProfileWidgetAction( Model.Eccezione.matricola , Model.Eccezione.dipendente.nome + " " + Model.Eccezione.dipendente.cognome , "#" , null , subTitle , subTitle2 , null , null , new { data_toggle = "modal" , data_target = "#giornata-modal" , data_day = Model.Eccezione.data } )
+            </div>
+            <div class="col-sm-8" style="padding-left:30px;display:none;">
+                <a tabindex="-1" class="font-w600" style="font-weight: bold;" data-toggle="modal" data-target="#giornata-modal" data-day="@Model.Eccezione.data" href="#">@CommonHelper.ToTitleCase( Model.Eccezione.dipendente.nome ) @CommonHelper.ToTitleCase( Model.Eccezione.dipendente.cognome )</a>
+                <div class="text-muted">
+                    <span>@Model.Eccezione.MotivoRichiesta</span>
+                    @{
+                        if ( Model.Eccezione.cod.Trim( ) == "POH" )
+                        {
+                            string txPOHMese = "";
+
+                            if ( Model.POH > 0 )
+                            {
+                                txPOHMese = String.Format( "{0}° nel mese corr." , Model.POH );
+                            }
+                            else
+                            {
+                                txPOHMese = String.Format( "{0} nel mese corr." , Model.POH );
+                            }
+                            <span class="font-w600" style="font-weight: bold;" title="POH nel mese"><b>@(txPOHMese)</b></span>
+                        }
+                    }
+                </div>
+            </div>
+            <div class="col-sm-1">
+                @if ( Model.Eccezione.IdDocumentoAssociato != null )
+                {
+                    @Html.Partial( "DocIcon" , "ShowDoc(" + Model.Eccezione.IdDocumentoAssociato + ")" )
+                }
+            </div>
+        </div>
+    </td>
+    <td class="text-right" role="toolbar">
+        @if ( NonPuoVistare == false )
+        {
+            @Html.Partial( "_approvaRifiutaButtons" )
+        }
+
+    </td>
+</tr>
+
+<tr class="trdata visible-xs @(Model.Eccezione.IsUrgent ? "urgenti" : "")"
+    @if ( Model.RichiedeVisto ) { @: data-richiedevisto="1"
+    }
+    data-idrichiesta="@Model.Eccezione.IdRichiestaPadre" data-ideccezione="@Model.Eccezione.IdEccezioneRichiesta" data-tr="@Model.Eccezione.ndoc">
+    <td class="text-center" style="vertical-align:top;">
+        &nbsp;
+    </td>
+    <td class="font-w600 text-info" colspan="6">
+        <div class="row push-20">
+            <div class="col-xs-12">
+                <span class="rai-font-md-bold">@Model.Eccezione.cod</span><span class="rai-font-md"> - @CommonHelper.ToTitleCase( Model.Eccezione.descrittiva_lunga )</span>
+                <br /><span class="rai-font-sm">@descrRichiesta</span>
+                @{
+                    if ( Model.Eccezione.IdStato == ( int ) EnumStatiRichiesta.Approvata &&
+                        !String.IsNullOrEmpty( Model.Eccezione.DescrizioneApprovatorePrimoLivello ) )
+                    {
+                        if ( Model.Eccezione.matricola == Model.Eccezione.matricolaPrimoLivello )
+                        {
+                            <br /><span class="rai-font-sm bold">Approvata automaticamente</span>
+                        }
+                        else
+                        {
+                            <br /><span class="rai-font-sm bold">Approvata da @Model.Eccezione.DescrizioneApprovatorePrimoLivello</span>
+                        }
+                    }
+                }
+                @if ( Model.attivitaCeiton != null )
+                {
+                    <br />
+                    <div style="display:inline" data-toggle="tooltip" class="rai-ceiton-tag labelceiton" title="@Model.attivitaCeiton.Titolo - @Model.attivitaCeiton.AttivitaPrimaria">
+                        <span style="cursor:pointer;font-weight: 500;font-size: 9px;">ATT.CEITON</span>
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="row text-center push-20">
+            <div class="col-xs-12">
+                @{
+                    if (!String.IsNullOrWhiteSpace(TestoEccezioniSostitutive))
+                    {
+                        if (String.IsNullOrWhiteSpace(subTitle))
+                        {
+                            subTitle = TestoEccezioniSostitutive;
+                        }
+                        else
+                        {
+                            subTitle = TestoEccezioniSostitutive + " <br /> " + subTitle;
+                        }
+                    }
+                    //if (!String.IsNullOrWhiteSpace(Model.Eccezione.EccezioneSostitutivaCodice))
+                    //{
+                    //    string note = subTitle;
+
+                    //    subTitle = "SW sostituito da " + Model.Eccezione.EccezioneSostitutivaCodice + " " +
+                    //        (!String.IsNullOrWhiteSpace(Model.Eccezione.EccezioneSostitutivaDalle) ? Model.Eccezione.EccezioneSostitutivaDalle : "")
+                    //        +
+                    //        (!String.IsNullOrWhiteSpace(Model.Eccezione.EccezioneSostitutivaAlle) ? "/" + Model.Eccezione.EccezioneSostitutivaAlle : "");
+
+                    //    if (Model.Eccezione.EccezioneSostitutivaCodice.EndsWith("Q") || Model.Eccezione.EccezioneSostitutivaCodice.EndsWith("P") || Model.Eccezione.EccezioneSostitutivaCodice.EndsWith("M"))
+                    //    {
+                    //        if (Model.Eccezione.EccezioneSostitutivaSWH == false)
+                    //        {
+                    //            subTitle += " - Lavoro in presenza";
+                    //        }
+                    //        else
+                    //        {
+                    //            subTitle += " - Lavoro da remoto";
+                    //        }
+                    //    }
+                    //    if (!String.IsNullOrWhiteSpace(note))
+                    //    {
+                    //        subTitle += " - " + note;
+                    //    }
+
+                    //}
+                }
+
+                @Html.ProfileWidgetAction( Model.Eccezione.matricola , Model.Eccezione.dipendente.nome + " " + Model.Eccezione.dipendente.cognome , "#" , null , subTitle , null , null , null , new { data_toggle = "modal" , data_target = "#giornata-modal" , data_day = Model.Eccezione.data } )
+            </div>
+        </div>
+        <div class="row text-center">
+
+            <div class="col-xs-12">
+                @if ( NonPuoVistare == false )
+                {
+                    @Html.Partial( "_approvaRifiutaButtons" )
+                }
+            </div>
+        </div>
+    </td>
+</tr>

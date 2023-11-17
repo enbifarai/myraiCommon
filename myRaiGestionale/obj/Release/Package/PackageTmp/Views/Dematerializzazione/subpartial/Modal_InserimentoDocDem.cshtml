@@ -1,0 +1,567 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiCommonModel
+@using myRaiHelper
+@model InsRicModel
+
+<style>
+    .rai-select-popover-top .rai-select-popover-container {
+        bottom: inherit;
+        top: 4px;        
+    }
+
+    .rai-select-popover-container {
+        z-index: 1000;
+    }
+</style>
+@{ 
+    string urlActionSelect = Url.Action("GetDestinatario" , "Dematerializzazione");
+}
+
+<div class="block block-transparent no-margin-bottom">
+    <div class="block-header">
+        <label class="rai-font-modal-heading">Inserimento nuova richiesta</label>
+        <div class="block-options">
+            <button data-dismiss="modal" class="btn btn-action-icon" onclick="$(this).parent('.modal').css('z-index', '');"><i class="glyphicon glyphicon-remove"></i></button>
+        </div>
+    </div>
+    <div class="block-content">
+        @using (Html.BeginPanel(myRaiHelper.PanelType.Panel , "Dettagli richiesta" , false))
+        {
+
+            <div class="row push-10" id="messaggio-attesa" style="display:none;">
+                <div class="col-sm-12">
+                    <div class="alert alert-warning">
+                        <span>Non è possibile continuare finchè il documento non verrà convertito in PDF. <br />Il documento PDF verrà generato a breve.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-xs-12">
+                    <input id="isPDF" value="" type="hidden" />
+                    <input id="identificativoAllegato" value="" type="hidden" />
+                    <input id="ApprovazioneObbligatoria" value="" type="hidden" />
+                    <input id="FirmaObbligatoria" value="" type="hidden" />
+                    <input id="PosizionaProtocollo" value="" type="hidden" />
+                    <input id="PosizioneProtocollo" value="" type="hidden" />
+                    <input id="ApprovatoreVisibile" value="" type="hidden" />
+                    <input id="FirmaVisibile" value="" type="hidden" />
+                    <input id="FileObbligatorio" value="" type="hidden" />
+                    <input id="IsCustomType" value="" type="hidden" />
+                    <input id="RicercaLibera" value="@(Model.RicercaLibera.ToString())" type="hidden" />
+
+                    <div id="DematerializzazioneWizard" class="rai wizard-progress wizard-progress-llg wiznew remove-margin-t push-40" role="tablist">
+                        <ul class="wizard-steps wizard-ul-dem">
+                            <li class="tabhead tabheadrich active wizard-li-dem" id="tab-dem-1" role="presentation">
+                                <a role="tab" aria-label="Dettaglio" aria-controls="validation-classic-step1" id="hTab1" onclick="" href="#" data-toggle="tab" aria-selected="true" tabindex="0" aria-expanded="true"><span>1</span>Scegli il documento</a>
+                            </li>
+                            <li class="tabhead tabheadrich disable wizard-li-dem" id="tab-dem-2" role="presentation">
+                                <a role="tab" tabindex="-1" aria-label="Documento" aria-controls="validation-classic-step2" id="hTab2" onclick="" href="#" data-toggle="tab" aria-selected="false"><span>2</span>Protocollo e data</a>
+                            </li>
+                            <li class="tabhead tabheadrich disable wizard-li-dem" id="tab-dem-3" role="presentation">
+                                <a role="tab" tabindex="-1" aria-label="Inserisci informazioni" aria-controls="validation-classic-step3" id="hTab3" onclick="" href="#" data-toggle="tab" aria-selected="false"><span>3</span>Informazioni</a>
+                            </li>
+                            <li class="tabhead tabheadrich disable wizard-li-dem" id="tab-dem-4" role="presentation">
+                                <a role="tab" tabindex="-1" aria-label="Protocollo e data" aria-controls="validation-classic-step4" id="hTab4" onclick="" href="#" data-toggle="tab" aria-selected="false"><span>4</span>Riepilogo</a>
+                            </li>
+                        </ul>
+                        <div id="tab2-pannello-abilita-posizionamento" style="display:none;">
+                            <div class="tab-pane push-10-t push-20 active" role="tabpanel" tabindex="0">
+                                <div class="form-group">
+                                    <div class="col-xs-12">
+                                        <ul class="nav nav-justified">
+                                            <li class="col-6">
+                                                <a id="icona1-protocollo" class="no-padding rai-radio-box icone-raggr text-center" onclick="Dematerializzazione_AbilitaPosizionamentoProtocollo();" href="javascript:void(0)">
+                                                    <div class="block-content border-b">
+                                                        <i class="rai-radio-box-icon fa fa-calendar-check text-gray" style="font-size: 3em; "></i>
+                                                    </div>
+                                                    <div class="block-content block-content-full block-content-mini">
+                                                        <label class="rai-font-md">Protocollo e data</label>
+                                                    </div>
+                                                </a>
+                                            </li>
+                                            <li class="col-6">
+                                                <a id="icona3-firma" class="no-padding rai-radio-box icone-raggr text-center" onclick="Dematerializzazione_AbilitaPosizionamentoFirma();" href="javascript:void(0)">
+                                                    <div class="block-content border-b">
+                                                        <i class="rai-radio-box-icon fa fa-edit text-gray" style="font-size: 3em; "></i>
+                                                    </div>
+                                                    <div class="block-content block-content-full block-content-mini">
+                                                        <label class="rai-font-md">Firma</label>
+                                                    </div>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-xs-12 push-10-t" id="dem-sel-pagina-documento" style="display:none;" data-paginarichiesta="1" data-paginacorrente="1" data-paginafirma="1">
+                                        <div class="col-sm-4"><label class="rai-caption">Selezione pagina</label></div>
+                                        <div class="col-sm-8">
+                                            @Html.RaiSelectFor(m => m.NumeroPaginaFirma, DematerializzazioneController.GetNumeroPagineDocumento(0, 1), attributes: new { id = "selPagina", style = "z-index: 1100;" }, hideSearch: true, onSelectchange: "Dematerializzazione_CambioPagina(null,false,false,true);")
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="div-txTab2" class="row" style="display:none">
+                        <div class="col-sm-12">
+                            <label class="rai-font-md">Trascina il protocollo e la data nella posizione in cui vuoi inserirli, verranno popolati dal sistema alla firma del documento.</label>
+                        </div>
+                    </div>
+                    <div style="overflow-y:auto; height: 70vh;  overflow-x:hidden;">
+                        <div id="tab1">
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <div class="form-group">
+                                        <div class="row push-10">
+                                            <div class="col-xs-12">
+                                                @Html.LabelForRequiredObbl(m => m.TipologiaDocumentale, "Tipologia invio", new { @class = "rai-caption" })
+                                                @Html.RaiSelectFor(m => m.TipologiaDocumentale, DematerializzazioneController.GetTipologieDocumentali(), attributes: new { required = "required", id = "tipologiaDocumentale" }, hideSearch: true, onSelectchange: "Dematerializzazione_AbilitaNextButton()")
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row" id="div-select-tipologiaDocumentale">
+                                <div class="col-sm-12">
+                                    <div class="form-group">
+                                        <div class="row push-10">
+                                            <div class="col-xs-12">
+                                                @Html.LabelForRequiredObbl(m => m.TipologiaDocumento, "Tipo documento", new { @class = "rai-caption" })
+                                                @Html.RaiSelectFor(m => m.TipologiaDocumento, DematerializzazioneController.GetTipologieDematerializzazioni(), attributes: new { required = "required", id = "tipodoc" }, hideSearch: true, onSelectchange: "Dematerializzazione_AbilitaNextButton()")
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            @{
+                                if (Model.RicercaLibera && String.IsNullOrEmpty(Model.MatricolaDestinatario))
+                                {
+                                    <div class="row" id="dem-selezione-destinatario">
+                                        <div class="col-sm-12">
+                                            <div class="form-group">
+                                                <div class="row push-10">
+                                                    <div class="col-xs-12">
+                                                        @Html.LabelForRequiredObbl(m => m.MatricolaDestinatario, "Dipendente", new { @class = "rai-caption" })
+                                                        @Html.RaiAsyncSelectFor(m => m.MatricolaDestinatario, urlActionSelect, minCharInput: 3, expandView: false, tipoFiltro: SelectFilterType.AllContains, showCodeInDropdown: true, attributes: new { required = "required", id = "selMatricolaDestinatario" }, onSelectchange: "Dematerializzazione_AbilitaNextButton()")
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            <br />
+                            <div class="row" id="div-template-container" style="display:none;">
+                                <div class="col-sm-12">
+                                    <div class="form-group">
+                                        <div class="row push-10" style="background-color:#eee; margin-left: 15px; margin-right: 15px;">
+
+                                            @{
+                                                if (Model.ListaTemplates != null && Model.ListaTemplates.Any())
+                                                {
+                                                    int riga = 0;
+                                                    <div class="col-xs-12" style="min-height:70px;">
+                                                        <label class="rai-font-sm-bold push-10">
+                                                            Scarica un template per il documento selezionato e, una volta compilato, caricalo utilizzando la sezione sottostante.
+                                                        </label>
+                                                        @{
+                                                            foreach (var t in Model.ListaTemplates)
+                                                            {
+                                                                riga++;
+                                                                <div class="col-xs-12 push-5">
+                                                                    <span class="rai-font-md-neutral">
+                                                                        Template @riga <a href="@Url.Action("ScaricaTemplate","Dematerializzazione")?idTemplate=@t.Id" class=""><i class="fa fa-download"> </i> @(t.Name)</a>
+                                                                    </span>
+                                                                </div>
+                                                            }
+                                                        }
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <div class="col-xs-12" style="text-align:center;min-height:50px;">
+                                                        <label class="rai-font-md-bold push-10" style=" margin-top:25px;">
+                                                            Nessun template disponibile
+                                                        </label>
+                                                    </div>
+                                                }
+                                            }
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="div-infoAggiuntive" style="display:none;">
+                                <div class="row" id="div-tipologiaDocumentale">
+                                    @Html.Partial("~/Views/Dematerializzazione/subpartial/VS.cshtml", Model)
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="tab1-custom-data" style="display:none">
+
+                        </div>
+
+                        <div id="tab2" style="display:none;">
+                            <label id="textLeft" class="rai-caption" style="display:none;"></label>
+                            <label id="textTop" class="rai-caption" style="display:none;"></label>
+
+                            <label id="textLeftData" class="rai-caption" style="display:none;"></label>
+                            <label id="textTopData" class="rai-caption" style="display:none;"></label>
+
+                            <label id="textLeftFirma" class="rai-caption" style="display:none;"></label>
+                            <label id="textTopFirma" class="rai-caption" style="display:none;"></label>
+
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <div class="row">
+                                        <div id="div-img-container" class="col-xs-12" style="height:100%; background-color:gray; padding-bottom: 20px;">
+
+                                            <div id="draggable" class="text-center" style="vertical-align:middle; height: 40px; width: 200px; border: 1px solid grey; position: absolute; background-color: white; display:none;">
+                                                <label style="vertical-align:middle;margin-top:10px;" class="rai-caption"> Prot. XXX/X/0000/0000000/X/X </label>
+                                            </div>
+
+                                            <div id="draggableData" class="text-center" style="vertical-align:middle; margin-top:45px; height: 40px; width: 100px; border: 1px solid grey; position: absolute; background-color: white; display:none;">
+                                                <label style="vertical-align:middle;margin-top:10px;" class="rai-caption"> gg/mm/aaaa </label>
+                                            </div>
+
+                                            <div id="draggableFirma" class="text-center" style="vertical-align:middle; margin-top:85px; height: 40px; width: 150px; border: 1px solid grey; position: absolute; background-color: white; display:none;">
+                                                <label style="vertical-align:middle;margin-top:10px;" class="rai-caption"> Firma </label>
+                                            </div>
+
+                                            <img id="ItemPreview" src="" style="width:595px; height:842px; display: block; margin-left: auto; margin-right: auto; margin-top:10px;" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="tab3" style="display:none;">
+                            <div class="row" id="div-Approvatore">
+                                <div class="col-sm-12">
+                                    <div class="form-group">
+                                        <div class="row push-10">
+                                            <div class="col-xs-6">
+                                                @Html.LabelForRequiredObbl(m => m.MatricolaApprovatore, "Approvatore", new { @class = "rai-caption" })
+                                                @Html.RaiSelectFor(m => m.MatricolaApprovatore, DematerializzazioneController.GetElencoApprovatori(), attributes: new { required = "required", id = "selApprovatore" }, hideSearch: true, onSelectchange: "Dematerializzazione_CheckTab1()")
+                                            </div>
+                                            <div class="col-xs-6">&nbsp;</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row" id="div-IncaricatoFirma">
+                                <div class="col-sm-12">
+                                    <div class="form-group">
+                                        <div class="row push-10">
+                                            <div class="col-xs-6">
+                                                @Html.LabelForRequiredObbl(m => m.IncaricatoFirma, "Incaricato della firma", new { @class = "rai-caption" })
+                                                @Html.RaiSelectFor(m => m.IncaricatoFirma, DematerializzazioneController.GetIncaricatiFirma(), attributes: new { required = "required", id = "incaricatoFirma" }, hideSearch: true, onSelectchange: "Dematerializzazione_CheckTab1()")
+                                            </div>
+                                            <div class="col-xs-6">&nbsp;</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row" id="div-note">
+                                <div class="col-sm-12">
+                                    <div class="form-group">
+                                        <div class="row push-10">
+                                            <div class="col-xs-12">
+                                                @Html.LabelFor(m => m.Note, "Nota per gli approvatori", new { @class = "rai-caption" })
+                                                @Html.TextAreaFor(m => m.Note, new { @class = "form-control", @rows = 5, @cols = 200, @title = "Inserisci una nota per gli operatori che dovranno approvare e firmare", @placeholder = "Inserisci una nota per gli operatori che dovranno approvare e firmare" })
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <div class="form-group">
+                                        <div class="row push-10">
+                                            <div class="col-sm-12">
+                                                <label class="rai-caption">Documenti a supporto</label>
+                                                <br />
+                                                <label class="rai-font-md">Se hai altri documenti a supporto della richiesta puoi caricarli qui Formati supportati .pdf</label>
+                                            </div>
+                                        </div>
+                                        <div class="row push-10" id="div-uploading-supporti">
+                                            <div class="col-sm-12">
+                                                <table id="table-uploading-supporti" class="rai-table rai-table-vcenter" style="min-width:100%">
+                                                    <tbody style="min-width:100%" id="table-uploading-supporti-body"></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        <div class="row push-10">
+                                            <div class="col-sm-12">
+                                                <button id="btn-aggiungi-allegato-supporto" type="button" onclick="$('#fileupload-VSDIP-allegati-supporto').click()" class="btn rai-btn-small" style="margin-bottom: 12px;margin-top:16px">
+                                                    Aggiungi documenti
+                                                </button>
+                                                <input data-tipo="PDF" style="display:none" type="file" multiple="multiple" id="fileupload-VSDIP-allegati-supporto" onchange="Dematerializzazione_AbilitaInfoFileMultiplo()" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="tab4" style="display:none;">
+                            <div class="tab-pane active" id="" role="tabpanel">
+                                <div class="block block-transparent block-content-table">
+                                    <div class="block-header block-content-mini">
+                                        <label class="block-title">RIEPILOGO RICHIESTA</label>
+                                        <div class="block-options"></div>
+                                    </div>
+                                    <div class="block-content block-content-mini">
+                                        <div id="div-riepilogo-documento">
+
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <div class="">
+                <div id="btns-fase1" class="block-footer" style="padding: 5px 2px;">
+                    <div class="rai-btn-fill">
+                        <button type="button" id="btns-fase1-btn1" class="btn rai-btn-secondary" onclick="Dematerializzazione_ChiudiInserimento()">Annulla</button>
+                        <button type="button" id="btns-fase1-next" onclick="Dematerializzazione_Btn1Next_Click()" class="btn rai-btn-primary disable">Avanti</button>
+                    </div>
+                </div>
+
+                <div id="btns-fase1-custom" class="block-footer" style="display:none; padding: 5px 2px;">
+                    <div class="rai-btn-fill">
+                        <button type="button" id="btns-fase1-custom-btn1" class="btn rai-btn-secondary" onclick="Dematerializzazione_Btn1BisPrev_Click()">Indietro</button>
+                        <button type="button" id="btns-fase1-custom-next" onclick="Dematerializzazione_Btn1BisNext_Click()" class="btn rai-btn-primary disable">Avanti</button>
+                    </div>
+                </div>
+
+                <div id="btns-fase2" class="block-footer" style="display:none; padding: 5px 2px;">
+                    <div class="rai-btn-fill">
+                        <button type="button" id="btns-fase2-prev" class="btn rai-btn-secondary" onclick="Dematerializzazione_Btn2Prev_Click()">Indietro</button>
+                        <button type="button" id="btns-fase2-next" onclick="Dematerializzazione_Btn2Next_Click()" class="btn rai-btn-primary">Avanti</button>
+                    </div>
+                </div>
+
+                <div id="btns-fase3" class="block-footer" style="display:none; padding: 5px 2px;">
+                    <div class="rai-btn-fill">
+                        <button type="button" id="btns-fase3-prev" class="btn rai-btn-secondary" onclick="Dematerializzazione_Btn3Prev_Click()">Indietro</button>
+                        <button type="button" id="btns-fase3-next" data-idDoc="" onclick="Dematerializzazione_Btn3Next_Click();" class="btn rai-btn-primary">Avanti</button>
+                    </div>
+                </div>
+
+                <div id="btns-fase4" class="block-footer" style="display:none; padding: 5px 2px;">
+                    <div class="rai-btn-fill">
+                        <button type="button" id="btns-fase4-prev" class="btn rai-btn-secondary" onclick="Dematerializzazione_Btn4Prev_Click()">Indietro</button>
+                        <button type="button" id="btns-fase4-next" data-idDoc="" onclick="Dematerializzazione_Save();" class="btn rai-btn-primary">Avanti</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<script type="text/javascript">
+    function Dematerializzazione_Btn3Next_Click() {
+        $('#modal-inserimentoDocDem-internal').data('isDirty', 'true');
+        $("form#form-insert-richiestaVSDip").submit();
+    }
+
+    function Dematerializzazione_Save() {
+        var idDoc = $('#btns-fase3-next').data('idDoc');
+
+        $.ajax({
+            url: "/Dematerializzazione/SetCompleted",
+            type: "POST",
+            data: JSON.stringify({
+                matricola: '@(Model.Matricola)',
+                idPersona: '@(Model.IdPersona)',
+                idDoc: idDoc
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: 'html',
+            success: function (data) {
+                $('#modal-inserimentoDocDem-internal').data('isDirty', 'false');
+                swal({
+                    title: 'Il documento è stato creato correttamente',
+                    type: 'success',
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                }).then(function () {
+                    $('#modal-inserimentoDocDem').modal('hide');                   
+                    //Dematerializzazione_OpenDettaglio('@(Model.Matricola)', '@(Model.IdPersona)', idDoc);
+                    $('#modal-inserimentoDocDem-internal').html(''); 
+                });
+            },
+            error: function (xhr, status) {
+                swal({
+                    title: xhr.statusText,
+                    type: 'error',
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                })
+            }
+        });
+    }
+
+    function SetPosizioneProtocollo() {
+        var result = false;
+        var idDoc = $('#identificativoAllegato').val();
+        if (idDoc == null || idDoc == "" || typeof (idDoc) === "undefined") {
+            return false;
+        }
+
+        var $newPosX = "-1";
+        var $newPosY = "-1";
+        var $newPosXData = "-1";
+        var $newPosYData = "-1";
+        var $newPosXFirma = "-1";
+        var $newPosYFirma = "-1";
+
+        $newPosX = $('#textLeft').text();
+        $newPosY = $('#textTop').text();
+        $newPosX = $newPosX.replace(".", ",");
+        $newPosY = $newPosY.replace(".", ",");
+
+        $newPosXData = $('#textLeftData').text();
+        $newPosYData = $('#textTopData').text();
+        $newPosXData = $newPosXData.replace(".", ",");
+        $newPosYData = $newPosYData.replace(".", ",");
+
+        $newPosXFirma = $('#textLeftFirma').text();
+        $newPosYFirma = $('#textTopFirma').text();
+        $newPosXFirma = $newPosXFirma.replace(".", ",");
+        $newPosYFirma = $newPosYFirma.replace(".", ",");
+        var numeroPagina = $('#dem-sel-pagina-documento').data('paginafirma');
+
+        if ($newPosX == "") {
+            $newPosX = "-1";
+        }
+
+        if ($newPosY == "") {
+            $newPosY = "-1";
+        }
+
+        if ($newPosXData == "") {
+            $newPosXData = "-1";
+        }
+
+        if ($newPosYData == "") {
+            $newPosYData = "-1";
+        }
+
+        if ($newPosXFirma == "") {
+            $newPosXFirma = "-1";
+        }
+
+        if ($newPosYFirma == "") {
+            $newPosYFirma = "-1";
+        }
+
+        $.ajax({
+            url: "/Dematerializzazione/SetPosizioneProtocollo",
+            type: "POST",
+            async: false,
+            data: JSON.stringify({
+                matricola: '@(Model.Matricola)',
+                idPersona: '@(Model.IdPersona)',
+                idAllegato: idDoc,
+                posLeft: $newPosX,
+                posTop: $newPosY,
+                posLeftData: $newPosXData,
+                posTopData: $newPosYData,
+                posLeftFirma: $newPosXFirma,
+                posTopFirma: $newPosYFirma,
+                numeroPaginaFirma: numeroPagina,
+                idDocumento: null
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: 'html',
+            success: function (data) {
+                result = true;
+            },
+            error: function (xhr, status) {
+                swal({
+                    title: xhr.statusText,
+                    type: 'error',
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+            }
+        });
+        return result;
+    }
+
+    $(function () {
+        Dematerializzazione_AttivaElementiTab(1);
+        $("#draggable").data('mosso', 'false');
+        $("#draggableData").data('mosso', 'false');
+        $("#draggableFirma").data('mosso', 'false');
+
+        $("#draggable").draggable({
+            containment: "#ItemPreview",
+            scroll: true,
+            start: function (e, ui) {
+                $(this).css('margin-top', '0px;');
+                $(this).data('mosso', 'true');
+            },
+            stop: function (e, ui) {
+
+            }
+        });
+
+        $("#draggableData").draggable({
+            containment: "#ItemPreview",
+            scroll: true,
+            start: function (e, ui) {
+                $(this).css('margin-top', '0px;');
+                $(this).data('mosso', 'true');
+            },
+            stop: function (e, ui) {
+
+            }
+        });
+
+        $("#draggableFirma").draggable({
+            containment: "#ItemPreview",
+            scroll: true,
+            start: function (e, ui) {
+                $(this).css('margin-top', '0px;');
+                $(this).data('mosso', 'true');
+            },
+            stop: function (e, ui) {
+
+            }
+        });
+
+        $("#ItemPreview").droppable({
+            drop: function (event, ui) {
+                var $newPosX = ui.offset.left - $(this).offset().left;
+                var $newPosY = ui.offset.top - $(this).offset().top;
+
+                var id = ui.draggable.attr('id');
+                if (id == "draggable") {
+                    $('#textLeft').text($newPosX);
+                    $('#textTop').text($newPosY);
+                }
+                else if (id == "draggableData") {
+                    $('#textLeftData').text($newPosX);
+                    $('#textTopData').text($newPosY);
+                }
+                else if (id == "draggableFirma") {
+                    $('#textLeftFirma').text($newPosX);
+                    $('#textTopFirma').text($newPosY);
+                }
+            }
+        });
+    });
+</script>

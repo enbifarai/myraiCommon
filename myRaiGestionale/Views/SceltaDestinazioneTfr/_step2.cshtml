@@ -1,0 +1,1083 @@
+﻿@using myRaiCommonModel
+@model SceltaDestinazioneTfrViewModel
+
+@if (Model != null)
+{
+    string[] sceltaEffettuataSplit = Model.SceltaEffettuata.Split('-'); // Il primo valore indica se in azienda o altro, il secondo valore indice che tipo di altro
+
+    using (Html.BeginForm("PostStep2", "SceltaDestinazioneTfr", FormMethod.Post, new { id = "StepForm" }))
+    {
+        @* Hidden field fissi dell'utente *@
+        <input type="hidden" value="@ViewBag.MatricolaUtente" id="matricolaUtente" name="matricolaUtente" />
+        <input type="hidden" value="@ViewBag.IdUtente" id="idUtente" name="idUtente" />
+        <input type="hidden" value="@ViewBag.IdRecordScelta" id="idRecordScelta" name="idRecordScelta" />
+        <input type="hidden" value="@Model.SceltaEffettuata" id="hdnSceltaEffettuata" name="hdnSceltaEffettuata" />
+        <input type="hidden" value="@ViewBag.IsDoppioImponibileAbilitato.ToString()" id="HdnIsDoppioImponibileAbilitato" name="HdnIsDoppioImponibileAbilitato" />
+
+
+        if (sceltaEffettuataSplit[0] == "Altro")
+        {
+            if (sceltaEffettuataSplit[1] == "Altro")
+            {
+                <div class="row pl-1">
+                    <div class="col-sm-12">
+                        <div class="form-group">
+                            <div class="row push-10">
+                                <div class="col-12" style="padding-left: 1rem;">
+                                    @Html.LabelForRequiredObbl(m => m.SceltaSpecificaDefinitaDaUtente, "FONDO DI DESTINAZIONE", new { @class = "rai-caption" })
+                                    @Html.RaiSelect("SceltaSpecificaDefinitaDaUtente_Codice", Model.FondiSpecificiDisponibili, placeholder: "", hideSearch: true, attributes: new { id = "DdlFondiSpecifici", name = "SceltaSpecificaDefinitaDaUtente_Codice", style = "max-width: 60rem;" }, onSelectchange: "abilitaDisabilitaContinua()")
+                                    @*Html.TextBoxFor(m => m.SceltaSpecificaDefinitaDaUtente, new { id = "SceltaSpecificaDefinitaDaUtente", @class = "form-control", onchange = "abilitaDisabilitaContinua();" })*@
+                                </div>
+                                @*<div class="col-12" style="padding-left: 1rem;">
+                                    @Html.DropDownListFor(m => m.SceltaSpecificaDefinitaDaUtente_Codice, Model.FondiSpecificiDisponibili, new { id = "DdlFondiSpecifici", name = "SceltaSpecificaDefinitaDaUtente_Codice", style = "width: 100%;", onchange = "abilitaDisabilitaContinua();" })
+                                </div>*@
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            if (ViewBag.IsDoppioImponibileAbilitato == true)
+            {
+                <div class="row">
+                    <div class="col-sm-3">
+                        <div class="form-group">
+                            <div class="row push-10">
+                                <div class="col-xs-12">
+                                    @Html.LabelForRequiredObbl(m => m.QuotaSelezionata, "QUOTA DESTINATA", new { @class = "rai-caption" })
+                                    @Html.RaiSelect("QuotaSelezionata", Model.QuoteDisponibili, placeholder: "", hideSearch: true, attributes: new { id = "DdlQuota", name = "QuotaSelezionata", style = "width: 85px;"}, onSelectchange: "abilitaDisabilitaContinua()")
+                                </div>
+                                @*<div class="col-xs-12">
+                                        @Html.DropDownListFor(m => m.QuotaSelezionata, Model.QuoteDisponibili, new { id = "DdlQuota", name = "QuotaSelezionata", style = "width: 212px;", onchange = "abilitaDisabilitaContinua();" })
+                                    </div>*@
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-7">
+                        <div class="form-group" style="padding-top: 45px;">
+                            <div class="row push-10">
+                                <div class="col-xs-12">
+                                    <div class="rai-checkbox">
+                                        @Html.CheckBoxFor(model => model.DoppioImponibile, new { id = "DoppioImponibileTfr", onchange = "doppioImponibileChange()" })
+                                        <label class="rai-caption" for="chkFiltroDir">Doppio dell'imponibile TFR *</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-sm-4">
+                        <div class="form-group">
+                            <div class="row push-10">
+                                <div class="col-xs-6">
+                                    @Html.LabelForRequiredObbl(m => m.QuotaSelezionata, "QUOTA DESTINATA", new { @class = "rai-caption" })
+                                    @Html.RaiSelect("QuotaSelezionata", Model.QuoteDisponibili, placeholder: "", hideSearch: true, attributes: new { id = "DdlQuota", name = "QuotaSelezionata", style = "width: 85px;"}, onSelectchange: "abilitaDisabilitaContinua()")
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <div class="row">
+                <div class="col-sm-4">
+                    <div class="form-group">
+                        <div class="row push-10">
+                            <div class="col-xs-12">
+                                @Html.LabelForRequiredObbl(m => m.DataAdesioneAlFondo, "DATA ADESIONE AL FONDO", new { @class = "rai-caption" })
+                                <div class="input-group">
+                                    <span id="calendarDataAdesioneAlFondo" class="input-group-addon" style="cursor: pointer" onclick="$('#dataAdesioneAlFondo').datetimepicker('show')">
+                                        <i class="fa fa-calendar"></i>
+                                    </span>
+                                    @Html.TextBoxFor(m => m.DataAdesioneAlFondo, new { @class = "js-datetimepicker form-control required-min",
+                                   data_format = "DD/MM/YYYY",
+                                   data_locale = "it",
+                                   id = "dataAdesioneAlFondo",
+                                   placeholder = "Selezionare una data",
+                                   autocomplete = "off",
+                                   onchange = "abilitaDisabilitaContinua();",
+                                   style = "width: 245px;"
+                               })
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @*</div>
+
+            <div class="row">*@
+                <div class="col-sm-4">
+                    <div class="form-group">
+                        <div class="row push-10">
+                            <div class="col-xs-12">
+                                @* La data di adesione ad un fondo diventa obbligatoria se, nello step precedente, è stata selezionata la voce "Ho già effettuato una scelta" oppure se ho deciso di destinare il tfr ad un fondo *@
+                                @if (sceltaEffettuataSplit[0] == "Altro") // Adesso non lo lascio in azienda, è bbligatorio
+                                {
+                                    @Html.LabelForRequiredObbl(m => m.DataPrimaIscrizione, "DATA PRIMA ISCRIZIONE", new { @class = "rai-caption" });
+                                }
+                                else
+                                {
+                                    @Html.LabelFor(m => m.DataPrimaIscrizione, "DATA PRIMA ISCRIZIONE", new { @class = "rai-caption" });
+                                }
+                                <div class="input-group">
+                                    <span id="calendarDataPrimaIscrizione" class="input-group-addon" style="cursor: pointer" onclick="$('#dataPrimaIscrizione').datetimepicker('show')">
+                                        <i class="fa fa-calendar"></i>
+                                    </span>
+                                    @Html.TextBoxFor(m => m.DataPrimaIscrizione, new { 
+                                        @class = "js-datetimepicker form-control required-min",
+                                        data_format = "DD/MM/YYYY",
+                                        data_locale = "it",
+                                        id = "dataPrimaIscrizione",
+                                        placeholder = "Selezionare una data",
+                                        autocomplete = "off",
+                                        onchange = "abilitaDisabilitaContinua();",
+                                        style = "width: 245px;"
+                                    })
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row" style="margin-left: 3rem; position: relative; left: 5px;">
+                <div class="col-12" style="margin-top: 1.5rem;">
+                    <div style="display: inline-block; width: 45%;">
+                        <span class="rai-font-sm-bold" style="font-size: 16px;">Numero di iscrizione CRAI</span>
+                        <div class="input-group">
+                            @Html.TextBoxFor(
+                                model =>
+                                    model.NumeroIscrizioneCrai,
+                                    new {
+                                        @class = "form-control",
+                                        id = "numeroIscrizioneCrai",
+                                        placeholder = "Inserire il numero di iscrizione CRAI",
+                                        autocomplete = "off",
+                                        onchange = "abilitaDisabilitaContinua();",
+                                        style = "height: 46px; border: 1px solid #E5E7E9" })
+                        </div>
+                    </div>
+                    <div style="display: inline-block; width: 45%; margin-left: 4px;">
+                        <span class="rai-font-sm-bold" style="font-size: 16px;">Anno di variazione aliquota</span>
+                        <div class="input-group">
+                            @Html.TextBoxFor(
+                                model =>
+                                    model.AnnoVariazioneAliquota,
+                                    new {
+                                        @class = "form-control",
+                                        id = "annoVariazioneAliquota",
+                                        placeholder = "Inserire l'anno di variazione dell'aliquota",
+                                        autocomplete = "off",
+                                        onchange = "abilitaDisabilitaContinua();",
+                                        style = "height: 46px; border: 1px solid #E5E7E9" })
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @*if (Model.IsSceltaPregressaEffettuata == true)
+        {
+            <div class="row">
+                <div class="col-sm-4">
+                    <div class="form-group">
+                        <div class="row push-10">
+                            <div class="col-xs-12">
+                                
+                                La data di adesione ad un fondo diventa obbligatoria se, nello step precedente, è stata selezionata la voce "Ho già effettuato una scelta" oppure se ho deciso di destinare il tfr ad un fondo
+                                
+                                @if (sceltaEffettuataSplit[0] == "Altro") // Adesso non lo lascio in azienda, è bbligatorio
+                                {
+                                    @Html.LabelForRequiredObbl(m => m.DataCompilazione, "DATA COMPILAZIONE", new { @class = "rai-caption" });
+                                }
+                                else
+                                {
+                                    @Html.LabelFor(m => m.DataCompilazione, "DATA COMPILAZIONE", new { @class = "rai-caption" });
+                                }
+                                <div class="input-group">
+                                    <span id="calendarDataCompilazione" class="input-group-addon" style="cursor: pointer" onclick="$('#dataCompilazione').datetimepicker('show')">
+                                        <i class="fa fa-calendar"></i>
+                                    </span>
+                                    @Html.TextBoxFor(m => m.DataCompilazione, new { @class = "js-datetimepicker form-control required-min",
+                                   data_format = "DD/MM/YYYY",
+                                   data_locale = "it",
+                                   id = "dataCompilazione",
+                                   placeholder = "Selezionare una data",
+                                   autocomplete = "off",
+                                   onchange = "abilitaDisabilitaContinua();",
+                                   style = "width: 245px;"
+                               })
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }*@
+
+        // Valore che indica se è presente un modulo di adesione
+        <input type="hidden" id="HdnIsModuloDiAdesionePresente" name="HdnIsModuloDiAdesionePresente" value="@(Model.ModuloDiAdesione != null ? "True" : "False")" />
+
+        //Valore che indica se è stata già effettuata una scelta in passato
+        <input type="hidden" id="HdnIsSceltaPregressaEffettuata" name="HdnIsSceltaPregressaEffettuata" value="@Model.IsSceltaPregressaEffettuata.ToString()" />
+
+        // Valore che indica se ADESSO il tfr viene lascaito in azienda (In_Azienda) oppure no (Altro)
+        <input type="hidden" id="HdnSceltaEffettuata" name="HdnSceltaEffettuata" value="@sceltaEffettuataSplit[0]" />
+
+        // Valore che indica ADESSO la scelta su che fondo viene riportata (CRAIPI, ecc.) Se anche qui è Altro, allora il valore da considerare è quella del controllo SceltaSpecificaDefinitaDaUtente
+        <input type="hidden" id="HdnSceltaSpecificaEffettuata" name="HdnSceltaSpecificaEffettuata" value="@sceltaEffettuataSplit[1]" />
+
+        // Valore che indica se i dati sono stati importati da cics
+        <input type='hidden' id='HdnImportatoDaCics' name='HdnImportatoDaCics' value='@Model.ImportatoDaCics.ToString()' />;
+    }
+
+    <div class="row" style="margin-top: 6rem;">
+        <div class="col-sm-12">
+            <section class="rai panel">
+                <div class="panel-body" id="my-block">
+                    @*Modulo di adesione*@
+
+                    @* Il Modulo di adesione NON è obbligatorio se non è stata effettuata una scelta in passato e ADESSO il tfr viene lasciato in azienda. In tutti gli altri casi è obbligatorio *@
+                    @if (!Model.IsSceltaPregressaEffettuata && sceltaEffettuataSplit[0] == "In_Azienda")
+                    {
+                        <span class="rai-font-md-bold" style="font-size: 18px;">Modulo di adesione</span>
+                    }
+                    else
+                    {
+                        <span class="rai-font-md-bold" style="font-size: 18px;">Modulo di adesione</span><span class="rai-font-md-bold" style="color: #e50012;"> * </span>
+                    }
+
+                    <div id="btn-upload-modulo-di-adesione" class="rai-btn-fill" style="display:@(Model.ModuloDiAdesione == null ? "block" : "none")">
+                        <button id="button-allegato-modulo-di-adesione"
+                                type="button"
+                                onclick="javascript: configuraModalPerUploadDocumentoDiAdesione()"
+                                class="btn rai-btn-small"
+                                style="margin-top:25px">
+                            Aggiungi documento
+                        </button>
+                    </div>
+
+                    <div id="progressbar-modulo-di-adesione-ancor"></div>
+
+                    @*File caricato*@
+                    <div style="margin-top: 3rem;">
+                        <table style="width: 100%;">
+                            <tbody id="modulo-di-adesione-caricato-tbody">
+                                @if (Model.ModuloDiAdesione != null)
+                                {
+                                    @Html.Partial("_trFileUpload", Model.ModuloDiAdesione)
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div id="dati-modulo-di-adesione-ancor"></div>
+
+
+    <div class="row" style="margin-top: 6rem;">
+        <div class="col-sm-12">
+            <section class="rai panel">
+                <div class="panel-body" id="my-block">
+                    @*Altri documenti*@
+                    <span class="rai-font-md-bold" style="font-size: 18px;">Altri documenti</span>
+
+                    @*<span class="rai-font-md" style="display: block;">Se hai altri documenti a supporto della richiesta puoi caricarli qui, specificando per ogni documento un titolo ed una breve descrizione</span>*@
+
+                    <div class="rai-btn-fill">
+                        <button id="button-allegato-altri-documenti"
+                                type="button"
+                                onclick="configuraModalPerUploadAltriDocumenti()"
+                                class="btn rai-btn-small"
+                                style="margin-top:25px">
+                            Aggiungi documenti
+                        </button>
+                    </div>
+
+                    <div id="progressbar-altri-documenti-ancor"></div>
+
+                    @*Files caricati*@
+                    <div style="margin-top: 3rem;">
+                        <table style="width: 100%;">
+                            <tbody id="altri-documenti-caricati-tbody">
+                                @if (Model.AltriDocumenti != null && Model.AltriDocumenti.Count() > 0)
+                                {
+                                    foreach (var documento in Model.AltriDocumenti)
+                                    {
+                                        @Html.Partial("_trFileUpload", documento)
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+    <div id="dati-altri-documenti-ancor"></div>
+
+    // Div per inserire le info e il file da caricare
+    <div id="choose-file-panel" style="display:none">
+        <div class="row">
+            <section class="rai panel">
+                <div class="panel-body" id="my-block">
+                    <span class="label-mat">TITOLO DEL DOCUMENTO</span>
+                    <span class="campoObbligatorio" style="font-weight:bold">*</span>
+                    <input id="titolodoc" type="text" style="height:46px;margin-bottom:12px" class="form-control" />
+
+                    <span class="label-mat">DESCRIZIONE DEL DOCUMENTO</span>
+                    <span class="campoObbligatorio" style="font-weight:bold">*</span>
+                    <input id="descrizionedoc" type="text" style="height:46px" class="form-control" />
+
+                    <input id="isobbligatorio" type="hidden" value="" />
+                    <input id="tipo" type="hidden" value="" />
+
+                    <div class="rai-btn-fill">
+                        <button id="button-allegato-" type="button" onclick="$('#fileuploadtfr').click()" class="btn rai-btn-small" style="margin-top:25px">
+                            Invia documento
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    //  Progress bar
+    <div id="progress-bar-panel" class="rai progress progress-xs m-2 light" style="margin-bottom: 8px;margin-top: 10px; display:none;">
+        <div id="progress-bar" class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="0" aria-="" valuemin="0" aria-valuemax="100" style="width:0%;">
+
+        </div>
+    </div>
+
+    if (ViewBag.IsDoppioImponibileAbilitato == true)
+    {
+        <div class="rai-btn-fill" style="margin-top: 6rem;">
+            <label class="rai-caption">* selezionando questa opzione verrà stanziato il doppio dell'imponibile TFR al fondo selezionato</label>
+        </div>
+        <div style="margin-top: 2rem;">
+            <div class="rai-btn-fill">
+                <a id="btnAnnulla" class="btn full-width rai-btn-secondary"
+                   title="Annulla" href="javascript:TornaIndietro()">Indietro</a>
+
+                <a id="btnContinua" class="btn full-width rai-btn-primary"
+                   title="Continua" href="javascript:postForm()">Continua</a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div style="margin-top: 8rem;">
+            <div class="rai-btn-fill">
+                <a id="btnAnnulla" class="btn full-width rai-btn-secondary"
+                   title="Annulla" href="javascript:TornaIndietro()">Indietro</a>
+
+                <a id="btnContinua" class="btn full-width rai-btn-primary"
+                   title="Continua" href="javascript:postForm()">Continua</a>
+            </div>
+        </div>
+    }
+
+
+
+    // Controllo di upload file nascosto. Il click per l'apertura della finestra di selezione file viene fatto dal modal in cui bisogna inserire altre info
+    <input style="display:none"
+           type="file"
+           id="fileuploadtfr"
+           onchange="fileChangedTfr()" />
+}
+
+<script>
+    $(document).ready(function () {
+        // Inizializzo il datepicker
+        InitDatePicker();
+
+        // Abilito o disabilito bottone continua a seconda delle condizioni
+        abilitaDisabilitaContinua();
+    });
+
+    /**
+     * Funzione che esegue il post del form
+     * */
+    function postForm() {
+
+        var esitoVerificaCampiObbligatori = isValidToPostStep2();
+
+        // console.log(esitoVerificaCampiObbligatori);
+
+        if (esitoVerificaCampiObbligatori) {
+            var verificaDataInserita = isDataValidToPostStep2();
+            if (verificaDataInserita == '') {
+                var dati = $('#StepForm').serialize();
+
+                //console.log('OK verifica date');
+
+                $.ajax({
+                    type: 'POST',
+                    cache: false,
+                    url: "/SceltaDestinazioneTfr/PostStep2",
+                    data: dati,
+                    success: function (data) {
+                        // Aggiorno il content del div principale
+                        $('#div-modulo-trattamento-fine-rapporto').html(data);
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        swal({
+                            title: jqXHR.statusText,
+                            type: 'error',
+                            confirmButtonClass: "btn btn-primary btn-lg",
+                            showConfirmButton: true,
+                            confirmButtonText: 'Ok',
+                            customClass: 'rai'
+                        });
+                    }
+                });
+            } else {
+                swal({
+                    title: verificaDataInserita,
+                    type: 'error',
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+            }
+        }
+        else {
+            swal({
+                title: 'Completare i dati prima di procedere',
+                type: 'error',
+                confirmButtonClass: "btn btn-primary btn-lg",
+                showConfirmButton: true,
+                confirmButtonText: 'Ok',
+                customClass: 'rai'
+            });
+        }
+    }
+
+    /**
+     * Funzione che esegue torna allo step precedente
+     * */
+    function TornaIndietro() {
+
+        var dati = $('#StepForm').serialize();
+
+        $.ajax({
+            type: 'POST',
+            cache: false,
+            url: "/SceltaDestinazioneTfr/BackStep1",
+            data: dati,
+            success: function (data) {
+                // Aggiorno il content del div principale
+                $('#div-modulo-trattamento-fine-rapporto').html(data);
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                swal({
+                    title: jqXHR.statusText,
+                    type: 'error',
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+            }
+        });
+    }
+
+    /**
+     * Funzione che esegue la verifica di corretto inserimento campi obbligatori
+     * */
+    function isValidToPostStep2() {
+
+        return verificaCampiPerContinuare();
+        //var esitoVerifiche = true;
+
+        //// Leggo il tipo di scelta effettuara
+        //var sceltaEffettuata = $('#StepForm #hdnSceltaEffettuata').val();
+
+        //console.log(sceltaEffettuata);
+
+        //// Nel caso il TFR non è lasciando in azienda bisogna inserire la quota e la data di adesione al fondo
+        //if (sceltaEffettuata !== 'In_Azienda') {
+        //    var quotaSelezionata = $('#StepForm #QuotaSelezionata').val();
+        //    var dataSelezionata = $('#StepForm #dataAdesioneAlFondo').val();
+
+        //    if (quotaSelezionata === '0' || !dataSelezionata) {
+        //        esitoVerifiche = false;
+        //    }
+
+        //    if (esitoVerifiche == true) {
+        //        var sceltaSpecificaUtenteControl = $('#StepForm #SceltaSpecificaDefinitaDaUtente');
+        //        if (sceltaSpecificaUtenteControl) {
+        //            var sceltaSpecificaUtente = sceltaSpecificaUtenteControl.val();
+        //            if (!sceltaSpecificaUtente) {
+        //                esitoVerifiche = false;
+        //            }
+        //        }
+        //    }
+        //}
+
+        //return esitoVerifiche;
+    }
+
+    function abilitaDisabilitaContinua() {
+
+        // Disabilito il bottone
+        $('#btnContinua').addClass('disabled');
+
+        // Riabilito il bottone secondo codizione
+        if (verificaCampiPerContinuare()) {
+            $('#btnContinua').removeClass('disabled');
+        }
+    }
+
+    function verificaCampiPerContinuare() {
+        // Il metodo di HRis è l'insieme dei 2 metodi di RaiPerMe. Quindi utilizzo 2 variabili booleane e alla fine ne faccio l'and
+        var isAbilitatoPerControlliNoFile = false;
+        var isAbilitatoPerControlliFile = false;
+
+        console.log('abilitaDisabilitaContinua');
+        console.log('isAbilitatoPerControlliNoFile ' + isAbilitatoPerControlliNoFile);
+        console.log('isAbilitatoPerControlliFile ' + isAbilitatoPerControlliFile);
+
+        // --> Leggo i valori dallo step precedente
+
+        // Se è stata effettuata una scelta in passato (Step precedente)
+        var valoreSceltaPrecedente = $('#HdnIsSceltaPregressaEffettuata').val();
+        console.log('valoreSceltaPrecedente ' + valoreSceltaPrecedente);
+
+        // Scelta attuale (se in azienda o altro) (Step precedente)
+        var valoreSceltaAttuale = $('#HdnSceltaEffettuata').val();
+        console.log('valoreSceltaAttuale ' + valoreSceltaAttuale);
+
+        // Scelta specifica (Da ddl: CRAIPI, ecc.) (Step precedente)
+        var sceltaSpecificaEffettuata = $('#HdnSceltaSpecificaEffettuata').val();
+        console.log('sceltaSpecificaEffettuata ' + sceltaSpecificaEffettuata);
+
+        // Scelta specifica definita dall'utente (Step attuale)
+        var sceltaSecificaDaDdlFondi = $('#DdlFondiSpecifici').val();
+        console.log('sceltaSecificaDaDdlFondi ' + sceltaSecificaDaDdlFondi);
+
+        // Leggo se è presente o meno un Modulo di Adesione
+        var isModuloDiAdesionePresente = $('#HdnIsModuloDiAdesionePresente').val();
+        console.log('isModuloDiAdesionePresente ' + isModuloDiAdesionePresente);
+
+        // Leggo la quota delezionata
+        //let selectIdQuota = _RaiSelectIdentifier('DdlQuota');
+        //let quotaSelezionata = $('#StepForm #' + selectIdQuota).val();
+        var quotaSelezionata = $('#StepForm #DdlQuota').val();
+        //if ($('#StepForm #DoppioImponibileTfr').is(':checked')) {
+        //    quotaSelezionata = '100';
+        //}
+        console.log('quotaSelezionata ' + quotaSelezionata);
+        //console.log('quotaSelezionata2 ' + quotaSelezionata2);
+
+        // Leggo la data di adesione al fondo
+        var dataAdesioneAlFondo = $('#StepForm #dataAdesioneAlFondo').val();
+        console.log('dataAdesioneAlFondo ' + dataAdesioneAlFondo);
+
+        // Leggo la data di compilazione
+        //// CL - 20230104 - La data di compilazione non necessita validazione in quanto automaticamente salvata nel controller. Viene modificata in dataPrimaIscrizione, che deve essere aggiunta.
+        ////var dataCompilazione = $('#StepForm #dataCompilazione').val(); // Può essere undefined visto che il controllo non viene creato se allo step 1 ho detto che non è mai effettuato una scelta
+        var dataPrimaIscrizione = $('#StepForm #dataPrimaIscrizione').val(); // Può essere undefined visto che il controllo non viene creato se allo step 1 ho detto che non è mai effettuato una scelta
+        console.log('dataPrimaIscrizione ' + dataPrimaIscrizione);
+
+        // Leggo il valore del campo nascosto che mi indica se i dati sono stati importat da cics
+        var importatoDaCics = $('#HdnImportatoDaCics').val();
+
+        // --> Verifiche sui controlli non file
+
+        //// CL - 20230104 - La data di compilazione è impostata automaticamente nel metodo di salvataggio del controller, quindi non è più significativa al fine di abilitare o disabilitare il pulsante Continua.
+        // Adesso lascio in azienda e nessuna scelta precedente
+        ////if (valoreSceltaAttuale == 'In_Azienda' && valoreSceltaPrecedente.toUpperCase() == "FALSE") {
+        ////    // Riabilito il bottone a prescendere dalla data perchè non è obbligatoria
+        ////    isAbilitatoPerControlliNoFile = true;
+        ////}
+
+        ////// Adesso lascio in azienda e ho una scelta precedente
+        ////if (valoreSceltaAttuale == 'In_Azienda' && valoreSceltaPrecedente.toUpperCase() == "TRUE") {
+        ////    if (dataCompilazione) {
+        ////        // Riabilito il bottone solo se è stata inserita la data
+        ////        isAbilitatoPerControlliNoFile = true;
+        ////    }
+        ////}
+        if (valoreSceltaAttuale == 'In_Azienda') {
+
+            // Riabilito il bottone a prescendere dalla data perchè non è obbligatoria
+            isAbilitatoPerControlliNoFile
+        }
+
+        // Adesso ho destinato il tfr ad un fondo e nessuna scelta precedente
+        if (valoreSceltaAttuale == 'Altro' && valoreSceltaPrecedente.toUpperCase() == "FALSE") {
+            // Riabiito il bottone solo se ho inserito tutti i campi
+            if (
+                quotaSelezionata == '0' ||
+                !dataAdesioneAlFondo ||
+                !dataPrimaIscrizione ||
+                !sceltaSpecificaEffettuata ||
+                (sceltaSpecificaEffettuata == 'Altro' && !sceltaSecificaDaDdlFondi)) {
+                // Lascio disabilitato
+            } else {
+                // Riabilito il tasto
+                isAbilitatoPerControlliNoFile = true;
+            }
+        }
+
+        // Adesso ho destinato il tfr ad un fondo e ho una scelta precedente
+        if (valoreSceltaAttuale == 'Altro' && valoreSceltaPrecedente.toUpperCase() == "TRUE") {
+            // Riabiito il bottone solo se ho inserito tutti i campi
+            if (
+                quotaSelezionata == '0' ||
+                !dataAdesioneAlFondo ||
+                !dataPrimaIscrizione ||
+                !sceltaSpecificaEffettuata
+                //|| (sceltaSpecificaEffettuata == 'Altro' && sceltaSecificaDaDdlFondi)
+            ){
+                // Lascio disabilitato
+            } else {
+                // Riabilito il tasto
+                isAbilitatoPerControlliNoFile = true;
+            }
+        }
+
+        // --> Verifiche su file
+
+        // Se è presente, il controllo deve ancora essere abilitato perchè caricato precedentemente
+        if (isModuloDiAdesionePresente.toUpperCase() == "TRUE") {
+            isAbilitatoPerControlliFile = true;
+        }
+
+        //console.log(valoreSceltaPrecedente);
+        //console.log(valoreSceltaAttuale);
+        //console.log(isModuloDiAdesionePresente);
+
+        // Se non è presente si aprono 2 scenari
+        // 1) Se il Modulo di Adesione non è obbligaorio (se non è stata effettuata una scelta precedente e adesso il tfr è in azienda oppure se i dati sono stati importati da cics)
+        // 2) Se il Modulo di Adesione è obbligatorio (tutti gli altri casi)
+
+        if (importatoDaCics.toUpperCase() == "TRUE" || (valoreSceltaPrecedente.toUpperCase() == "FALSE" && valoreSceltaAttuale == 'In_Azienda')) {
+            // Il modulo non è obbligatorio
+            isAbilitatoPerControlliFile = true;
+        }
+
+        //console.log('isAbilitatoPerControlliNoFile ' + isAbilitatoPerControlliNoFile);
+        //console.log('isAbilitatoPerControlliFile ' + isAbilitatoPerControlliFile);
+
+        return isAbilitatoPerControlliNoFile && isAbilitatoPerControlliFile
+        //if (isAbilitatoPerControlliNoFile && isAbilitatoPerControlliFile) {
+        //    $('#btnContinua').removeClass('disabled');
+        //}
+    }
+
+    /**
+     * Funzione che verifica che una data inserita non è maggiore di oggi
+     * */
+    function isDataValidToPostStep2() {
+
+        var dataAdesioneAlFondo = $('#StepForm #dataAdesioneAlFondo').val();
+
+        //// CL - 20230104 - La data di compilazione viene salvata direttamente nel metodo di salvataggio del controller, qui viene sostituita dalla data di prima iscrizione.
+        ////var dataCompilazione = $('#StepForm #dataCompilazione').val();
+        var dataPrimaIscrizione = $('#StepForm #dataPrimaIscrizione').val();
+
+        var DataInseritaSplit;
+        var dataInserita;
+        var oggiCompleta = new Date();
+        var oggi = new Date(oggiCompleta.getFullYear(), oggiCompleta.getMonth(), oggiCompleta.getDate());
+
+        if (dataAdesioneAlFondo) {
+            DataInseritaSplit = dataAdesioneAlFondo.split('/');
+            dataInserita = new Date(parseInt(DataInseritaSplit[2]), parseInt(DataInseritaSplit[1]) - 1, parseInt(DataInseritaSplit[0]));
+
+            //console.log('Data adesione al fondo');
+            //console.log('dataInserita ' + dataInserita);
+            //console.log('Oggi ' + oggi);
+
+            if (dataInserita > oggi) {
+                return 'La data di adesione al fondo non può essere superiore ad oggi';
+            }
+        }
+
+        //// CL - 20230104 - La data di compilazione viene salvata direttamente nel metodo di salvataggio del controller, qui viene sostituita dalla data di prima iscrizione.
+        ////if (dataCompilazione) {
+        ////    DataInseritaSplit = dataCompilazione.split('/');
+        ////    dataInserita = new Date(parseInt(DataInseritaSplit[2]), parseInt(DataInseritaSplit[1]) - 1, parseInt(DataInseritaSplit[0]));
+
+        ////    //console.log('Data compilazione');
+        ////    //console.log('dataInserita ' + dataInserita);
+        ////    //console.log('Oggi ' + oggi);
+
+        ////    if (dataInserita > oggi) {
+        ////        return 'La data di compilazione non può essere superiore ad oggi';
+        ////    }
+        ////}
+        if (dataPrimaIscrizione) {
+            DataInseritaSplit = dataPrimaIscrizione.split('/');
+            dataInserita = new Date(parseInt(DataInseritaSplit[2]), parseInt(DataInseritaSplit[1]) - 1, parseInt(DataInseritaSplit[0]));
+            if (dataInserita > oggi) {
+                return 'La data di prima iscrizione non può essere superiore ad oggi';
+            }
+        }
+
+        return '';
+    }
+
+    function doppioImponibileChange() {
+        let selectId = _RaiSelectIdentifier('DdlQuota');
+        //console.log(selectId)
+
+        console.log($('#StepForm #' + selectId).val());
+
+        if ($('#StepForm #DoppioImponibileTfr').is(':checked')) {
+            $('#StepForm #' + selectId).val('100');
+            $('#value-' + selectId).text($('#StepForm #' + selectId).val() + ' %');
+            $('#StepForm #DdlQuota').html('<option value="100">100 %</option>');
+        }
+
+        console.log($('#StepForm #' + selectId).val())
+
+        abilitaDisabilitaQuotaDaDoppioImponibile();
+        abilitaDisabilitaContinua();
+    }
+
+    function abilitaDisabilitaQuotaDaDoppioImponibile() {
+        let selectId = _RaiSelectIdentifier('DdlQuota');
+        //console.log(selectId)
+
+        if ($('#StepForm #DoppioImponibileTfr').is(':checked')) {
+            //$('#StepForm #' + selectId).prop('disabled', true);
+            $('#StepForm #' + selectId).attr('data-rai-select-readonly', true);
+        } else {
+            //$('#StepForm #' + selectId).prop('disabled', false);
+            $('#StepForm #' + selectId).attr('data-rai-select-readonly', false);
+        }
+    }
+
+    // --- Upload file ---
+
+    // Div in cui viene spostato a volo il pannello per inserire titolo e descrizione del file che si sta caricando
+    var datiModuloDiAdesioneAncor = $('#dati-modulo-di-adesione-ancor');
+    var datiAltriDocumentiAncor = $('#dati-altri-documenti-ancor');
+
+    // Div in cui viene spostata la progress bar
+    var progressbarModuloDiAdesioneAncor = $('#progressbar-modulo-di-adesione-ancor');
+    var progressbarAltriDocumentiAncor = $('#progressbar-altri-documenti-ancor');
+
+    // Pannello in cui inserire titolo e descrizione del file che si sta caricando
+    var chooseFilePanel = $('#choose-file-panel');
+
+    // Pannello contenente la progress bar
+    var progressBarPanel = $('#progress-bar-panel');
+
+    /**
+     * Configurazione del modal per l'upload del Modulo di Adesione
+     * */
+    function configuraModalPerUploadDocumentoDiAdesione() {
+
+        $('#titolodoc').val('Modulo di adesione');
+        $('#titolodoc').prop('disabled', true);
+        $('#descrizionedoc').val('');
+        $('#isobbligatorio').val('true');
+        $('#tipo').val('ModuloDiAdesione');
+
+        // Da decommentare se si vuole prima inserire titolo e descrizione
+        //datiModuloDiAdesioneAncor.append(chooseFilePanel)
+        //chooseFilePanel.show()
+
+        // Sposto la porgress bar nella zona del Modulo di Adesione
+        progressbarModuloDiAdesioneAncor.append(progressBarPanel);
+
+        // Da eliminare se si vuole prima inserire titolo e descrizione
+        $('#fileuploadtfr').click()
+    }
+
+    /**
+     * Configurazione del modal per l'upload di altro tipo di documento
+     * */
+    function configuraModalPerUploadAltriDocumenti() {
+
+        $('#titolodoc').val('');
+        $('#titolodoc').prop('disabled', false);
+        $('#descrizionedoc').val('');
+        $('#isobbligatorio').val('false');
+        $('#tipo').val('AltriDocumenti');
+
+        // Da decommentare se si vuole prima inserire titolo e descrizione
+        //datiAltriDocumentiAncor.append(chooseFilePanel)
+        //chooseFilePanel.show()
+
+        // Sposto la porgress bar nella zona degli altri documenti
+        progressbarAltriDocumentiAncor.append(progressBarPanel);
+
+        // Da eliminare se si vuole prima inserire titolo e descrizione
+        $('#fileuploadtfr').click()
+    }
+
+    /**
+     * Gestore evento onChange del controllo input file
+     */
+    function fileChangedTfr(e) {
+        var nomeFile = getNomeFile();
+
+        // Variabile booleana che memorizza il risultato di una generica verifica
+        var moduloValido = true;
+
+        moduloValido = isEstensioneValida(nomeFile);
+
+        // Da decommetare se si vuole inserire titolo e descrizione e farne le verifiche
+        //if (moduloValido) {
+        //    moduloValido = areCampiObbligatoriPresenti();
+        //}
+
+        if (moduloValido) {
+            // Se tutte le verifiche sono passate, viene eseguito l'upload
+            eseguiUpload(nomeFile);
+        }
+    }
+
+    /***
+     * Funzione che legge il nome del file che si sta caricando
+     * */
+    function getNomeFile() {
+        return $('#fileuploadtfr')
+            .val()
+            .split('\\')
+            .pop();
+    }
+
+    /**
+     * Funzione che verifica l'estensione dei files caricati
+     */
+    function isEstensioneValida(nomeFile) {
+        if (nomeFile.toLowerCase().indexOf('.pdf') < 0) {
+
+            // Ripulisco il controllo altrimenti non viene ricatturato il change
+            $('#fileuploadtfr').val('');
+
+            swal({
+                title: 'Sono ammessi soltanto file pdf',
+                type: 'error',
+                confirmButtonText: 'OK',
+                customClass: 'rai',
+            });
+
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    /**
+     * Funzione che verifica il riempimento dei campi titolo e descrizione
+     * */
+    function areCampiObbligatoriPresenti() {
+        var titoloDocumento = $('#titolodoc').val()
+        var descrizioneDocumento = $('#descrizionedoc').val();
+
+        if (!titoloDocumento || !descrizioneDocumento) {
+
+            // Ripulisco il controllo altrimenti non viene ricatturato il change
+            $('#fileuploadtfr').val('');
+
+            swal({
+                title: 'Inserire un titolo e una breve descrizione',
+                type: 'error',
+                confirmButtonText: 'OK',
+                customClass: 'rai',
+            });
+
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    /**
+     Funzione che esegue l'upload del file
+     */
+    function eseguiUpload(nomeFile) {
+
+        // console.log('eseguiUpload ' + nomeFile);
+
+        // Azzero la progrss bar e la mostro (la posizione della progress bar p stata decisa nelle funzioni Configura...)
+        $("#progress-bar").css("width", "0%")
+        progressBarPanel.show();
+
+        // Cre l'oggetto di input
+        var file = $('#fileuploadtfr')[0].files[0];
+        var titoloDocumento = $('#titolodoc').val()
+        var descrizioneDocumento = $('#descrizionedoc').val();
+        var tipo = $('#tipo').val();
+        var isObbligatorio = $('#isobbligatorio').val()
+        var matricolaUtentePostFile = $('#matricolaUtente').val()
+
+        var formdata = new FormData();
+        formdata.append('file', file);
+        formdata.append('nome', nomeFile);
+        formdata.append('titolo', nomeFile);
+        formdata.append('descrizione', descrizioneDocumento);
+        formdata.append('isObbligatorio', isObbligatorio);
+        formdata.append('tipo', tipo);
+        formdata.append('matricolaUtente', matricolaUtentePostFile);
+
+        var request = new XMLHttpRequest();
+        request.onreadystatechange = function () {
+
+            if (request.readyState == 4 && request.status == 200) {
+
+                // console.log(request.responseText)
+
+                if (tipo == 'ModuloDiAdesione') {
+                    // Ho caricato il modulo di adesione
+
+                    // Visualizzo tr nella tabella dei files
+                    $('#modulo-di-adesione-caricato-tbody').append(request.responseText);
+
+                    // Rendo invisibile il bottone di upload
+                    $('#btn-upload-modulo-di-adesione').hide();
+
+                    // Controllo se abilitare il bottone continua la possibilità di andare al prossimo step
+                    $('#HdnIsModuloDiAdesionePresente').val('True');
+                    abilitaDisabilitaContinua();
+                } else {
+                    // Ho caricato un altro documento
+
+                    // Visualizzo tr nella tabella dei files
+                    $('#altri-documenti-caricati-tbody').append(request.responseText);
+                }
+
+                // Pulisco il panel di upload
+                pulisciPanelUploadFile();
+
+                // Nascondo il panel in cui inserisco titolo e descrizione
+                chooseFilePanel.hide();
+
+                // Nascondo la progress bar
+                progressBarPanel.hide();
+            }
+            else if (request.readyState == 4 && request.status == 200) {
+                //console.dir(request);
+
+                swal({
+                    title: 'Errore',
+                    text: 'Errore nel caricamento del file',
+                    type: 'error',
+                    customClass: 'rai'
+                });
+
+                // Pulisco il panel di upload
+                pulisciPanelUploadFile();
+
+                // Nascondo il panel in cui inserisco titolo e descrizione
+                chooseFilePanel.hide();
+
+                // Nascondo la progress bar
+                progressBarPanel.hide();
+            }
+            else {
+                console.dir(request);
+            }
+        }
+
+        request.upload.addEventListener('progress', function (e) {
+            var filesize = $('#fileuploadtfr')[0].files[0].size;
+            var percent = Math.round(e.loaded / filesize * 100);
+            $("#progress-bar").css("width", percent + "%");
+        });
+
+        request.open('post', '/SceltaDestinazioneTfr/PostFile');
+        request.timeout = 45000;
+        request.send(formdata);
+    }
+
+    /**
+     * Funzione che resetta i campi del pannello in cui vengono inseriti titolo e descrizione del file da caricare
+     * */
+    function pulisciPanelUploadFile() {
+        $('#titolodoc').val('');
+        $('#titolodoc').prop('disabled', false);
+        $('#descrizionedoc').val('');
+        $('#isobbligatorio').val('false');
+        $('#tipo').val('');
+
+        // Ripulisco il controllo altrimenti non viene ricatturato il change
+        $('#fileuploadtfr').val('');
+    }
+
+    /**
+     * Funzione che visualizza un file
+     */
+    function visualizzaFile(idAllegato) {
+
+    }
+
+    /**
+     * Funzione che elimina un file dopo aver chiesto conferma all'utente
+     */
+    function eliminaFile(idAllegato) {
+
+        var tipo = $('#riga-allegato-' + idAllegato).data('tipo');
+
+        swal({
+            title: 'Sei sicuro di voler eliminare il documento selezionato?',
+            type: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sì, elimina',
+            cancelButtonText: 'Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+            eseguiEliminazioneAllegato(idAllegato, tipo)
+        });
+    }
+
+    /**
+     * Funzione che esegue l'eliminazione del file
+     */
+    function eseguiEliminazioneAllegato(idAllegato, tipo) {
+        $.ajax({
+            url: "/SceltaDestinazioneTfr/EliminaAllegato",
+            type: "POST",
+            data: JSON.stringify({
+                idAllegato: idAllegato
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: 'html',
+            success: function (data) {
+                swal({
+                    title: 'Documento eliminato correttamente',
+                    type: 'success',
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+                $('#riga-allegato-' + idAllegato).remove();
+
+                if (tipo == 'ModuloDiAdesione') {
+                    // Rendo visibile il bottone di upload
+                    $('#btn-upload-modulo-di-adesione').show();
+
+                    // Controllo se disabilitare il bottone continua la possibilità di andare al prossimo step
+                    $('#HdnIsModuloDiAdesionePresente').val('False');
+                    abilitaDisabilitaContinua();
+                }
+            },
+            error: function (xhr, status) {
+                swal({
+                    title: xhr.statusText,
+                    type: 'error',
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+            }
+        });
+    }
+
+    // --- Fine Upload file ---
+</script>

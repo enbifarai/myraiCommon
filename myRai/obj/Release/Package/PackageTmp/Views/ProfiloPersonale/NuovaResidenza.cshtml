@@ -1,0 +1,178 @@
+﻿@using myRaiHelper;
+@model myRaiCommonModel.ProfiloPersonaleModel
+
+<script src="~/assets/js/plugins/jquery-validation/additional-methods.min.js"></script>
+@**@
+
+
+
+@using (Html.BeginModal("Nuova Residenza"))
+{
+    <div class="row">
+        <div class="col-sm-12">
+
+            @using (Html.BeginPanel(PanelType.Panel, "Residenza", false))
+            {
+
+                using (Html.BeginForm("ModificaResidenzaDB", "ProfiloPersonale", FormMethod.Post, new { @id = "form-nuovo-residenza" }))
+                {
+
+
+
+
+                    <div class="form-group rai">
+
+
+
+
+                        <div class="row push-20">
+                            <div class="col-sm-12 col-xs-12 col-lg-12">
+                                <label class="rai-caption">Indirizzo <font color="#d2322d">*</font></label>
+                                @Html.TextBoxFor(m => m.ResDomdb.DES_INDIRRES, new
+                           {
+                               @class = "rai form-control",
+                               id= "ind-res",
+                               onkeyup = "checkInputRes()"
+                           })
+                                @Html.ValidationMessageFor(m => m.ResDomdb.DES_INDIRRES)
+                            </div>
+
+                            <div class="col-sm-12 col-xs-12 col-lg-8">
+                                @Html.LabelForRequiredObbl(m => m.ResDomdb.COD_CITTARES, "Comune", new { @class = "rai-caption" })
+
+                                @Html.RaiAsyncSelectFor(m => m.ResDomdb.COD_CITTARES, Url.Action("GetComuni", "ProfiloPersonale"), 3, attributes: new { required = "required", id = "comune-res", onchange = "checkInputRes()" }, searchText: "Prova a scrivere \"Roma\"")
+                                @Html.ValidationMessageFor(m => m.ResDomdb.COD_CITTARES)
+
+                            </div>
+
+                            <div class="col-sm-12 col-xs-12 col-lg-4">
+                                @Html.LabelForRequiredObbl(m => m.ResDomdb.CAP_CAPRES, "CAP", new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.ResDomdb.CAP_CAPRES, new { @class = "rai form-control", id = "cap-res", onkeyup = "checkInputRes()" })
+                                @Html.ValidationMessageFor(m => m.ResDomdb.CAP_CAPRES)
+
+                            </div>
+
+                            <div class="col-xs-12 push-10">
+                                @Html.LabelForRequiredObbl(m => m.ResDomdb.DTA_CAMBIO_RES, "Data cambio residenza", new { @class = "rai-caption" })
+                                <div class="input-group">
+                                    <span class="input-group-addon" style="cursor: pointer" onclick="$('#cambio-data').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                                    @Html.TextBoxFor(m => m.ResDomdb.DTA_CAMBIO_RES, "{0:d MMM yyyy}", new {@class = "js-datetimepicker  form-control", id = "cambio-data",  data_locale = "it", placeholder = "Selezionare una data", autocomplete = "off", required = "required", onchange = "checkInputRes()" })
+                                </div>
+                                @Html.ValidationMessageFor(m => m.ResDomdb.DTA_CAMBIO_RES)
+                            </div>
+
+                            <div class="row push-20">
+
+                                <div id="annoprecedente" class="field-validation-error col-sm-12" style="display:none;">Attenzione: per cambi di residenza con decorrenza nell'anno precedente rivolgersi all'ufficio del personale</div>
+
+                                
+                            </div>
+
+                        </div>
+
+                        @*<div class="row push-20">
+
+                                <div id="ugualecellulare" class="field-validation-error col-sm-12" style="display:none;">Attenzione: il numero inserito è già in uso.</div>
+
+                                <div id="cellulareform" class="col-sm-12" cell="@cellulare" style="display:none;"></div>
+                            </div>*@
+
+                        <div class="row push-20">
+
+                            <div class="col-sm-12">
+
+
+
+
+                                <div class="rai-checkbox">
+                                    <input type="checkbox" id="flag-anche-domicilio" value="01" name="AncheDomicilio" />
+                                    <input type="hidden" value="00" name="AncheDomicilio" />
+                                    <label class="rai-caption" for="flag-anche-domicilio" data-toggle="tooltip" title="Selezionare solo nel caso in cui si voglia modificare anche il domicilio">Modifica anche il domicilio</label>
+
+
+                                </div>
+
+
+
+                            </div>
+
+
+                        </div>
+
+
+
+
+
+
+
+
+
+
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <label class="rai-font-md">
+                                    Compilando il modulo si dichiara di essere intestatario dei rapporti qui indicati e di essere a conoscenza che, salvo diversa e tempestiva indicazione di diverse coordinate bancarie, eventuali competenze arretrate (nonché le indennità di fine rapporto, qualora lavoratore a tempo determinato) saranno accreditate sul conto già utilizzato per l’accredito dello stipendio.
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <label class="rai-font-md">
+                                    In merito alle tempistiche necessarie al fine di registrare una modifica relativa a dati bancari, è consigliabile mantenere temporaneamente attivo il vecchio codice iban in quanto non si assicura già per il mese corrente l’accredito sulle nuove coordinate bancarie.
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <label class="rai-font-md">
+                                    Attenzione: in caso di conto <b>vincolato</b>, è propria responsabilità consegnare all’Ufficio di competenza la necessaria modulistica relativa alle coordinate bancarie dichiarate.
+                                </label>
+                            </div>
+                        </div>
+
+
+                        <div class="row">
+                            <div class="col-sm-12 text-left" style="margin-top:30px">
+                                <div class="rai-btn-fill">
+                                    <button onclick="ModificaResidenzaDB()" type="button" class="btn rai-btn-primary" id="submitDatiRes" disabled>Salva i dati </button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+
+                }
+            }
+
+        </div>
+    </div>
+
+}
+
+
+
+
+<script>
+    InitDatePicker();
+    $.validator.unobtrusive.parse(document);
+
+
+
+
+
+
+
+
+
+
+</script>
+
+
+
+
+
+
+

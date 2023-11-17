@@ -1,0 +1,139 @@
+﻿@model myRaiCommonModel.ChatItemModel
+
+@if (Model.chatitem.MATRICOLA_FROM == myRaiHelper.CommonHelper.GetCurrentUserMatricola())
+{
+    <span class="rai-font-sm-neutral" style="display:block;margin-top:10px">Tu, @Model.chatitem.TIMESTAMP.ToString("dd MMMM yyyy")</span>
+}
+else
+{
+    <span class="rai-font-sm-neutral" style="display:block;margin-top:10px">@(Model.ListInfoMatricole.Where(x => x.matricola == Model.matricola).Select(x => x.nominativo).FirstOrDefault()) , @Model.chatitem.TIMESTAMP.ToString("dd MMMM yyyy")</span>
+}
+
+
+<div class="rai-profile-widget" style="margin-top: 12px;BACKGROUND-COLOR: #fff;padding: 20px;">
+    <div class="row">
+        <div class="col-sm-10">
+            <div id="profile-1" class="rai-profile-image">
+                <img src="@myRaiHelper.CommonHelper.GetUrlFotoExternal(Model.matricola)" class="">
+                <div class="border-base-color rai-profile-presence bg-feedback-success"></div>
+            </div>
+            <div id="profile-2" class="rai-profile-info">
+                @{
+
+                }
+                @*<span class="rai-font-md-bold ">@Model.anagrafica[1] @Model.anagrafica[2]</span>*@
+                <span class="rai-font-md-bold ">@Model.ListInfoMatricole.Where(x => x.matricola == Model.matricola).Select(x => x.nominativo).FirstOrDefault()</span>
+                <br>
+                <span class="rai-font-sm">@Model.ListInfoMatricole.Where(x => x.matricola == Model.matricola).Select(x => x.posizione).FirstOrDefault()</span>
+
+            </div>
+        </div>
+        <div class="col-sm-2" style="text-align: right;">
+
+        </div>
+
+    </div>
+    <div class="row" style="margin-top: 20px;">
+        @if (Model.IsOpeningItem)
+        {
+            <span class="rai-font-sm-neutral">Segnalazione</span>
+            <br>
+        }
+
+        <span class="rai-font-md">@Model.chatitem.NOTA</span>
+    </div>
+</div>
+@if (Model.chatitem.XR_MAT_ALLEGATI.Any() && Model.chatitem.MATRICOLA_FROM != Model.chatitem.XR_MAT_SEGNALAZIONI.XR_MAT_RICHIESTE.MATRICOLA)
+{
+    foreach (var a in Model.chatitem.XR_MAT_ALLEGATI)
+    {
+        <div data-id-allegato="@a.ID" style="background-color: #fff;margin-top:12px;border-radius: 3px;padding: 12px;">
+            <div class="row">
+                <div class="col-sm-9" style="padding-left:5px">
+                    <span class="rai-font-md-bold" style="font-size: 130%;">@myRaiCommonManager.MaternitaCongediManager.GetAllegatoTipologia(a.TIPOLOGIA)</span>
+                </div>
+                <div class="col-sm-3" style="text-align:right;padding-right:0px">
+                    @if (a.ID_STATO == 10)
+                    {
+                        <span id="span@(a.ID)" class="rai-font-sm" data-stato="@a.ID_STATO" style="color: #EE9600;font-weight: bold;">In approvazione</span>
+                    }
+                    @if (a.ID_STATO == 20)
+                    {
+                        <span id="span@(a.ID)" class="rai-font-sm" data-stato="@a.ID_STATO" style="color:#008A09;font-weight: bold;">Approvato</span>
+                    }
+                    @if (a.ID_STATO == 50)
+                    {
+                        <span id="span@(a.ID)" class="rai-font-sm" data-stato="@a.ID_STATO" style="color: #E50012;font-weight: bold;">Da sostituire</span>
+                    }
+                </div>
+            </div>
+
+
+            <div class="widget-summary" style="margin-top: 8px;">
+                <div class="widget-summary-col widget-summary-col-icon">
+                    <div class="summary-icon bg-cda" style="width:36px; height:36px;line-height:32px;background-color:#eee">
+                        <i class="icons icon-doc" style="font-size: 65%;"></i>
+                    </div>
+                </div>
+                <div class="widget-summary-col">
+                    <div class="row">
+                        <div class="col-sm-8">
+                            <div class="summary">
+                                <span class="rai-font-md" style="word-break:break-word;display: block;">@a.NOMEFILE</span>
+                                <span class="rai-font-sm-neutral">@(a.BYTECONTENT.Length / 1000) KB</span>
+                            </div>
+                        </div>
+
+
+                        <div class="col-sm-4" style="text-align:right;padding-right:0px;padding-left:0px" id="cont-span227">
+                            @if (a.ID_STATO == 10 && ! Model.IdAllegatiGiaInValutazione.Contains(a.ID))
+                            {
+                                <button data-idallegato-valutato="@a.ID" id="nok-@a.ID" class="valuta-allegato nok-notselected btn btn-action-icon" style="margin-right: 4px;" onclick="SelectNok(@a.ID,true)">
+                                    <i class="fa fa-times"></i>
+                                </button>
+                                <button data-idallegato-valutato="@a.ID" id="ok-@a.ID" class="valuta-allegato ok-notselected btn btn-action-icon" onclick="SelectOk(@a.ID,true)">
+                                    <i class="fa fa-check"></i>
+                                </button>
+                            }
+
+
+                            <a target="_blank" href="/maternitacongedi/getpdf?id=@a.ID" class="rai-font-sm" onclick="" aria-label="Scegli file" title="Visualizza" style="margin-left:16px; margin-right:8px;min-width:80px;color: #005EB3;font-weight: bold;">Visualizza</a>
+
+                        </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                        @*<div class="col-sm-4" style="text-align:right;padding-right:0px;padding-left:0px" id="cont-span106">
+
+
+                            <a target="_blank" href="/maternitacongedi/getpdf?id=@a.ID" class="rai-font-sm" onclick="" aria-label="Scegli file" title="Visualizza" style="margin-right:8px;min-width:80px;color: #005EB3;font-weight: bold;">Visualizza</a>
+
+
+
+                        </div>*@
+
+                    </div>
+
+
+                </div>
+
+            </div>
+
+        </div>
+    }
+
+}

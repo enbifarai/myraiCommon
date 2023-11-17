@@ -1,0 +1,86 @@
+﻿@using myRaiHelper
+@using MVCProject.Custom_Helpers;
+
+
+<!-- Icone -->
+@{
+    ViewBag.Title = "HRIS - " + ( ( string ) SessionHelper.Get( "GEST_SECTION" ) ).TitleCase( );
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+
+    bool hrisEnabled = AuthHelper.EnabledTo( CommonHelper.GetCurrentUserMatricola( ) , "HRIS" );
+    var subFuncs = AuthHelper.EnabledSubFunc( CommonHelper.GetCurrentUserMatricola( ) , "HRIS" );
+}
+
+<section role="main" class="content-body">
+    <!-- start: page -->
+    <!-- Main Container -->
+    <main id="main-container">
+
+
+        <div class="content left-top-20">
+            <div class="row">
+                <div class="col-sm-8">
+                    @Html.AsyncPartial( "Scrivania" , "GetWidgetCompressi" , "~/Views/_RaiDesign/Widget_skeleton.cshtml" , TempData )
+                    <div class="row">
+                        <div class="col-sm-12">
+                            @Html.AsyncPartial( "Scrivania" , "GetWidgetSingoli" , "~/Views/_RaiDesign/Widget_skeleton.cshtml" , TempData )
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-12">
+                            @Html.AsyncPartial( "Scrivania" , "GetRichieste" , "~/Views/_RaiDesign/Widget_skeleton.cshtml" , TempData )
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4">
+
+                    <div class="row">
+                        <div class="col-sm-12">
+                            @Html.AsyncPartial( "Scrivania" , "GetGestioneWidget" , "~/Views/_RaiDesign/PanelNoHeader_skeleton.cshtml" , TempData )
+                        </div>
+                    </div>
+
+                    @if ( hrisEnabled )
+                    {
+                        @Html.AsyncPartial( "Scrivania" , "GetCercaDipendente" , "~/Views/_RaiDesign/Widget_skeleton.cshtml" , TempData )
+                    }
+
+                    @if ( SessionHelper.Get<string>( "GEST_SECTION" , ( ) => { return null; } ) == "GESTIONE" )
+                    {
+                        //se sono admin o amministrazione
+                        if ( subFuncs.Contains( "ADM" ) || subFuncs.Any( x => x.StartsWith( "01" ) ) )
+                        {
+
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    @Html.AsyncPartial( "Scrivania" , "GetScadenzario" , "~/Views/_RaiDesign/Widget_skeleton.cshtml" , TempData )
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- end: page -->
+</section>
+
+
+<div class="modal fade" id="modal-news" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false" style="display: none;">
+</div>
+
+@Html.RenderModal( "gestione-widget" )
+@Html.RenderModal( "richiesta" )
+
+@Html.Partial( "~/Views/MaternitaCongedi/popupvisgest.cshtml" )
+
+
+<div id="pg-visible-xs" class="visible-xs"></div>
+<div id="pg-visible-sm" class="visible-sm"></div>
+<div id="pg-visible-md" class="visible-md"></div>
+<div id="pg-visible-lg" class="visible-lg"></div>
+
+@section afterjs {
+    @Html.Raw( TempData["script"] )
+}

@@ -1,0 +1,165 @@
+﻿@using myRaiGestionale.Controllers
+@{
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    ViewBag.Title = "HRIS - Dashboard";
+}
+
+
+<section role="main" class="content-body">
+    <main id="main-container">
+        <div class="content">
+            <div class="row">
+                <div class="col-md-12">
+                    @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Log"))
+                    {
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div id="hris-log" style="min-height:50px;">
+
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                @Html.Partial("Ricerca_Log", new HrisLogFilter() { Operazione = "", DataDa = DateTime.Today.ToString("dd/MM/yyyy"), DataA = DateTime.Today.AddDays(1).ToString("dd/MM/yyyy") })
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Task"))
+                    {
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div id="hris-task" style="min-height:50px;">
+
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                @Html.Partial("Ricerca_Task", new HrisTaskFilter() { DataDa = DateTime.Today.ToString("dd/MM/yyyy"), DataA = DateTime.Today.AddDays(1).ToString("dd/MM/yyyy"), EscludiSchedulati=true })
+                            </div>
+                            <div class="col-md-3">
+                                @{
+                                    var db = new myRaiData.Incentivi.IncentiviEntities();
+                                    var tipologie = db.XR_TSK_TIPOLOGIE.ToList();
+                                }
+                                @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTableNoMarginBottom, "Esegui nuovi task"))
+                                {
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <div style="overflow:hidden;overflow-y:auto;overflow-x:auto;max-height:500px;padding-right:2px;">
+                                                <table class="table rai-table rai-table-vcenter rai-table-bordered">
+                                                    @foreach (var item in tipologie)
+                                                    {
+                                                        <tr>
+                                                            <td class="remove-padding-l rai-font-sm">
+                                                                <span>@item.COD_TIPOLOGIA</span><br /><span>@item.COD_SOTTOTIPOLOGIA</span>
+                                                            </td>
+                                                            <td class="remove-padding-r text-right">
+                                                                <button class="btn rai-btn-small" onclick="HrisTaskDetail(0, '@item.COD_TIPOLOGIA', @(item.COD_SOTTOTIPOLOGIA==null?"null":"'"+item.COD_SOTTOTIPOLOGIA+"'"))">Crea</button>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Scheduler"))
+                    {
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div id="hris-schedule" style="min-height:50px;">
+
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                @Html.Partial("Ricerca_Schedule", new HrisScheduleFilter() { })
+                            </div>
+                            <div class="col-md-3">
+                                @{
+                                    var db = new myRaiData.Incentivi.IncentiviEntities();
+                                    var tipologie = db.XR_TSK_TIPOLOGIE.ToList();
+                                }
+                                @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Nuova schedulazione"))
+                                {
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <div style="overflow:hidden;overflow-y:auto;overflow-x:auto;max-height:460px;padding-right:2px;">
+                                                <table class="table rai-table rai-table-vcenter rai-table-bordered">
+                                                    @foreach (var item in tipologie)
+                                                    {
+                                                        <tr>
+                                                            <td class="remove-padding-l rai-font-sm">
+                                                                <span>@item.COD_TIPOLOGIA</span><br /><span>@item.COD_SOTTOTIPOLOGIA</span>
+                                                            </td>
+                                                            <td class="remove-padding-r text-right">
+                                                                <button class="btn rai-btn-small" onclick="HrisScheduleDetail(0, '@item.COD_TIPOLOGIA', @(item.COD_SOTTOTIPOLOGIA==null?"null":"'"+item.COD_SOTTOTIPOLOGIA+"'"))">Crea</button>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Segnalazioni"))
+                    {
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div id="hris-segn" style="min-height:50px;">
+
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                @Html.Partial("Ricerca_Segn", new HrisSegnFilter() { DataDa = DateTime.Today.ToString("dd/MM/yyyy"), DataA = DateTime.Today.AddDays(1).ToString("dd/MM/yyyy") })
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+        </div>
+    </main>
+</section>
+
+@Html.RenderModal("log", myRaiHelper.ModalPosition.Right, myRaiHelper.ModalSize.Half)
+@Html.RenderModal("segn")
+@Html.RenderModal("task", myRaiHelper.ModalPosition.Right, myRaiHelper.ModalSize.Half)
+@Html.RenderModal("schedule", myRaiHelper.ModalPosition.Right, myRaiHelper.ModalSize.Half)
+
+@section afterjs {
+    <script>
+        $('#form-ricerca-log input[type="submit"]').click();
+        $('#form-ricerca-segn input[type="submit"]').click();
+        $('#form-ricerca-task input[type="submit"]').click();
+        $('#form-ricerca-schedule input[type="submit"]').click();
+
+        function HrisLogDetail(idLog) {
+            RaiOpenAsyncModal('modal-log', '@Url.Action("Detail_Log","Dashboard")', { idLog: idLog }, null, "POST");
+        }
+        function HrisSegnDetail(idSegn) {
+            RaiOpenAsyncModal('modal-segn', '@Url.Action("Detail_Segn","Dashboard")', { idSegn: idSegn }, null, "POST");
+        }
+        function HrisTaskDetail(idTask, tipologia, sottotipologia) {
+            RaiOpenAsyncModal('modal-task', '@Url.Action("Detail_Task","Dashboard")', { idTask: idTask, tipologia: tipologia, sottotipologia: sottotipologia }, null, "POST");
+        }
+        function HrisScheduleDetail(idSchedule, tipologia, sottotipologia) {
+            RaiOpenAsyncModal('modal-schedule', '@Url.Action("Detail_Schedule","Dashboard")', { idSchedule: idSchedule, tipologia: tipologia, sottotipologia: sottotipologia }, null, "POST");
+        }
+    </script>
+}

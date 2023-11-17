@@ -1,0 +1,118 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model List<FormStatisticsModel>
+
+<!-- Icone -->
+@{
+    Layout = "~/Views/Shared/_layout2.cshtml";
+}
+
+<section class="body">
+    @Html.Partial( "../Shared/header2" , new myRaiCommonModel.NotifichePopupModel( CommonHelper.GetCurrentUserMatricola( ) ) )
+    <div class="inner-wrapper">
+        @Html.Partial( "../Shared/sidebar3" , myRaiHelper.UtenteHelper.getSidebarModel( appType: myRaiHelper.ApplicationType.Gestionale ) )
+        <section role="main" class="content-body">
+
+            <!-- start: page -->
+            <!-- Main Container -->
+
+            <main id="main-container">
+
+                <div class="content">
+
+                    <div class="row">
+                        <div class="col-sm-12">
+
+                            @{
+                                bool GappChiuso = false;
+                            }
+
+                            @if ( !UtenteHelper.GappChiuso( ) )
+                            {
+                                int c = 0;
+                                foreach ( var item in Model )
+                                {
+                                    c++;
+                                    @Html.Partial( "GetSingleStats" , item , new ViewDataDictionary( ) { { "modelIndex" , c } } )
+                                }
+                            }
+                            else
+                            {
+                                @Html.Partial( "_cics_chiuso" )
+                                GappChiuso = true;
+                            }
+
+                        </div>
+
+                    </div>
+                </div>
+
+            </main>
+
+            <!-- end: page -->
+        </section>
+    </div>
+
+    <aside id="sidebar-right" class="sidebar-right">
+        <div class="nano has-scrollbar">
+            <div class="nano-content" tabindex="0" style="right: -17px;">
+            </div>
+        </div>
+        <div class="nano-pane" style="opacity: 1; visibility: visible;">
+            <div class="nano-slider" style="height: 583px; transform: translate(0px, 0px);"></div>
+        </div>
+    </aside>
+
+
+</section>
+
+
+@section afterjs {
+    @Html.Raw( TempData["script"] )
+    <script type="text/javascript">
+
+        @{ int c = 0;}
+        @foreach (var subModel in Model)
+        {
+            c++;
+            int i = 0;
+            foreach (var item in subModel.items)
+            {
+                i++;
+                if (item.domanda.MyRai_FormDomande1.Count() > 0)
+                {
+                    continue;
+                }
+                <text>
+                    var flotPieData_@(c+"_"+i) =@Html.Raw(item.JsonPieItems) ;
+                    $.plot($("#pie-@c-@i"), flotPieData_@(c+"_"+i), {
+                        series: {
+                            pie: {
+                                show: true,
+                                label: {
+                                    show: true,
+                                    formatter: labelFormatter,
+                                    threshold: 0.1
+                                }
+                            }
+                        },
+                        legend: {
+                            show: false
+                        }
+                    });
+                </text>
+            }
+
+
+        }
+
+    </script>
+}
+
+<div id="pg-visible-xs" class="visible-xs"></div>
+<div id="pg-visible-sm" class="visible-sm"></div>
+<div id="pg-visible-md" class="visible-md"></div>
+<div id="pg-visible-lg" class="visible-lg"></div>

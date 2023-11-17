@@ -1,0 +1,16 @@
+﻿using myRaiData.Incentivi;
+using myRaiHelper.GenericRepository;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+
+namespace myRaiGestionale.RepositoryServices
+{
+    public class TipoRapportoLavoroRepository : BaseRepository<TB_TPRLAV>
+    {
+        public TipoRapportoLavoroRepository(IncentiviEntities db) : base(db)
+        {
+        }
+    }
+}

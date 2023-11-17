@@ -1,0 +1,336 @@
+﻿
+@* freak - definisco il modello *@
+@model myRaiCommonModel.cvModels.cvModel.Studies
+
+<div id="modalAggiungi" class="modal fade right" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">  @*tabindex="-1"  freak - per compatibilità con la js-select2*@
+    <div class="modal-dialog modal-lg">
+        
+        <div class="modal-content">
+
+             <div class="block-header bg-cdf" style="height: 58px;">
+                        <ul class="block-options visible-xs">
+                            <li>
+                                <button data-dismiss="modal" type="button"><span aria-hidden="true">×</span></button>
+                            </li>
+                        </ul>
+                        <h4 class="lead" style="float: left; margin: -3px 0 0 0px; font-size: 2.1rem; color: #fff;">Inserisci CV
+                        </h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+
+              </div>
+                <div class="modal-body row height100" id="edit-content">
+                        
+                        <!--  Validazione Wizard (.js-wizard-validation class è inizializzato in js/pages/forms_wizard.js) -->
+                          <section class="panel form-wizard" id="rootwizard"> 
+                              <form  class="form-horizontal mb-lg form-inserimentocv" novalidate="novalidate" action="/CurriculumVitae/InsertCV" method="post">
+                            <div class="col-sm-6 no-pad-left no-pad-right border-right "> @*js-wizard-simple*@
+                                <!-- Step Tabs -->
+                            <div class="tabs">
+                                <ul class="nav nav-tabs nav-justify wizard-steps">
+                                    <li>
+                                        <a class="text-center" href="#validation-step1" data-toggle="tab" id="clickable" role="tab"><span class="badge hidden-xs">1</span>  Tipo Titolo</a>
+                                        @*<a class="inactive" data-toggle="tab" role="tab">1. Tipo Titolo</a>*@
+                                    </li>
+                                    <li>
+                                        <a data-toggle="tab" href="#validation-step2" onclick="click_default('diploma_click');"  role="tab"><span class="badge hidden-xs">2</span> Dettagli Titolo e Istituto</a>
+                                        @*<a class="inactive" data-toggle="tab" role="tab">2. Dettagli Titolo e Istituto</a>*@
+                                    </li>
+@*                                    <li>
+                                        <a class="inactive" href="#validation-step3" data-toggle="tab">3. Istituto e altro</a>
+                                    </li>*@
+                                </ul>
+                                <!-- FINE Step Tabs -->
+                                    @{ Html.EnableClientValidation();
+                                       Html.EnableUnobtrusiveJavaScript(); }
+
+                                <!-- Form -->
+                                <!-- jQuery Validation (.js-form2 class è inizializzato in js/pages/forms_wizard.js) -->
+                                
+                                  @* id="form_insertcv"*@
+                                    <!-- FREAK -  variabile hidden per il campo _tableTarget (indica a quale tabella deve fare riferimento -->
+                                    @*<input type="hidden" id="_tableTarget" name="_tableTarget" value="" />*@
+                                    <!-- Steps Content -->
+                                    <div class="tab-content">
+                                        <!-- Step 1 Seleziona tipo titolo di studio -->
+
+                                        <div class="tab-pane" id="validation-step1"> <!--  fade fade-right in push-30-t push-50 active -->
+                                                <ul class="nav nav-justified bg-white">
+                                                <li>
+                                                <a id="icona-raggr-3" class="icone-raggr block block-link-hover3 text-center">
+                                                <div class="block-content block-content-full border-b" id="diploma_click" onclick="Show_CV_Wizard('diploma')">
+                                                    <i class="di di-diploma text-study fa-5x"></i>
+                                                </div>
+                                                <div class="block-content block-content-full block-content-mini bg-gray-lighter">
+                                                    <strong>Diploma</strong>
+                                                </div>
+                                                </a>
+                                                </li>
+                                                <li>
+                                                       <a id="icona-raggr-1" class="icone-raggr block block-link-hover3 text-center">
+                                                            <div class="block-content block-content-full border-b" onclick="Show_CV_Wizard('laurea')">
+                                                                <i class="di di-laurea text-study fa-5x"></i>
+                                                            </div>
+                                                            <div class="block-content block-content-full block-content-mini bg-gray-lighter">
+                                                                <strong>Laurea</strong>
+                                                            </div>
+                                                        </a>
+                                                </li>
+                                                <li>
+                                                       <a id="icona-raggr-2" class="icone-raggr block block-link-hover3 text-center">
+                                                            <div class="block-content block-content-full border-b"  onclick="Show_CV_Wizard('special')">
+                                                                <i class="di di-master text-study fa-5x"></i>
+                                                            </div>
+                                                            <div class="block-content block-content-full block-content-mini bg-gray-lighter">
+                                                                <strong>Specializzazione</strong>
+                                                            </div>
+                                                        </a>
+                                                </li>
+                                            </ul>
+
+                                        </div>
+                                        <!-- FINE Step 1 -->
+
+                                        <!-- Step 2 -->
+                                        <div class="tab-pane" id="validation-step2"> <!--  fade fade-right push-50 -->
+                                            <div class="form-group">
+                                                <div class="col-md-12"> @*col-md-8 col-sm-offset-2*@
+                                                    <div class="form-material">
+                                                        <div class="frk_codTipoTitolo push-10">
+                                                        <label  for="_codTipoTitolo" class="frk_codTipoTitolo_text"></label>
+                                                        <select class="js-select2 form-control input-validation-error" data-val="true" data-val-required="Campo obbligatorio" id="_codTipoTitolo" name="_codTipoTitolo" style="width: 100%;"  onchange='FillDTitoloByCodTipoTitolo($("#_codTipoTitolo option:selected").val(), "_codTitolo");'> @*data-placeholder="Seleziona"*@
+                                                            <option value="00" id="tmp_val"></option><!-- necessario per il placeholder con Select2 plugin -->
+                                                            @{
+                                                                myRai.Data.CurriculumVitae.cv_ModelEntities cvEnt = new myRai.Data.CurriculumVitae.cv_ModelEntities();
+                                                                //var prova = new List<myRai.Data.CurriculumVitae.DTipoTitolo>();
+                                                                var tt = (from tipotitolo in cvEnt.DTipoTitolo
+                                                                            select tipotitolo).ToList();
+                                                                tt = tt.Where(m => Convert.ToInt32(m.Livello) > 40 && Convert.ToInt32(m.Livello) < 90).ToList();
+                                                                            
+                                                            }
+                                                            @foreach (var elem in tt)
+                                                            {
+                                                                @*<option value="@elem.CodTipoTitolo">@elem.DescTipoTitolo</option>*@
+                                                                <option value="@elem.CodTipoTitolo">@elem.DescTipoTitolo</option>
+                                                            }
+                                                        </select>
+                                                            @Html.ValidationMessageFor(m => m._codTipoTitolo)
+                                                        </div>
+                                                        <div class="frk_codTitolo push-10">
+                                                        <label for="_codTitolo" class="frk_codTitolo_text"></label>
+                                                        <select class="js-select2 form-control input-validation-error" data-val="true" data-val-required="Campo obbligatorio"  id="_codTitolo" name="_codTitolo" style="width: 100%;" > @*data-placeholder="Seleziona"*@
+                                                            <option></option><!-- necessario per il placeholder con Select2 plugin -->
+
+                                                        </select>
+                                                              @Html.ValidationMessageFor(m => m._codTitolo)
+                                                        </div>
+                                                        <div class="frk_corsoLaurea push-10">
+                                                            <label for="_corsoLaurea">Corso di Laurea</label>
+                                                            @*<input class="form-control" type="text" id="_corsoLaurea" name="_corsoLaurea"  placeholder="Inserire a testo libero" />*@
+                                                            @Html.TextBoxFor(m => m._corsoLaurea, new { @class="form-control", placeholder="Inserire a testo libero", id="_corsoLaurea" })
+                                                            @Html.ValidationMessageFor(m => m._corsoLaurea)
+                                                        </div>
+                                                        <div class="frk_titoloSpecializ push-10">
+                                                            <label for="_tipoSpecializ">Titolo in</label>
+                                                            @*<input class="form-control" type="text" id="_corsoLaurea" name="_corsoLaurea"  placeholder="Inserire a testo libero" />*@
+                                                            @Html.TextBoxFor(m => m._titoloSpecializ, new { @class="form-control push-10", placeholder="Inserire a testo libero", id="_titoloSpecializ" })
+                                                            @Html.ValidationMessageFor(m => m._titoloSpecializ)
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="stile-anno push-10-t">
+                                                                <div class="col-md-6 push-10">
+    @*                                                                <label for="_dataInizio" class="frk_dataInizio"></label>
+                                                                    <input class="form-control" type="text" id="_dataInizio" name="_dataInizio" placeholder="Selezionare una data" />*@
+                                                                    <label class="frk_dataInizio" id="label-data-eccez" for="example-datetimepicker6"></label>
+                                                                        
+                                                                        <div class="input-group date" style="position: relative">
+                                                                            <span class="input-group-addon" style="cursor:pointer" onclick="$('.annoinizio').datetimepicker('show')"><i class="icons icon-calendar"></i></span>    
+                                                                            @*<input class="js-datetimepicker form-control annoinizio" data-format="YYYY" data-locale="it" type="text" id="" name="" placeholder="Scegli una data">*@
+                                                                            @Html.TextBoxFor(m => m._dataInizio, new { @class="js-datetimepicker form-control annoinizio", data_format="YYYY", placeholder="Scegli una data"})
+                                                                            @Html.ValidationMessageFor(m => m._dataInizio)
+                                                                            @*<span class="input-group-addon"><i class="fa fa-calendar"></i></span>*@
+                                                                        </div>
+                                                                
+                                                                </div>
+                                                                <div class="col-md-6 push-10">
+    @*                                                                <label for="_dataFine" class="frk_dataFine"></label>
+                                                                    <input class="form-control" type="text" id="_dataFine" name="_dataFine" placeholder="Selezionare una data" />*@
+                                                                <div class="stile-anno">
+                                                                        <label class="frk_dataFine" id="label-data-eccez" for="example-datetimepicker6"></label>
+                                                                        <div class="input-group date" style="position: relative">
+                                                                            <span class="input-group-addon" style="cursor:pointer" onclick="$('.annofine').datetimepicker('show')"><i class="icons icon-calendar"></i></span>    
+                                                                            @*<input class="js-datetimepicker form-control annofine" data-format="YYYY" data-locale="it" type="text" id="" name="" placeholder="Scegli una data">*@
+                                                                            @Html.TextBoxFor(m => m._dataFine, new { @class="js-datetimepicker form-control annofine", data_format="YYYY", placeholder="Scegli una data"})
+                                                                            @Html.ValidationMessageFor(m => m._dataFine)
+                                                                           @* <span class="input-group-addon"><i class="fa fa-calendar"></i></span>*@
+                                                                        </div>
+                                                                </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="stile-data push-10-t">
+                                                                <div class="col-md-6 push-10">
+    @*                                                                <label for="_dataInizio" class="frk_dataInizio"></label>
+                                                                    <input class="form-control" type="text" id="_dataInizio" name="_dataInizio" placeholder="Selezionare una data" />*@
+                                                                        <label class="frk_dataInizio" id="label-data-eccez" for="example-datetimepicker6"></label>
+                                                                        <div class="input-group date" style="position: relative">
+                                                                            <span class="input-group-addon" style="cursor:pointer" onclick="$('.datainizio').datetimepicker('show')"><i class="icons icon-calendar"></i></span>
+                                                                            @*<input class="js-datetimepicker form-control datainizio" data-format="DD/MM/YYYY" data-locale="it" type="text" id="" name="" placeholder="Scegli una data">*@
+                                                                            @Html.TextBoxFor(m => m._dataInizio, new { @class="js-datetimepicker form-control datainizio", data_format="DD/MM/YYYY", placeholder="Scegli una data"})
+                                                                            @Html.ValidationMessageFor(m => m._dataInizio)
+                                                                            @*<span class="input-group-addon"><i class="fa fa-calendar"></i></span>*@
+                                                                        </div>
+                                                                
+                                                                </div>
+                                                                <div class="col-md-6 push-10">
+    @*                                                                <label for="_dataFine" class="frk_dataFine"></label>
+                                                                    <input class="form-control" type="text" id="_dataFine" name="_dataFine" placeholder="Selezionare una data" />*@
+                                                                        <label class="frk_dataFine" id="label-data-eccez" for="example-datetimepicker6"></label>
+                                                                        <div class="form-material input-group date" style="position: relative">
+                                                                            <span class="input-group-addon" style="cursor:pointer" onclick="$('.datafine').datetimepicker('show')"><i class="icons icon-calendar"></i></span>
+                                                                            @*<input class="js-datetimepicker form-control datafine" data-format="DD/MM/YYYY" data-locale="it" type="text" id="" name="" placeholder="Scegli una data">*@
+                                                                            @Html.TextBoxFor(mbox => mbox._dataFine, new { @class="js-datetimepicker form-control datafine", data_format="DD/MM/YYYY", placeholder="Scegli una data"})
+                                                                            @Html.ValidationMessageFor(m => m._dataFine)
+                                                                            @*<span class="input-group-addon"><i class="fa fa-calendar"></i></span>*@
+                                                                        </div>
+                                                                
+                                                                </div>
+                                                            </div>
+                                                            <span class="col-md-12 push-10 _customDataInizioFineError field-validation-error">La data di inizio deve essere minore della data di conseguimento</span>    
+                                                            <div class="col-md-6 push-10">
+                                                                <label for="_voto">Voto</label>
+                                                                @*<input class="form-control" type="text" id="_voto" name="_voto" placeholder="Inserire votazione" onkeypress="return onlyNumeric(event);"/>*@
+                                                                @Html.TextBoxFor(m => m._voto, new { @class="form-control", placeholder="Inserire votazione", onkeypress="return onlyNumeric(event);", id="_voto" })
+                                                                @Html.ValidationMessageFor(m => m._voto)
+                                                                <!-- FREAK - test validazionre campo -->
+                                                            </div>
+                                                            <div class="col-md-6 push-10">
+                                                                <label for="_scala">Scala</label>
+                                                                @*<input class="form-control" type="text" id="_scala" name="_scala"  placeholder="Scala (in cifre)" onkeypress="return onlyNumeric(event);" />*@
+                                                                @Html.TextBoxFor(m => m._scala, new { @class="form-control", placeholder="Scala (in cifre)", onkeypress="return onlyNumeric(event);",  id="_scala" })
+                                                                @Html.ValidationMessageFor(m => m._scala)
+                                                            </div>
+                                                            <span class="col-md-12 push-10 _customVotoScalaError field-validation-error">Il voto deve essere minore o uguale all scala</span>
+                                                        </div>
+                                                        <div class="row frk_riconoscimento push-10">
+                                                            <div class="col-md-10">
+                                                                <label for="_riconoscimento">Riconoscimento</label>
+                                                                @Html.TextBoxFor(m => m._riconoscimento, new { @class="form-control", placeholder="Inserire a testo libero",  id="_riconoscimento" })
+                                                                @Html.ValidationMessageFor(m => m._riconoscimento)
+@*                                                                <select class="js-select2 form-control" id="_riconoscimento" name="_riconoscimento" style="width: 100%;"  data-placeholder="Selezionare da una lista">
+                                                                    <option></option><!-- necessario per il placeholder con Select2 plugin -->
+                                                                </select>*@
+                                                            </div>
+                                                            @*<div class="col-md-2">&nbsp;</div>*@
+                                                            <div class="col-md-2">
+                                                                <label for="_lode">Lode</label>
+                                                                <label class="css-input css-checkbox css-checkbox-success">
+                                                                    <input class="" type="checkbox" id="_lode" name="_lode" value="S" /><span></span>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row frk_titoloTesi push-10">
+                                                            <div class="col-md-12">
+                                                                <label for="_titoloTesi">Titolo della tesi</label>
+                                                                @*<input class="form-control" type="text" id="_titoloTesi" name="_titoloTesi" placeholder="Inserire a testo libero" />*@
+                                                                @Html.TextBoxFor(m => m._titoloTesi, new { @class="form-control", placeholder="Inserire a testo libero",  id="_titoloTesi" })
+                                                                @Html.ValidationMessageFor(m => m._titoloTesi)
+                                                            </div>
+                                                        </div> 
+                                                        <div class="row frk_info push-10">
+                                                            <div class="col-md-12">
+                                                                <label for="_info">Ulteriori informazioni</label>
+                                                                <textarea class="form-control" id="_note" name="_note" rows="5" placeholder=""></textarea>
+                                                            </div>
+                                                        </div>
+                                                        <!-- Termine parte "VARIABILE" e la parte inserimento dettaglio titolo -->
+                                                        <!-- PARTE RELATIVA ALL'ISTITUTO COMUNE A TUTTE E TRE LE TIPOLOGIE -->
+                                                        <!-- FINE PARTE ISTITUTO -->
+                                                        <h5 class="push-20-t push-10">Dettaglio istituto o ente erogatore</h5>
+                                                        <div class="push-10">
+                                                            <label for="_istituto">Nome</label>
+                                                            @*<input class="form-control" type="text" id="_istituto" name="_istituto" placeholder="Inserire a testo libero" />*@
+                                                            @Html.TextBoxFor(m => m._istituto, new { @class="form-control", placeholder="Inserire a testo libero", id="_istituto" })
+                                                            @Html.ValidationMessageFor(m => m._istituto)
+                                                        </div>
+                                                        <div class="push-10">
+                                                            <label for="_localitaStudi">Città</label>
+                                                            @*<input class="form-control" type="text" id="_localitaStudi" name="_localitaStudi" placeholder="Inserire a testo libero" />*@
+                                                            @Html.TextBoxFor(m => m._localitaStudi, new { @class="form-control", placeholder="Inserire a testo libero", id="_localitaStudi" })
+                                                            @Html.ValidationMessageFor(m => m._localitaStudi)
+                                                        </div>
+                                                        <div class="push-10">
+                                                            <label for="_codNazione">Paese</label>
+                                                            <select class="js-select2 form-control"  id="_codNazione" name="_codNazione" style="width: 100%;"  data-placeholder="Selezionare dalla lista">
+                                                                <option></option><!-- necessario per il placeholder con Select2 plugin -->
+                                                                @{
+                                                                    var naz = (from nazione in cvEnt.DNazione
+                                                                               orderby nazione.DES_NAZIONE
+                                                                               select nazione).ToList();
+                                                                }
+                                                                @foreach (var elem in naz)
+                                                                {
+                                                                    <option value="@elem.COD_SIGLANAZIONE">@elem.DES_NAZIONE</option>
+                                                                }
+                                                            </select>
+                                                        </div>
+                                                        <div class="push-10">
+                                                            <label for="_indirizzoStudi">Indirizzo</label>
+                                                            @*<input class="form-control" type="text" id="_indirizzoStudi" name="_indirizzoStudi" placeholder="Inserire a testo libero" />*@
+                                                            @Html.TextBoxFor(m => m._indirizzoStudi, new { @class="form-control", placeholder="Inserire a testo libero", id="_indirizzoStudi" })
+                                                            @Html.ValidationMessageFor(m => m._indirizzoStudi)
+                                                        </div>
+                                                    <input type="hidden" name="_tableTarget" id="_tableTarget" value="" />
+                                                    </div>
+                                                </div>
+                                            </div> <!-- FREAK - COPIARE FINO A QUAAAAAAAAAAAA -->
+                                        </div>
+                                        <!-- FINE Step 2 -->
+                                    </div>
+                                    <!-- END Steps Content -->
+                                </div>
+                                    <!-- Steps Navigation -->
+                                <div class="panel-footer">
+                                        <ul class="pager wizard">
+											<li class="previous">
+												<a href="javascript:;"><i class="fa fa-angle-left"></i> Indietro</a>
+											</li>
+											<li class="finish pull-right">
+												<a href="javascript:;">Invia</a>
+											</li>
+											<li class="next">
+												<a href="javascript:;" onclick="click_default('diploma_click');">Avanti <i class="fa fa-angle-right"></i></a>
+											</li>
+										</ul>
+                                </div>
+@*                                    <div class="block-content block-content-mini block-content-full border-t">
+                                        <div class="row">
+                                            <div class="col-xs-6">
+                                                <button class="wizard-prev btn btn-warning" type="button"><i class="fa fa-arrow-circle-o-left"></i> Indietro</button>
+                                            </div>
+                                            <div class="col-xs-6 text-right">
+                                                <button class="wizard-next btn btn-success" type="button" onclick="click_default('diploma_click');">Avanti <i class="fa fa-arrow-circle-o-right"></i></button>
+                                                <button class="wizard-finish btn btn-primary" type="submit"><i class="fa fa-check-circle-o"></i> Invia</button>
+                                            </div>
+                                        </div>
+                                    </div>*@
+                                    <!-- END Steps Navigation -->
+                               
+                                      
+                                <!-- END Form -->
+                            </div>
+                        </form>
+                    </section>
+                            <!-- END Validation Wizard Wizard -->
+
+
+
+
+
+
+                   
+                </div>
+
+           
+        </div>
+        
+    </div>
+</div>

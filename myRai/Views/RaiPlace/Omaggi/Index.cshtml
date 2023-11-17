@@ -1,0 +1,96 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonModel.raiplace;
+@using MVCProject.Custom_Helpers;
+@using myRaiCommonManager;
+
+@model List<Omaggio>
+@{
+    ViewBag.Title = "Omaggi";
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    var oggi = DateTime.Today.ToString("dd/MM/yyyy");
+    var matricola = "";
+    matricola = CommonHelper.GetCurrentUserMatricola();
+}
+
+<div class="content-body">
+    <div class="col-md-8">
+        @Html.RenderPanel(PanelType.Panel, "Elenco Omaggi", "../RaiPlace/Omaggi/subpartial/_elencoOmaggi", Model, false, contentId: "elencoomaggi")
+    </div>
+    <div class="col-md-4">
+        <section class="panel" id="panelRicercaOmaggio">
+            <header class="panel-heading">
+                <div class="row">
+                    <h2 class="panel-title">Ricerca Omaggio</h2>
+                </div>
+            </header>
+            <div class="panel-body">
+                <form class="js-form-search" id="fricercaomaggio" action="javascript:cercaOmaggi()" novalidate="novalidate">
+                    <div class="form-group no-margin">
+                        @Html.Hidden("Matricola", matricola)
+                        <div class="row push-5">
+                            <div class="col-sm-12">
+                                <label class="rai-caption">Tipo omaggio</label>
+                                <select class="form-control" id="tipoOmaggio">
+                                    @{
+                                        var tipi = Model.Select(x => x.Tipo).GroupBy(x => new { x.Text, x.Value }).Select(x => x.Key);
+                                    }
+                                    <option selected value="0">Tutti i tipi</option>
+                                    @foreach (var tipo in tipi)
+                                    {
+                                        <option value="@tipo.Value">@tipo.Text</option>
+
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row push-5">
+                            <div class="col-sm-12">
+                                <label class="rai-caption">Data ricezione da</label>
+                                <div class="input-group">
+                                    <span onclick="$('#datada').datetimepicker('show')" class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                                    <input class="js-datetimepicker form-control" data-format="DD/MM/YYYY" data-locale="it" type="text" id="datada" name="datada" placeholder="Data ricezione dal">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row push-5">
+                            <div class="col-sm-12">
+                                <label class="rai-caption">Data ricezione a</label>
+                                <div class="input-group">
+                                    <span onclick="$('#dataal').datetimepicker('show')" class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                                    <input class="js-datetimepicker form-control" data-format="DD/MM/YYYY" data-locale="it" type="text" id="dataal" name="dataal" placeholder="Al">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="rai-btn-fill">
+                                <input type="submit" id="btnCercaOmaggio" class="btn rai-btn-primary" title="Cerca" value="Cerca" />
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        @Html.RenderWidget(WidgetType.Normal, "Omaggio", "icon icon-present", "Da qui puoi aggiungere un omaggio", action:new ActionTemplate()
+        {
+            Text = "Aggiungi omaggio",
+            Href = "#",
+            OnClick = "ShowGestisciOmaggio('i',0);"
+        })
+
+    </div>
+
+
+</div>
+
+
+@Html.RenderModal("omaggio")
+
+
+
+

@@ -1,0 +1,670 @@
+﻿@using myRaiHelper;
+@using myRaiData.Incentivi
+@model myRaiCommonModel.Gestionale.Valutazione
+
+@{
+    bool isSuperior = Model.VistaResponsabile;
+    var stringQuestions = Model.Scheda.XR_VAL_EVAL_SHEET_QST.Where(x => x.XR_VAL_QUESTION.XR_VAL_QUESTION_TYPE.NAME == "Stringa");
+
+    var owners = Model.Rating.GroupBy(x => x.ID_OWNER).Select(x => x.First().XR_VAL_EVAL_RATING_OWNER);
+
+    bool showPianoSvil = Model.Stato >= (int)ValutazioniState.Analizzata && Model.CampagnaScheda.IND_PIANOSVIL.GetValueOrDefault();
+
+    //bool showPS_2021_interact = showPianoSvil && Model.NomePianoSviluppo == "PianoSviluppo_2021" && ((PianoSviluppo_Base)Model.PianoSviluppo).CanModify;
+    bool showPianoSvil_interact = showPianoSvil && ((PianoSviluppo_Base)Model.PianoSviluppo).CanModify;
+    PianoSviluppo_Base svilBase = (PianoSviluppo_Base)Model.PianoSviluppo;
+    bool showPianoSvil_approve = showPianoSvil && (svilBase.CanApprove || (svilBase.Nota != null && Model.Stato != (int)ValutazioniState.SviluppoCompilato));
+}
+
+<div class="block no-margin-bottom block-transparent" style="margin-left:-15px;margin-right:-15px;">
+    @if (showPianoSvil)
+    {
+        if (showPianoSvil_interact)
+            {
+            <div class="rai wizard-progress push-20-t" id="wizAuto">
+                <ul class="wizard-steps">
+                    <li class="tabhead active disable">
+                        <a href="#tabVal" data-toggle="tab" aria-expanded="false"><span>1</span>Valutazione</a>
+                    </li>
+                    <li class="tabhead disable">
+                        <a href="#tabPiano" data-toggle="tab" aria-expanded="false"><span>2</span>Piano sviluppo</a>
+                    </li>
+                </ul>
+                    </div>
+        }
+        else
+                            {
+            <ul class="nav nav-tabs nav-tabs-alt nav-justified push-10" data-toggle="tabs" role="tablist">
+                <li class="@(!svilBase.CanApprove?"active":"")" role="presentation">
+                    <a href="#tabVal" class="rai-badge-anchor" id="hrefTab1" tabindex="0" role="tab" aria-selected="true" aria-controls="tabVal">
+                        Valutazione
+                    </a>
+                </li>
+
+                <li class="@(svilBase.CanApprove?"active":"")" role="presentation">
+                    <a href="#tabPiano" class="rai-badge-anchor" id="hrefTab2" tabindex="0" role="tab" aria-selected="false" aria-controls="tabPiano">
+                        Piano sviluppo
+                    </a>
+                </li>
+            </ul>
+                                    }
+                                }
+
+    <div class="tab-content no-border no-shadow" style="padding-top:0px;background-color:transparent;">
+        <div class="tab-pane @(!showPianoSvil || !svilBase.CanApprove?"active":"")" id="tabVal" role="tabpanel">
+            @using (Html.BeginForm("Save_Valutazione", "Valutazioni", FormMethod.Post, new { @id = "form-valutazione" }))
+            {
+                @Html.HiddenFor(m => m.IdValutazione)
+                @Html.HiddenFor(m => m.Owner)
+                @Html.HiddenFor(m => m.CampagnaScheda)
+                <div class="rai block block-content-table block-transparent remove-margin-bottom" id="block-evaluation">
+                    @if (!showPianoSvil)
+                    {
+                        <div class="block-header block-content-mini">
+                            <label class="rai-font-table-heading">Valutazione</label>
+                        </div>
+                    }
+                    <!--contenuto-->
+                    <div id="block-evaluation-content" class="block-content block-content-mini @(isSuperior ? "manager-view" : "")" style="padding:5px 10px;">
+                        @if (showPianoSvil_interact)
+                        {
+                            <i class="rai-font-md">Per poter compilare il piano di sviluppo, seleziona almeno due punti di forza (massimo tre) e almeno due aree di miglioramento (massimo tre).</i>
+                        }
+
+                        <div style="overflow:hidden;overflow-y:auto;max-height:60vh;padding-right:4px" id="val-container" onscroll="ValCheckDecl()">
+                            <table class="table table-striped rai-table rai-table-vcenter rai-table-collapsable" id="table-Valutazione" data-table-collapsable-parent="#val-container">
+                                @{
+                                    List<XR_VAL_QUESTION_GROUP> dGroups = new List<XR_VAL_QUESTION_GROUP>();
+                                    IEnumerable<XR_VAL_QUESTION_GROUP> groups = Model.Scheda.XR_VAL_EVAL_SHEET_QST.OrderBy(x => x.ORDER).GroupBy(x => x.XR_VAL_QUESTION.XR_VAL_QUESTION_GROUP).Select(x => x.Key);
+                                    while (groups.Any(x => x.ID_QST_GROUP_MACRO != null))
+                                    {
+                                        foreach (var item in groups)
+                                        {
+                                            var index = dGroups.FindIndex(x => x.ID_QST_GROUP_MACRO == item.ID_QST_GROUP);
+                                            if (index >= 0)
+                                            {
+                                                dGroups.Insert(index, item);
+                                            }
+                                            else
+                                            {
+                                                dGroups.Add(item);
+                                            }
+                                        }
+
+                                        groups = groups.GroupBy(x => x.XR_VAL_QUESTION_GROUP2).Select(x => x.Key);
+                                    }
+                                    foreach (var item in groups)
+                                    {
+                                        var index = dGroups.FindIndex(x => x.ID_QST_GROUP_MACRO == item.ID_QST_GROUP);
+                                        if (index >= 0)
+                                        {
+                                            dGroups.Insert(index, item);
+                                        }
+                                        else
+                                        {
+                                            dGroups.Add(item);
+                                        }
+                                    }
+
+                                    int bgColorMax = 40;
+                                    int bgColorMin = 20;
+                                    int bgColor = 40;
+                                    bool hasAnswerHeader = false;
+                                }
+
+                                @foreach (var item in dGroups)
+                                {
+                                    if (item.XR_VAL_QUESTION_GROUP1 != null && item.XR_VAL_QUESTION_GROUP1.Any())
+                                    {
+                                        bool drawQstHeader = false;
+                                        XR_VAL_QUESTION rifHeader = null;
+                                        var tmp = Model.Scheda.XR_VAL_EVAL_SHEET_QST.Where(x => x.XR_VAL_QUESTION.XR_VAL_QUESTION_GROUP.ID_QST_GROUP_MACRO == item.ID_QST_GROUP).Select(x => x.XR_VAL_QUESTION);
+
+                                        if (tmp.Any())
+                                        {
+                                            hasAnswerHeader = false;
+                                            if (tmp.All(x => x.XR_VAL_QUESTION_DISPLAY.NAME == "Radio button"))
+                                            {
+                                                var answCount = tmp.Select(x => x.XR_VAL_QUESTION_ANSWER.Count()).Distinct();
+                                                if (answCount.Count() == 1)
+                                                {
+                                                    var answList = tmp.SelectMany(x => x.XR_VAL_QUESTION_ANSWER.Select(y => y.ID_ANSWER)).Distinct();
+                                                    drawQstHeader = answList.Count() == answCount.ElementAt(0);
+                                                    if (drawQstHeader)
+                                                    {
+                                                        hasAnswerHeader = true;
+                                                        rifHeader = tmp.First();
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        else if (item.XR_VAL_QUESTION_GROUP1.All(x => x.XR_VAL_QUESTION_GROUP1 == null || !x.XR_VAL_QUESTION_GROUP1.Any()))
+                                        {
+                                            //Se il macrogruppo non ha domande nella scheda, e tutti i suoi sotto-gruppi non hanno ulteriori sotto-gruppi
+                                            continue;
+                                        }
+                                        else
+                                        {
+                                            bgColor = bgColor < bgColorMax ? bgColor + 20 : bgColor;
+                                        }
+
+                                        <tr>
+
+                                            <td class="text-center bg-neutrals-xl-@bgColor.ToString("00")" colspan="2" data-group-decl="@item.NAME"><label class="rai-font-md-bold">@item.NAME</label></td>
+                                            <td class="bg-neutrals-xl-@bgColor.ToString("00")" style="width:1%;white-space:nowrap;" colspan="1">
+                                                @if (drawQstHeader)
+                                                {
+                                                    <div class="answers-container">
+                                                        @foreach (var answ in rifHeader.XR_VAL_QUESTION_ANSWER.ValidNow().OrderBy(x => x.NUM_ORDER))
+                                                        {
+                                                            <div class="answer-item" data-toggle="tooltip" data-delay="750" data-html="true" title="@Html.Raw(answ.XR_VAL_ANSWER.NOT_HELP)">
+                                                                <span class="rai-font-sm-bold">@Html.Raw(answ.XR_VAL_ANSWER.DESCRIPTION)</span>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                            </td>
+                                            @if (showPianoSvil_interact)
+                                            {
+                                                if (drawQstHeader)
+                                                {
+                                                    <td class="bg-neutrals-xl-@bgColor.ToString() ">
+                                                        <div class="answers-container">
+                                                            <div class="answer-item">
+                                                                <span class="rai-font-sm-bold">Punto di<br />forza</span>
+                                                            </div>
+                                                            <div class="answer-item">
+                                                                <span class="rai-font-sm-bold">Area di<br />miglioramento</span>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                }
+                                                else
+                                                {
+                                                    <td class="bg-neutrals-xl-@bgColor.ToString() ">
+                                                        &nbsp;
+                                                    </td>
+                                                }
+                                            }
+                                        </tr>
+
+                                        bgColor = bgColor > bgColorMin ? bgColor - 20 : bgColor;
+                                    }
+
+                                    if (item.XR_VAL_QUESTION.Any())
+                                    {
+                                        string groupname = item.NAME;
+                                        string groupDes = item.DESCRIPTION;
+                                        int qstGroup = item.XR_VAL_QUESTION.Count();
+                                        bool isFirst = true;
+
+                                        var lstQst = Model.Scheda.XR_VAL_EVAL_SHEET_QST.Where(x => x.XR_VAL_QUESTION.ID_QST_GROUP == item.ID_QST_GROUP);
+
+                                        if (!Model.CanModify)
+                                        {
+                                            int ratingColor = 90;
+                                            decimal sumPesi = lstQst.Sum(x => x.WEIGHT);
+                                            decimal valMin = lstQst.First().XR_VAL_QUESTION.XR_VAL_QUESTION_ANSWER.Min(x => x.XR_VAL_ANSWER.VALUE_INT.Value);
+                                            decimal valMax = lstQst.First().XR_VAL_QUESTION.XR_VAL_QUESTION_ANSWER.Max(x => x.XR_VAL_ANSWER.VALUE_INT.Value);
+                                            Dictionary<int, decimal> averages = new Dictionary<int, decimal>();
+                                            foreach (var owner in owners.OrderBy(x => x.ORDER))
+                                            {
+                                                decimal countElem = Model.Rating.Count(x => lstQst.Any(y => y.ID_SHEET_QST == x.ID_QUESTION) && x.ID_OWNER == owner.ID_OWNER);
+                                                decimal sumElem = Model.Rating.Where(x => lstQst.Any(y => y.ID_SHEET_QST == x.ID_QUESTION) && x.ID_OWNER == owner.ID_OWNER).Select(x => x.VALUE_INT.GetValueOrDefault()).Sum();
+                                                decimal averageGroup = sumElem / sumPesi;
+
+                                                averages.Add(owner.ID_OWNER, averageGroup);
+                                            }
+
+                                            bool anyDifferent = false;
+                                            foreach (var qst in lstQst.OrderBy(x=>x.ORDER))
+                                            {
+
+                                                var ratings = Model.Rating.Where(x => x.ID_QUESTION == qst.ID_SHEET_QST);
+                                                bool areDifferent = ratings.Select(x => x.VALUE_INT).Distinct().Count() > 1;
+                                                if (areDifferent)
+                                                {
+                                                    //controlla l'effettiva differenza
+                                                    int ansMin = ratings.Min(x => x.VALUE_INT.Value);
+                                                    int ansMax = ratings.Max(x => x.VALUE_INT.Value);
+                                                    int soglia = Convert.ToInt32(Math.Round((valMax + valMin) / 2, 0)) - 1;
+                                                    soglia = soglia < 1 ? 1 : soglia;
+                                                    areDifferent = ansMax - ansMin >= soglia;
+                                                }
+
+                                                if (areDifferent)
+                                                {
+                                                    anyDifferent = true;
+                                                    break;
+                                                }
+                                            }
+
+                                            <tbody class="rai-table-collapsable-header">
+                                                <tr>
+                                                    <td colspan="2" class="bg-base" data-text-gr="@item.ID_QST_GROUP">
+                                                        <span class="rai-font-md-bold">@Html.Raw(groupname)</span>
+                                                        @if (!String.IsNullOrWhiteSpace(groupDes))
+                                                        {
+                                                            <text>&nbsp;</text><a class="fa fa-info-circle" id="grpOwner@(Model.IdValutazione)_@(item.ID_QST_GROUP)" data-toggle="collapse" data-target="#grpDes@(Model.IdValutazione)_@(item.ID_QST_GROUP)" data-table-collapsable-toggle="ignore"></a><br />
+                                                            <div class="collapse" id="grpDes@(Model.IdValutazione)_@(item.ID_QST_GROUP)">
+                                                                <span class="rai-font-sm-neutral">@Html.Raw(groupDes)</span>
+                                                            </div>
+                                                        }
+                                                    </td>
+                                                    <td class="bg-base @(anyDifferent && !showPianoSvil_interact?"border-right-warning":"")">
+                                                        @foreach (var owner in owners.OrderBy(x=>x.ORDER))
+                                                        {
+                                                            decimal averageGroup = averages[owner.ID_OWNER];
+                                                            
+                                                            decimal prWidth = (averageGroup - valMin) * 100 / (valMax - valMin);
+
+                                                            <span class="rai-font-sm-bold" style="margin-left:35px;">@owner.DESCRIPTION</span>
+                                                            <div class="rai progress progress-md" style="margin-bottom: 8px;margin-left:35px;margin-right:35px;">
+                                                                <div class="progress-bar progress-bar-info bg-@ratingColor" role="progressbar" aria-valuenow="@averageGroup.ToString()" valuemin="" aria-valuemax="@(valMax.ToString())" style="width: @(prWidth.ToString("0"))%;">
+                                    </div>
+                                                            </div>
+
+                                                            ratingColor -= 30;
+                                                        }
+                                                    </td>
+                                                    @if (showPianoSvil_interact)
+                                                    {
+                                                        <td class="bg-base @(anyDifferent?"border-right-warning":"")">
+                                                            <div class="answers-container" data-punto-gr="@item.ID_QST_GROUP">
+                                                                <div class="answer-item">
+                                                                    <button class="btn btn-action-icon feedback-success-color" data-punto="Forza" title="Punto di forza" onclick="ValAddPunto(this); ValEnableGotoPiano();" data-table-collapsable-toggle="ignore"><i class="fa fa-level-up"></i></button>
+                                                                </div>
+                                                                <div class="answer-item">
+                                                                    <button class="btn btn-action-icon feedback-error-color" data-punto="Miglioramento" title="Area di miglioramento" onclick="ValAddPunto(this);ValEnableGotoPiano();" data-table-collapsable-toggle="ignore"><i class="fa fa-level-down"></i></button>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    }
+                                                </tr>
+                                            </tbody>
+                                        }
+
+                                        <tbody>
+                                            @foreach (var qst in lstQst.OrderBy(x => x.ORDER))
+                                            {
+                                                var question = qst.XR_VAL_QUESTION;
+                                                var ratings = Model.Rating.Where(x => x.ID_QUESTION == qst.ID_SHEET_QST).OrderBy(x => x.XR_VAL_EVAL_RATING_OWNER.ORDER);
+
+                                                string strValue = "";
+                                                int intValue = 0;
+
+                                                if (Model.Rating.Count() > 0)
+                                                {
+                                                    var rate = Model.Rating.FirstOrDefault(x => x.ID_QUESTION == qst.ID_SHEET_QST && x.XR_VAL_EVAL_RATING_OWNER.NAME == Model.Owner);
+                                                    if (rate != null)
+                                                    {
+                                                        strValue = rate.VALUE_STR;
+                                                        intValue = rate.VALUE_INT.GetValueOrDefault();
+                                                    }
+                                                }
+
+
+                                                <tr>
+                                                    @if (isFirst && Model.CanModify)
+                                                    {
+
+                                                        <td rowspan="@(qstGroup.ToString())" class="bg-base" data-text-gr="@item.ID_QST_GROUP">
+                                                            <span class="rai-font-md-bold">@Html.Raw(groupname)@(!String.IsNullOrWhiteSpace(item.NOT_ADDITIONAL_INFO) && Model.CanModify ? " *":"")</span>
+                                                            @if (!String.IsNullOrWhiteSpace(groupDes))
+                                                            {
+                                                                <text>&nbsp;</text><a class="fa fa-info-circle" id="grpOwner@(Model.IdValutazione)_@(item.ID_QST_GROUP)" data-toggle="collapse" data-target="#grpDes@(Model.IdValutazione)_@(item.ID_QST_GROUP)"></a><br />
+                                                                <div class="collapse" id="grpDes@(Model.IdValutazione)_@(item.ID_QST_GROUP)">
+                                                                    <span class="rai-font-sm-neutral">@Html.Raw(groupDes)</span>
+                                                                </div>
+                                                            }
+                                                        </td>
+
+                                                        isFirst = false;
+                                                    }
+
+                                                    @if (question.XR_VAL_QUESTION_DISPLAY.NAME == "Radio button")
+                                                    {
+                                                        decimal valMin = question.XR_VAL_QUESTION_ANSWER.Min(x => x.XR_VAL_ANSWER.VALUE_INT.Value);
+                                                        decimal valMax = question.XR_VAL_QUESTION_ANSWER.Max(x => x.XR_VAL_ANSWER.VALUE_INT.Value);
+
+                                                        if (!Model.CanModify)
+                                                        {
+                                                            <td>&nbsp;</td>
+                                                        }
+
+                                                        <td data-text-qst="@qst.ID_SHEET_QST">
+                                                            <span class="rai-font-md">@Html.Raw(question.NAME)</span>
+                                                            @if (!String.IsNullOrWhiteSpace(question.DESCRIPTION))
+                                                            {
+                                                                <text>&nbsp;</text><a class="fa fa-info-circle" id="qstOwner@(Model.IdValutazione)_@(qst.ID_SHEET_QST)" data-toggle="collapse" data-target="#qstDes@(Model.IdValutazione)_@(qst.ID_SHEET_QST)"></a><br />
+                                                                <div class="collapse" id="qstDes@(Model.IdValutazione)_@(qst.ID_SHEET_QST)">
+                                                                    <span class="rai-font-sm-neutral">@Html.Raw(question.DESCRIPTION)</span>
+                                                                </div>
+                                                            }
+                                                        </td>
+
+                                                        bool areDifferent =  !Model.CanModify && ratings.Select(x => x.VALUE_INT).Distinct().Count() > 1;
+                                                        if (areDifferent)
+                                                        {
+                                                            //controlla l'effettiva differenza
+                                                            int ansMin = ratings.Min(x => x.VALUE_INT.Value);
+                                                            int ansMax = ratings.Max(x => x.VALUE_INT.Value);
+                                                            int soglia = Convert.ToInt32(Math.Round((valMax + valMin) / 2, 0))-1;
+                                                            soglia = soglia < 1 ? 1 : soglia;
+                                                            areDifferent = ansMax - ansMin >= soglia;
+                                                        }
+
+                                                        <td style="width:1%;white-space:nowrap;" class="@(areDifferent && !showPianoSvil_interact ? "border-right-warning" : "")" colspan="1">
+
+                                                            @if (Model.CanModify)
+                                                            {
+                                                                <div data-val-question="@qst.ID_SHEET_QST" data-val-typequestion="int" data-val-type="@Model.Owner.ToLower()" data-val-weight="@qst.WEIGHT" data-val-average="@(qst.WEIGHT > 0 ? "true" : "false")" data-val-optional="@(qst.IND_OPTIONAL.GetValueOrDefault()?"true":"false")">
+                                                                    <div>
+                                                                        <div class="answers-container">
+                                                                            @foreach (var answ in question.XR_VAL_QUESTION_ANSWER.OrderBy(x => x.NUM_ORDER))
+                                                                            {
+                                                                                string tooltip = "";
+                                                                                if (hasAnswerHeader)
+                                                                                {
+                                                                                    tooltip = answ.XR_VAL_ANSWER.DESCRIPTION;
+                                                                                }
+
+                                                                                if (!String.IsNullOrWhiteSpace(answ.XR_VAL_ANSWER.NOT_HELP))
+                                                                                {
+                                                                                    if (!String.IsNullOrWhiteSpace(tooltip))
+                                                                                    {
+                                                                                        tooltip = "<b>" + tooltip + "</b><br/>";
+                                                                                    }
+                                                                                    tooltip += answ.XR_VAL_ANSWER.NOT_HELP;
+                                                                                }
+
+                                                                                <div class="answer-item">
+                                                                                    @if (hasAnswerHeader)
+                                                                                    {
+                                                                                        <div class="rai-font-sm-bold" style="visibility:collapse;height:0px">@Html.Raw(answ.XR_VAL_ANSWER.DESCRIPTION)<br /></div>
+                                                                                    }
+                                                                                    <div class="rai-radio radio-inline @(isSuperior || !Model.CanModify ? "disable" : "")" data-toggle="tooltip" data-delay="750" data-html="true" title="@Html.Raw(tooltip)">
+                                                                                        <input type="radio" id="radio@(qst.ID_SHEET_QST)_@answ.ID_QST_ANSWER" name="radio@(qst.ID_SHEET_QST)" data-val-value="@answ.XR_VAL_ANSWER.VALUE_INT" @(intValue == answ.XR_VAL_ANSWER.VALUE_INT ? "checked is-checked=\"true\"" : "") onclick="ValCheckOptional(this);ValCalcMediaPond('@Model.Owner.ToLower()'); ValModalValutazioneUpdateStatus()">
+                                                                                        @if (hasAnswerHeader)
+                                                                                        {
+                                                                                            <label for="radio@(qst.ID_SHEET_QST)_@answ.ID_QST_ANSWER"></label>
+                                                                                        }
+                                                                                        else
+                                                                                        {
+                                                                                            <label for="radio@(qst.ID_SHEET_QST)_@answ.ID_QST_ANSWER">@Html.Raw(answ.XR_VAL_ANSWER.DESCRIPTION)</label>
+                                                                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+                                                            else
+                                                            {
+                                                                int ratingColor = 90;
+
+
+                                                                foreach (var rating in ratings)
+                                                                {
+                                                                    decimal prWidth = ((decimal)rating.VALUE_INT.GetValueOrDefault() - valMin) * 100 / (valMax - valMin);
+
+                                                                    <div data-val-type="@rating.XR_VAL_EVAL_RATING_OWNER.NAME.ToLower()" data-val-weight="@qst.WEIGHT" data-val-average="@(qst.WEIGHT > 0 ? "true" : "false")" data-val-optional="@(qst.IND_OPTIONAL.GetValueOrDefault()?"true":"false")">
+                                                                        <span class="rai-font-sm-bold" style="margin-left:35px;">@rating.XR_VAL_EVAL_RATING_OWNER.DESCRIPTION</span>
+                                                                        <div class="rai progress progress-xs" style="margin-bottom: 8px;margin-left:35px;margin-right:35px;">
+                                                                            <div class="progress-bar progress-bar-info bg-@ratingColor" role="progressbar" aria-valuenow="@(rating.VALUE_INT.GetValueOrDefault().ToString())" valuemin="0" aria-valuemax="@(valMax.ToString())" style="width: @(prWidth.ToString("0"))%;">
+        </div>
+                                                                        </div>
+
+                                                                        <div style="visibility:collapse;height:0px">
+                                                                            <input type="radio" class="hidden" id="radio_rating_@rating.ID_RATING" data-val-value="@rating.VALUE_INT" @(rating.VALUE_INT.HasValue?"checked=\"checked\"":"")>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    ratingColor -= 30;
+    }
+}
+
+                                </td>
+
+                                                        if (showPianoSvil_interact)
+                                        {
+                                                            <td class="@(areDifferent ? "border-right-warning" : "")"></td>
+                                        }
+                            }
+                            else if (question.XR_VAL_QUESTION_DISPLAY.NAME == "Custom")
+                            {
+                                                        <td colspan="@(Model.CanModify ? "2" : "1")">
+                                                            <div data-val-question="@qst.ID_SHEET_QST" data-val-typequestion="">
+                                                                <textarea class="form-control" rows="2" style="width:100%" readonly>@strValue</textarea>
+                                                            </div>
+                                                </td>
+                                                        <td colspan="2">
+                                                            <div data-val-question="@qst.ID_SHEET_QST" data-val-typequestion="">
+                                                    <div class="row" style="margin:0px;">
+                                                        @foreach (var answ in question.XR_VAL_QUESTION_ANSWER.ValidNow().OrderBy(x => x.NUM_ORDER))
+                                                        {
+                                                            <div class="col-sm-6 no-padding">
+                                                                <div class="rai-radio radio-inline @(isSuperior || !Model.CanModify ? "disable" : "")">
+                                                                                @*Da verificare*@
+                                                                                <input type="radio" id="radio@(qst.ID_SHEET_QST)_@answ.ID_QST_ANSWER" name="radio@(qst.ID_SHEET_QST)" data-val-value="@answ.XR_VAL_ANSWER.VALUE_INT" @(intValue == answ.XR_VAL_ANSWER.VALUE_INT ? "checked" : "") onclick="ValModalValutazioneUpdateStatus()">
+                                                                                <label for="radio@(qst.ID_SHEET_QST)_@answ.ID_QST_ANSWER">@Html.Raw(answ.XR_VAL_ANSWER.DESCRIPTION)</label>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                    </div>
+                                </td>
+                            }
+                        </tr>
+
+                }
+
+                                            @if (!String.IsNullOrWhiteSpace(item.NOT_ADDITIONAL_INFO) && Model.CanModify)
+                                            {
+                <tr>
+                                                    <td colspan="3">
+                                                        <em class="rai-font-sm">* @item.NOT_ADDITIONAL_INFO</em>
+                    </td>
+                </tr>
+                                            }
+                                        </tbody>
+                                    }
+                                }
+
+        </table>
+                        </div>
+        @if (Model.CanModify)
+        {
+                            <div class="row push-20-t">
+                <div class="col-sm-12 no-padding">
+                    <div class="rai-btn-fill">
+                                        <a href="#" class="btn rai-btn-secondary" id="btnSaveAsDraftVal" onclick="ValSalvaValutazione(this, 'form-valutazione', @Model.CampagnaScheda.ID_CAMPAIGN_SHEET, true)">Salva in bozza</a>
+                                        <a href="#" class="btn rai-btn-primary disable" id="bntSaveValutazione" onclick="ValSalvaValutazione(this, 'form-valutazione', @Model.CampagnaScheda.ID_CAMPAIGN_SHEET, false)">Salva</a>
+                    </div>
+                </div>
+            </div>
+        }
+
+                    </div>
+                </div>
+            }
+        </div>
+        @if (showPianoSvil)
+        {
+            <div class="tab-pane @(svilBase.CanApprove?"active":"")" id="tabPiano" role="tabpanel">
+                @Html.Partial("pianosviluppo/Modal_" + Model.NomePianoSviluppo, Model.PianoSviluppo)
+            </div>
+        }
+    </div>
+</div>
+
+
+@if (showPianoSvil_interact)
+{
+    <div class="row push-20-t">
+        <div class="col-sm-12 rai-btn-fill">
+            <button class="btn rai-btn-secondary" disabled id="btnValPianoIndietro" onclick="ValGotoVal()">Indietro</button>
+            <button class="btn rai-btn-primary" disabled id="btnValPianoProsegui" onclick="ValGotoPiano()">Prosegui</button>
+            <button class="btn rai-btn-primary" id="btnValPianoSalva" onclick="ValCheckPiano(true);ValSalvaPiano(this)" style="display:none;">Salva</button>
+        </div>
+    </div>
+}
+
+@if (showPianoSvil)
+{
+    if (svilBase.CanApprove || (svilBase.Nota != null && Model.Stato != (int)ValutazioniState.SviluppoCompilato))
+    {
+        <div class="rai block block-content-table block-transparent push-20-t" id="block-approvePiano">
+            <div class="block-header block-content-mini">
+                <label class="rai-font-table-heading">Approvazione piano</label>
+            </div>
+            <div class="block-content block-content-mini">
+                @using (Html.BeginForm("Save_Piano_Approva", "Valutazioni", FormMethod.Post, new { @id = "form-piano-nota" }))
+                {
+                    if (svilBase.Nota != null)
+                    {
+                        <div class="row push-10">
+                            <div class="col-sm-4">
+                                <span class="rai-font-md-neutral">Attuale riscontro</span>
+                            </div>
+                            <div class="col-sm-8">
+                                @if (svilBase.Nota.IND_APPROVED.GetValueOrDefault())
+                                {
+                                    <span class="rai-font-md"><i class="fa fa-circle feedback-success-color"></i> Approvato</span>
+                                }
+                                else
+                                {
+                                    <span class="rai-font-md"><i class="fa fa-circle feedback-error-color"></i> Non approvato</span>
+                                }
+                            </div>
+                        </div>
+                        if (!svilBase.CanApprove)
+                        {
+                            <div class="row push-10">
+                                <div class="col-sm-4">
+                                    <label class="rai-font-md-neutral">Nota</label>
+                                </div>
+                                <div class="col-sm-8">
+                                    <label class="rai-font-md">@(svilBase.Nota != null && !String.IsNullOrWhiteSpace(svilBase.Nota.NOT_TEXT) ? svilBase.Nota.NOT_TEXT : "-")</label>
+                                </div>
+                            </div>
+                        }
+                    }
+
+                    if (svilBase.CanApprove)
+                    {
+                        <div class="row push-10">
+                            <div class="col-sm-4">
+                                <label class="rai-font-md-neutral">Nota <span class="rai-font-sm-neutral">(facoltativa)</span></label>
+                            </div>
+                            <div class="col-sm-8">
+                                <textarea rows="4" id="valNotaResp" class="form-control">@(svilBase.Nota != null ? svilBase.Nota.NOT_TEXT : "")</textarea>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <div class="rai-btn-fill">
+                                    @*<button class="btn btn-md rai-btn-primary" onclick="ValSalvaValutazionePresaVisione(this,'form-valutazione-nota', @Model.IdValutazione, @Model.CampagnaScheda.ID_CAMPAIGN_SHEET)">
+                                            Invia
+                                        </button>*@
+                                    <button class="btn btn-md btn-action-icon text-danger" onclick="ValSalvaPianoNota(this, @Model.IdValutazione, @Model.CampagnaScheda.ID_CAMPAIGN_SHEET, false)">
+                                        <i class="glyphicon glyphicon-remove"></i>
+                                        Non approvo
+                                    </button>
+                                    <button class="btn btn-md btn-action-icon text-success" onclick="ValSalvaPianoNota(this, @Model.IdValutazione, @Model.CampagnaScheda.ID_CAMPAIGN_SHEET, true)">
+                                        <i class="fa fa-fw fa-check"></i>
+                                        Approvo
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    }
+}
+
+<script language="javascript">
+    InitDatePicker();
+    ValModalValutazioneUpdateStatus();
+
+    function ValEnableGotoPiano() {
+        if (ValCheckPiano(false)) {
+            $('#btnValPianoProsegui').prop('disabled', false);
+        } else {
+            $('#btnValPianoProsegui').prop('disabled', true);
+        }
+    }
+
+    function ValGotoPiano() {
+        $('#btnValPianoIndietro').prop('disabled', false);
+        $('#btnValPianoProsegui').hide();
+        $('#btnValPianoSalva').show();
+
+        $('a[href=#tabVal]').parent().addClass('completed');
+        $('a[href=#tabPiano]').click();
+
+        debugger
+        var puntiMiglioramento = $('#PuntiMiglioramento').val();
+        $('#tableCorsi').addClass('rai-loader');
+        $('#tableCorsi').html('');
+        $.ajax({
+            url: "/Valutazioni/GetCorsi",
+            type: "POST",
+            contentType: 'application/json; charset=UTF-8',
+            data:JSON.stringify({ areeMiglioramento: puntiMiglioramento }),
+            cache: false,
+            success: function (data) {
+                $('#tableCorsi').html(data);
+            },
+            error: function () {
+            },
+            complete: function () {
+                $('#tableCorsi').removeClass('rai-loader');
+            }
+        });
+    }
+    function ValGotoVal() {
+        $('#btnValPianoIndietro').prop('disabled', true);
+        $('#btnValPianoProsegui').show();
+        $('#btnValPianoSalva').hide();
+
+        $('a[href=#tabVal]').parent().removeClass('completed');
+        $('a[href=#tabVal]').click();
+    }
+
+    function ValCheckDecl() {
+        var list = $('[data-group-decl]');
+        for (var i = 0; i < list.length; i++) {
+            var attr = $(list[i]).data('group-decl');
+            var elem = $('[data-decl="' + attr + '"]');
+            if (elem.length > 0) {
+                if (checkInView("#val-container", $(list[i]), false)) {
+                    if (!checkInView("#tableDecl", elem, false)) {
+                        $('#tableDecl').animate({
+                            scrollTop: getRelativePos(elem[0]).top
+                        }, 1);
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    function checkInView(containerSelector ,elem, partial) {
+        var container = $(containerSelector);
+        var contHeight = container.height();
+        var contTop = container.scrollTop();
+        var contBottom = contTop + contHeight;
+
+        var elemTop = $(elem).offset().top - container.offset().top;
+        var elemBottom = elemTop + $(elem).height();
+
+        var isTotal = (elemTop >= 0 && elemBottom <= contHeight);
+        var isPart = ((elemTop < 0 && elemBottom > 0) || (elemTop > 0 && elemTop <= container.height())) && partial;
+
+        return isTotal || isPart;
+    }
+</script>

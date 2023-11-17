@@ -1,0 +1,150 @@
+﻿@model myRaiCommonModel.cvModels.cvModel.AreeInteresse
+
+@{
+    string matricola = Model._matricola;
+    myRai.Data.CurriculumVitae.cv_ModelEntities cvEnt = new myRai.Data.CurriculumVitae.cv_ModelEntities();
+
+    List<myRai.Data.CurriculumVitae.TCVAreaIntAzEstero> areaGeoList = cvEnt.TCVAreaIntAzEstero.Where(x => x.Matricola == matricola && x.Prog == Model._prog).ToList();
+
+}
+
+@using (Html.BeginModal("Modifica un interesse aziendale"))
+{
+    using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Dati generali", false))
+    {
+        <form class="mb-lg form-modificaareainteresse" id="form-modificaareainteresse" novalidate="novalidate" action="/CV_Online/ModificaAreeInteresse" method="post">
+            <input type="hidden" id="_flagEspRai" name="_flagEspRai" value="" />
+            <input type="hidden" id="_matricola" name="_matricola" value="@Model._matricola" />
+            <input type="hidden" id="_prog" name="_prog" value="@Model._prog" />
+
+            <div class="rai form-group" id="edit-content">
+                <div class="row">
+                    <div class="push-10 col-md-12">
+                        <label for="_codAreaOrg" class="titleElements rai-caption">Area</label>
+                        @Html.DropDownListFor(m=>m._codAreaOrg, Model.AreaInteresseItems,new {
+                            @class="js-select2 rai form-control ",
+                            @data_minimum_results_for_search="Infinity",
+                            @style="width:100%"
+                       })
+
+                        @Html.ValidationMessageFor(m => m._codAreaOrg)
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="push-20 col-md-6">
+                        <label for="_areeIntDispo" class="titleElements rai-caption">Note</label>
+                        <textarea  maxlength="1000" id="_areeIntDispo" name="_areeIntDispo" rows="5" class="rai form-control" style="width: 100%" placeholder="Descrivere un ambito aziendale di interesse utilizzando al massimo 1000 caratteri">@Model._areeIntDispo</textarea>
+                        @Html.ValidationMessageFor(m => m._areeIntDispo)
+                    </div>
+                    <div class="push-10 col-md-6">
+                        <label for="_profIntDispo" class="titleElements rai-caption">Indicare eventuali profili di interesse</label>
+                        <textarea maxlength="1000" id="_profIntDispo" name="_profIntDispo" rows="5" class="rai form-control" style="width: 100%" placeholder="Descrivere profilo/i di interesse utilizzando al massimo 1000 caratteri">@Model._profIntDispo</textarea>
+                        @Html.ValidationMessageFor(m => m._profIntDispo)
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="push-10 col-md-12">
+                        <label for="_codTipoDispo" class="titleElements rai-caption">
+                            Interesse allo svolgimento di mansioni diverse da quelle attualmente svolte,
+                            nel rispetto delle competenze professionali acquisite
+                        </label>
+                        <select class="js-select2 rai form-control " id="_codTipoDispo" name="_codTipoDispo" style="width: 100%">
+                            <option></option> @* serve per il placeholder *@
+                            @{
+                                string check_tipoDispo = "";
+                                var tipoDispo = cvEnt.DTipoDispo.OrderBy(x => x.DescTipoDispo);
+                                foreach (var elem in tipoDispo)
+                                {
+                                    if (elem.CodTipoDispo == Model._codTipoDispo)
+                                    {
+                                        check_tipoDispo = "selected=\"selected\"";
+                                    }
+                                    else
+                                    {
+                                        check_tipoDispo = "";
+                                    }
+                                    <option value="@elem.CodTipoDispo" @check_tipoDispo>@(elem.DescTipoDispo)</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="push-20 col-md-12">
+                        @{
+                            string check_esteroDispo = "";
+                            if (Model._flagEsteroDispo == "S")
+                            {
+                                check_esteroDispo = "checked=\"checked\"";
+                            }
+                            else
+                            {
+                                check_esteroDispo = "";
+                            }
+                        }
+                        <div class="rai-checkbox">
+
+                            <input type="checkbox" name="_flagEsteroDispo" id="_flagEsteroDispo" value="S" @check_esteroDispo />
+                            <label for="_flagEsteroDispo" class="titleElements rai-caption">
+                                Interesse a svolgere la propria attività anche all'estero
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="push-10 col-md-12">
+                        <label for="_codAreaGeo" class="titleElements rai-caption">
+                            Indicare presso quale sede aziendale si è disponibili a svolgere
+                            la propria attività
+                        </label>
+                        <select class="js-select2 rai form-control " multiple id="_listaLocalita" name="_listaLocalita" style="width: 100%">
+                            <option></option> @* serve per il placeholder *@
+                            @{
+                                var localita = cvEnt.DTabellaCV.Where(x => x.NomeTabella == "LocalitaEsp").OrderBy(y => y.Ordine).ToList();
+                                string select;
+                                foreach (var elem in localita)
+                                {
+                                    if (areaGeoList.Where(x => x.Codice == elem.Codice).Count() > 0)
+                                    {
+                                        select = "selected=\"selected\"";
+                                    }
+                                    else
+                                    {
+                                        select = "";
+                                    }
+                                    <option value="@elem.Codice" @select>@(elem.Descrizione)</option>
+                                }
+                            }
+
+                        </select>
+                    </div>
+                </div>
+
+
+                <div class="row push-20-t">
+                    <div class="col-md-12">
+                        <button class="btn rai-btn-primary full-width" type="submit" onclick="submit_modificaAreeInteresse(this)">Salva</button>
+                    </div>
+                </div>
+
+
+
+
+            </div>
+        </form>
+            <div id="savedbmodAreaInt" class="alert alert-primary" style="position:fixed;bottom:10px;right:10px;display:none;z-index:100; width:250px;">
+            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+            <i class="fa fa-refresh fa-spin"></i> Salvataggio in corso
+        </div>
+    }
+}
+
+
+
+
+<script>
+     $.validator.unobtrusive.parse($("form:last"));
+
+
+</script>

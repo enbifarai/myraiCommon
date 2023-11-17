@@ -1,0 +1,91 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model PresenzaDipendenti
+<section class="panel">
+    <header class="panel-heading">
+
+        <h2 class="panel-title">Il mio team</h2>
+        <div class="panel-actions rai-panel-actions" style="">
+            <div class="hidden-xs hidden-sm btn-action-icon-switch" style="display:none;">
+                <button class="btn-action-icon active" title="Vista per richiesta" onclick="switchPresView(this, 'presenza')"><i class="fa fa-user"></i></button>
+                <button class="btn-action-icon" title="Vista per giornata/turno" onclick="switchPresView(this, 'dettagli')"><i class="fa fa-comment"></i></button>
+            </div>
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+        </div>
+
+    </header>
+    <div class="panel-body" style="padding: 0px;">
+        <div class="panel-group" style="margin: 0px">
+            @{string act = "in";}
+            @if (Model.ListaDipendenti != null && Model.ListaDipendenti.Any())
+            {
+                foreach (var dipendentipersede in Model.ListaDipendenti.OrderBy(x => x.SedeGapp))
+                {
+                    @Html.Partial("~/Views/Approvazione/subpartial/_skel_presenzeDipendentiPerSede.cshtml", dipendentipersede)
+                    if (act == "in")
+                    { act = ""; };
+                }
+            }
+            else
+            {
+                @Html.Partial("~/Views/Shared/_NoDatidiv.cshtml")
+            }
+        </div>
+    </div>
+</section>
+<div class="modal right fade" id="myPianoFerie-div" role="dialog" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-popin">
+        <div class="modal-content height100" id="myPianoFerie-content"></div>
+    </div>
+</div>
+<script type="text/javascript">
+    function MostraPianoFerie( sede, rMese, rAnno )
+    {
+        $( "#myPianoFerie-div" ).modal( "show" );
+        $( "#myPianoFerie-content" ).html( '<div class="block-header bg-cdf" style="height: 58px; width: 1440px;position:fixed;"><ul class="block-options visible-xs"><li><button data-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button></li></ul><div class="calendario-annoVisualizzato" style="max-width: 1400px; min-width: 1000px;"></div><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button></div><div class="sezione-calendario-feriePermessi"><div class="container" style="max-width:100%; background-color:#FFF; padding-top: 100px;"><div class="block block-opt-refresh" id="my-block" style="box-shadow:none"><div id="appr" class="block-content tab-content"></div></div></div></div>' );
+        var data = new Date();
+        var mese = data.getMonth() + 1;
+        var anno = data.getFullYear();
+        if ( typeof rMese !== "undefined" && rMese != null )
+        {
+            mese = rMese;
+        }
+        if ( typeof rAnno !== "undefined" && rAnno != null )
+        {
+            anno = rAnno;
+        }
+        $.ajax( {
+            url: '@Url.Action("GetSituazioneFerieModal","PianoFerie")',
+            type: "POST",
+            data: {
+                mese: mese,
+                anno: anno,
+                sede: sede
+            },
+            cache: false,
+            success: function ( result )
+            {
+                $( "#myPianoFerie-content" ).html( result );
+            }
+        } );
+    }
+</script>
+<script>
+    function switchPresView(button, view) {
+        event.preventDefault();
+        $(button).parent().find('a').removeClass('active');
+        $(button).addClass('active');
+        if (view == 'presenza') {
+            $('div[data-presenza]').animate({
+                scrollLeft: 0
+            }, 'slow')
+        }
+        else {
+            $('div[data-presenza]').animate({
+                scrollLeft: $('div[data-presenza]').first()[0].scrollWidth / 2
+            }, 'slow')
+        }
+    }
+</script>

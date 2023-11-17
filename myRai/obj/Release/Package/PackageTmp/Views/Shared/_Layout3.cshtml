@@ -1,0 +1,169 @@
+﻿@using System.Web.Optimization
+@using myRaiData;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+<!DOCTYPE html>
+<html class="fixed sidebar-left-xs" lang="it">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Rai per Me - RaiPlace</title>
+    <meta name="description" content="myRai">
+    <meta name="author" content="">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="shortcut icon" href="~/assets/img/favicons/favicon.png">
+    <link rel="icon" type="image/png" href="~/assets/img/favicons/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="~/assets/img/favicons/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="~/assets/img/favicons/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/png" href="~/assets/img/favicons/favicon-160x160.png" sizes="160x160">
+    <link rel="icon" type="image/png" href="~/assets/img/favicons/favicon-192x192.png" sizes="192x192">
+    <link rel="apple-touch-icon" sizes="57x57" href="~/assets/img/favicons/apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="~/assets/img/favicons/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="~/assets/img/favicons/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="~/assets/img/favicons/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="~/assets/img/favicons/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="~/assets/img/favicons/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="~/assets/img/favicons/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="~/assets/img/favicons/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="~/assets/img/favicons/apple-touch-icon-180x180.png">
+
+    @Styles.Render( "~/assets/css/stylesPorto" )
+    @{
+        string tema = CommonHelper.GetTema( ( CommonHelper.GetCurrentUserMatricola( ) ) );
+
+        if ( tema != "" )
+        {
+            string s = "/assets/stylesheets/skins/" + tema + ".css";
+            <link href="@s" rel="stylesheet">
+            string s2 = "/assets/stylesheets/skins/" + tema + "V2.css";
+            <link href="@s2" rel="stylesheet">
+        }
+        else
+        {
+            string s = "/assets/stylesheets/skins/green.css";
+            <link href="@s" rel="stylesheet">
+            string s2 = "/assets/stylesheets/skins/greenV2.css";
+            <link href="@s2" rel="stylesheet">
+        }
+    }
+
+
+
+
+</head>
+
+@{
+    string StaiInProd = "";
+    try
+    {
+        StaiInProd = System.Diagnostics.Debugger.IsAttached && System.Configuration.ConfigurationManager.ConnectionStrings["digiGappEntities2"].ConnectionString.ToLower( ).Contains( "zto" ) ? "background-color:red" : "";
+    }
+    catch
+    {
+
+    }
+}
+<body style="@StaiInProd">
+    @RenderBody( )
+    @if ( CommonHelper.GetCurrentUsername( ) != User.Identity.Name )
+    {
+        <div class="row">
+            <div class="col-sm-12 bottom-matr">
+                PER RAGIONI TECNICHE STAI SIMULANDO LA MATRICOLA @CommonHelper.GetCurrentUsername( )
+            </div>
+        </div>
+    }
+    <div class="modal right fade" id="modal-help" role="dialog" aria-hidden="true" style="display: none;"></div>
+    @Html.RenderModal("valexternal", size: ModalSize.Half)
+</body>
+
+@Scripts.Render( "~/assets/javascriptPorto" )
+
+<script src="@Url.Content("~/assets/js/plugins/jquery-form/jquery.form.js")"></script>
+<script src="@Url.Content("~/assets/js/jquery.unobtrusive-ajax.js")"></script>
+<script src="@Url.Content("~/assets/js/plugins/table-scroll/table-scroll.min.js")"></script>
+<script>
+    $.ajaxSetup({
+        cache: false
+    });
+</script>
+
+@RenderSection( "afterjs" , false )
+
+<script src="/home/getjs"></script>@* <-------  Validazione Parametri Generici*@
+
+<script type="text/javascript">
+    $(document).ready(function () {
+
+        $("aside")
+            .find("a[href='" + location.pathname + "']")
+            .css("font-weight", "bold")
+            .parent("li")
+            .parent("ul")
+            .parent("li")
+            .addClass("nav-expanded");
+
+
+        Handlers();
+
+        if ($.UIRai.isVisibleJunosMenu()) { $.UIRai.removeJunosMenu(); }
+
+        $("a[data-refreshurl],button[data-refreshurl]").click();
+        console.log('done');
+        UIRai.initHelpers('notify');
+        UIRai.initHelpers('strumenti-table');
+        UIRai.initHelpers('datetimepicker');
+        UIRai.initHelpers('select2');
+
+        $('#rootwizard').bootstrapWizard({
+            onTabShow: function (tab, navigation, index) {
+                var $total = navigation.find('li').length;
+                var $current = index + 1;
+                var $percent = ($current / $total) * 100;
+                $('#rootwizard').find('.bar').css({ width: $percent + '%' });
+            }
+        });
+        $('#rootwizard .finish').click(function () {
+            $('#rootwizard').find("a[href*='tab1']").trigger('click');
+        });
+    });
+
+    function exitfromJunos() {
+        window.location.assign("/dana-na/auth/logout.cgi");
+    }
+
+    var DataUltimaConvalida = '@Session["DatePerEvidenze"]';
+
+    /*
+    * Translated default messages for the jQuery validation plugin.
+    * Locale: IT (Italian; Italiano)
+    */
+    $.extend($.validator.messages, {
+        required: "Campo obbligatorio",
+        remote: "Controlla questo campo",
+        email: "Inserisci un indirizzo email valido",
+        url: "Inserisci un indirizzo web valido",
+        date: "Inserisci una data valida",
+        dateISO: "Inserisci una data valida (ISO)",
+        number: "Inserisci un numero valido",
+        digits: "Inserisci solo numeri",
+        creditcard: "Inserisci un numero di carta di credito valido",
+        equalTo: "Il valore non corrisponde",
+        extension: "Inserisci un valore con un&apos;estensione valida",
+        maxlength: $.validator.format("Non inserire pi&ugrave; di {0} caratteri"),
+        minlength: $.validator.format("Inserisci almeno {0} caratteri"),
+        rangelength: $.validator.format("Inserisci un valore compreso tra {0} e {1} caratteri"),
+        range: $.validator.format("Inserisci un valore compreso tra {0} e {1}"),
+        max: $.validator.format("Inserisci un valore minore o uguale a {0}"),
+        min: $.validator.format("Inserisci un valore maggiore o uguale a {0}"),
+        nifES: "Inserisci un NIF valido",
+        nieES: "Inserisci un NIE valido",
+        cifES: "Inserisci un CIF valido",
+        currency: "Inserisci una valuta valida"
+    });
+</script>
+</html>

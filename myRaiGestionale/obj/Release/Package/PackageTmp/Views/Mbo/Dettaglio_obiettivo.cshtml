@@ -1,0 +1,132 @@
+﻿@using myRaiCommonModel.Gestionale
+@using myRaiHelper
+@model MboObiettivo
+
+@{ 
+    var minValOb = 1;
+    var maxValOb = 99;
+    var stepOb = 1;
+}
+
+<div class="panel">
+    <div class="panel-heading">
+        <label class="panel-title">Dati obiettivo</label>
+    </div>
+    <div class="panel-body">
+        <form id="form-obiettivo" method="POST" action="/Mbo/Save_Obiettivo">
+            @Html.HiddenFor(m => m.Id)
+            @Html.HiddenFor(m => m.IdScheda)
+            @Html.HiddenFor(m => m.IdTipologia)
+            <div class="form-group">
+                <div class="row push-10-t">
+                    <div class="col-sm-12">
+                        @if (Model.IsConsolidato.GetValueOrDefault())
+                        {
+                            @Html.LabelFor(m => m.Tipo, "Tipo obiettivo", new { @class = "rai-caption" })
+
+                        }
+                        else
+                        {
+                            @Html.LabelForRequiredObbl(m => m.Tipo, "Tipo obiettivo", new { @class = "rai-caption" })
+                            @Html.RaiSelectFor(m => m.Tipo, new List<SelectListItem>()
+                               {
+                                   new SelectListItem(){Text="Qualitativo", Value="qualitativo"},
+                                   new SelectListItem(){Text="Quantitativo", Value="quantitativo"}
+                               }, hideSearch:true, onSelectchange: "MboChangeLabelRisultato()")
+                            @Html.ValidationMessageFor(m => m.Tipo)
+                        }
+                    </div>
+                </div>
+                <div class="row push-10-t">
+                    <div class="col-sm-12">
+                        @Html.LabelForRequiredObbl(m => m.Descrizione, "Obiettivo", new { @class = "rai-caption" })
+                        @Html.TextAreaFor(m => m.Descrizione, new { @class = "form-control", required = "required", rows = 3 })
+                        @Html.ValidationMessageFor(m => m.Descrizione)
+                    </div>
+                </div>
+                <div class="row push-10-t">
+                    <div class="col-sm-12">
+                        @Html.LabelForRequiredObbl(m => m.PesoSpecifico, "Peso obiettivo", new { @class = "rai-caption remove-margin-bottom" })
+                        @*<span class="rai-font-sm-neutral text-italic">(@minValOb% - @maxValOb%)</span>*@
+                        <br /><span class="rai-font-sm-neutral">Attribuire un peso espresso in misura percentuale, con un valore compreso tra 1% e 99%</span>
+                        @Html.TextBoxFor(m => m.PesoSpecifico, new { @class = "form-control", required = "required", type = "number", min = minValOb, max = maxValOb, step = stepOb })
+                        @Html.ValidationMessageFor(m => m.PesoSpecifico)
+
+                    </div>
+                </div>
+                <div class="row push-10-t">
+                    <div class="col-sm-12">
+                        @Html.LabelForRequiredObbl(m => m.RisultatoAtteso, "Risultato atteso", new { id= "lblRisultatoAtteso", @class = "rai-caption remove-margin-bottom" })
+                        <br /><span class="rai-font-sm-neutral" id="spanRisultatoAtteso"></span>
+                        @Html.TextAreaFor(m => m.RisultatoAtteso, new { @class = "form-control", required = "required", rows = 3 })
+                        @Html.ValidationMessageFor(m => m.RisultatoAtteso)
+                    </div>
+                </div>
+                <div class="row push-10 push-20-t">
+                    <div class="col-sm-12 push-5">
+                        @Html.LabelForRequiredObbl(m => m.StrategicoDirezione, "Obiettivo strategico di direzione a cui è collegato", new { @class = "rai-caption", @id = "lblIsStratDir" })
+                        @Html.TextAreaFor(m => m.StrategicoDirezione, new { @class = "form-control", rows = 3 })
+                        @Html.ValidationMessageFor(m => m.StrategicoDirezione)
+                    </div>
+                </div>
+                <div class="row push-20-t">
+                    <div class="col-sm-12 text-right">
+                        <div class="">
+                            <a onclick="RaiOPGotoMain('bc-scheda');">Indietro</a>
+                            <button class="btn rai-btn-primary push-10-l" style="width:120px" onclick="MboSalvaObiettivo()">Salva</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+
+<script id="ScriptObiettivo">
+    function MboChangeLabelRisultato() {
+        if ($('#form-obiettivo #Tipo').val() == 'quantitativo') {
+            $('#lblRisultatoAtteso').html('Valore di riferimento/Risultato atteso <font color="#d2322d">*</font>');
+            $('#spanRisultatoAtteso').html("Indicare il valore di riferimento stabilito per l'obiettivo economico/quantitativo");
+        } else {
+            $('#lblRisultatoAtteso').html('Risultato atteso <font color="#d2322d">*</font>');
+            $('#spanRisultatoAtteso').html("Descrivere il risultato atteso per l'obiettivo qualitativo");
+        }
+    }  
+    MboChangeLabelRisultato();
+
+    function MboSalvaObiettivo() {
+        event.preventDefault();
+
+        var validator = $("#form-obiettivo").validate();
+        if (!$("#form-obiettivo").valid()) {
+            validator.focusInvalid();
+            return false;
+        }
+
+        var formData = new FormData($('#form-obiettivo')[0]);
+
+        $.ajax({
+            url: "/Mbo/Save_Obiettivo",
+            type: "POST",
+            cache: false,
+            dataType: 'html',
+            contentType: false,
+            processData: false,
+            data: formData,
+            success: function (data) {
+                switch (data) {
+                    case "OK":
+                        swal("Salvataggio effettuato", "L'obiettivo è stato salvato correttamente", 'success');
+                        var idScheda = $('#IdScheda').val();
+                        RaiUpdateWidget("elencoObiettivi", "@Url.Action("Modal_Scheda","Mbo")", "replaceId", { idScheda: idScheda, loadIncarichi: false }, false, function () { MboCheckPerc(); }, null, "POST");
+                        RaiOPGotoMain("bc-scheda");
+                        break;
+                    default:
+                        swal("Oops...", data, 'error');
+                }
+            }
+        });
+    }
+</script>

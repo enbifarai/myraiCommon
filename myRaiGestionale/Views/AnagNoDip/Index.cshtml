@@ -1,0 +1,393 @@
+﻿@using MVCProject.Custom_Helpers
+@using myRaiHelper
+@using myRaiCommonManager
+@using myRaiCommonModel
+@{
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    ViewBag.Title = "HRIS - Anagrafica Dipendente";
+
+    var newAnagAction = new myRaiHelper.ActionTemplate()
+    {
+        Text = "Crea anagrafica",
+        OnClick = "AnagNoDipModal(0)"
+    };
+}
+
+@{
+    string matricola = CommonHelper.GetCurrentUserMatricola();
+    AbilSubFunc subFunc = null;
+    bool isAbil = AnagraficaNoDipManager.EnabledToSubFunc(matricola, "NDIADM", out subFunc)
+        || AnagraficaNoDipManager.EnabledToSubFunc(matricola, "NDIGEST", out subFunc)
+        || AnagraficaNoDipManager.EnabledToSubFunc(matricola, "NDIVIS", out subFunc);
+
+    string abilLock = HrisHelper.GetParametro<string>(HrisParam.AbilLockAnagNoDip);
+    bool isEnabledLock = !String.IsNullOrWhiteSpace(abilLock) && abilLock == "TRUE";
+}
+
+<style>
+    .no-height {
+        min-height: unset !important;
+    }
+</style>
+
+<section role="main" class="content-body">
+    <main id="main-container">
+        <div class="content">
+            @using (Html.BeginOnePageNav("nav-nodip", "Anagrafica non dipendenti"))
+            {
+                <div class="row">
+                    <div class="col-md-8">
+                        <div id="wdgt-list">
+                            @Html.AsyncPartial("AnagNoDip", "Elenco_Anagrafiche", "~/Views/_RaiDesign/PanelTemplateSkeleton.cshtml", TempData, "InitTooltip()")
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        @if (isEnabledLock && subFunc.Nome == "ADM")
+                        {
+                            <div id="wdgt-lock">
+                                <div class="panel">
+                                    <div class="panel-heading">
+                                        <label class="panel-title">
+                                            Lock attivi
+                                        </label>
+                                        <div class="panel-actions rai-panel-actions">
+                                            <button class="btn btn-action-icon" onclick="AnagNoDipLoadLock()"><i class="fa fa-refresh"></i></button>
+                                            <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" aria-labelledby="lblRightBox" aria-expanded="true"></a>
+                                        </div>
+                                    </div>
+                                    <div class="panel-body panel-body-nopadding">
+                                        <table class="table rai-table rai-table-vcenter rai-table-compact">
+                                            <tbody id="body-lock"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        @if (subFunc.Create)
+                        {
+                            @Html.RenderWidget(myRaiHelper.WidgetType.Normal, "Gestione anagrafica", "fa fa-user", "Aggiungi una nuova anagrafica", action: newAnagAction)
+                        }
+                        @Html.Partial("Widget_Ricerca", new AnagNoDipRicerca())
+                    </div>
+                </div>
+            }
+        </div>
+    </main>
+
+    <!-- end: page -->
+</section>
+
+<!--Impedire la chiusura della modale-->
+@Html.RenderModal("anag-no-dip", myRaiHelper.ModalPosition.Right, myRaiHelper.ModalSize.Half, modalAttributes: new myRaiHelper.RaiAttributes() { new myRaiHelper.RaiAttribute("data-backdrop", "static") })
+
+<div class="modal right fade " id="modal-storico-no-dip" role="dialog" aria-hidden="true" style="display: none; ">
+    <div class="modal-dialog modal-dialog-popin modal-half-dialog" style="">
+        <div class="modal-content ">
+            <div id="modal-storico-no-dip-internal" data-modal-wrapper="">
+                <div class="block block-transparent no-margin-bottom">
+                    <div class="block-header">
+                        <label class="rai-font-modal-heading" id="cont-storico-title"></label>
+                        <div class="block-options">
+                            <button data-dismiss="modal" class="btn btn-action-icon" onclick="$(this).parent('.modal').css('z-index', '');"><i class="glyphicon glyphicon-remove"></i></button>
+                        </div>
+                    </div>
+                    <div class="block-content">
+                        <div class="row">
+                            <div class="col-sm-12" id="cont-storico">
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="display:none" id="anagnodip-popover">
+    <div class="rai-popover">
+        <div class="rai-popover-header">
+            <div class="rai-popover-title" style="float:left">
+                Elenco rapporti
+            </div>
+            <div class="rai-popover-actions" style="float:right">
+                <a onclick="hidePopover()" data-table-collapsable-toggle="ignore"><i class="fa fa-times"></i></a>
+            </div>
+        </div>
+        <div class="rai-popover-content">
+        </div>
+    </div>
+</div>
+
+<script>
+    function InitTooltip() {
+        $('[data-toggle=\"tooltip\"]').tooltip();
+    }
+
+    function AnagNoDipModal(idAnag, dtaInizio, matricola, nominativo) {
+        let title = "Nuova anagrafica";
+        if (idAnag > 0) {
+            title = matricola + ' - ' + nominativo;
+        }
+        RaiOPNavGoToNext("nav-nodip", "nav-no-dip-anag", title, "/AnagNoDip/Modal_Anagrafica", { idAnag: idAnag, dtaInizio: dtaInizio }, "POST");
+    }
+    function AnagNoDipDelAnag(idAnag, dtaInizio) {
+        event.preventDefault();
+        RaiDeleteRecord("Sei sicuro di voler cancellare questa versione?",
+            "/AnagNoDip/Delete_Anagrafica", { idAnag: idAnag, dataInizio: dtaInizio },
+            "Anagrafica cancellata con successo", function () {
+                if ($('#form-nodip-ricerca').length > 0)
+                    $('#form-nodip-ricerca').submit();
+                RaiOPGotoMain('nav-nodip', true);
+            },
+            "POST", false, true);
+    }
+
+    function AnagNoDipModalRapp(codTipoSogg, codImpresa, dataInizio) {
+        var idAnag = $('#IdAnag').val();
+        RaiOpenAsyncModal("modal-anag-no-dip", "/AnagNoDip/Modal_Rapporto", { idAnag: idAnag, codTipoSogg: codTipoSogg, codImpresa: codImpresa, dataInizio: dataInizio }, null, "POST");
+    }
+    function AnagNoDipDelRapp(codTipoSogg, codImpresa, dataInizio) {
+        var idAnag = $('#IdAnag').val();
+
+        RaiDeleteRecord("Sei sicuro di voler cancellare questo rapporto?",
+            "/AnagNoDip/Delete_Rapporto", { idAnag: idAnag, codTipoSogg: codTipoSogg, codImpresa: codImpresa, dataInizio: dataInizio },
+            "Rapporto cancellato con successo", function () {
+                var idAnag = $('#IdAnag').val();
+                var anagDataInizio = $('#AnagDataInizio').val();
+
+                let matricola = $('#DatiAnagrafici_Matricola').val();
+                let cognome = $('#DatiAnagrafici_Cognome').val();
+                let nome = $('#DatiAnagrafici_Nome').val();
+                AnagNoDipModal(idAnag, anagDataInizio, matricola, cognome + ' ' + nome);
+            },
+            "POST", false, true);
+
+    }
+    function AnagNoDipModalResDom(dataInizio) {
+        var idAnag = $('#IdAnag').val();
+        RaiOpenAsyncModal("modal-anag-no-dip", "/AnagNoDip/Modal_Indirizzo", { idAnag: idAnag, dataInizio: dataInizio }, null, "POST");
+    }
+    function AnagNoDipDelResDom(dataInizio) {
+        var idAnag = $('#IdAnag').val();
+        RaiDeleteRecord("Sei sicuro di voler cancellare questo indirizzo?",
+            "/AnagNoDip/Delete_Indirizzo", { idAnag: idAnag, dataInizio: dataInizio },
+            "Indirizzo cancellato con successo", function () {
+                var idAnag = $('#IdAnag').val();
+                var anagDataInizio = $('#AnagDataInizio').val();
+                let matricola = $('#DatiAnagrafici_Matricola').val();
+                let cognome = $('#DatiAnagrafici_Cognome').val();
+                let nome = $('#DatiAnagrafici_Nome').val();
+                AnagNoDipModal(idAnag, anagDataInizio, matricola, cognome + ' ' + nome);
+                $('#modal-anag-no-dip').modal('hide');
+            }, "POST", false, true);
+    }
+    function AnagNoDipModalIban(idIban) {
+        var idAnag = $('#IdAnag').val();
+        RaiOpenAsyncModal("modal-anag-no-dip", "/AnagNoDip/Modal_Iban", { idAnag: idAnag, idIban: idIban }, null, "POST");
+    }
+    function AnagNoDipDeleteIban(idIban) {
+        var idAnag = $('#IdAnag').val();
+        RaiDeleteRecord("Sei sicuro di voler cancellare questo iban?",
+            "/AnagNoDip/Delete_Iban", { idAnag: idAnag, idIban: idIban },
+            "Iban cancellato con successo", function () {
+                var idAnag = $('#IdAnag').val();
+                var anagDataInizio = $('#AnagDataInizio').val();
+                let matricola = $('#DatiAnagrafici_Matricola').val();
+                let cognome = $('#DatiAnagrafici_Cognome').val();
+                let nome = $('#DatiAnagrafici_Nome').val();
+                AnagNoDipModal(idAnag, anagDataInizio, matricola, cognome + ' ' + nome);
+                $('#modal-anag-no-dip').modal('hide');
+            }, "POST", false, true);
+    }
+
+    function AnagNoDipOpenStoricoIndirizzi(idAnag) {
+        event.preventDefault();
+        let matricola = $('#DatiAnagrafici_Matricola').val();
+        let cognome = $('#DatiAnagrafici_Cognome').val();
+        let nome = $('#DatiAnagrafici_Nome').val();
+        $('#cont-storico-title').text(matricola + ' - ' + cognome + ' ' + nome);
+        RaiUpdateWidget("cont-storico", "/AnagNoDip/Storico_Indirizzi", 'html', { idAnag: idAnag }, false, function () {
+            $('#modal-storico-no-dip').modal('show');
+        });
+    }
+    function AnagNoDipOpenStoricoIban(idAnag) {
+        event.preventDefault();
+        let matricola = $('#DatiAnagrafici_Matricola').val();
+        let cognome = $('#DatiAnagrafici_Cognome').val();
+        let nome = $('#DatiAnagrafici_Nome').val();
+        $('#cont-storico-title').text(matricola + ' - ' + cognome + ' ' + nome);
+        RaiUpdateWidget("cont-storico", "/AnagNoDip/Storico_Iban", 'html', { idAnag: idAnag }, false, function () {
+            $('#modal-storico-no-dip').modal('show');
+        });
+    }
+
+    function CalcolaCF() {
+        let forzato = $('#IndForzaCF').val();
+        if (forzato == 'True' || forzato == 'true') return;
+
+        var cognome = $('#DatiAnagrafici_Cognome').val();
+        var nome = $('#DatiAnagrafici_Nome').val();
+        var sesso = $('[name="DatiAnagrafici.Sesso"]:checked').val() ?? '';
+        var dataNascita = $('#DatiAnagrafici_DataNascita').val();
+        var luogoNascita = $('#DatiAnagrafici_CodLuogoNascita').val() ?? '';
+
+
+        if (cognome != '' && nome != '' && sesso != '' && dataNascita != '' && luogoNascita != '') {
+            $.ajax({
+                url: '/AnagNoDip/CalcolaCF',
+                cache: 'false',
+                type: 'POST',
+                dataType: "json",
+                data: {
+                    cognome: cognome,
+                    nome: nome,
+                    sesso: sesso,
+                    dataNascita: dataNascita,
+                    luogoNascita: luogoNascita
+                },
+                success: function (data) {
+                    if (data.Esito == true) {
+                        $("#DatiAnagrafici_CodiceFiscale").val(data.cf);
+                        $('#DatiAnagrafici_CodiceFiscale').attr('data-auto', data.cf);
+                    }
+                    else {
+                        debugger
+                    }
+                },
+                error: function (a, b, c) {
+                    debugger
+                }
+            });
+        }
+    }
+
+    function AnagNoDipPopoverRapp(element, idAnag) {
+        $('[data-toggle="popover"]').popover("hide");
+        $.ajax({
+            url: '/AnagNoDip/Elenco_Rapporti',
+            type: 'POST',
+            dataType: 'html',
+            data: { idAnag: idAnag },
+            success: function (data) {
+                let popContent = $('#anagnodip-popover');
+                popContent.find('.rai-popover-content').html($(data).find('table').parent().html());
+
+                //$(popContent).find(".panel").removeClass('panel').addClass('rai-popover');
+                //$(popContent).find(".panel-heading").removeClass('panel-heading').addClass('rai-popover-header');
+
+                //$(popContent).find(".panel-title").replaceWith('<div class="rai-popover-title">' + $(popContent).find(".panel-title").innerHTML+'</div>');
+                //$(popContent).find(".panel-body").removeClass('panel-body').addClass('rai-popover-content');
+
+                //let table = $(popContent).find('table');
+                //$(popContent).find('.rai-popover-content').html($(table));
+
+                //var actions = $(popContent).find(".panel-actions").removeClass('panel-actions');
+                //$(actions).html('<a onclick="hidePopover()" ><i class="fa fa-times"></i></a>');
+
+                $(popContent).find('.rapp-edit').remove();
+                $(popContent).find('.rapp-del').remove();
+                $(popContent).find('.rapp-add').remove();
+
+                $(element).attr('data-content', $(popContent).html());
+                $(element).popover().on("show.bs.popover", function () { $(this).data("bs.popover").tip().css("max-width", "650px"); });
+                $(element).popover("show");
+
+                $(".popover-content").css("padding", "0px");
+            }
+        })
+    }
+</script>
+
+@if (isEnabledLock)
+{
+    <script>
+        function AnagNoDipRilascia(idAnag, force) {
+            $.ajax({
+                url: '/AnagNoDip/Remove_Lock',
+                cache: 'false',
+                type: 'POST',
+                dataType: "json",
+                data: {
+                    idAnag: idAnag, force: force
+                },
+                success: function (data) {
+                    if (force)
+                        AnagNoDipLoadLock();
+                },
+                error: function (a, b, c) {
+                    debugger
+                }
+            });
+        }
+    </script>
+}
+else
+{
+    <script>
+        function AnagNoDipRilascia(idAnag, force) {
+            return;
+        }
+    </script>
+}
+
+
+@section afterjs {
+    @Html.Raw(TempData["script"])
+
+    <script src="~/assets/js/plugins/jquery-validation/additional-methods.min.js"></script>
+    <script>
+        jQuery.validator.setDefaults({
+            errorPlacement: function (error, element) {
+                var name = $(element).attr('name');
+                if ($('[data-valmsg-for="' + name + '"]').length > 0)
+                    $('[data-valmsg-for="' + name + '"]').html(error);
+                else
+                    error.appendTo(element.prev());
+            }
+        });
+        InitDatePicker();
+    </script>
+
+    @if (isEnabledLock && subFunc.Nome == "ADM")
+    {
+        <script>
+            function AnagNoDipLoadLock() {
+                $('#body-lock').addClass('rai-loader');
+                $.ajax({
+                    url: '/AnagNoDip/Elenco_Lock',
+                    cache: 'false',
+                    type: 'POST',
+                    dataType: "json",
+                    data: null,
+                    success: function (data) {
+                        $('#body-lock').html('');
+                        if (data.length > 0) {
+                            for (var i = 0; i < data.length; i++) {
+                                let id = data[i].Item1;
+                                let matr = data[i].Item2;
+                                let nom = data[i].Item3;
+
+                                let tr = '<tr>'
+                                    + '<td><span class="rai-font-sm">' + matr + '</span><br/><span>' + nom + '</span></td>'
+                                    + '<td class="rai-table-td-action"><button class="btn btn-action-icon" title="Rilascia" onclick="AnagNoDipRilascia(' + id + ',true)"><i class="fa fa-lock"></i></button>'
+                                    + '</tr>';
+
+                                $('#body-lock').append(tr);
+                            }
+                        } else {
+                            $('#body-lock').append('<tr><td class="text-center"><span class="rai-font-md-neutral">Non ci sono dati da visualizzare</span></td></tr>');
+                        }
+                    },
+                    error: function (a, b, c) {
+                        debugger
+                    },
+                    complete: function () {
+                        $('#body-lock').removeClass('rai-loader');
+                    }
+                });
+            }
+            AnagNoDipLoadLock();
+        </script>
+    }
+}

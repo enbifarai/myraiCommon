@@ -1,0 +1,77 @@
+﻿@using MVCProject.Custom_Helpers
+@using myRaiCommonModel.Gestionale
+@using myRai.Business
+
+@{
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    ViewBag.Title = "Rai per Me - MBO";
+}
+
+        <section role="main" class="content-body" style="padding-top:10px;">
+            <main id="main-container">
+
+                <div class="content">
+                    <div class="row">
+                        <div class="col-sm-8">
+                            <div id="wdgt-schede">
+                                @Html.AsyncPartial("Mbo", "Elenco_Schede", "~/Views/_RaiDesign/PanelTemplateSkeleton.cshtml", TempData)
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div id="wdgt-ricerca">
+                                @{
+                                    List<MboScheda> schede = null;
+                                    bool hasSchede = MboManager.HasSchede(out schede);
+                                }
+                                @if (hasSchede)
+                                {
+                                    <div class="rai panel">
+                                        <div class="panel-heading">
+                                            <h4 class="panel-title">Assegnazione obiettivi</h4>
+                                        </div>
+                                        <div class="panel-body panel-body-nopadding">
+                                            <table class="table rai-table rai-table-vcenter rai-table-panel">
+                                                @foreach (var item in schede)
+                                                {
+                                                    <tr>
+                                                        <td><span class="rai-font-md">@item.Iniziativa.Nome</span></td>
+                                                        <td><span class="rai-label">@item.StatoCorrente.DES_DESCRIZIONE</span></td>
+                                                        <td class="text-right"><button class="btn rai-btn-small" onclick="MboOpenModalScheda(@item.Id)">Vedi</button></td>
+                                                    </tr>
+                                                }
+                                            </table>
+                                        </div>
+                                    </div>
+                                }
+                                @Html.AsyncPartial("Mbo", "Widget_Ricerca", "~/Views/_RaiDesign/PanelTemplateSkeleton.cshtml", TempData)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            <!-- end: page -->
+        </section>
+
+
+
+
+@Html.RenderModal("mbo")
+@Html.RenderModal("mbo-half", myRaiHelper.ModalPosition.Right, myRaiHelper.ModalSize.Half)
+
+<script>
+    function MboOpenModalIniziativa(idIniziativa) {
+        event.preventDefault();
+        RaiOpenAsyncModal("modal-mbo-half", "@Url.Action("Modal_Iniziativa","Mbo")", { idIniz:idIniziativa }, null, "POST")
+    }
+    function MboUpdateIniziative() {
+        RaiUpdateWidget("wdg-iniziative", '/Mbo/Widget_Iniziative', 'html')
+    }
+    function MboOpenModalScheda(idScheda) {
+        event.preventDefault();
+        RaiOpenAsyncModal("modal-mbo-half", "@Url.Action("Modal_Scheda","Mbo")", { idScheda:idScheda}, null, "POST")
+    }
+</script>
+
+@section afterjs {
+    @Html.Raw(TempData["script"])
+}

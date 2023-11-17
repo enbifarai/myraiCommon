@@ -1,0 +1,74 @@
+﻿@using myRaiGestionale.Controllers
+@model myRaiCommonModel.Gestionale.RicercaValutazione
+
+@{
+    var formId = "form-ricerca-" + Model.BoxDest;
+}
+@*@using (Html.BeginForm("Elenco_Valutazioni_Gest", "Valutazioni", FormMethod.Post, new { id = formId, @class = "", role = "search" }))*@
+@using (Ajax.BeginForm("Elenco_Valutazioni", "Valutazioni", new AjaxOptions
+{
+    InsertionMode = InsertionMode.Replace,
+    HttpMethod = "POST",
+    UpdateTargetId = Model.BoxDest,
+    OnBegin = "RaiSearchFormPreSubmit('" + Model.BoxDest + "')",
+    OnSuccess = "RaiSearchFormSuccessSubmit('" + formId + "','" + Model.BoxDest + "')"
+}, new { id = formId, role = "search" }))
+{
+    @Html.HiddenFor(m => m.HasFilter, new { @class = formId + " form-control-bool" })
+    @Html.HiddenFor(m => m.ResultView)
+    <div class="form-group">
+        <div class="row">
+            <div class="col-xl-6 col-sm-12 push-10">
+                <label class="rai-caption">Matricola</label>
+                @Html.TextBoxFor(m => m.Matricola, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Matricola" })
+            </div>
+            <div class="col-xl-6 col-sm-12 push-10">
+                <label class="rai-caption">Nominativo</label>
+                @Html.TextBoxFor(m => m.Nominativo, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Cognome" })
+            </div>
+            <div class="col-xl-6 col-sm-12 push-10">
+                <label class="rai-caption">Iniziativa</label>
+                @Html.DropDownListFor(m => m.Campagna, new SelectList(ValutazioniController.GetSelectCampagne(), "Value", "Text", null), new { @class = formId + " form-control form-control-value-int", style = "width: 100%", placeholder = "Piano" })
+            </div>
+            <div class="col-xl-6 col-sm-12 push-10">
+                <label class="rai-caption">Scheda</label>
+                <select class="@formId form-control form-control-value-int valid" data-val="true" id="CampagnaScheda" name="CampagnaScheda">
+                    <option value="0">Seleziona una scheda</option>
+                    @foreach (var group in ValutazioniController.GetSelectCampagneSchede())
+                    {
+                        <optgroup label="@group.Name">
+                            @foreach (var item in group.ListItems)
+                            {
+                                <option value="@item.Value">@item.Text</option>
+                            }
+                        </optgroup>
+                    }
+                </select>
+            </div>
+            <div class="col-xl-6 col-sm-12 push-10">
+                <label class="rai-caption">Valutatore</label>
+                @Html.RaiSelectFor(m => m.Valutatore, ValutazioniController.GetSelectValutatori(), "Seleziona un valutatore", attributes: new { @class = formId + " form-control-value-int" })
+            </div>
+            <div class="col-xl-6 col-sm-12 push-10">
+                <label class="rai-caption">Delega</label>
+                @Html.DropDownListFor(m => m.GestitoInDelega, new SelectList(ValutazioniController.GetSelectDelega(), "Value", "Text", null), new { @class = formId + " form-control form-control-value-int", style = "width: 100%", placeholder = "Delega" })
+            </div>
+            <div class="col-xl-6 col-sm-12 push-10">
+                <label class="rai-caption">Stato</label>
+                @Html.RaiSelectFor(m => m.Stato, ValutazioniController.GetStati(), "Seleziona uno stato", attributes: new { @class = formId + " form-control form-control-value-int" })
+            </div>
+            <div class="col-sm-12 push-10 push-10-t">
+                @Html.RaiCheckBoxLabelFor(m => m.MostraIniziativeChiuse, "Mostra iniziative non attive", "", new { @class = formId + " form-control form-control-bool" })
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="rai-btn-fill">
+                <input type="button" id="btnAzzera" class="btn rai-btn-secondary" title="Azzera" value="Azzera" onclick="RaiSearchFormClear('@(formId)',true)" />
+                <input type="submit" id="btnCerca" class="btn rai-btn-primary" title="Cerca" onclick="RaiSearchFormCheckHasFilter('@formId');" value="Cerca" />
+            </div>
+        </div>
+    </div>
+}

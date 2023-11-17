@@ -1,0 +1,51 @@
+﻿@model myRaiCommonModel.TaskStatusModel
+
+@{
+    var taskInCorso = Model.TaskInCorso;
+    int counter = Model.counter;
+}
+
+@if (taskInCorso == null)
+{
+    return;
+}
+
+else if (taskInCorso.TERMINATA)
+{
+    <span>Completata</span> <i class="fa fa-circle circle-green" aria-hidden="true"></i>
+    <br />
+    <span class="rai-font-sm-neutral">@taskInCorso.DATA_ULTIMO_TENTATIVO.Value.ToString("dd/MM/yyyy, HH.mm")</span>
+
+    <input value="1" class="task-switch" type="checkbox" name="model[@counter].attivo" data-plugin-ios-switch="" checked="checked" style="display: none;">
+}
+else if (taskInCorso.ERRORE_BATCH != null)
+{
+    <span>In errore</span> <i class="fa fa-circle circle-red" aria-hidden="true"></i>
+    <br />
+    <span class="rai-font-sm-neutral">@taskInCorso.DATA_ULTIMO_TENTATIVO.Value.ToString("dd/MM/yyyy, HH.mm")</span>
+
+    <input value="1" class="task-switch" type="checkbox" name="model[@counter].attivo" data-plugin-ios-switch="" checked="checked" style="display: none;">
+}
+else
+{
+    if (taskInCorso.BLOCCATA_DATETIME == null)
+    {
+        bool stato = true;
+        if (Model.taskPronto!= null && Model.taskPronto.IdAltraPraticaGiaSuDB != 0 && Model.switch_disabilitato == true)
+        {
+            stato = false;
+        }
+        @Html.Partial("_taskswitch", new myRaiCommonModel.TaskSwitchModel() { stato = stato, counter = counter,
+            disabilitato = Model.switch_disabilitato,
+            Richiesta = Model.TaskInCorso.XR_MAT_RICHIESTE, mese =taskInCorso.MESE.ToString(), IsStornoCedolino =Model.IsStornoCedolino
+        })
+
+    }
+    else
+    {
+        @Html.Partial("_taskswitch", new myRaiCommonModel.TaskSwitchModel() { stato = false, counter = counter
+       ,
+       Richiesta = Model.TaskInCorso.XR_MAT_RICHIESTE, disabilitato=Model.switch_disabilitato, mese=taskInCorso.MESE.ToString(), IsStornoCedolino = Model.IsStornoCedolino })
+
+    }
+}

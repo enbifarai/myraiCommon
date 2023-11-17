@@ -1,0 +1,198 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model CarenzaTimbratureModel
+
+<div class="block  pull-t" id="car-timbrature">
+    <div class="block-header" style="margin-top:0px">
+
+        <h4 class="font-w600  tit-richieste" style="text-align: center">Intervalli da coprire per il @Model.carenze.Data.ToString("dd/MM/yyyy")</h4>
+
+    </div>
+
+    <input type="hidden" name="DataEccezioni" value="@Model.carenze.Data.ToString("dd/MM/yyyy")" />
+
+    <div class="block-content">
+        <input type="hidden" id="carenza-giornata-totale" value="@Model.CarenzaGiornataMinuti" />
+        <table class="table rai-table rai-table-vcenter" id="table-ecc-auto">
+
+            <thead>
+                <tr class="prop-auto-head">
+                    <th>Dalle</th>
+                    <th>Alle</th>
+                    <th>Quantita</th>
+                    <th>Eccezione</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @{
+                    int counter = 0;
+                }
+                @foreach (var item in Model.carenze.Intervalli)
+                {
+                    counter++;
+
+                    <tr id="tr-data-@counter" class="@(item.StartInMensa && item.EndInMensa ?"rowmensa":"")">
+                        <td style="position:relative" id="td-start-@counter" class="infor">
+                            @if (item.StartInMensa && item.EndInMensa)
+                            {
+                                <span class="span-mensa">PERIODO MENSA</span>
+                            }
+                            <div>@item.Start</div>
+
+                            <input type="hidden" />
+                        </td>
+                        <td id="td-end-@counter" class="infor">
+                            @item.End
+                            <input type="hidden" name="End" />
+                        </td>
+                        <td id="td-minuti-@counter" class="infor" style="font-weight:bold">
+                            @item.MinutiTotali min
+                            <input type="hidden" />
+                        </td>
+
+                        <td>
+                            <select style="margin-top:5px;margin-bottom:-15px;" class="form-control ecc-cop @(String.IsNullOrWhiteSpace(item.CopertaDa)?"":"gia-preso text-primary" )"
+                                    id="ecc-intervallo-@counter" name="EccSel"
+                                    @if (item.MinutiTotali > Model.CarenzaGiornataMinuti) { @: disabled="disabled"
+                                    }
+                                    data-progressivo="@counter"
+                                    data-intervallo="@item.Start/@item.End"
+                                    data-minuti="@item.MinutiTotali" onchange="CheckMinutiEcc(@Model.CarenzaGiornataMinuti,this)">
+
+                                @if (!String.IsNullOrWhiteSpace(item.CopertaDa))
+                                {
+                                    <option value="">@item.CopertaDa</option>
+                                }
+                                else
+                                {
+                                    <option value="">Seleziona..</option>
+                                    foreach (var ecc in Model.EccezioniPerCopertura)
+                                    {
+                                        if (ecc.nome == "UMH")
+                                        {
+                                            if (Model.carenze.GiornataSupportaUMH && item.StartInMensa
+                                                && item.EndInMensa)
+                                            {
+                                                <option value="@ecc.nome">@ecc.nome</option>
+                                            }
+                                        }
+                                        else if (ecc.nome == "URH")
+                                        {
+                                            if (!Model.carenze.GiornataSupportaUMH && item.StartInMensa
+                                                && item.EndInMensa)
+                                            {
+                                                <option value="@ecc.nome">@ecc.nome</option>
+                                            }
+                                        }
+                                        else if (ecc.nome == CommonHelper.GetParametro<string>(EnumParametriSistema.EccezioneFittiziaSpostamento))
+                                        {
+                                            if (item.StartInMensa && item.EndInMensa &&
+                                                item.StartInsediamento != item.EndInsediamento &&
+                                                Model.carenze.ScontrinoMensaPresente)
+                                            {
+                                                <option value="@ecc.nome">@ecc.nome</option>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <option value="@ecc.nome">@ecc.nome</option>
+                                        }
+                                    }
+                                }
+
+                            </select>
+
+                        </td>
+                    </tr>
+
+                    @Html.Partial("_slider", new SliderModel(counter, item.Start, item.End,
+                              item.MinutiTotali > Model.CarenzaGiornataMinuti,
+                              !String.IsNullOrWhiteSpace(item.CopertaDa)))
+
+
+
+                }
+                <tr>
+                    <td colspan="4" class="text-center" style="background-color: #fff">
+                        <div class="rai-btn-fill">
+                            <button style="margin-top: 20px; margin-bottom: 20px" onclick="part2()"
+                                    id="button-conferma-timbra" type="button" disabled="disabled" class="btn btn-primary">
+                                Avanti
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <table id="part2" class="table" style="display: none">
+            <thead>
+                <tr class="prop-auto-head">
+                    <th style="font-weight: normal">ECCEZIONE</th>
+                    <th style="font-weight: normal">QUANTITA</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="2" class="text-center nodel" style="background-color: #fff">
+                        <button style="margin-top: 20px; margin-bottom: 20px" onclick="part1()"
+                                id="button-back" type="button" class="btn btn-primary">
+                            INDIETRO
+                        </button>
+                        <button style="margin-top: 20px; margin-bottom: 20px" onclick="submitEccezioniDaCarenze('@Model.carenze.Data.ToString("dd/MM/yyyy")')"
+                                id="button-conferma-timbra2" type="button" class="disable btn btn-primary">
+                            CONFERMA
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table class="table">
+            <tbody>
+
+                <tr>
+                    <td colspan="4" style="background-color: #fff">
+                        @if (Model.ShowProposteAutomaticheButton)
+                        {
+                            <h5>Se non desideri coprire la carenza con questa facilitazione, puoi scegliere manualmente o passare alle proposte automatiche:</h5>
+                        }
+                        else
+                        {
+                            <h5>Se non desideri coprire la carenza con questa facilitazione, puoi scegliere manualmente:</h5>
+                        }
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="no-border" style="background-color: #fff; text-align: center">
+                        <div class="rai-btn-fill">
+                            <button onclick="ScegliDaWizard()" type="button" class="btn rai-btn-secondary">
+                                Scegli manualmente
+                            </button>
+                            @if (Model.ShowProposteAutomaticheButton)
+                            {
+                                <button id="passa-prop-auto" onclick="GetProposteAuto(undefined,true)" type="button" class="btn rai-btn-secondary">
+                                    Proposte automatiche
+                                </button>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+        @{
+            var serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
+            var serializedResult = serializer.Serialize(Model.EccezioniPerCopertura);
+
+            }
+        var arrayEccezioni=
+            @Html.Raw(serializedResult)
+            ;
+</script>
+@*</div>*@

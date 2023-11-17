@@ -1,0 +1,193 @@
+﻿@model myRaiHelper.InfoComunicazione.InfoComunicazioneResponse 
+
+@{
+    var db = new myRaiData.Incentivi.IncentiviEntities();
+}
+<style>
+    #api-info > tbody > tr > td {
+        line-height: 0.2;
+    }
+</style>
+<div class="block block-transparent no-margin-bottom">
+    <div class="block-header">
+        <label class="rai-font-modal-heading">Dati comunicazione telematica</label>
+        <div class="block-options">
+            <button id="aggiorna-scheda" style="display:none" onclick="DecodLivCat()" aria-label="" class="btn btn-action-icon" type="button" data-toggle="block-option"><i class="fa fa-refresh"></i></button>
+            <button data-dismiss="modal" class="btn btn-action-icon" onclick="$(this).parent('.modal').css('z-index', '');"><i class="glyphicon glyphicon-remove"></i></button>
+        </div>
+    </div>
+    <div class="block-content">
+
+        <table id="api-info" style="width:100%;margin-left:16px" class="table rai-table rai-table-vcenter rai-table-high-row rai-table-collapsable rai-table-borderless">
+            @*<thead>
+                    <tr>
+                        <th>Informazione</th>
+                        <th>Valore</th>
+                    </tr>
+                </thead>*@
+
+            @if (Model.Comunicazione != null)
+            {
+
+
+                <tr>
+                    <td style="background-color:#eee;text-align:center" colspan="2">Sezione 1 - Datore di lavoro</td>
+                </tr>
+                <tr>
+                    <td>Codice Fiscale</td>
+                    <td>@Model.Comunicazione.CFAzienda</td>
+                </tr>
+                <tr>
+                    <td>Ragione Sociale</td>
+                    <td>@Model.Comunicazione.denominazioneAzienda</td>
+                </tr>
+
+
+                <tr>
+                    <td style="background-color:#eee;text-align:center" colspan="2">Sezione 2 - Lavoratore</td>
+                </tr>
+                <tr>
+                    <td>Codice Fiscale</td>
+                    <td>@Model.Comunicazione.CFLavoratore</td>
+                </tr>
+                <tr>
+                    <td>Data di nascita</td>
+                    <td>@Model.Comunicazione.dataNascitaLavoratore.ToString("dd/MM/yyyy")</td>
+                </tr>
+                <tr>
+                    <td>Cognome</td>
+                    <td>@Model.Comunicazione.cognomeLavoratore</td>
+                </tr>
+                <tr>
+                    <td>Nome</td>
+                    <td>@Model.Comunicazione.nomeLavoratore</td>
+                </tr>
+                <tr>
+                    <td>Comune o Stato straniero di nascita</td>
+                    @{
+                        string citta = Model.Comunicazione.codComuneStatoEsteroNascitaLavoratore;
+                        if (!String.IsNullOrWhiteSpace(Model.Comunicazione.codComuneStatoEsteroNascitaLavoratore))
+                        {
+                            citta = db.SINTESI1.Where(x => x.COD_CITTANASC == Model.Comunicazione.codComuneStatoEsteroNascitaLavoratore)
+                                    .Select(x => x.DES_CITTANASC).FirstOrDefault();
+                            if (String.IsNullOrWhiteSpace(citta))
+                            {
+                                citta = Model.Comunicazione.codComuneStatoEsteroNascitaLavoratore;
+                            }
+                        }
+                    }
+                    <td>@citta</td>
+                </tr>
+
+                <tr>
+                    <td style="background-color:#eee;text-align:center" colspan="2">Sezione 3 - Rapporto di lavoro</td>
+                </tr>
+                <tr>
+                    <td>Data inizio</td>
+                    <td>@Model.Comunicazione.dataInizioRapporto.ToString("dd/MM/yyyy")</td>
+                </tr>
+                <tr>
+                    <td>Tipologia</td>
+                    <td>@Model.Comunicazione.desTipologiaRapportoLavoro</td>
+                </tr>
+                <tr>
+                    <td>PAT</td>
+                    <td>@Model.Comunicazione.posizioneINAIL</td>
+                </tr>
+                <tr>
+                    <td>Voce di tariffa INAIL</td>
+                    <td>@Model.Comunicazione.tariffaINAIL</td>
+                </tr>
+
+                <tr>
+                    <td style="background-color:#eee;text-align:center" colspan="2">Sezione 4 - Accordo di Lavoro Agile</td>
+                </tr>
+                <tr>
+                    <td>Data sottoscrizione accordo</td>
+                    <td>@Model.Comunicazione.dataSottoscrizioneAccordo.ToString("dd/MM/yyyy")</td>
+                </tr>
+                <tr>
+                    <td>Tipologia</td>
+                    <td>@Model.Comunicazione.tipologiaDurataPeriodo</td>
+                </tr>
+                <tr>
+                    <td>Data inizio</td>
+                    <td>@Model.Comunicazione.dataInizioPeriodo</td>
+                </tr>
+                <tr>
+                    <td>Data fine</td>
+                    <td>@Model.Comunicazione.dataFineAccordo</td>
+                </tr>
+
+
+
+                <tr>
+                    <td style="background-color:#eee;text-align:center" colspan="2">Sezione 5 - Dati di invio</td>
+                </tr>
+                <tr>
+                    <td>Tipologia comunicazione</td>
+                    <td>@Model.Comunicazione.desTipologiaComunicazione</td>
+                </tr>
+                <tr>
+                    <td>Data invio</td>
+                    <td>@Model.Comunicazione.dataInvio.ToString("dd/MM/yyyy")</td>
+                </tr>
+                <tr>
+                    <td>Codice comunicazione</td>
+                    <td>@Model.Comunicazione.codiceComunicazione</td>
+                </tr>
+                <tr>
+                    <td>Identificativo periodo</td>
+                    <td>@Model.Comunicazione.codiceIdentificativoPeriodoSmartWorking</td>
+                </tr>
+            }
+
+            @*@if (Model.Comunicazione != null)
+            {
+                foreach (System.Reflection.PropertyInfo property in Model.Comunicazione.GetType().GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+                    {
+                        string a = null;
+                        var obj = property.GetValue(Model.Comunicazione, null);
+                        if (obj != null)
+                        {
+                            a = obj.ToString();
+                        }
+                        <tr>
+                            <td>@property.Name</td>
+                            <td>@a</td>
+                        </tr>
+                    }
+            }*@
+            else
+            {
+                foreach (System.Reflection.PropertyInfo property in Model.Esito.GetType().GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+                {
+                    string a = null;
+                    var obj = property.GetValue(Model.Esito, null);
+                    if (obj != null)
+                    {
+                        a = obj.ToString();
+                    }
+                    <tr>
+                        <td>@property.Name</td>
+                        <td>@a</td>
+                    </tr>
+                }
+
+            }
+
+        </table>
+
+
+        @*<div>
+                <pre>@Html.Raw(Newtonsoft.Json. JsonConvert.SerializeObject(Model, Newtonsoft.Json.Formatting.Indented))</pre>
+            </div>*@
+
+
+
+
+
+
+
+    </div>
+</div>

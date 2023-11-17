@@ -1,0 +1,854 @@
+﻿@using myRaiCommonManager
+@using myRaiCommonModel
+@using myRaiHelper
+@model AnagraficaNoDipModel
+
+<style>
+    [href="#anag-additional"][aria-expanded="true"] i {
+        transform: rotate(180deg);
+    }
+</style>
+
+<div class="row">
+    <div class="col-md-8" style="padding-top:8px;height:82vh;overflow:hidden;overflow-y:auto;margin-top:-8px" id="anag-left-cont">
+        @if (Model.IdAnag > 0 && (Model.Rapporti.Elenco.Count == 0 || Model.ResidenzaDomicilio.Elenco.Count == 0))
+        {
+            <div class="alert alert-warning">
+                <b>Dati mancanti</b><br />
+                <span>Dati @(Model.Rapporti.Elenco.Count == 0 ? "rapporti" : "")@(Model.ResidenzaDomicilio.Elenco.Count == 0 ? (Model.Rapporti.Elenco.Count == 0 ? " e " : "") + "residenza/domicilio" : "") mancanti</span>
+            </div>
+        }
+
+        <div id="div-anag">
+            @using (Html.BeginPanel(PanelType.Panel, "Dati anagrafici"))
+            {
+                using (Html.BeginForm("Save_Anagrafica", "AnagNoDip", FormMethod.Post, new { @id = "form-anag" }))
+                {
+                    @Html.HiddenFor(m => m.IdAnag)
+                    @Html.HiddenFor(m => m.IdPersona)
+                    @Html.HiddenFor(m => m.AnagNewDataInizio)
+                    @Html.HiddenFor(m => m.OrigDataInizio)
+                    @Html.HiddenFor(m => m.OrigDataFine)
+                    @Html.HiddenFor(m => m.IndForzaCF)
+
+                    if (Model.IdAnag == 0)
+                    {
+                        <div class="row">
+                            <div class="col-sm-6 push-10 push-10-t">
+                                <div class="rai-checkbox" style="display:inline-block">
+                                    @Html.CheckBoxFor(m => m.IsDipendente, new { onchange = "AnagNoDipToggleDip(this, true)" })
+                                    <label>&nbsp;</label>
+                                </div>
+                                <label for="IsDipendente" class="">Dipendente RAI</label>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="row form-group remove-margin-bottom">
+                            <div class="col-sm-3 push-10">
+                                @Html.LabelFor(m => m.DatiAnagrafici.Matricola, new { @class = "rai-caption" })
+                                <div class="input-group">
+                                    @Html.TextBoxFor(m => m.DatiAnagrafici.Matricola, new { @class = "form-control", @readonly = "readonly" })
+                                    <div class="input-group-addon">
+                                        <i class="fa fa-lock"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-3 push-10">
+                                <div class="rai-checkbox @(Model.IdAnag > 0?"disable":"")" style="display:inline-block;margin-top:3em;">
+                                    @Html.CheckBoxFor(m => m.IsDipendente, new { @readonly = "@readonly" })
+                                    <label disabled>&nbsp;</label>
+                                </div>
+                                <label for="" class="">Dipendente RAI</label>
+                            </div>
+                            <div class="col-sm-6 push-10 text-right">
+
+                            </div>
+                        </div>
+                    }
+                    if (Model.IdAnag == 0)
+                    {
+                        <div id="NoDipSearchDip" style="display:none;">
+                            @using (Html.BeginBlock(BlockType.ContentTable, "Ricerca dipendente"))
+                            {
+                                <div class="form-group">
+                                    <div class="row">
+                                        <div class="col-xs-12 push-10">
+                                            @Html.Label("Nominativo", new { @class = "rai-caption" })
+                                            @Html.TextBox("AnagRicNominativo", "", new { @class = " form-control form-control-value", style = "width: 100%", placeholder = "Inserisci un nominativo" })
+                                        </div>
+                                        <div class="col-xs-12 push-10">
+                                            @Html.Label("Matricola", new { @class = "rai-caption" })
+                                            @Html.TextBox("AnagRicercaMatricola", "", new { @class = " form-control form-control-value", style = "width: 100%", placeholder = "Inserisci la matricola" })
+                                        </div>
+                                    </div>
+                                    <div class="row push-20">
+                                        <div class="col-sm-12">
+                                            <div class="rai-btn-fill">
+                                                <input type="submit" id="btnCerca" class="btn rai-btn-small" title="Cerca" value="Cerca" onclick="AnagNoDipAnagCerca(this)" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-sm-6 push-10">
+                                @Html.LabelFor(m => m.AnagDataInizio, "Data inizio", new { @class = "rai-caption" })
+                                @if (Model.CanModify)
+                                {
+                                    <font color="#d2322d">*</font>
+                                }
+                                <div class="input-group">
+                                    @if (Model.CanModify)
+                                    {
+                                        <div class="input-group-addon" onclick="$('#AnagDataInizio').datetimepicker('show')">
+                                            <i class="fa fa-calendar"></i>
+                                        </div>
+                                        @Html.TextBoxFor(m => m.AnagDataInizio, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY", data_locale = "it", placeholder = "Data inizio", autocomplete = "off", required = "required", onchange = "AnagNoDipAnagDate()" })
+                                    }
+                                    @if (!Model.CanModify)
+                                    {
+                                        @Html.TextBoxFor(m => m.AnagDataInizio, new { @class = "form-control", data_format = "DD/MM/YYYY", data_locale = "it", placeholder = "Data inizio", autocomplete = "off", required = "required", @readonly = "readonly" })
+                                        <div class="input-group-addon">
+                                            <i class="fa fa-lock"></i>
+                                        </div>
+                                    }
+                                </div>
+                                @Html.ValidationMessageFor(m => m.AnagDataInizio)
+                            </div>
+                            <div class="col-md-6">
+                                @Html.LabelFor(m => m.AnagDataFine, "Data fine", new { @class = "rai-caption" })
+                                @if (Model.CanModify)
+                                {
+                                    <font color="#d2322d">*</font>
+                                }
+                                <div class="input-group">
+                                    @if (Model.CanModify)
+                                    {
+                                        <div class="input-group-addon" onclick="$('#AnagDataFine').datetimepicker('show')">
+                                            <i class="fa fa-calendar"></i>
+                                        </div>
+                                        @Html.TextBoxFor(m => m.AnagDataFine, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY", data_locale = "it", placeholder = "Data fine", autocomplete = "off", required = "required" })
+                                    }
+                                    @if (!Model.CanModify)
+                                    {
+                                        @Html.TextBoxFor(m => m.AnagDataFine, new { @class = "form-control", data_format = "DD/MM/YYYY", data_locale = "it", placeholder = "Data fine", autocomplete = "off", required = "required", @readonly = "readonly" })
+                                        <div class="input-group-addon">
+                                            <i class="fa fa-lock"></i>
+                                        </div>
+                                    }
+                                </div>
+                                @Html.ValidationMessageFor(m => m.AnagDataFine)
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-6 push-10">
+                                @Html.LabelFor(m => m.DatiAnagrafici.Cognome, "Cognome", new { @class = "rai-caption" })
+                                @if (Model.CanModify)
+                                {
+                                    <font color="#d2322d">*</font>
+                                }
+                                <div class="input-group @(Model.CanModify?"hidden-addon":"")">
+                                    @if (Model.CanModify)
+                                    {
+                                        @Html.TextBoxFor(m => m.DatiAnagrafici.Cognome, new { @class = "form-control", required = "required", onchange = "CalcolaCF();", pattern = @"^[A-Z0-9\.\s'\/\\-]+$", data_allowedchar = @"[A-Za-z0-9\.\s'\/\\-]" })
+                                    }
+                                    else
+                                    {
+                                        @Html.TextBoxFor(m => m.DatiAnagrafici.Cognome, new { @class = "form-control", required = "required", onchange = "CalcolaCF();", pattern = @"^[A-Z0-9\.\s'\/\\-]+$", data_allowedchar = @"[A-Za-z0-9\.\s'\/\\-]", @readonly = "readonly" })
+                                    }
+                                    <div class="input-group-addon">
+                                        <i class="fa fa-lock"></i>
+                                    </div>
+                                </div>
+                                @Html.ValidationMessageFor(m => m.DatiAnagrafici.Cognome)
+                            </div>
+                            <div class="col-sm-6 push-10">
+                                @Html.LabelFor(m => m.DatiAnagrafici.Nome, "Nome", new { @class = "rai-caption" })
+                                @if (Model.CanModify)
+                                {
+                                    <font color="#d2322d">*</font>
+                                }
+                                <div class="input-group @(Model.CanModify?"hidden-addon":"")">
+                                    @if (Model.CanModify)
+                                    {
+                                        @Html.TextBoxFor(m => m.DatiAnagrafici.Nome, new { @class = "form-control", required = "required", onchange = "CalcolaCF();", pattern = @"^[A-Z0-9\.\s'\/\\-]+$", data_allowedchar = @"[A-Za-z0-9\.\s'\/\\-]" })
+                                    }
+                                    else
+                                    {
+                                        @Html.TextBoxFor(m => m.DatiAnagrafici.Nome, new { @class = "form-control", required = "required", onchange = "CalcolaCF();", pattern = @"^[A-Z0-9\.\s'\/\\-]+$", data_allowedchar = @"[A-Za-z0-9\.\s'\/\\-]", @readonly = "readonly" })
+                                    }
+                                    <div class="input-group-addon">
+                                        <i class="fa fa-lock"></i>
+                                    </div>
+                                </div>
+                                @Html.ValidationMessageFor(m => m.DatiAnagrafici.Nome)
+                            </div>
+                        </div>
+                        @if (Model.IdAnag > 0)
+                        {
+                            <div class="row">
+                                <div class="col-sm-12 text-right">
+                                    <a href="#anag-additional" style="font-size:12px;" data-toggle="collapse" aria-expanded="false"><i class="fa fa-chevron-down"></i> Informazioni aggiuntive</a>
+                                </div>
+                            </div>
+                        }
+                        <div id="anag-additional" class="collapse @(Model.IdAnag==0?"in":"")">
+                            <div class="row">
+                                <div class="col-sm-6 push-10">
+                                    @Html.LabelFor(m => m.DatiAnagrafici.DataNascita, "Data nascita", new { @class = "rai-caption" })
+                                    @if (Model.CanModify)
+                                    {
+                                        <font color="#d2322d">*</font>
+                                    }
+                                    <div class="input-group">
+                                        @if (Model.CanModify)
+                                        {
+                                            <div class="input-group-addon" onclick="$('#DatiAnagrafici_DataNascita').datetimepicker('show')">
+                                                <i class="fa fa-calendar"></i>
+                                            </div>
+                                            @Html.TextBoxFor(m => m.DatiAnagrafici.DataNascita, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY", data_locale = "it", placeholder = "Data nascita", autocomplete = "off", required = "required", onchange = "CalcolaCF();", style = "border-radius:0px 4px 4px 0px" })
+                                        }
+                                        @if (!Model.CanModify)
+                                        {
+                                            @Html.TextBoxFor(m => m.DatiAnagrafici.DataNascita, new { @class = "form-control", data_format = "DD/MM/YYYY", data_locale = "it", placeholder = "Data nascita", autocomplete = "off", required = "required", style = "border-radius:0px 4px 4px 0px", @readonly = "readonly" })
+                                            <div class="input-group-addon">
+                                                <i class="fa fa-lock"></i>
+                                            </div>
+                                        }
+                                    </div>
+                                    @Html.ValidationMessageFor(m => m.DatiAnagrafici.DataNascita)
+                                </div>
+                                <div class="col-sm-6 push-10">
+                                    @Html.LabelFor(m => m.DatiAnagrafici.CodLuogoNascita, "Luogo di nascita", new { @class = "rai-caption" })
+                                    @if (Model.CanModify)
+                                    {
+                                        <font color="#d2322d">*</font>
+                                    }
+                                    @Html.RaiAsyncSelectFor(m => m.DatiAnagrafici.CodLuogoNascita, Url.Action("GetComuni", "Anagrafica"), 3, attributes: new { required = "required" }, onSelectchange: "CalcolaCF()", tipoFiltro: myRaiHelper.SelectFilterType.StartsWith, readOnly: !Model.CanModify)
+                                    @Html.ValidationMessageFor(m => m.DatiAnagrafici.CodLuogoNascita)
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-6 push-10">
+                                    @Html.LabelFor(m => m.DatiAnagrafici.Sesso, "Sesso", new { @class = "rai-caption" })
+                                    @if (Model.CanModify)
+                                    {
+                                        <font color="#d2322d">*</font>
+                                    }
+                                    <div class="rai-radio-container rai-radio-inline">
+                                        <div class="rai-radio">
+                                            @if (Model.CanModify)
+                                            {
+                                                @Html.RadioButtonFor(m => m.DatiAnagrafici.Sesso, "M", new { required = "required", onclick = "CalcolaCF();", id = "sesso_m" })
+                                            }
+                                            else
+                                            {
+                                                @Html.RadioButtonFor(m => m.DatiAnagrafici.Sesso, "M", new { required = "required", id = "sesso_m", @readonly = "readonly" })
+                                            }
+                                            <label @(Model.CanModify ? "for=\"sesso_m\"" : "disabled")>Maschile</label>
+                                        </div>
+                                        <div class="rai-radio">
+                                            @if (Model.CanModify)
+                                            {
+                                                @Html.RadioButtonFor(m => m.DatiAnagrafici.Sesso, "F", new { required = "required", onclick = "CalcolaCF();", id = "sesso_f"})
+                                            }
+                                            else
+                                            {
+                                                @Html.RadioButtonFor(m => m.DatiAnagrafici.Sesso, "F", new { required = "required", id = "sesso_f", @readonly = "readonly", disabled = "disabled" })
+                                            }
+                                            <label @(Model.CanModify ? "for=\"sesso_f\"" : "disabled")>Femminile</label>
+                                        </div>
+                                    </div>
+                                    @Html.ValidationMessageFor(m => m.DatiAnagrafici.Sesso)
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-6 push-10">
+                                    @Html.LabelFor(m => m.DatiAnagrafici.CodiceFiscale, "Codice fiscale", new { @class = "rai-caption" })
+                                    @if (Model.CanModify)
+                                    {
+                                        <font color="#d2322d">*</font>
+                                    }
+                                    <div class="input-group @(Model.IdAnag<0 || Model.CanModify?"hidden-addon":"")">
+                                        @if (Model.CanModify)
+                                        {
+                                            @Html.TextBoxFor(m => m.DatiAnagrafici.CodiceFiscale, new { @class = "form-control", required = "required", pattern = @"^[A-Z0-9]{16}$", data_allowedchar = @"[A-Za-z0-9]", onkeyup = "AnagCFKeyUp()" })
+                                        }
+                                        else
+                                        {
+                                            @Html.TextBoxFor(m => m.DatiAnagrafici.CodiceFiscale, new { @class = "form-control", required = "required", pattern = @"^[A-Z0-9]{16}$", data_allowedchar = @"[A-Za-z0-9]", @readonly = "readonly" })
+                                        }
+                                        <div class="input-group-addon">
+                                            <i class="fa fa-lock"></i>
+                                        </div>
+                                    </div>
+                                    @Html.ValidationMessageFor(m => m.DatiAnagrafici.CodiceFiscale)
+                                    <div id="mex-cf-forzato" style="display:none;"><em class="rai-font-sm">Codice fiscale immesso manualmente</em></div>
+                                </div>
+                                <div class="col-sm-6 push-10">
+                                    @if (Model.CanModify)
+                                    {
+                                        <button class="btn rai-btn-small" style="margin-top:38px;" onclick="AnagNoDipRicalcolaCF()">Ricalcola</button>
+                                    }
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                if (Model.CanModify)
+                {
+                    <div class="row push-20-t">
+                        <div class="col-sm-12">
+                            <div class="rai-btn-fill">
+                                <button id="btnSave" onclick="AnagNoDipSave(this)" class="btn rai-btn-primary">Salva</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+            }
+        </div>
+
+        @if (Model.IdAnag > 0)
+        {
+            <div id="div-rapp">
+                @Html.Partial("Elenco_Rapporti", Model.Rapporti)
+            </div>
+
+            <div id="div-ind">
+                @Html.Partial("Elenco_Indirizzi", Model.ResidenzaDomicilio)
+            </div>
+
+            <div id="div-iban">
+                @Html.Partial("Elenco_Iban", Model.DatiBancari)
+            </div>
+        }
+    </div>
+    <div class="col-md-4">
+        @if (Model.IdAnag == 0)
+        {
+            using (Html.BeginPanel(PanelType.Panel, "Info", false))
+            {
+                <div class="row">
+                    <div class="col-sm-12">
+                        <span>Una volta inseriti i dati anagrafici, sarà possibile inserire le informazioni relative ai rapporti di lavoro, alla residenza e alle coordinate bancarie.</span>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            if (Model.IdPersonaInCarico > 0 && Model.IdPersonaInCarico != CommonHelper.GetCurrentIdPersona())
+            {
+                <div class="alert alert-info">
+                    <b>Modifica in corso</b><br />
+                    <span>Al momento non è possibile modificare questa anagrafica</span>
+                </div>
+
+                using (Html.BeginPanel(PanelType.NoHeader))
+                {
+                    <span class="rai-font-sm">
+                        Questa anagrafica è soggetta a modifica.
+                    </span>
+                }
+            }
+
+            using (Html.BeginPanel(PanelType.PanelNoPadding, "Storico anagrafica", true))
+            {
+                <table class="table rai-table rai-table-panel rai-table-collapsable rai-table-vcenter rai-table-filter" data-table-collapsable-parent="none" role="grid">
+                    @foreach (var item in Model.Storico)
+                    {
+                        <tbody class="rai-table-collapsable-header @(item.AnagDataInizio == Model.AnagDataInizio?"open":"")">
+                            <tr data-filter="@(item.AnagDataInizio == Model.AnagDataInizio?"selected":"")">
+                                <td class="ws-nowrap">
+                                    <span class="">Dal @item.AnagDataInizio.ToString("dd/MM/yyyy")</span>
+                                    @if (item.AnagDataFine == new DateTime(9999, 12, 31))
+                                    {
+                                        <span> ad oggi</span>
+                                    }
+                                    else
+                                    {
+                                        <span> al @item.AnagDataFine.ToString("dd/MM/yyyy")</span>
+                                    }
+                                </td>
+                                <td class="text-right">
+                                    <div class="btn-action-icon-container">
+                                        @if (item.AnagDataInizio != Model.AnagDataInizio)
+                                        {
+                                            <button class="btn btn-action-icon" title="Modifica" onclick="AnagNoDipModal(@item.IdAnag, '@item.AnagDataInizio.ToString("dd/MM/yyyy")', '@item.DatiAnagrafici.Matricola','@item.DatiAnagrafici.Nominativo.Replace("'","\\'")')"><i class="fa fa-pencil"></i></button>
+                                        }
+                                        @if (Model.CanDelete)
+                                        {
+                                            <button class="btn btn-action-icon" title="Elimina" onclick="AnagNoDipDelAnag(@item.IdAnag, '@item.AnagDataInizio.ToString("dd/MM/yyyy")')" style="float:right;"><i class="fa fa-trash-o"></i></button>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="rai-table-td-toggle">
+                                    <i class="fa fa-chevron-down"></i>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tbody class="">
+                            <tr>
+                                <td colspan="3" class="no-padding">
+                                    <div>
+                                        <table class="table rai-table rai-table-vcenter rai-table-panel rai-table-compact">
+                                            <tr>
+                                                <td class="">
+                                                    <span class="rai-font-md-neutral-bold">Cognome</span>
+                                                </td>
+                                                <td class="ws-nowrap">
+                                                    <span>@item.DatiAnagrafici.Cognome</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="">
+                                                    <span class="rai-font-md-neutral-bold">Nome</span>
+                                                </td>
+                                                <td class="ws-nowrap">
+                                                    <span>@item.DatiAnagrafici.Nome</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="">
+                                                    <span class="rai-font-md-neutral-bold">Data nascita</span>
+                                                </td>
+                                                <td class="ws-nowrap">
+                                                    <span>@item.DatiAnagrafici.DataNascita.ToString("dd/MM/yyyy")</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="">
+                                                    <span class="rai-font-md-neutral-bold">Luogo Nascita</span>
+                                                </td>
+                                                <td class="ws-nowrap">
+                                                    <span>@item.DatiAnagrafici.LuogoNascita</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="">
+                                                    <span class="rai-font-md-neutral-bold">Sesso</span>
+                                                </td>
+                                                <td class="ws-nowrap">
+                                                    <span>@item.DatiAnagrafici.Sesso</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="">
+                                                    <span class="rai-font-md-neutral-bold">Codice fiscale</span>
+                                                </td>
+                                                <td class="ws-nowrap">
+                                                    <span>@item.DatiAnagrafici.CodiceFiscale</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </td>
+                            </tr>
+
+                        </tbody>
+                    }
+                    @if (Model.CanAdd)
+                    {
+                        <tbody class="rai-table-collapsable-header">
+                            <tr>
+                                <td colspan="3">
+                                    <button class="btn rai-btn-small full-width" onclick="AnagNoDipNewVersion()">Crea nuova versione</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    }
+                </table>
+
+            }
+
+
+            @*@Html.RenderWidget(WidgetType.Normal, "Nuovo indirizzo", "fa fa-home", "Aggiungi un nuovo indirizzo", action: newResDom)
+            @Html.RenderWidget(WidgetType.Normal, "Nuovo iban", "icons icon-wallet", "Aggiungi un nuovo iban", action: newIban)*@
+
+            using (Html.BeginPanel(PanelType.PanelNoPadding, "Indice", false))
+            {
+
+                <table class="table rai-table rai-table-panel rai-table-vcenter rai-table-filter">
+                    <tr data-filter onclick="AnagScrollIntoView('div-anag')">
+                        <td>Dati anagrafici</td>
+                        <td></td>
+                    </tr>
+                    <tr data-filter onclick="AnagScrollIntoView('div-rapp')">
+                        <td>Elenco rapporti</td>
+                        <td class="text-right">
+                            @if (Model.Rapporti.Elenco.Count == 0)
+                            {
+                                <i class="fa fa-warning feedback-warning-color" title="Dati rapporti mancanti" data-toggle="tooltip" data-html="true"></i>
+                            }
+                        </td>
+                    </tr>
+                    <tr data-filter onclick="AnagScrollIntoView('div-ind')">
+                        <td>Elenco indirizzi</td>
+                        <td class="text-right">
+                            @if (Model.ResidenzaDomicilio.Elenco.Count == 0)
+                            {
+                                <i class="fa fa-warning feedback-warning-color" title="Dati indirizzi mancanti" data-toggle="tooltip" data-html="true"></i>
+                            }
+                        </td>
+                    </tr>
+                    <tr data-filter onclick="AnagScrollIntoView('div-iban')">
+                        <td>Elenco Iban</td>
+                        <td class="text-right">
+                            @if (Model.DatiBancari.Elenco.Count == 0)
+                            {
+                                <i class="fa fa-warning feedback-warning-color" title="Dati iban mancanti" data-toggle="tooltip" data-html="true"></i>
+                            }
+                        </td>
+                    </tr>
+                </table>
+            }
+        }
+    </div>
+</div>
+
+
+<script>
+    InitTooltip();
+    $('#main-container').addClass('no-height');
+    $('[data-op-path="main"]').one('click', function () {
+        $('#main-container').removeClass('no-height');
+        AnagNoDipRilascia(@Model.IdAnag);
+    });
+
+    function AnagScrollIntoView(id) {
+        debugger
+        $('#anag-left-cont').animate({
+            scrollTop: getRelativePos($('#'+id)[0]).top
+        }, 500);
+    }
+
+    InitDatePicker();
+    $('#form-anag input.form-control[name]').on('keyup', function (e) {
+        forceInputUpperCase(e.target || e.currentTarget);
+    });
+
+    function AnagNoDipAnagDate() {
+        let ini = $('#AnagDataInizio').val();
+        $('#AnagDataFine').data('DateTimePicker').minDate(moment(ini, 'DD/MM/YYYY').add(1,'days').format('DD/MM/YYYY'));
+    }
+    @if (Model.CanModify) {
+        <text>
+    AnagNoDipAnagDate()
+    </text>
+    }
+
+    function AnagNoDipRicalcolaCF() {
+        event.preventDefault();
+        $('#IndForzaCF').val('False');
+        AnagNoDipMexForzaCF();
+        CalcolaCF();
+    }
+
+    function AnagCFKeyUp() {
+        $('#IndForzaCF').val('True');
+        AnagNoDipMexForzaCF();
+    }
+
+    function AnagNoDipMexForzaCF() {
+        if ($('#IndForzaCF').val() == 'False')
+            $('#mex-cf-forzato').hide();
+        else
+            $('#mex-cf-forzato').show();
+    }
+
+    AnagNoDipMexForzaCF();
+
+    @if (Model.IdAnag == 0)
+    {
+        <text>$('#DatiAnagrafici_DataNascita').val('');</text>
+    }
+
+    function AnagNoDipSave(button) {
+        event.preventDefault();
+        let form = $('#form-anag');
+        let validator = $(form).validate();
+
+        if (!$(form).valid()) {
+            validator.focusInvalid();
+            return false;
+        }
+
+        let cognome = $('#DatiAnagrafici_Cognome').val();
+        let nome = $('#DatiAnagrafici_Nome').val();
+        let sesso = $('[name="DatiAnagrafici.Sesso"]:checked').val() || '';
+        let dataNascita = $('#DatiAnagrafici_DataNascita').val();
+        let luogoNascita = $('#DatiAnagrafici_CodLuogoNascita').val() || '';
+        let indForza = $('#IndForzaCF').val()
+
+        if (cognome != '' && nome != '' && sesso != '' && dataNascita != '' && luogoNascita != '') {
+            $.ajax({
+                url: '/AnagNoDip/CalcolaCF',
+                cache: 'false',
+                type: 'POST',
+                dataType: "json",
+                data: {
+                    cognome: cognome,
+                    nome: nome,
+                    sesso: sesso,
+                    dataNascita: dataNascita,
+                    luogoNascita: luogoNascita
+                },
+                success: function (data) {
+                    if (data.Esito == true) {
+                        let valCod = $("#DatiAnagrafici_CodiceFiscale").val();
+                        let message = "Vuoi confermare i dati?";
+                        if (valCod != data.cf) {
+                            message = "I dati anagrafici non corrispondono con il codice fiscale.<br>" + message;
+                        }
+                        swal({
+                            title: 'Sei sicuro?',
+                            html: message,
+                            type: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#3085d6',
+                            cancelButtonColor: '#d33',
+                            confirmButtonText: 'Sì!',
+                            cancelButtonText: 'Annulla',
+                            reverseButtons: 'true'
+                        }).then(function () {
+                            InternalAnagNoDipSave(button, true, true, true);
+                        })
+                    }
+                    else {
+                        swal({ title: "Ops...", type: "error", text: data.message });
+                    }
+                },
+                error: function (a, b, c) {
+                    swal({ title: "Ops...", type: "error", text: "Si è verificato un errore imprevisto durante il calcolo del codice fiscale" });
+                }
+            });
+        }
+    }
+
+    function AnagNoDipNewVersion(button) {
+        event.preventDefault();
+
+        let mDataInizio = moment($('#AnagDataInizio').val(), 'DD/MM/YYYY').add(1, 'days');
+        let mCurrentValue = moment();
+
+        let dataInizio = mDataInizio.format("MM/DD/YYYY");
+        let currentValue = moment().format('DD/MM/YYYY');
+        if (mCurrentValue < mDataInizio) {
+            currentValue = mDataInizio.format('DD/MM/YYYY');
+        }
+
+        let htmlText =
+            '<b>ATTENZIONE</b>' +
+            '<p class="text-left" style="margin-bottom:55px;">' +
+            'Questa operazione creerà una nuova versione dei dati anagrafici.<br />' +
+            'Sarà comunque possibile modificare i dati precedenti selezionando la versione desiderata dall\'elenco delle anagrafiche o dallo storico presente del dettaglio della matricola corrente.<br/>' +
+            '</p>' +
+            'Inserisci la data di inizio del nuovo record<br/>' +
+            '<div class="row push-5-t"><div class="col-sm-12 text-center">' +
+            '<div class="input-group" style="width:20rem;display:inline-table;"><div class="input-group-addon"><i class="fa fa-calendar" onclick=""></i></div>' +
+            '<input type="text" class="form-control js-datetimepicker" style="" id="dtaNewBegin" data-format="DD/MM/YYYY" data-locale="it" data-mindata="'+dataInizio+'" placeholder = "Data inizio" autocomplete = "off" required = "required" value="'+currentValue+'" />'+
+            '</div>' +
+            '</div ></div > ';
+
+        swal({
+            type: 'warning',
+            html: htmlText,
+            title: '',
+            showCancelButton: true,
+            reverseButtons: true,
+            cancelButtonText:'Annulla',
+            onOpen: function () {
+                InitDatePicker();
+            },
+            preConfirm: function (value) {
+                return new Promise(function (resolve, reject) {
+                    if ($('#dtaNewBegin').val() == "") {
+                        reject("Inserisci la data di apertura")
+                    }
+                    else {
+                        resolve()
+                    }
+                })
+            }
+        }).then(function (result) {
+            debugger
+            let dtaNewBegin = moment($('#dtaNewBegin').val(), 'DD/MM/YYYY');
+            let dtaOldBegin = moment($('#AnagDataInizio').val(), 'DD/MM/YYYY');
+            let dtaOldEnd = moment($('#AnagDataFine').val(), 'DD/MMYYYY');
+
+            let newDtaOldEnd = null;
+            if (dtaOldBegin.isSame(dtaNewBegin))
+                newDtaOldEnd = dtaNewBegin;
+            else
+                newDtaOldEnd = dtaNewBegin.add(-1, 'days');
+
+            $('#AnagDataFine').val(newDtaOldEnd.format('DD/MM/YYYY'));
+            $('#AnagNewDataInizio').val($('#dtaNewBegin').val());
+            if (InternalAnagNoDipSave(button, false, false, true)) {
+                debugger
+                let matricola = $('#DatiAnagrafici_Matricola').val();
+                let cognome = $('#DatiAnagrafici_Cognome').val();
+                let nome = $('#DatiAnagrafici_Nome').val();
+                AnagNoDipModal($('#IdAnag').val(), $('#AnagNewDataInizio').val(), matricola, cognome+' '+nome);
+            }
+        });
+    }
+
+    function InternalAnagNoDipSave(button, async, reload, showAlertSuccess) {
+        $(button).addClass("disable");
+        let form = $('#form-anag');
+        $(form).parent().addClass("rai-loader");
+
+        let result = false;
+
+        $.ajax({
+            url: "/AnagNoDip/Save_Anagrafica",
+            type: "POST",
+            async: async,
+            dataContent:'json',
+            cache: false,
+            data: $(form).serialize(),
+            success: function (data) {
+                if (data.esito) {
+                    if (showAlertSuccess) {
+                        if (data.message == '')
+                            swal("OK", "Salvataggio effettuato", "success");
+                        else
+                            swal("OK", data.message, 'success');
+                    }
+
+                    if (reload) {
+                        let id = data.idModel;
+                        let dataIni = $('#AnagDataInizio').val();
+                        let matricola = $('#DatiAnagrafici_Matricola').val();
+                        let cognome = $('#DatiAnagrafici_Cognome').val();
+                        let nome = $('#DatiAnagrafici_Nome').val();
+                        AnagNoDipModal(data.idModel, dataIni, data.matricola, cognome+' '+nome);
+                    }
+
+                    if ($('#form-nodip-ricerca').length > 0)
+                        $('#form-nodip-ricerca').submit();
+
+                    result = true;
+                } else {
+                    swal("Oops...", data.message, 'error');
+                    result = false;
+                }
+            },
+            error: function (a, b, c) {
+                swal({ title: "Ops...", text: ' ' + b + ' ' + c, type: 'error', customClass: 'rai' });
+                result = false;
+            },
+            complete: function () {
+                $(button).removeClass("disable");
+                $(form).parent().removeClass("rai-loader");
+            }
+        });
+
+        return result;
+    }
+
+    function AnagNoDipToggleDip(check, showSearch) {
+        let isChecked = $(check).is(':checked');
+        if (isChecked) {
+            if (showSearch)
+                $('#NoDipSearchDip').show();
+
+            //$('#DatiAnagrafici_Cognome').attr('readonly','readonly').closest('.input-group').removeClass('hidden-addon');
+            //$('#DatiAnagrafici_Nome').attr('readonly', 'readonly').closest('.input-group').removeClass('hidden-addon');
+
+            //$('#DatiAnagrafici_DataNascita').parent().find('.input-group-addon:last').removeClass('hidden');
+            //$('#DatiAnagrafici_DataNascita').parent().find('.input-group-addon:first').addClass('hidden');
+            //$('#DatiAnagrafici_DataNascita').css('border-radius', '4px 0px 0px 4px');
+            //$('#DatiAnagrafici_DataNascita').attr('readonly', 'readonly');
+
+            //$('#DatiAnagrafici_CodLuogoNascita').closest('.rai-select-container').attr('data-rai-select-readonly', 'true');
+            //$('[name="DatiAnagrafici.Sesso"]').addClass('disable');
+            //$('#DatiAnagrafici_CodiceFiscale').attr('readonly', 'readonly').closest('.input-group').removeClass('hidden-addon');
+        } else {
+            if (showSearch)
+                $('#NoDipSearchDip').hide();
+
+            //$('#DatiAnagrafici_Cognome').removeAttr('readonly').closest('.input-group').addClass('hidden-addon');
+            //$('#DatiAnagrafici_Nome').removeAttr('readonly').closest('.input-group').addClass('hidden-addon');
+
+            //$('#DatiAnagrafici_DataNascita').parent().find('.input-group-addon:last').addClass('hidden');
+            //$('#DatiAnagrafici_DataNascita').parent().find('.input-group-addon:first').removeClass('hidden');
+            //$('#DatiAnagrafici_DataNascita').css('border-radius', '0px 4px 4px 0px');
+            //$('#DatiAnagrafici_DataNascita').removeAttr('readonly');
+
+            //$('#DatiAnagrafici_CodLuogoNascita').closest('.rai-select-container').attr('data-rai-select-readonly', 'false');
+            //$('[name="DatiAnagrafici.Sesso"]').removeClass('disable');
+            //$('#DatiAnagrafici_CodiceFiscale').removeAttr('readonly').closest('.input-group').addClass('hidden-addon');
+        }
+    }
+
+
+    function AnagNoDipAnagCerca() {
+        event.preventDefault();
+        let nominativo = $('#AnagRicNominativo').val();
+        let matricola = $('#AnagRicercaMatricola').val();
+        let provenienza = 'NODIP';
+        let action = "AnagNoDipSelezionaDipendente('$matricola')";
+        let actionText = 'Seleziona';
+
+        apriModale('modal-ricerca-dipendente');
+        RaiUpdateWidget('modal-ricerca-dipendente-body', '/Ricerca/RicercaDipendente', 'html', {
+        nominativoDipendente: nominativo,
+            matricola: matricola,
+            provenienza: provenienza,
+            action: action,
+            actionText: actionText
+        }, false, null, false, "POST");
+    }
+
+    function AnagNoDipSelezionaDipendente(matricola) {
+        event.preventDefault();
+        $('#modal-ricerca-dipendente').modal('hide');
+
+        $.ajax({
+        url: '/AnagNoDip/RicercaMatricola',
+            cache: 'false',
+            type: 'POST',
+            dataType: "json",
+            data: {
+            matricola: matricola
+            },
+            success: function (data) {
+                if (data.found == true) {
+                    $('#IdPersona').val(data.idpersona);
+                    $('#DatiAnagrafici_Cognome').val(data.cognome);
+                    $('#DatiAnagrafici_Nome').val(data.nome);
+                    $('#DatiAnagrafici_DataNascita').val(data.dataNascita);
+                    $('[name="DatiAnagrafici.Sesso"][value="' + data.sesso + '"]').click();
+                    $('#DatiAnagrafici_CodiceFiscale').val(data.cf);
+
+                    let codCitta = data.codComuneNascita;
+                    RaiSelectLoadDefaultValue($('#DatiAnagrafici_CodLuogoNascita').data('rai-select'), '@Url.Action("GetComuni", "Anagrafica")', codCitta);
+                }
+                else {
+
+                }
+            },
+            error: function (a, b, c) {
+
+            }
+        });
+    }
+</script>
+
+@if (Model.IdAnag > 0)
+{
+    <script>
+        AnagNoDipToggleDip($('#IsDipendente'), false);
+    </script>
+}

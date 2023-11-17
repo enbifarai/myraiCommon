@@ -1,0 +1,244 @@
+﻿@using myRaiCommonModel;
+@using myRaiHelper;
+@using Newtonsoft.Json;
+@using myRaiCommonManager;
+@model myRaiCommonModel.XR_DEM_DOCUMENTI_EXT
+@{
+    var r = Model;
+}
+
+@*@{
+    string tx = r.Descrizione;
+    string descrizione = "";
+    List<AttributiAggiuntivi> objModuloValorizzato = null;
+    List<AttributiAggiuntivi> listaPiatta = null;
+
+    if (!String.IsNullOrEmpty(r.CustomDataJSON) && !String.IsNullOrEmpty(r.MatricolaDestinatario))
+    {
+        string ecc = null;
+        objModuloValorizzato = JsonConvert.DeserializeObject<List<AttributiAggiuntivi>>(r.CustomDataJSON);
+
+        if (objModuloValorizzato != null && objModuloValorizzato.Any())
+        {
+            var obj = objModuloValorizzato.Where(w => w.Id != null && w.Id.ToUpper() == "ECCEZIONEPERAUTOMATISMO").FirstOrDefault();
+            if (obj != null)
+            {
+                ecc = obj.Valore;
+            }
+
+            if (String.IsNullOrEmpty(ecc))
+            {
+                obj = objModuloValorizzato.Where(w => w.Id != null && w.Id.ToUpper() == "ECCEZIONESELEZIONATANASCOSTA").FirstOrDefault();
+                if (obj != null)
+                {
+                    ecc = obj.Valore;
+                }
+            }
+
+            if (String.IsNullOrEmpty(ecc))
+            {
+                obj = objModuloValorizzato.Where(w => w.Id != null && w.Id.ToUpper() == "ECCEZIONE").FirstOrDefault();
+                if (obj != null)
+                {
+                    ecc = obj.Valore;
+                }
+            }
+
+            if (!String.IsNullOrEmpty(ecc))
+            {
+                tx += " (" + ecc.ToUpper() + ")";
+            }
+        }
+    }
+    else if (!String.IsNullOrEmpty(r.CustomDataJSON) && String.IsNullOrEmpty(r.MatricolaDestinatario))
+    {
+        // MDC, MDCO, VPA, MDCUAD
+        objModuloValorizzato = JsonConvert.DeserializeObject<List<AttributiAggiuntivi>>(r.CustomDataJSON);
+
+        if (objModuloValorizzato != null && objModuloValorizzato.Any())
+        {
+            var obj = objModuloValorizzato.Where(w => w.DBRefAttribute != null && w.DBRefAttribute.ToUpper() == "OGGETTOPERPROTOCOLLO").FirstOrDefault();
+            if (obj != null)
+            {
+                descrizione = obj.Valore;
+            }
+        }
+    }
+}*@
+
+@{ 
+    string tx = r.DescrizionePerVisualizzazione != null ? r.DescrizionePerVisualizzazione.Replace(",",", "):null;
+    string descrizione = r.DescrizionePerVisualizzazioneSottotitolo;
+    List<AttributiAggiuntivi> objModuloValorizzato = null;
+    List<AttributiAggiuntivi> listaPiatta = null;
+
+}
+
+<label style="display:block; margin-bottom:0px !important;">@tx</label>
+<label class="rai-font-sm " style="display:block; margin-bottom:0px !important;">@descrizione</label>
+
+<span class="rai-font-sm" style="display:block; margin-bottom:0px !important;">
+    @{
+
+        string periodo = null;
+
+        if (!String.IsNullOrEmpty(r.CustomDataJSON))
+        {
+            objModuloValorizzato = JsonConvert.DeserializeObject<List<AttributiAggiuntivi>>(r.CustomDataJSON);
+            listaPiatta = new List<AttributiAggiuntivi>();
+        }
+
+        if (objModuloValorizzato != null && objModuloValorizzato.Count(w => w.InLine != null && w.InLine.Any()) > 0)
+        {
+            foreach (var obj in objModuloValorizzato.Where(w => w.InLine != null && w.InLine.Any()).ToList())
+            {
+                listaPiatta.AddRange(DematerializzazioneManager.GetListaPiatta(obj));
+            }
+
+            if (listaPiatta != null && listaPiatta.Any() &&
+                (listaPiatta.Count(w => w.DBRefAttribute == "DATA_INIZIO_MATERNITA") > 0 ||
+                listaPiatta.Count(w => w.DBRefAttribute == "INIZIO_GIUSTIFICATIVO") > 0))
+            {
+                var findInizioMat = listaPiatta.Where(w => w.DBRefAttribute == "DATA_INIZIO_MATERNITA").FirstOrDefault();
+                if (findInizioMat != null && !String.IsNullOrEmpty(findInizioMat.Valore))
+                {
+                    periodo = findInizioMat.Valore;
+                    findInizioMat = listaPiatta.Where(w => w.DBRefAttribute == "DATA_FINE_MATERNITA").FirstOrDefault();
+                    if (findInizioMat != null)
+                    {
+                        if (periodo != findInizioMat.Valore)
+                        {
+                            periodo += " - " + findInizioMat.Valore;
+                        }
+                    }
+                }
+                else
+                {
+                    var inizio = listaPiatta.Where(w => w.DBRefAttribute == "INIZIO_GIUSTIFICATIVO").FirstOrDefault();
+                    var fine = listaPiatta.Where(w => w.DBRefAttribute == "FINE_GIUSTIFICATIVO").FirstOrDefault();
+
+                    if (inizio != null && !String.IsNullOrEmpty(inizio.Valore))
+                    {
+                        periodo = inizio.Valore;
+                        listaPiatta.Remove(inizio);
+                        if (fine != null && !String.IsNullOrEmpty(fine.Valore))
+                        {
+                            if (periodo != fine.Valore)
+                            {
+                                periodo += " - " + fine.Valore;
+                            }
+                            listaPiatta.Remove(fine);
+                        }
+
+                        if (listaPiatta.Count(w => w.DBRefAttribute == "INIZIO_GIUSTIFICATIVO") > 0)
+                        {
+                            periodo += " (+" + listaPiatta.Count(w => w.DBRefAttribute == "INIZIO_GIUSTIFICATIVO") + ")";
+                        }
+                    }
+                    else
+                    {
+                        if (r.Id_Richiesta.HasValue)
+                        {
+                            periodo = DematerializzazioneManager.GetPeriodoByIdMatRichiesta(r.Id_Richiesta.GetValueOrDefault());
+                        }
+                    }
+                }
+            }
+        }
+
+        if (String.IsNullOrEmpty(periodo) && objModuloValorizzato != null)
+        {
+            var findInizioMat = objModuloValorizzato.Where(w => w.DBRefAttribute == "DATA_INIZIO_MATERNITA").FirstOrDefault();
+            if (findInizioMat != null && !String.IsNullOrEmpty(findInizioMat.Valore))
+            {
+                periodo = findInizioMat.Valore;
+                findInizioMat = objModuloValorizzato.Where(w => w.DBRefAttribute == "DATA_FINE_MATERNITA").FirstOrDefault();
+                if (findInizioMat != null && !String.IsNullOrEmpty(findInizioMat.Valore))
+                {
+                    if (periodo != findInizioMat.Valore)
+                    {
+                        periodo += " - " + findInizioMat.Valore;
+                    }
+                }
+            }
+            else
+            {
+                findInizioMat = objModuloValorizzato.Where(w => w.DBRefAttribute == "INIZIO_GIUSTIFICATIVO").FirstOrDefault();
+                if (findInizioMat != null && !String.IsNullOrEmpty(findInizioMat.Valore))
+                {
+                    periodo = findInizioMat.Valore;
+                    findInizioMat = objModuloValorizzato.Where(w => w.DBRefAttribute == "FINE_GIUSTIFICATIVO").FirstOrDefault();
+                    if (findInizioMat != null && !String.IsNullOrEmpty(findInizioMat.Valore))
+                    {
+                        if (periodo != findInizioMat.Valore)
+                        {
+                            periodo += " - " + findInizioMat.Valore;
+                        }
+                    }
+                }
+                else
+                {
+                    if (r.Id_Richiesta.HasValue)
+                    {
+                        periodo = DematerializzazioneManager.GetPeriodoByIdMatRichiesta(r.Id_Richiesta.GetValueOrDefault());
+                    }
+                }
+            }
+        }
+
+        if (String.IsNullOrEmpty(periodo))
+        {
+            periodo = "Creato il " + r.DataCreazione.ToString("dd/MM/yyyy");
+        }
+    }
+
+    @periodo
+</span>
+
+    @{
+        if (r.Id_Stato < (int)StatiDematerializzazioneDocumenti.FirmatoDigitalmente)
+        {
+            DateTime dat = DateTime.MinValue;
+            List<AttributiAggiuntivi> objD = null;
+            objD = JsonConvert.DeserializeObject<List<AttributiAggiuntivi>>(r.CustomDataJSON);
+
+            if (objD != null)
+            {
+                bool trovato = false;
+                foreach (var attr in objD)
+                {
+                    if (attr.DBRefAttribute != null && attr.DBRefAttribute == "DataScadenzaPratica")
+                    {
+                        try
+                        {
+                            dat = DateTime.Parse(attr.Valore);
+                            trovato = true;
+                            break;
+                        }
+                        catch (Exception ex)
+                        {
+                            dat = DateTime.MinValue;
+                            trovato = true;
+                            break;
+                        }
+                    }
+                }
+                if (trovato)
+                {
+                    if ((dat - DateTime.Now).TotalDays <= 0)
+                    {
+                        <span class="rai-label rai-label-error">Scaduto</span>
+                    }
+                    else if ((dat - DateTime.Now).TotalDays <= r.GetGiorniPerScadenzaPratica())
+                    {
+                    <span class="rai-label rai-label-warning">In Scadenza</span>
+                    }
+                }
+            }
+        }
+    }
+
+
+
+
+

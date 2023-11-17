@@ -1,0 +1,138 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonModel.RaiAcademy;
+@using MVCProject.Custom_Helpers;
+
+@model RichiestaIscrizione
+
+<div class="modal-dialog modal-dialog-centered modal-dialog-popin">
+    <div class="modal-content">
+        <div class="block block-themed block-transparent" style="margin-bottom:0px;">
+            <div class="block-header bg-cdf" style="height: 58px; border-radius: 6px 6px 0px 0px">
+                <ul class="block-options visible-xs">
+                    <li>
+                        <button data-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+                    </li>
+                </ul>
+                <h4 class="lead" style="float: left; margin: -3px 0 0 0px; font-size: 2.1rem; color: #fff;">
+                    Richiesta individuale di partecipazione al corso
+                </h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            @using ( Html.BeginForm( "SubmitIscrizione" , "RaiAcademy" , FormMethod.Post , new { id = "form-submitIscrizione" } ) )
+            {
+                <div class="modal-body">
+                    @Html.HiddenFor( model => model.TitoloCorso )
+                    @Html.HiddenFor( model => model.Corso.Id )
+                    @Html.HiddenFor( model => model.IdEdizione )
+
+                    <div id="riepilogoCorso">
+                        <div class="row push-10">
+                            <div class="col-md-12">
+                                @Html.LabelFor( model => model.TitoloCorso , "Titolo del corso" , new { @class = "titleElements text-primary" } )
+                                <h4>@Model.TitoloCorso</h4>
+                            </div>
+                        </div>
+
+                        @if ( Model.IdEdizione > 0 )
+                        {
+                            var edizione = Model.Corso.AltriDettagli.Edizioni.FirstOrDefault( x => x.IdEdizione == Model.IdEdizione );
+
+                            <div class="row push-10">
+                                <div class="col-md-12">
+                                    <label class="titleElements text-primary">@edizione.Nome</label><br />
+                                    @if ( edizione.DataInizio != edizione.DataFine )
+                                    {
+                                        <label class="text-primary">@String.Format( "dal {0:d MMMM yyyy} al {1:d MMMM yyyy}" , edizione.DataInizio , edizione.DataFine )</label><br />
+                                    }
+                                    else
+                                    {
+                                        <label class="text-primary">@String.Format( "{0:d MMMM yyyy}" , edizione.DataInizio )</label><br />
+                                    }
+                                    <label>@edizione.Luogo</label><br />
+                                    @if ( edizione.DesLuogo != "" )
+                                    {
+                                        <label>@edizione.DesLuogo</label><br />
+                                    }
+                                    <label>@(edizione.Orario != "" ? edizione.Orario : "Orari non disponibili")</label><br />
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="row  push-10">
+                        <div class="col-md-12">
+                            @Html.LabelForRequiredObbl( model => model.Motivazione , "Motivazione della richiesta" , new { @class = "titleElements text-primary" } )
+                            @Html.TextAreaFor( model => model.Motivazione , new { @class = "form-control " , @placeholder = "Vorrei partecipare al corso perchè...." , rows = 3 } )
+                            @Html.ValidationMessageFor( model => model.Motivazione )
+                        </div>
+                    </div>
+
+                    <div class="row  push-10">
+                        <div class="col-md-12">
+                            @Html.LabelFor( model => model.NoteAggiuntive , "Note aggiuntive" , new { @class = "titleElements text-primary" } )
+                            @Html.TextAreaFor( model => model.NoteAggiuntive , new { @class = "form-control " , @placeholder = "Dettagliare eventuali informazioni aggiuntive (edizione preferenziale, ecc.)" , rows = 3 } )
+                            @Html.ValidationMessageFor( model => model.NoteAggiuntive )
+                        </div>
+                    </div>
+
+                    <div class="row  push-10">
+                        <div class="col-md-12">
+                            @Html.LabelForRequiredObbl( model => model.DestinatarioRichiesta , "Destinatario della richiesta" , new { @class = "titleElements text-primary" } )
+                            @*@Html.TextBoxFor(model => model.DestinatarioRichiesta, new { @class = "form-control formElements", @placeholder = "Inserisci l'indirizzo e-mail del tuo responsabile diretto" })*@
+                            @Html.DropDownListFor( model => model.DestinatarioRichiesta , new List<SelectListItem>( ) , new { @class = "js-data-example-ajax" , @required = "required" } )
+                            @Html.ValidationMessageFor( model => model.DestinatarioRichiesta )
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <button id="btnSubmitRich" class="btn btn-primary" type="submit" onclick="SubmitIscrizione(@Model.Corso.Id, @Model.IdEdizione)"><i class=""></i>Richiedi</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    $(".js-data-example-ajax").select2({
+        placeholder: "Scrivi al tuo responsabile",
+        minimumInputLength: 3,
+        width: '100%',
+        ajax: {
+            url: '/RaiAcademy/GetCognomiRisorsa',
+            type: "POST",
+            dataType: 'json',
+            data: function (params) {
+                return {
+                    cog: params.term
+                };
+            },
+            processResults: function (data) {
+                return {
+                    results: $.map(data, function (obj) {
+                        var a = new Array();
+                        for (var item in obj) {
+                            var txt = obj[item].text;
+                            var array = txt.split('/');
+                            var nome = array[1];
+                            var cognome = array[0];
+                            var direzione = array[2];
+                            var matricola = obj[item].id;
+                            var fullname = matricola + ' - ' + cognome + ' ' + nome + ' (' + direzione + ')';
+
+                            a.push({ id: obj[item].id, text: fullname, nome: nome, cognome: cognome });
+                        }
+                        return a;
+                    })
+                };
+            }
+        }
+    });
+</script>
+

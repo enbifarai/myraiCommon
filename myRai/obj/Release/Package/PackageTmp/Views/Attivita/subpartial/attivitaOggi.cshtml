@@ -1,0 +1,63 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model WeekPlan
+
+@{Layout = null;}
+
+<section class="panel ">
+    <header class="panel-heading">
+        <div class="panel-actions"></div>
+        <h2 id="lblDayPlan" class="panel-title">Oggi</h2>
+    </header>
+    <div class="panel-body">
+        @if ( Model.Days == null || Model.Days.Count == 0 || Model.Days[0].Activities.Count == 0 )
+        {
+            <div class="row">
+                <div class="col-md-12" style="padding-right:0;">
+                    <h4>Nessuna attività programmata</h4>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="row">
+                <div class="col-md-12 no-padding">
+                    <table class="js-table-sections table table-hover" style="margin:0;" role="grid">
+                        <tbody>
+                            @foreach ( var activity in Model.Days[0].Activities )
+                            {
+                                bool past = activity.EndTime < DateTime.Now.TimeOfDay;
+                                bool present = activity.StartTime < DateTime.Now.TimeOfDay && activity.EndTime > DateTime.Now.TimeOfDay;
+                                bool future = activity.StartTime > DateTime.Now.TimeOfDay;
+
+                                <tr style="@(past?"opacity:.8;font-style:italic;":"")">
+                                    <td style="width:2px;padding-left:1px;padding-right:1px" class="@(present?"bg-primary":"")"></td>
+                                    <td>
+                                        <div class="rai-font-md-neutral">Dalle @activity.StartTime.ToString( @"hh\:mm" ) alle @activity.EndTime.ToString( @"hh\:mm" )</div>
+                                        <div style="white-space: nowrap; overflow: hidden;text-overflow: ellipsis;"><a href="javascript:ShowPopup('', '', '@Model.Days[0].Date.ToString("dd/MM/yyyy")', '@Model.Days[0].Date.ToString("dd/MM/yyyy")', true, true, null)">@activity.Title</a></div>
+                                        <div class="rai-font-sm-neutral">@activity.Location</div>
+                                        @if ( !String.IsNullOrWhiteSpace( activity.Note ) )
+                                        {
+                                            <div class="rai-font-sm">Note: @activity.Note</div>
+                                        }
+                                        @if ( activity.Eccezioni == 1 )
+                                        {
+                                            <div class="rai-font-sm">1 richiesta</div>
+                                        }
+                                        else if ( activity.Eccezioni > 1 )
+                                        {
+                                            <div class="rai-font-sm">@activity.Eccezioni richieste</div>
+                                        }
+                                    </td>
+                                    <td style="width:2px"></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+</section>

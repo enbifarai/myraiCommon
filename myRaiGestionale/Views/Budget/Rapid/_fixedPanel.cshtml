@@ -1,0 +1,275 @@
+﻿@using System.Globalization;
+@using myRaiCommonModel;
+
+@{
+    Layout = null;
+    var cultureInfo = CultureInfo.GetCultureInfo("it-IT");
+}
+
+@model BudgetVM
+
+
+<div class="row">
+    <div class="col-sm-12">
+        <section class="panel">
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <span class="rai-font-lg-bold">Sono presenti @Model.Campagne.Count(x => x.Id > 2) piani</span>&nbsp;&nbsp;
+                        <a class="btn rai-btn-small" href="#" onclick="OpenExportDocumentModal('piano', 0)"><i class="fa fa-external-link"></i> Esporta report</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-sm-4">
+        @using (Html.BeginPanel(myRaiHelper.PanelType.PanelNoPadding, "Dettagli piano", false))
+        {
+            <div style="padding:15px;padding-bottom:0px;">
+                <div class="row push-10">
+                    <div class="col-sm-12">
+                        <select class="form-control" id="selezioneCampagna">
+                            @{
+                                foreach (var c in Model.Campagne.OrderBy(x=>x.Id>2).ThenBy(x=>x.DataInizio))
+                                {
+                                    <option value="@(c.Id)" @(c.Id == Model.InfoCampagna.Id ? "selected=\"selected\"" : "")>@(c.NomeCampagna)</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="row push-10">
+                    <div class="col-sm-12">
+                        <div class="rai-btn-fill">
+                            @if (Model.InfoCampagna.Id > 2)
+                            {
+                                <a class="btn rai-btn-small" href="@Url.Action("ReportPromozioniCampagna", "Budget", new { idCamp = Model.InfoCampagna.Id })" target="_blank">Esporta piano</a>
+                                <a class="btn rai-btn-small" href="#" @*href="@Url.Action("ReportPoliticheRetributive", "Budget", new { idCamp = Model.InfoCampagna.Id })"*@ onclick="OpenExportDocumentModal('piano', @Model.InfoCampagna.Id)"><i class="fa fa-external-link"></i> Esporta Report</a>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="row bg-neutrals-xl-10" style="padding:10px; margin-left:-15px;margin-right:-15px; margin-bottom:4px">
+                    <div class="col-sm-12">
+                        @{
+                            var numAree = Model.InfoCampagna.DettaglioCampagna.Count();
+
+                            var deltaPos = Model.InfoCampagna.DettaglioCampagna.Count(x => x.Budget > x.BudgetSpeso);
+                            var deltaNeg = Model.InfoCampagna.DettaglioCampagna.Count(x => x.Budget < x.BudgetSpeso);
+                        }
+                        Il piano contiene @(numAree == 1 ? "1 area" : numAree + " aree")
+                    </div>
+                </div>
+            </div>
+            <div>
+                <table class="table rai-table rai-table-panel rai-table-vcenter rai-table-filter">
+                    <tr data-filter onclick="ToggleAreaFilter(this, '')">
+                        <td>
+                            <i class="ti-layers-alt" style="padding-left:10px;"></i>&nbsp; Tutte
+                        </td>
+                        <td class="text-right">
+                            <div style="padding-right:10px;"><span class="rai-label">@numAree</span></div>
+                        </td>
+                    </tr>
+                    <tr data-filter onclick="ToggleAreaFilter(this, 'deltaPos')">
+                        <td class="col-sm-10 col-xs-9">
+                            <i class="ti-stats-up" style="padding-left:10px;"></i>&nbsp; Delta positivo
+                        </td>
+                        <td class="col-sm-2 col-xs-3 text-right">
+                            <div style="padding-right:10px;"><span class="rai-label">@deltaPos</span></div>
+                        </td>
+                    </tr>
+                    <tr data-filter onclick="ToggleAreaFilter(this, 'deltaNeg')">
+                        <td class="col-sm-10 col-xs-9">
+                            <i class="ti-stats-down" style="padding-left:10px;"></i>&nbsp; Delta negativo
+                        </td>
+                        <td class="col-sm-2 col-xs-3 text-right">
+                            <div style="padding-right:10px;"><span class="rai-label">@deltaNeg</span></div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        }
+    </div>
+    <div class="col-sm-4">
+        @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Report piano annuo", false))
+        {
+            <div class="row">
+                <div class="col-sm-12">
+                    <span><b>Costo Annuo</b> @(String.Format("€ {0:N2}", Model.InfoCampagna.CostoAnno))</span>
+                </div>
+            </div>
+            <div class="row push-20-t push-20">
+                <div class="col-sm-12">
+                    <div class="graf rai-chart overflow-hidden">
+                        <div class="annuo_graf"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-6 col-xs-6">
+                    <div class="rai-chart-legend bg-90"></div><span class="rai-font-sm-neutral">Costo <br class="hidden-xl" />@(String.Format("€ {0:N2}", Model.InfoCampagna.CostoAnno))</span>
+                </div>
+                <div class="col-sm-6 col-xs-6">
+                    <div class="rai-chart-legend bg-20"></div><span class="rai-font-sm-neutral">Budget <br class="hidden-xl" />@(String.Format("€ {0:N2}", Model.InfoCampagna.BudgetAnno))</span>
+                </div>
+            </div>
+        }
+    </div>
+    <div class="col-sm-4">
+        @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Report piano periodo", false))
+        {
+            <div class="row">
+                <div class="col-sm-12">
+                    <span><b>Costo periodo</b> @(String.Format("€ {0:N2}", Model.InfoCampagna.CostoPeriodo))</span>
+                </div>
+            </div>
+            <div class="row push-20-t push-20">
+                <div class="col-sm-12">
+                    <div class="graf rai-chart overflow-hidden">
+                        <div class="periodo_graf"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-6 col-xs-6">
+                    <div class="rai-chart-legend bg-90"></div><span class="rai-font-sm-neutral">Costo <br class="hidden-xl" />@(String.Format("€ {0:N2}", Model.InfoCampagna.CostoPeriodo))</span>
+                </div>
+                <div class="col-sm-6 col-xs-6">
+                    <div class="rai-chart-legend bg-20"></div><span class="rai-font-sm-neutral">Budget <br class="hidden-xl" />@(String.Format("€ {0:N2}", Model.InfoCampagna.BudgetPeriodo))</span>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@*<div class="col-xs-3">
+
+        @if ((Model.ShowReportPoliticheRetributive && Model.InfoCampagna.Id > 2) || Model.InfoCampagna.Id == 0)
+        {
+            <a data-target="#modal-selezione-piano-export" id="pianoExportSelected" data-toggle="tooltip" data-html="true" href="#" title="Download report 2" class="btn btn-action-icon" style="margin-top:-7px;"><i class="icons icon-book-open h3"></i> </a>
+        }
+        @if (Model.InfoCampagna.Id == 0)
+        {
+            <a class="btn btn-action-icon" style="margin-top:-7px;" href="@Url.Action("EsportaRiepiloProvv", "Budget")" target="_blank" data-toggle="tooltip" title="Riepilogo provvedimenti"><i class="icons icon-book-open h3"></i> </a>
+            <a class="btn btn-action-icon" style="margin-top:-7px;" href="@Url.Action("ReportProvvedimentiLiv", "Budget")" target="_blank" data-toggle="tooltip" title="Riepilogo aumenti di livello"><i class="icons icon-book-open h3"></i> </a>
+        }
+    </div>*@
+
+<script type="text/javascript">
+    @{
+        decimal percentuale = 0;
+        if (Model.InfoCampagna.BudgetAnno > 0)
+        {
+            percentuale = (100 * Model.InfoCampagna.CostoAnno) / Model.InfoCampagna.BudgetAnno;
+            percentuale = Math.Round(percentuale * 100) / 100;
+        }
+        else if (Model.InfoCampagna.BudgetAnno == 0 &&
+            Model.InfoCampagna.CostoAnno == 0)
+        {
+            percentuale = 0;
+        }
+        else
+        {
+            percentuale = 100;
+        }
+
+        int percAnno = (int)percentuale;
+        if (percAnno>100)
+        {
+            percAnno = 100;
+        }
+
+
+        decimal perc = 0;
+        if (Model.InfoCampagna.BudgetPeriodo > 0)
+        {
+            perc = (100 * Model.InfoCampagna.CostoPeriodo) / Model.InfoCampagna.BudgetPeriodo;
+            perc = Math.Round(perc * 100) / 100;
+        }
+        else if (Model.InfoCampagna.BudgetPeriodo == 0 &&
+            Model.InfoCampagna.CostoPeriodo == 0)
+        {
+            perc = 0;
+        }
+        else
+        {
+            perc = 100;
+        }
+
+        int percPeriodo = (int)perc;
+        if (percPeriodo>100)
+        {
+            percPeriodo = 100;
+        }
+    }
+
+    var graf = new Chartist.Pie('.annuo_graf', { series: [@(percAnno), 0, 0, 0, 0, 0, 0, @(100- percAnno)] },
+                    {
+                        donut: true,
+                        donutWidth: 40,
+                        startAngle: 270,
+                        total: 200,
+                        showLabel: false
+                    });
+    graf.on("created", function () {
+        var svg = document.querySelector('.annuo_graf svg');
+        svg.setAttribute("transform", "scale(1.75)");
+        svg.setAttribute("style", "position:relative;top:70px;");
+        var newElementText = document.createElementNS("http://www.w3.org/2000/svg", 'text');
+        var newElementTspan = document.createElementNS("http://www.w3.org/2000/svg", 'tspan');
+        newElementText.setAttribute("y", "45%");
+        newElementText.setAttribute("font-size", "12px");
+        newElementText.setAttribute("style", "font-size:12px");
+        newElementText.setAttribute("fill", "#333");
+        newElementText.setAttribute("class", "rai-font-text-heading");
+        newElementTspan.setAttribute("x", (svg.clientWidth / 2).toString());
+        newElementTspan.setAttribute("text-anchor", "middle");
+        newElementTspan.textContent = "@percentuale%";
+        newElementText.appendChild(newElementTspan);
+        svg.appendChild(newElementText)
+    });
+
+    var graf2 = new Chartist.Pie('.periodo_graf', { series: [@(percPeriodo), 0, 0, 0, 0, 0, 0, @(100- percPeriodo)] },
+                {
+                    donut: true,
+                    donutWidth: 40,
+                    startAngle: 270,
+                    total: 200,
+                    showLabel: false
+                });
+    graf2.on("created", function () {
+        var svg = document.querySelector('.periodo_graf svg');
+        svg.setAttribute("transform", "scale(1.75)");
+        svg.setAttribute("style", "position:relative;top:70px;");
+        var newElementText = document.createElementNS("http://www.w3.org/2000/svg", 'text');
+        var newElementTspan = document.createElementNS("http://www.w3.org/2000/svg", 'tspan');
+        newElementText.setAttribute("y", "45%");
+        newElementText.setAttribute("font-size", "12px");
+        newElementText.setAttribute("style", "font-size:12px");
+        newElementText.setAttribute("fill", "#333");
+        newElementText.setAttribute("class", "rai-font-text-heading");
+        newElementTspan.setAttribute("x", (svg.clientWidth / 2).toString());
+        newElementTspan.setAttribute("text-anchor", "middle");
+        newElementTspan.textContent = "@perc%";
+        newElementText.appendChild(newElementTspan);
+        svg.appendChild(newElementText)
+    });
+
+    function ToggleAreaFilter(row, filter) {
+        $('tr[data-filter]').attr('data-filter', '');
+
+        if (filter != '') {
+            $('[data-area-filter]').hide();
+            $('[data-area-filter="' + filter + '"]').show();
+        }
+        else {
+            $('[data-area-filter]').show();
+        }
+
+        $(row).attr('data-filter', 'selected');
+    }
+</script>

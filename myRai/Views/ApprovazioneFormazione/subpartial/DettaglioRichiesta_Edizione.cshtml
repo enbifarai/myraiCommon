@@ -1,0 +1,129 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model myRai.Controllers.RichiestaModel
+
+@{
+    var idEdiz = Model.Richiesta.TREQUESTS_STEP.First( ).ID_EDIZIONE;
+}
+
+<div class="block-header block-header-inc block-content-mini">
+    <div class="row">
+        <div class="col-sm-7 col-xs-7 no-padding">
+            <h4 class="font-w600">Dettaglio edizione</h4>
+        </div>
+        <div class="col-sm-5 col-xs-5 text-right no-padding" style="padding-top:7px !important;font-size:15px;">
+            @*<i class="icons icon-info text-primary" data-toggle="tooltip" data-placement="bottom" data-trigger="hover click" title="Data aggiornamento: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")"></i>*@
+        </div>
+    </div>
+</div>
+
+<!--contenuto-->
+<div class="block-content block-content-mini block-content-full no-padding-left no-padding-right">
+    @if ( idEdiz > 0 )
+    {
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="row" role="grid">
+
+                    @{
+
+                        var edizione = Model.Corso.AltriDettagli.Edizioni.FirstOrDefault( x => x.IdEdizione == idEdiz );
+
+
+                        string ariaLabelEdiz = edizione.Nome;
+                        ariaLabelEdiz += "\r\nDate: ";
+                        if ( edizione.DataInizio != edizione.DataFine )
+                        {
+                            ariaLabelEdiz += String.Format( "dal {0:d MMMM yyyy} al {1:d MMMM yyyy}" , edizione.DataInizio , edizione.DataFine );
+                        }
+                        else
+                        {
+                            ariaLabelEdiz += String.Format( "{0:d MMMM yyyy}" , edizione.DataInizio );
+                        }
+                        ariaLabelEdiz += "\r\nPresso: " + edizione.Luogo;
+                        if ( edizione.DesLuogo != "" )
+                        { ariaLabelEdiz += " " + edizione.DesLuogo; }
+                        if ( edizione.Orario != "" )
+                        { ariaLabelEdiz += "\r\nOrari: " + edizione.Orario; }
+
+                        <div class="col-sm-12" role="row" aria-label="@ariaLabelEdiz">
+                            <h3>@edizione.Nome</h3>
+                            @if ( edizione.DataInizio != edizione.DataFine )
+                            {
+                                <label class="text-primary">@String.Format( "dal {0:d MMMM yyyy} al {1:d MMMM yyyy}" , edizione.DataInizio , edizione.DataFine )</label><br />
+                            }
+                            else
+                            {
+                                <label class="text-primary">@String.Format( "{0:d MMMM yyyy}" , edizione.DataInizio )</label><br />
+                            }
+                            <label>@edizione.Luogo</label><br />
+                            @if ( edizione.DesLuogo != "" )
+                            {
+                                <label>@edizione.DesLuogo</label><br />
+                            }
+                            <label>@(!String.IsNullOrWhiteSpace( edizione.Orario ) ? edizione.Orario : "Orari non disponibili")</label><br />
+                            @if ( !String.IsNullOrWhiteSpace( edizione.Note ) || edizione.Giornate.Count( ) > 0 )
+                            {
+                                var elencoGiornate = "";
+                                foreach ( var day in edizione.Giornate.OrderBy( x => x.Data ) )
+                                {
+                                    elencoGiornate += String.Format( "{0:dd MMMM yyyy} - dalle ore {1:00}:{2:00} alle ore {3:00}:{4:00}<br />" , day.Data , day.DaOra , day.DaMinuti , day.AOra , day.AMinuti );
+                                }
+
+                                <label><a href="#" onclick="ShowEdizMoreDetails('@edizione.Nome','@elencoGiornate','@edizione.Note')">Maggiori dettagli</a></label><br />
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-sm-12">
+                <label>Edizione da definire</label>
+            </div>
+        </div>
+    }
+
+</div>
+
+<script>
+    function ShowEdizMoreDetails(nome, days, note) {
+
+        event.preventDefault();
+
+        var testo = "";
+        if (days != "")
+            testo += "<h4>Elenco giornate</h4>" + days;
+
+        if (note != "") {
+            if (testo != "")
+                testo += "<br/>";
+
+            testo += "<h4>Note aggiuntive</h4>" + note;
+        }
+
+        testo = "<div style='text-align:left;'>" + testo + "</div>";
+
+        swal({
+            title: 'Edizione ' + nome,
+            text: "",
+            html: testo,
+            width: 700,
+            //input: 'text',
+            //type: 'warning',
+            //showCancelButton: true,
+            //confirmButtonColor: '#3085d6',
+            //cancelButtonColor: '#d33',
+            confirmButtonText: 'Ok',
+            //cancelButtonText: 'No, cancel!',
+            confirmButtonClass: 'btn btn-primary btn-lg',
+            //cancelButtonClass: 'btn btn-danger',
+            buttonsStyling: false
+        });
+    }
+</script>

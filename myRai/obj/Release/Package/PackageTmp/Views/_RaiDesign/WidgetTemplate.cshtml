@@ -1,0 +1,121 @@
+﻿@model myRaiHelper.WidgetTemplate
+
+@{
+    var actionAttribute = "";
+    var classAttribute = "";
+
+    if (Model.HasAction)
+    {
+        classAttribute = "btn btn-sm rai-btn-small full-width";
+        if (Model.MainAction)
+        {
+            classAttribute = "btn rai-btn-primary full-width";
+        }
+
+        if (Model.Action.Attributes != null && Model.Action.Attributes.Count() > 0)
+        {
+            classAttribute += String.Join(" ", Model.Action.Attributes.Where(x => x.Name == "class").Select(x => " " + x.Value));
+            actionAttribute += String.Join(" ", Model.Action.Attributes.Where(x => x.Name != "class").Select(x => x.ToString()));
+        }
+
+        if (!String.IsNullOrWhiteSpace(Model.Action.Href))
+        {
+            actionAttribute += " href=\"" + Model.Action.Href + "\"";
+        }
+        if (!String.IsNullOrWhiteSpace(Model.Action.OnClick))
+        {
+            actionAttribute += " onclick=\"" + Model.Action.OnClick + "\" ";
+        }
+    }
+    if (String.IsNullOrWhiteSpace(Model.Id))
+    {
+        Model.Id = Guid.NewGuid( ).ToString( "N" );
+    }
+}
+
+
+<section class="rai panel" @if ( !String.IsNullOrWhiteSpace( Model.Id ) ) { @: id="@Model.Id"
+         }>
+    <header class="panel-heading">
+        <h2 id="@(Model.Id)_title" class="panel-title">@Model.Title</h2>
+    </header>
+    <div class="panel-body">
+        <div class="widget">
+            <div class="widget-body">
+                @if (!String.IsNullOrWhiteSpace(Model.Description))
+                {
+                    <div class="widget-summary push-10">
+                        <div class="widget-summary-col">
+                            <span id="@(Model.Id)_description" class="rai-font-md">@Model.Description</span>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div id="@(Model.Id)_description_container" class="widget-summary push-10 hide">
+                        <div class="widget-summary-col">
+                            <span id="@(Model.Id)_description" class="rai-font-md">@Model.Description</span>
+                        </div>
+                    </div>
+                }
+                <div class="widget-summary  push-10">
+                    <div class="widget-summary-col widget-summary-col-icon">
+                        <div class="summary-icon">
+                            @if (Model.Type == myRaiHelper.WidgetType.Interactive)
+                            {
+                                <a @actionAttribute title="@Model.MainText" class="interactive-primary-color">
+                                    <i id="@(Model.Id)_icon" class="@Model.Icon"> </i>
+                                </a>
+
+                            }
+                            else
+                            {
+                                <i id="@(Model.Id)_icon" class="@Model.Icon"> </i>
+                            }
+                        </div>
+                    </div>
+                    <div class="widget-summary-col">
+                        <div class="summary">
+                            @if (!String.IsNullOrWhiteSpace(Model.Label))
+                            {
+                                <div style="width:100%"><label class="rai-caption rai-caption-interactive">@Model.Label</label></div>
+                            }
+                            <h3 class="title" style="word-break: break-word;" id="@(Model.Id)_maintext">
+                                @if (Model.Type == myRaiHelper.WidgetType.Interactive)
+                                {
+                                    <a @Html.Raw(actionAttribute) id="@(Model.Id)_maintext_a" title="@Model.MainText" class="interactive-primary-color">
+                                        @Model.MainText
+                                    </a>
+                                }
+                                else
+                                {
+                                    if (Model.MainTextType == myRaiHelper.WidgetTextType.Regular)
+                                    {
+                                        @Model.MainText
+                                    }
+                                    else
+                                    {
+                                        @Html.Raw(Model.MainText)
+                                    }
+                                }
+                            </h3>
+                            @if (!String.IsNullOrWhiteSpace(Model.Detail))
+                            {
+
+                                <span class="rai-font-sm-neutral" id="@(Model.Id)_detail">@Html.Raw(Model.Detail)</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+                @if (Model.Type == myRaiHelper.WidgetType.Normal && Model.HasAction)
+                {
+                    <div class="summary-footer">
+                        <a class="@classAttribute" @Html.Raw(actionAttribute) title="@(!String.IsNullOrWhiteSpace(Model.Action.Title)?Model.Action.Title:Model.Action.Text)">
+                            @Model.Action.Text
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</section>

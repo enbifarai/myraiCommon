@@ -1,0 +1,234 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel.Gestionale
+@using myRai.Business
+@model List<MboScheda>
+
+@{
+    var matricola = CommonManager.GetCurrentUserMatricola();
+}
+
+
+@if (Model == null || !Model.Any())
+{
+    <div class="rai panel">
+        <div class="panel-heading">
+            <label class="panel-title">Elenco schede</label>
+        </div>
+        <div class="panel-body">
+            <div class="row push-10-t push-10">
+                <div class="col-sm-12 text-center">
+                    <span class="rai-font-md-neutral">Non ci sono dati da visualizzare</span>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    var firstIni = true;
+
+
+    foreach (var ini in Model.GroupBy(x => x.Iniziativa.Id))
+    {
+        var notSub = ini.Count(x => x.PersSecRiporto == null || x.PersSecRiporto.Matricola != matricola);
+        var hasSub = ini.Count(x => x.PersSecRiporto != null && x.PersSecRiporto.Matricola == matricola);
+        var anyChief = ini.Count(x => x.IsChief && x.ElencoSchedeSub.Any());
+
+        <div id="iniziativa@(ini.Key.ToString())">
+            <div class="rai panel @(firstIni?"":"panel-collapsed")">
+                <header class="panel-heading">
+                    <h1 class="panel-title">@ini.First().Iniziativa.Nome</h1>
+                    <div class="panel-actions rai-panel-actions">
+                        <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" aria-labelledby="lblRightBox" aria-expanded="true"></a>
+                    </div>
+                </header>
+                <div class="panel-body panel-body-nopadding">
+                    <div class="block no-margin-bottom">
+                        <ul class="nav nav-tabs nav-tabs-alt nav-justified" data-toggle="tabs" role="tablist">
+                            @if (notSub > 0)
+                            {
+                                <li class="active" role="presentation">
+                                    <a href="#ElencoDaCompilare@(ini.Key)" class="rai-badge-anchor" id="hrefDaValutare@(ini.Key)" tabindex="0" role="tab" aria-controls="ElencoDaCompilare@(ini.Key)">
+                                        Da compilare
+                                        <div class="rai-badge-tab">
+                                            @notSub
+                                        </div>
+                                    </a>
+                                </li>
+                            }
+                            @if (hasSub > 0)
+                            {
+                                <li role="presentation" class="@(notSub==0?"active":"")">
+                                    <a href="#ElencoDaVisionare@(ini.Key)" class="rai-badge-anchor" id="hrefDaVisionare@(ini.Key)" tabindex="0" role="tab" aria-controls="ElencoDaVisionare@(ini.Key)">
+                                        Da approvare
+                                        <div class="rai-badge-tab">
+                                            @hasSub
+                                        </div>
+                                    </a>
+                                </li>
+                            }
+                            @if (anyChief > 0)
+                            {
+                                <li role="presentation" class="@(notSub==0 && hasSub==0?"active":"")">
+                                    <a href="#ElencoDaConsultare@(ini.Key)" class="rai-badge-anchor" id="hrefDaConsultare@(ini.Key)" tabindex="0" role="tab" aria-controls="ElencoDaConsultare@(ini.Key)">
+                                        In visione
+                                        <div class="rai-badge-tab">
+                                            @anyChief
+                                        </div>
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                        <div class="block-content tab-content" style="padding:15px 5px">
+                            @if (notSub > 0)
+                            {
+                                <div class="tab-pane active" id="ElencoDaCompilare@(ini.Key)" role="tabpanel">
+                                    <table class="table rai-table rai-table-vcenter rai-table-panel rai ">
+                                        @foreach (var item in ini.Where(x => x.PersSecRiporto == null || x.PersSecRiporto.Matricola != matricola).OrderBy(x => x.PersValutato.Nominativo))
+                                        {
+                                            <tr>
+                                                <td>@Html.ProfileWidget(item.PersValutato.Matricola, item.PersValutato.Nominativo, null, item.PersValutato.DesServizio)</td>
+                                                <td>
+                                                    @if (item.IsSent.HasValue && item.IsSent.Value
+                                                        && item.IsApproved.HasValue && !item.IsApproved.Value
+                                                        && item.StatoCorrente.ID_STATO == (int)MboState.DaCompilare)
+                                                    {
+                                                        <label class="rai-font-sm" data-stato="50" style="color: #E50012;font-weight: bold;white-space:pre">Richiesta correzione</label>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="rai-label">
+                                                            @item.StatoCorrente.DES_DESCRIZIONE
+                                                        </span>
+                                                    }
+                                                </td>
+                                                <td class="text-right">
+                                                    <button class="btn rai-btn-small" onclick="MboOpenModalScheda(@item.Id)">Visualizza</button>
+                                                </td>
+                                                <td class="rai-table-td-toggle">
+                                                    @if (item.ElencoSchedeSub.Any())
+                                                    {
+                                                        <i class="fa fa-chevron-down"></i>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </table>
+                                </div>
+                            }
+                            @if (hasSub > 0)
+                            {
+                                <div id="ElencoDaVisionare@(ini.Key)" role="tabpanel" class="tab-pane @(notSub==0?"active":"")">
+                                    <div class="panel-group no-margin-bottom" id="accordSecRip@(ini.Key)">
+                                        @foreach (var resp in ini.Where(x => x.PersSecRiporto != null && x.PersSecRiporto.Matricola == matricola).GroupBy(x => x.IdPersonaResp))
+                                        {
+                                            <div class="panel panel-accordion">
+                                                <div class="panel-heading">
+                                                    <h4 class="panel-title">
+                                                        <a class="accordion-toggle collapse no-padding" data-toggle="collapse" data-parent="#accordSecRip@(ini.Key)" href="#collapse_secRip_@(ini.Key)_@(resp.Key)" aria-expanded="false">
+                                                            @if (resp.Key > 0)
+                                                            {
+                                                                <span>@resp.First().PersResp.Nominativo</span>
+                                                            }
+                                                        </a>
+                                                    </h4>
+                                                    <div class="panel-actions">
+                                                        <span class="rai-notification">@resp.Count()</span>
+                                                    </div>
+                                                </div>
+                                                <div id="collapse_secRip_@(ini.Key)_@(resp.Key)" class="collapse" aria-expanded="false">
+                                                    <div class="panel-body panel-row-bordered" style="padding:5px; padding-top:0px;">
+                                                        @foreach (var item in resp.OrderBy(x => x.PersValutato.Nominativo))
+                                                        {
+                                                            <div class="row" style="padding:10px;">
+                                                                <div class="col-sm-6">@Html.ProfileWidget(item.PersValutato.Matricola, item.PersValutato.Nominativo, null, item.PersValutato.DesServizio)</div>
+                                                                <div class="col-sm-3">
+                                                                    @if (item.IsSent.HasValue && item.IsSent.Value
+                                                        && item.IsApproved.HasValue && !item.IsApproved.Value)
+                                                                    {
+                                                                        <label class="rai-font-sm" data-stato="50" style="color: #E50012;font-weight: bold;white-space:pre">Richiesta correzione</label>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span class="rai-label">
+                                                                            @item.StatoCorrente.DES_DESCRIZIONE
+                                                                        </span>
+                                                                    }
+                                                                </div>
+                                                                <div class="col-sm-3 text-right">
+                                                                    <button class="btn rai-btn-small" onclick="MboOpenModalScheda(@item.Id)">Visualizza</button>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                        }
+                                    </div>
+                                </div>
+                            }
+                            @if (anyChief > 0)
+                            {
+                                <div id="ElencoDaConsultare@(ini.Key)" role="tabpanel" class="tab-pane @(notSub==0?"active":"")">
+                                    <div class="panel-group no-margin-bottom" id="accordChief@(ini.Key)">
+                                        @foreach (var resp in ini.Where(x => x.IsChief && x.ElencoSchedeSub.Any()))
+                                        {
+                                            <div class="panel panel-accordion">
+                                                <div class="panel-heading">
+                                                    <h4 class="panel-title">
+                                                        <a class="accordion-toggle collapse no-padding" data-toggle="collapse" data-parent="#accordChief@(ini.Key)" href="#collapse_chief_@(ini.Key)_@(resp.Id)" aria-expanded="false">
+                                                            <span>@resp.PersValutato.Nominativo</span>
+                                                        </a>
+                                                    </h4>
+                                                    <div class="panel-actions">
+                                                        <span class="rai-notification">@resp.ElencoSchedeSub.Count()</span>
+                                                    </div>
+                                                </div>
+                                                <div id="collapse_chief_@(ini.Key)_@(resp.Id)" class="collapse" aria-expanded="false">
+                                                    <div class="panel-body panel-row-bordered" style="padding:5px; padding-top:0px;">
+                                                        @foreach (var item in resp.ElencoSchedeSub.OrderBy(x => x.PersValutato.Nominativo))
+                                                        {
+                                                            <div class="row" style="padding:10px;">
+                                                                <div class="col-sm-6">@Html.ProfileWidget(item.PersValutato.Matricola, item.PersValutato.Nominativo, null, item.PersValutato.DesServizio)</div>
+                                                                <div class="col-sm-3">
+                                                                    @if (item.IsSent.HasValue && item.IsSent.Value
+                                                        && item.IsApproved.HasValue && !item.IsApproved.Value)
+                                                                    {
+                                                                        <label class="rai-font-sm" data-stato="50" style="color: #E50012;font-weight: bold;white-space:pre">Richiesta correzione</label>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span class="rai-label">
+                                                                            @item.StatoCorrente.DES_DESCRIZIONE
+                                                                        </span>
+                                                                    }
+                                                                </div>
+                                                                <div class="col-sm-3 text-right">
+                                                                    <button class="btn rai-btn-small" onclick="MboOpenModalScheda(@item.Id)">Visualizza</button>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        firstIni = false;
+    }
+
+
+}
+
+<script>
+    jQuery('.js-table-sections-header > tr').unbind('click');
+</script>

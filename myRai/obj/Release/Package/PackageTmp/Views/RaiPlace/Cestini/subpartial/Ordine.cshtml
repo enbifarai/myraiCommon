@@ -1,0 +1,161 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonModel.raiplace;
+@using MVCProject.Custom_Helpers;
+@using myRaiCommonManager;
+
+@model CestiniModel
+
+<style>
+    #ordine_titoloProduzione-error {
+        display: table-row;
+    }
+</style>
+
+@using ( Ajax.BeginForm( "DettaglioOrdine" , "Cestini" ,
+    new { } ,
+    new AjaxOptions
+    {
+        InsertionMode = InsertionMode.Replace ,
+        HttpMethod = "POST"
+    } ,
+    new
+    {
+        id = "form-gestioneordine"
+    } ) )
+{
+    @Html.AntiForgeryToken( )
+    @Html.HiddenFor( m => m.ordine.idOrdine )
+    @Html.HiddenFor( m => m.ordine.richiedente )
+    @Html.HiddenFor( m => m.ordine.telefonoRichiedente )
+    @Html.HiddenFor( m => m.ordine.struttura )
+    @Html.HiddenFor( m => m.ordine.DestinatarioCestino )
+    @Html.HiddenFor( m => m.ordine.titoloProduzione )
+    @Html.HiddenFor( m => m.ordine.matricolaReferenteConsegna )
+    @Html.HiddenFor( m => m.ordine.referenteConsegna )
+
+    <div class="row">
+        <div class="form-group no-margin-left-right">
+            <div class="params">
+                @Html.LabelFor( m => m.ordine.dataOraPasto , "Data consegna cestino" )
+                <div class="form-material input-group mb-md" style="position: relative">
+                    @Html.TextBoxFor( m => m.ordine.dataOraPasto , new { @class = "js-datetimepicker form-control disabilita" , id = "data_ora_pasto" , data_format = "DD/MM/YYYY" , data_locale = "it" , placeholder = "Selezionare Data consegna cestino" , required = "required" } )
+                    <span style="cursor: pointer" onclick="$('#data_ricezione').datetimepicker('show')" class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                </div>
+                <div>
+                    @Html.ValidationMessageFor( m => m.ordine.dataOraPasto , "La data consegna cestino è obbligatoria" , new { @class = "field-validation-error hidden" } )
+                </div>
+            </div>
+        </div>
+        <div class="row form-group no-margin-left-right" style="margin-left: -15px;margin-right: -15px;">
+            <div class="col-xs-12 col-sm-5 col-lg-5 form-group">
+                @Html.LabelFor( m => m.ordine.cespite )
+                @Html.DropDownListFor( m => m.ordine.cespite , new SelectList( @myRai.Controllers.RaiPlace.CestiniController.GetCespiti( Model.ordine.cespite ) , "Value" , "Text" , "Selected" ) , "Selezionare" , new { @class = "form-control disabilita" , required = "required" } )
+                @Html.ValidationMessageFor( m => m.ordine.cespite , "Selezionare il cespite" , new { @class = "field-validation-error hidden" , required = "required" } )
+                @Html.HiddenFor( m => m.ordine.luogoConsegna )
+            </div>
+            <div class="col-xs-12 col-sm-7 col-lg-7 form-group">
+                @Html.LabelFor( m => m.ordine.tipoPasto )
+                @Html.DropDownListFor( m => m.ordine.tipoPasto , new SelectList( new[] { new SelectListItem { Value = "pranzo" , Text = "pranzo" } , new SelectListItem { Value = "cena" , Text = "cena" } } , "Value" , "Text" , "Selected" ) , "Selezionare" , htmlAttributes: new { @class = "form-control disabilita" , required = "required" } )
+                @Html.ValidationMessageFor( m => m.ordine.tipoPasto , "Selezionare il tipo pasto" , new { @class = "field-validation-error hidden" , required = "required" } )
+            </div>
+        </div>
+
+        @if ( Model.ordine.DestinatarioCestino == myRai.Models.raiplace.DestinatarioEnum.Me )
+        {
+            @Html.Partial( "~/Views/RaiPlace/Cestini/subpartial/_ordineMe.cshtml" )
+        }
+        else if ( Model.ordine.DestinatarioCestino == myRai.Models.raiplace.DestinatarioEnum.Interni )
+        {
+            @Html.Partial( "~/Views/RaiPlace/Cestini/subpartial/_ordineInterni.cshtml" )
+        }
+        else if ( Model.ordine.DestinatarioCestino == myRai.Models.raiplace.DestinatarioEnum.Esterni )
+        {
+            @Html.Partial( "~/Views/RaiPlace/Cestini/subpartial/_ordineEsterni.cshtml" )
+        }
+
+        <div class="form-group no-margin-left-right">
+            @Html.LabelFor( m => m.ordine.motivoOrdine , "Motivazione dell'esigenza" )
+            @Html.TextBoxFor( m => m.ordine.motivoOrdine , htmlAttributes: new { @class = "form-control disabilita" , required = "required" , onchange = "CtrInput($(this));" } )
+        </div>
+        <div class="form-group no-margin-left-right hidden">
+            @Html.LabelFor( m => m.ordine.note , "Note" )
+            @Html.TextAreaFor( m => m.ordine.note , htmlAttributes: new { @class = "form-control disabilita" } )
+        </div>
+    </div>
+}
+
+<script type="text/javascript">
+    var produzioni = new Array();
+
+    $('#ordine_matricolaSpettacolo').autoComplete({
+        minChars: 3,
+        source: function (term, response) {
+            $.ajax({
+                async: false,
+                cache: true,
+                type: "POST",
+                url: '/Cestini/GetProduzioneByMatricola',
+                data: { "term": term },
+                success: function (data) {
+                    produzioni = new Array();
+                    for (var i = 0; i < data.length; i++) {
+                        produzioni.push([data[i].Matricola, data[i].Titolo.replace(/'/g, '\''), data[i].UORG]);
+                    }
+                    response(produzioni);
+                }
+            });
+        },
+        renderItem: function (item, search) {
+            return '<div class="autocomplete-suggestion" data-matricola="' + item[0] + '" data-costo="' + item[2] + '" data-titolo="' + item[1] + '"> ' + item[0] + ' (' + item[1] + ')</div>';
+        },
+        onSelect: function (event, term, item) {
+            var titolo = item.data('titolo');
+            var costo = item.data('costo');
+            var matricola = item.data('matricola');
+            $('#ordine_centroCosto').val(costo);
+            $('#ordine_matricolaSpettacolo').val(matricola);
+            $('#ordine_titoloProduzione').val(titolo);
+        }
+    });
+
+    $('#SelectUser').on("select2:selecting", function (e, item) {
+        var txt = e.params.args.data.text;
+        var array = txt.split('/');
+        var nome = e.params.args.data.nome;
+        var cognome = e.params.args.data.cognome;
+        var matricola = e.params.args.data.id;
+
+        $('#richiestaCorrente_cognomeRisorsa').val(cognome);
+        $('#richiestaCorrente_nomeRisorsa').val(nome);
+        $('#richiestaCorrente_matricolaRisorsa').val(matricola);
+    });
+
+    $('#selReferenteConsegna').on("select2:selecting", function (e, item) {
+        var txt = e.params.args.data.text;
+        var array = txt.split('/');
+        var nome = e.params.args.data.nome;
+        var cognome = e.params.args.data.cognome;
+        var matricola = e.params.args.data.id;
+        $('#ordine_matricolaReferenteConsegna').val(matricola);
+        $('#ordine_referenteConsegna').val(txt);
+        $('#selReferenteConsegna-error').hide();
+    });
+
+    $("#ordine_cespite").on('change', function () {
+        setLuogoConsegna();
+    }).on('keypress', function () {
+        setLuogoConsegna();
+    });
+
+    function setLuogoConsegna() {
+        var txt = $("#ordine_cespite option:selected").text();
+        $("#ordine_luogoConsegna").val(txt);
+    }
+
+    $(function () {
+        initOrdine();
+    });
+</script>

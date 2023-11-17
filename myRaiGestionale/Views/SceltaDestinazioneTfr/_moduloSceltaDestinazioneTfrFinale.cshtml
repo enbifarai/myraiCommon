@@ -1,0 +1,207 @@
+﻿@using myRaiCommonModel
+@model SceltaDestinazioneTfrViewModel
+
+@if (Model != null)
+{
+    using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Stato", false))
+    {
+        @Html.Partial("_wizard", Model)
+
+        // Dati riepilogo
+        <div class="row" style="margin-top: 3rem;">
+            <div class="col-sm-12">
+                <span class="rai-font-md-bold">DETTAGLI RICHIESTA</span>
+            </div>
+            <hr />
+            <div class="row" style="margin-top: 1.5rem;">
+                <div class="col-md-3">
+                    <span class="rai-font-md-neutral">Scelta pregressa</span>
+                </div>
+                <div class="col-md-9">
+                    <div class="rai-font-md">@Model.DescrizioneSceltaPregressaEffettuata</div>
+                    <div class="rai-font-md" style="margin-top: 1.5rem;">@Model.DescrizioneMotivoSceltaPregressaEffettuata</div>
+                </div>
+            </div>
+            <div class="row" style="margin-top: 1.5rem;">
+                <div class="col-md-3">
+                    <span class=rai-font-md-neutral>Scelta attuale</span>
+                </div>
+                <div class="col-md-9">
+                    <div class="rai-font-md">@Model.DescrizioneSceltaAttualeEffettuata</div>
+                </div>
+            </div>
+        </div>
+
+
+        // Documenti allegati
+        <div class="row" style="margin-top: 6rem;">
+            <section class="rai panel">
+                <div class="panel-body" id="my-block">
+                    <span class="rai-font-md-bold">DOCUMENTI ALLEGATI</span>
+
+                    @if (Model.PdfCompilato != null)
+                    {
+                        <div class="col-sm-12" style="margin-top: 1.5rem;">
+                            <span class="rai-font-md-bold">Documento compilato</span>
+                        </div>
+
+                        <div class="col-sm-12" style="margin-top: 0.5rem;">
+                            <table style="width: 100%;">
+                                <tbody>
+                                    @Html.Partial("_trFileUpload", Model.PdfCompilato)
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+
+                    @if (Model.ModuloDiAdesione != null)
+                    {
+                        <div class="col-sm-12" style="margin-top: 1.5rem;">
+                            <span class="rai-font-md-bold">Modulo di adesione</span>
+                        </div>
+
+                        <div class="col-sm-12" style="margin-top: 0.5rem;">
+                            <table style="width: 100%;">
+                                <tbody>
+                                    @Html.Partial("_trFileUpload", Model.ModuloDiAdesione)
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+
+                    @if (Model.AltriDocumenti != null && Model.AltriDocumenti.Count() > 0)
+                    {
+                        <div class="col-sm-12" style="margin-top: 1.5rem;">
+                            <span class="rai-font-md-bold">Altri documenti</span>
+                        </div>
+
+                        <div class="col-sm-12" style="margin-top: 0.5rem;">
+                            <table style="width: 100%;">
+                                <tbody>
+                                    @foreach (var documento in Model.AltriDocumenti)
+                                    {
+                                        @Html.Partial("_trFileUpload", documento)
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </section>
+        </div>
+    }
+}
+
+<script>
+    /**
+     * Funzione che esegue il post del form
+     * */
+    function postForm() {
+
+        var dati = $('#StepForm').serialize();
+
+        $.ajax({
+            type: 'POST',
+            cache: false,
+            url: "/SceltaDestinazioneTfr/PostStep4",
+            data: dati,
+            success: function (data) {
+                mostraConfermaDocumentoCreato();
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                swal({
+                    title: jqXHR.statusText,
+                    type: 'error',
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+            }
+        });
+    }
+
+    /**
+     * Funzione che esegue torna allo step precedente
+     * */
+    function TornaIndietro() {
+
+        var dati = $('#StepForm').serialize();
+
+        $.ajax({
+            type: 'POST',
+            cache: false,
+            url: "/SceltaDestinazioneTfr/BackStep3",
+            data: dati,
+            success: function (data) {
+                // Aggiorno il content del div principale
+                $('#div-modulo-trattamento-fine-rapporto').html(data);
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                swal({
+                    title: jqXHR.statusText,
+                    type: 'error',
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+            }
+        });
+    }
+
+    /**
+     * Funzione che mostra il corretto invio della richiesta e chiama un metodo del controller per compilare e mostrare il pdf
+     * */
+    function mostraConfermaDocumentoCreato() {
+        //console.log('mostraConfermaECompilaPdf')
+        swal({
+            title: 'Il documento è stato creato correttamente',
+            type: 'success',
+            showConfirmButton: true,
+            confirmButtonText: 'Ok',
+            customClass: 'rai'
+        }).then(function () {
+            //console.log('mostraConfermaECompilaPdf then')
+            sceltaDestinazioneTFR_ChiudiInserimento();
+        });
+    }
+
+    /**
+     * Funzione che visualizza la view con il documento da validare
+     * */
+    function visualizzaDocumentoDaValidare() {
+        //console.log(visualizzaDocumentoDaValidare);
+        $.ajax({
+            type: 'POST',
+            cache: false,
+            url: "/Moduli/CompilaModuloSceltaDestinazioneTFR",
+            data: {},
+            success: function (data) {
+                $("#boxModuliSceltaDestinazioneTfr-content").html(data)
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                //console.log('error visualizzaDocumentoDaValidare')
+                //console.dir(jqXHR);
+                swal({
+                    title: jqXHR.statusText,
+                    type: 'error',
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+            }
+        });
+    }
+
+    function visualizzaFile(idAllegato) {
+        var idModal = 'modal-viewer-temp-allegati'
+        RaiOpenAsyncModal('modal-viewer-temp-allegati', '/SceltaDestinazioneTfr/GetAllegatoTemporaneo', { idAllegato: idAllegato }, null, 'GET');
+    }
+
+    function visualizzaFilePdfCompilato(idAllegato) {
+        var idModal = 'modal-viewer-temp-allegati'
+        RaiOpenAsyncModal('modal-viewer-temp-allegati', '/SceltaDestinazioneTfr/GetAllegatoTemporaneoPdfCompilato', { idAllegato: idAllegato }, null, 'GET');
+    }
+</script>

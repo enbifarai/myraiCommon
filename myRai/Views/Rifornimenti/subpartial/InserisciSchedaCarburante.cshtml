@@ -1,0 +1,504 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model SchedaCarburante
+
+<div class="modal-backdrop fade in" onclick="confirmCloseSkCarb()"></div>
+<div class="modal-dialog modal-dialog-popin">
+    <div id="loading" class="loader hide">Loading&#8230;</div>
+
+    <div id="modal-buttons">
+        <span class="modal-close-botton-lg" aria-label="Close" onclick="confirmCloseSkCarb()">x</span>
+        <span class="modal-close-botton-xs visible-xs" aria-label="Close" onclick="confirmCloseSkCarb()">x</span>
+    </div>
+
+    <div id="modalContent" class="modal-content height100">
+        <div id="modalPanel" class="block block-themed block-transparent remove-margin-b">
+            <div id="modalHeader" class="block-header bg-cdf">
+                <span class="h3" style="font-weight: 100;">Inserimento Scheda Carburante Anno @Model.Anno</span>
+            </div>
+
+            <div id="hiddenFilePicker" style="width: 0px; height: 0px; overflow: hidden;">
+                <input id="inputAttachFile" type="file" name="browse" onchange="LoadAttachmentFile(this.files)" accept="@String.Join(" ", RifornimentiConfig.EstensioniFilePermesse)" />
+            </div>
+
+            <table id="TabRif_Template" hidden="hidden">
+                <tr class="TabRif_EditRow text-right">
+                    <td>
+                        <input class="TabRif_Field" type="hidden" name="RifornimentiInseriti[idxRow].StatoLavorazione" value="Inserito" />
+                        <blockquote class="b-thin" style="margin: 0; padding: 0px">
+                            <input class="TabRif_Field form-control text-center datetimepicker" name="RifornimentiInseriti[idxRow].Data" required="required" placeholder="gg/mm/aaaa" data-date-format="DD/MM/YYYY" data-locale="it" data-date-min-date="01/01/@Model.Anno" data-date-max-date="12/31/@Model.Anno" autocomplete="off" />
+                        </blockquote>
+                    </td>
+                    <td>
+                        <input class="TabRif_Field form-control" type="time" name="RifornimentiInseriti[idxRow].Orario" required="required" placeholder="hh:mm" autocomplete="off" />
+                    </td>
+                    <td>
+                        <input class="TabRif_Field form-control text-right" type="number" name="RifornimentiInseriti[idxRow].Quantita" min="0.01" max="99.99" step="0.01" required="required" autocomplete="off" />
+                    <td>
+                        <input class="TabRif_Field form-control text-right" type="number" name="RifornimentiInseriti[idxRow].Importo" min="0.01" max="150.00" step="0.01" required="required" autocomplete="off" />
+                    <td>
+                        <input class="TabRif_Field form-control text-right" type="number" name="RifornimentiInseriti[idxRow].ContaKm" min="1" max="999999" step="1" required="required" autocomplete="off" />
+                    <td>
+                        <select class="TabRif_Field form-control form-control-sm mb-3" name="RifornimentiInseriti[idxRow].Nazione" required="required">
+                            @foreach ( var item in RifornimentiConfig.TipiNazione )
+                            {
+                                <option value="@item">@item</option>
+                            }
+                            <option value="" hidden="hidden" disabled="disabled" selected="selected"></option>
+                        </select>
+                    </td>
+                    <td class="actions text-center" style="white-space: nowrap">
+                        <i class="fa fa-refresh" onclick="undoRow(this);" style="margin: 5px 5px;"></i>
+                        <i class="fa fa-trash-o" onclick="confirmDeleteRowSkCarb(this);" style="margin: 5px 5px;"></i>
+                    </td>
+                </tr>
+
+                <tr class="TabRif_EmptyRow">
+                    <td colspan="10" style="padding-top: 10px;">Prego usare il pulsante "+ Aggiungi Rifornimento" per inserire i rifornimenti.</td>
+                </tr>
+            </table>
+
+            <div id="containerFormSkCarb" style="margin: 10px;">
+                <form id="formSkCarb" method="post" onsubmit="event.preventDefault(); confirmSaveSkCarb();">
+
+                    @Html.HiddenFor( m => m.Anno )
+                    @Html.HiddenFor( m => m.IdSkCarb )
+                    @Html.HiddenFor( m => m.idxEvidenziaRif )
+                    @Html.HiddenFor( m => m.FileNameSkCarb )
+                    @Html.HiddenFor( m => m.FileContentSkCarb )
+
+                    <div id="sezLoadAttachSkCarb" style="margin-top: 30px;">
+
+                        <div id="sceltaTipoCarb" class="form-group">
+                            <div class="col-sm-5 text-bold h5">
+                                Tipo Carburante
+                            </div>
+                            <div class="col-sm-5" style="min-width: 180px;">
+                                @Html.DropDownListFor( n => n.TipoCarb , new SelectList( RifornimentiConfig.TipiCarburante ) , new { @class = "form-control form-control-sm mb-3" } )
+                                @Html.ValidationMessageFor( n => n.TipoCarb )
+                            </div>
+                            <div class="col-sm-2"></div>
+                        </div>
+
+                        <div id="sceltaTipoSk" class="form-group">
+                            <div class="col-sm-5 text-bold h5">
+                                Tipo Scheda Carburante
+                            </div>
+                            <div class="col-sm-5" style="min-width: 180px;">
+                                @Html.DropDownListFor( n => n.TipoSkCarb , new SelectList( RifornimentiConfig.TipiSkCarburante ) , new { @class = "form-control form-control-sm mb-3" } )
+                                @Html.ValidationMessageFor( n => n.TipoSkCarb )
+                            </div>
+                            <div class="col-sm-2"></div>
+                        </div>
+
+                        <div id="insertTarga" class="form-group">
+                            <div class="col-sm-5 text-bold h5">
+                                Targa Veicolo
+                            </div>
+                            <div class="col-sm-2" style="min-width: 180px;">
+                                @Html.TextBoxFor( n => n.TargaAssociata , new { @class = "form-control" , required = "required" , maxlength = "7" , style = "text-transform:uppercase" } )
+                                @Html.ValidationMessageFor( n => n.TargaAssociata )
+                            </div>
+                            <div class="col-sm-4"></div>
+                        </div>
+
+                        <div id="UploadFileSkCarburante" class="form-group">
+                            <div class="col-sm-5 text-bold h5" style="line-height: 22px; margin-top: 0px;">
+                                File allegato
+                                <br />
+                                (unico PDF con scheda carburante e scontrini)
+                            </div>
+                            <div class="col-sm-7">
+                                @if ( string.IsNullOrWhiteSpace( Model.IdSkCarb ) || string.IsNullOrWhiteSpace( Model.FileNameSkCarb ) )
+                                {
+                                    <button type="button" onclick="choiseFile();" class="col-sm-4 btn btn-default">Seleziona Allegato</button>
+                                    <label id="fileNameAllegatoSelez" style="width: 200px; margin-left: 20px;">@Model.FileNameSkCarb</label>
+                                }
+                                else
+                                {
+                                    @Html.ActionLink( "Vedi Allegato" , "getFile_Ricevuta" , "Rifornimenti" , new { @idDoc = Model.IdSkCarb } , new { target = "_blank" , @class = "btn btn-primary" } )
+                                    @*<button type="submit" onclick="resetFilePicker(); submitSkCarb();" name="Funzione" value="removeAttachFile" formnovalidate class="btn btn-default" style="margin-left: 20px;">Cambia Allegato</button>*@
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="sezInsertRifSkCarb" class="col-sm-12 container-fluid dt-bootstrap4 no-footer" style="margin-top: 15px;">
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped mb-0 dataTable no-footer text-right h5" id="datatable-editable" role="grid">
+                                <thead>
+                                    <tr role="row">
+                                        <th style="text-align: center; min-width: 130px; max-width: 200px;">Data</th>
+                                        <th style="text-align: center; min-width: 90px;">Orario</th>
+                                        <th style="text-align: center; min-width: 110px;">Quantità (lt)</th>
+                                        <th style="text-align: center; min-width: 110px;">Importo (€)</th>
+                                        <th style="text-align: center; min-width: 110px;">ContaKm (Km)</th>
+                                        <th style="text-align: center; min-width: 110px;">Nazione</th>
+                                        <th style="text-align: center; min-width: 50px;">Azioni</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="TabRif">
+
+                                    @if ( Model.RifornimentiInseriti != null && Model.RifornimentiInseriti.Count( ) > 0 )
+                                    {
+                                        for ( int i = 0 ; i < Model.RifornimentiInseriti.Count( ) ; i++ )
+                                        {
+                                            if ( Model.RifornimentiInseriti[i].StatoLavorazione == "Inserito" )
+                                            {
+                                                <tr class="TabRif_EditRow">
+                                                    <td>
+                                                        <input class="TabRif_Field" type="hidden" name="RifornimentiInseriti[idxRow].StatoLavorazione" value="@Model.RifornimentiInseriti[i].StatoLavorazione" />
+                                                        <blockquote class="b-thin" style="margin: 0; padding: 0px">
+                                                            <input class="TabRif_Field form-control text-center datetimepicker" name="RifornimentiInseriti[idxRow].Data" value="@Model.RifornimentiInseriti[i].Data" required="required" placeholder="gg/mm/aaaa" data-date-format="DD/MM/YYYY" data-locale="it" data-date-min-date="01/01/@Model.Anno" data-date-max-date="12/31/@Model.Anno" autocomplete="off" />
+                                                            @Html.ValidationMessageFor( n => n.RifornimentiInseriti[i].Data )
+                                                        </blockquote>
+                                                    </td>
+                                                    <td>
+                                                        <input class="TabRif_Field form-control" type="time" name="RifornimentiInseriti[idxRow].Orario" value="@(Model.RifornimentiInseriti[i].Orario.HasValue ? Model.RifornimentiInseriti[i].Orario.Value.ToString("hh\\:mm") : "")" required="required" autocomplete="off" />
+                                                        @Html.ValidationMessageFor( n => n.RifornimentiInseriti[i].Orario )
+                                                    </td>
+                                                    <td>
+                                                        <input class="TabRif_Field form-control text-right" type="number" name="RifornimentiInseriti[idxRow].Quantita" value="@Model.RifornimentiInseriti[i].Quantita" min="0.01" max="99.99" step="0.01" required="required" autocomplete="off" />
+                                                        @Html.ValidationMessageFor( n => n.RifornimentiInseriti[i].Quantita )
+                                                    </td>
+                                                    <td>
+                                                        <input class="TabRif_Field form-control text-right" type="number" name="RifornimentiInseriti[idxRow].Importo" value="@Model.RifornimentiInseriti[i].Importo" min="0.01" max="150.00" step="0.01" required="required" autocomplete="off" />
+                                                        @Html.ValidationMessageFor( n => n.RifornimentiInseriti[i].Importo )
+                                                    </td>
+                                                    <td>
+                                                        <input class="TabRif_Field form-control text-right" type="number" name="RifornimentiInseriti[idxRow].ContaKm" value="@Model.RifornimentiInseriti[i].ContaKm" min="1" max="999999" step="1" required="required" autocomplete="off" />
+                                                        @Html.ValidationMessageFor( n => n.RifornimentiInseriti[i].ContaKm )
+                                                    </td>
+                                                    <td>
+                                                        <select class="TabRif_Field form-control text-right form-control-sm mb-3" name="RifornimentiInseriti[idxRow].Nazione">
+                                                            @foreach ( var item in RifornimentiConfig.TipiNazione )
+                                                            {
+                                                                if ( item == @Model.RifornimentiInseriti[i].Nazione )
+                                                                {
+                                                                    <option value="@item" selected="selected">@item</option>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <option value="@item">@item</option>
+                                                                }
+                                                            }
+                                                        </select>
+                                                        @Html.ValidationMessageFor( n => n.RifornimentiInseriti[i].Nazione )
+                                                    </td>
+                                                    <td class="actions text-center" style="white-space: nowrap;">
+                                                        <i class="fa fa-refresh" onclick="undoRow(this);" style="margin: 6px 6px;"></i>
+                                                        <i class="fa fa-trash-o" onclick="confirmDeleteRowSkCarb(this);" style="margin: 6px 6px;"></i>
+                                                    </td>
+                                                </tr>
+                                            }
+                                            else
+                                            {
+                                                <tr class="TabRif_LockRow">
+                                                    <td style="text-align: center;">
+                                                        <input class="TabRif_Field" type="hidden" name="RifornimentiInseriti[idxRow].StatoLavorazione" value="@Model.RifornimentiInseriti[i].StatoLavorazione" />
+                                                        <input class="TabRif_Field" type="hidden" name="RifornimentiInseriti[idxRow].Data" value="@Model.RifornimentiInseriti[i].Data" />
+                                                        <input class="TabRif_Field" type="hidden" name="RifornimentiInseriti[idxRow].Orario" value="@Model.RifornimentiInseriti[i].Orario" />
+                                                        <input class="TabRif_Field" type="hidden" name="RifornimentiInseriti[idxRow].Quantita" value="@Model.RifornimentiInseriti[i].Quantita" />
+                                                        <input class="TabRif_Field" type="hidden" name="RifornimentiInseriti[idxRow].Importo" value="@Model.RifornimentiInseriti[i].Importo" />
+                                                        <input class="TabRif_Field" type="hidden" name="RifornimentiInseriti[idxRow].ContaKm" value="@Model.RifornimentiInseriti[i].ContaKm" />
+                                                        <input class="TabRif_Field" type="hidden" name="RifornimentiInseriti[idxRow].Nazione" value="@Model.RifornimentiInseriti[i].Nazione">
+                                                        @(Model.RifornimentiInseriti[i].Data.HasValue ? Model.RifornimentiInseriti[i].Data.Value.ToShortDateString( ) : "")
+                                                    </td>
+                                                    <td style="text-align: left; padding-left: 23px;">@(Model.RifornimentiInseriti[i].Orario.HasValue ? Model.RifornimentiInseriti[i].Orario.Value.ToString( "hh\\:mm" ) : "")</td>
+                                                    <td style="text-align: right; padding-right: 36px;">@Model.RifornimentiInseriti[i].Quantita.Replace( "." , "," )</td>
+                                                    <td style="text-align: right; padding-right: 36px;">@Model.RifornimentiInseriti[i].Importo.Replace( "." , "," )</td>
+                                                    <td style="text-align: right; padding-right: 36px;">@Model.RifornimentiInseriti[i].ContaKm</td>
+                                                    <td style="text-align: left; padding-left: 24px;">@Model.RifornimentiInseriti[i].Nazione</td>
+                                                    <td class="action text-center"><i class="fa fa-lock"></i></td>
+                                                </tr>
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr class="TabRif_EmptyRow">
+                                            <td colspan="10" style="text-align: left; padding-top: 10px;">Prego usare il pulsante "Aggiungi Rifornimento" per inserire i rifornimenti.</td>
+                                        </tr>
+                                    }
+
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="sezButtonsOptions" class="col-md-12">
+                        <button type="button" onclick="addRow();" class="btn btn-primary">+ Aggiungi Rifornimento</button>
+
+                        <button type="submit" class="btn btn-primary" style="float: right;">Salva Scheda Carburante</button>
+
+                        @* @if (!String.IsNullOrWhiteSpace(Model.IdSkCarb))
+                            {
+                                <button type="button" onclick="confirmDeleteSkCarb()" class="btn" style="float: right;">Elimina Scheda Carburante</button>
+                            }*@
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    (function ($) {
+        var idx = parseInt(@Model.idxEvidenziaRif);
+        highlightRow(idx);
+        initDatePicker();
+        setTimeout(function () { ShowAlert(); }, 300);
+
+        //Per browser che non implementano <input type=number> con cultura italiana come IE<12
+        var isIE = false || !!document.documentMode;
+        if (isIE == true) {
+            $(".TabRif_Field").each(function (id, field) {
+                var value = $(field).attr("value");
+                if (value != null) { value = value.replace(".", ","); };
+                $(field).attr("value", value);
+            });
+        };
+
+    }).apply(this, [jQuery]);
+
+    function highlightRow(idx) {
+        $(".TabRif_EditRow:gt(0), .TabRif_LockRow").eq(idx).find("blockquote").addClass("warning");
+    };
+
+    function ShowAlert() {
+        var ReturnMessage = '@Model.ReturnMessage';
+        if (ReturnMessage != "") {
+            swal(ReturnMessage);
+        };
+    };
+
+    function deleteRow(row) {
+        $(row).parents("tr:first").remove();
+        var rows = $(".TabRif_EditRow:gt(0), .TabRif_LockRow");
+        if (rows.length < 1) {
+            $(".TabRif_EmptyRow:first").clone().show().appendTo("#TabRif");
+        };
+    };
+
+    function undoRow(row) {
+        var newRow = $(".TabRif_EditRow").first().clone().show();
+        $(row).parents("tr:first").replaceWith(newRow);
+        initDatePicker();
+    };
+
+    function addRow() {
+        $(".TabRif_EmptyRow").hide();
+
+        var rows = $(".TabRif_EditRow:gt(0), .TabRif_LockRow");
+        if (rows.length < 9) {
+            var newrow = $(".TabRif_EditRow:first").clone().show();
+            $(newrow).appendTo("#TabRif");
+            initDatePicker();
+        }
+        else {
+            swal("Non è possibile inserire più di 9 rifornimenti per scheda carburante");
+        };
+    };
+
+    function submitSkCarb() {
+        $(".TabRif_EditRow:gt(0), .TabRif_LockRow").each(function (idx, row) {
+
+            $(row).find(".TabRif_Field").each(function (id, field) {
+                var name = $(field).attr("name");
+                if (name != null) { name = name.replace("idxRow", idx); };
+                $(field).attr("name", name);
+
+                //Per browser che non implementano <input type=number> con cultura italiana come IE<12
+                //Permette di accettare input numerici con separatore decimale "." o ","
+                var value = $(field).val();
+                if (value != null) { value = value.replace(",", "."); };
+                $(field).val(value);
+            });
+        });
+    };
+
+    function confirmSaveSkCarb() {
+        swal({
+            title: "I dati attualmente inseriti verrano salvati, continuare?",
+            html: "",
+            type: 'question',
+            showCloseButton: true,
+            showCancelButton: true,
+            confirmButtonText: 'Ok',
+            cancelButtonText: 'Annulla'
+        }).then(function () {
+            submitSkCarb();
+            $('#loading').removeClass('hide');
+            $.ajax({
+                url: "@Url.Action("getView_EditSkCarb_FormSubmitManager", "Rifornimenti")",
+                type: "POST",
+                data: $("#formSkCarb").serialize(),
+                success: function (view) {
+                    $("#containerModaleInsertSkCarb").html(view);
+                    $('#loading').addClass('hide');
+                },
+                fail: function (jqXHR, textStatus, errorThrown) {
+                    console.log('fails');
+                    $('#loading').addClass('hide');
+                },
+                always: function () {
+                    console.log('always');
+                    $('#loading').addClass('hide');
+                }
+            });
+        });
+    };
+
+    function confirmCloseSkCarb() {
+        swal({
+            title: "I dati non salvati verranno persi, continuare?",
+            html: "",
+            type: 'question',
+            showCloseButton: true,
+            showCancelButton: true,
+            confirmButtonText: 'Ok',
+            cancelButtonText: 'Annulla'
+        }).then(function () { $('#containerModaleInsertSkCarb').modal('hide'); });
+    };
+
+    function confirmDeleteRowSkCarb(row) {
+        swal({
+            title: "I dati del rifornimento verranno persi, continuare?",
+            html: "",
+            type: 'question',
+            showCloseButton: true,
+            showCancelButton: true,
+            confirmButtonText: 'Ok',
+            cancelButtonText: 'Annulla'
+        }).then(function () { deleteRow(row); });
+    };
+
+
+    function choiseFile() {
+        $("#inputAttachFile").trigger('click');
+    };
+
+    function LoadAttachmentFile(files) {
+        var file = files[0];
+        $("#FileNameSkCarb").val(file.name);
+
+        var fileReader = new FileReader();
+        fileReader.onload = function () {
+            fileReader.result;
+            $("#FileContentSkCarb").val(fileReader.result);
+        };
+        fileReader.readAsDataURL(file);
+        $("#fileNameAllegatoSelez").text(file.name);
+    };
+
+    function initDatePicker() {
+        jQuery('.datetimepicker').each(function () {
+            var $input = jQuery(this);
+
+            $input.datetimepicker({
+                useCurrent: true,
+                locale: moment.locale('' + ($input.data('locale') ? $input.data('locale') : '') + ''),
+                showTodayButton: $input.data('show-today-button') ? $input.data('show-today-button') : false,
+                showClear: $input.data('show-clear') ? $input.data('show-clear') : false,
+                showClose: $input.data('show-close') ? $input.data('show-close') : false,
+                sideBySide: $input.data('side-by-side') ? $input.data('side-by-side') : false,
+                inline: $input.data('inline') ? $input.data('inline') : false,
+
+                icons: {
+                    time: 'si si-clock',
+                    date: 'si si-calendar',
+                    up: 'si si-arrow-up',
+                    down: 'si si-arrow-down',
+                    previous: 'icons icon-arrow-left',
+                    next: 'icons icon-arrow-right',
+                    today: 'si si-size-actual',
+                    clear: 'si si-trash',
+                    close: 'si si-close'
+                }
+            })
+            .on("dp.change", function (e) {
+                $input.change();
+
+            })
+            .on("dp.show", function (e) {
+                $(e.currentTarget).val('');
+            });
+        });
+    };
+
+    @*
+    function initSpinner() {
+        if ($.isFunction($.fn['spinner'])) {
+            $(function () {
+                $('[data-plugin-spinner]').each(function () {
+                    var $this = $(this),
+                        opts = {};
+
+                    var pluginOptions = $this.data('plugin-options');
+                    if (pluginOptions)
+                        opts = pluginOptions;
+
+                    $this.themePluginSpinner(opts);
+                });
+            });
+        };
+    };
+    *@
+
+    @*
+    function initTimePicker() {
+        $(".timepicker").timepicker({
+            showMeridian: false,
+            showSeconds: false,
+            minuteStep: 1,
+            defaultTime: false,
+        });
+    };
+    *@
+
+    @*
+    function resetFilePicker() {
+        var $el = $("#inputAttachFile");
+        $el.wrap('<form>').closest('form').get(0).reset();
+        $el.unwrap();
+    };
+    *@
+
+    @*
+    function confirmDeleteSkCarb() {
+        swal({
+            title: "Sicuro di voler cancellare tutti i dati di questa scheda carburante?",
+            html: "",
+            type: 'question',
+            showCloseButton: true,
+            showCancelButton: false,
+            confirmButtonText: ' OK'
+        }).then(function () { deleteSkCarb(); });
+    }
+    *@
+
+    @*
+    function deleteSkCarb() {
+        $.ajax({
+            url: '@Url.Action("getView_DeleteSkCarb", "Rifornimenti")',
+            type: "POST",
+            cache: false,
+            data: { targetYear: "@Model.Anno", idSkCarbToDelete: "@Model.IdSkCarb" },
+            success: function (message) {
+                swal(message);
+                $('#containerModaleInsertSkCarb').modal('hide');
+                CambiaAnno(0);
+            },
+            error: function (data) {
+                swal("Errore: richiesta fallita");
+            }
+        });
+    };
+    *@
+
+</script>

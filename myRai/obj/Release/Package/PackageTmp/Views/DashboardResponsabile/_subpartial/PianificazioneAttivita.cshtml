@@ -1,0 +1,113 @@
+﻿@using myRaiCommonModel.DashboardResponsabile
+
+@model PianificazioneAttivitaVM
+
+<section class="panel">
+    <header class="panel-heading">
+        <h2 id="lblResSett" class="panel-title">Pianificazione attività</h2>
+        <div class="panel-actions  rai-panel-actions">
+            <div class="hidden-xs btn-action-icon-switch">
+                <button class="btn-action-icon" href="#" title="" data-attivo="false" onclick="filtraSoloErrori(this);"><i class="fa fa-calendar-o"></i></button>
+            </div>
+            <a href="#" aria-expanded="true" aria-labelledby="lblResSett" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+        </div>
+    </header>
+    <div id="" class="panel-body" style="padding:0px;">
+        @{
+            foreach (var sede in Model.SediGapp)
+            {
+                <div class="row" id="@sede.CodiceSede" style="cursor:pointer; height:48px; border-top: 1px solid #ddd; vertical-align: inherit;" data-id="@sede.CodiceSede" data-toggle="div-toggle" data-function="CaricaDati" data-params="@sede.CodiceSede">
+                    <div class="col-xs-8">
+                        <span class="sede-name rai-font-md-bold" style="margin-left:16px; display:inline;"><i data-item="font" id="div-toggle-row-@sede.CodiceSede" class="fa fa-angle-right" style="padding: 16px 8px 8px;"></i> @sede.CodiceSede</span> - <span class="rai-font-md"> @sede.DescrizioneSede </span>
+                    </div>
+                    <div class="col-xs-4 text-right" style="margin-top: 10px;">
+                        <span id="spinner_@sede.CodiceSede" style="height:48px; display:none;">
+                            <i class="fa fa-spinner fa-spin" style="margin-right: 3px;"></i> <span style="font-size:10px">Verifica pregresso in corso...</span>
+                        </span>
+                    </div>
+                </div>
+                <div id="tbody-@sede.CodiceSede" data-isdirty="false"></div>
+            }
+        }
+    </div>
+</section>
+
+<script type="text/javascript">
+    $(function () {
+        $('div[data-toggle="div-toggle"]').each(function () {
+            $(this).on('click', function () {
+                var i = $(this).find('i[data-item="font"]');
+                var id = $(this).data('id');
+                if ($(i).hasClass("fa fa-angle-right")) {
+                    // chiuso
+                    var fnName = $(this).data("function");
+                    var params = $(this).data("params");
+                    window[fnName](params);
+                    $(i).removeClass("fa fa-angle-right").addClass("fa fa-angle-down");
+                    $('#tbody-' + id).show();
+                }
+                else {
+                    $(i).removeClass("fa fa-angle-down").addClass("fa fa-angle-right");
+                    $('#tbody-' + id).hide();
+                }
+            });
+        });
+    })
+
+    function CaricaDati(sede) {
+        var isdirty = $('#tbody-' + sede).data('isdirty');
+        if (isdirty != null && isdirty.length > 0) {
+            if (isdirty != "true") {
+                $('#tbody-' + sede).html('<div class="text-center rai-loader">&nbsp;</div>');
+            }
+            else {
+                $('#spinner_' + sede).show();
+            }
+        }
+        else {
+            $('#tbody-' + sede).html('<div class= "text-center rai-loader">&nbsp;</div > ');
+        }
+
+        $.ajax({
+            url: '@(Url.Action("CaricaDatiSede", "DashboardResponsabile"))',
+            type: "POST",
+            data: JSON.stringify({
+                sede: sede
+            }),
+            contentType: "application/json; charset=utf-8",
+            success: function (response) {
+                $('#tbody-' + sede).html(response);
+                $('#tbody-' + sede).data('isdirty', 'true');
+                $('#tbody-' + sede).css('overflow-x', 'auto');
+                $('#spinner_' + sede).hide();
+            },
+            error: function (err) {
+                swal({
+                    title: "Si è verificato un errore\n",
+                    text: '',
+                    type: 'error',
+                    confirmButtonText: 'Ok',
+                    confirmButtonClass: 'btn btn-lg btn-primary',
+                    buttonsStyling: false
+                });
+                $('#tbody-' + sede).html('');
+                $('#tbody-' + sede).data('isdirty', 'false');
+                $('#spinner_' + sede).hide();
+            }
+        });
+    }
+
+    function filtraSoloErrori(current) {
+        var currentItem = $(current);
+        var isAttivo = ($(currentItem).data('attivo') == "true" ? true : false);
+
+        if (isAttivo) {
+            $('table[data-row="divTableGiornate"]').find('tr.senzaerrore').show();
+            $(currentItem).data('attivo', 'false');
+        }
+        else {
+            $('table[data-row="divTableGiornate"]').find('tr.senzaerrore').hide();
+            $(currentItem).data('attivo', 'true');
+        }
+    }
+</script>

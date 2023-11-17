@@ -1,0 +1,159 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@{
+    Layout = "~/Views/Shared/_layout2.cshtml";
+}
+
+@model DocDipendenteModel
+
+<section class="body">
+    @Html.Partial( "../Shared/header2" , new myRaiCommonModel.NotifichePopupModel( CommonHelper.GetCurrentUserMatricola( ) ) )
+    <div class="inner-wrapper">
+        @Html.Partial( "../Shared/sidebar3" , myRaiHelper.UtenteHelper.getSidebarModel(  ) )
+        <section role="main" class="content-body">
+            <main id="main-container">
+                <div class="content">
+                    <div class="row">
+                        <div class="col-sm-8">
+                            @{bool GappChiuso = false;}
+                            @if ( !UtenteHelper.GappChiuso( ) )
+                            {
+                                @Html.AsyncPartial( "docdipendente" , "listadoc" , null , TempData )
+                            }
+                            else
+                            {
+                                @Html.Partial( "_cics_chiuso" )
+                                GappChiuso = true;
+                            }
+                        </div>
+                        <div class="col-sm-4">
+                            <section class="panel">
+                                <header class="panel-heading">
+                                    <div class="panel-actions">
+                                        <a href="#" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+                                    </div>
+                                    <h2 class="panel-title">Carica un documento</h2>
+                                </header>
+                                <div class="panel-body" id="my-block">
+                                    <div class="widget-summary">
+                                        <div class="widget-summary-col widget-summary-col-icon">
+                                            <div class="summary-icon bg-cda">
+                                                <i class="icons icon-doc"></i>
+                                            </div>
+                                        </div>
+                                        <div class="widget-summary-col">
+                                            <div class="summary">
+                                                <h3 class="title" style="word-break:break-word;">Vuoi inserire un documento?</h3>
+                                            </div>
+                                            <div class="summary-footer">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @using ( Html.BeginForm( "Upload" , "DocDipendente" , FormMethod.Post , new { enctype = "multipart/form-data" } ) )
+                                    {
+                                        <input type="file" name="fileupload" id="fileupload" onchange="$('#filename').val($(this).val().substring( $(this).val().lastIndexOf('\\')+1));$('#filename').change();allowUpload();" style="opacity:0" />
+                                        <div class="input-group mb-md">
+                                            <span class="input-group-addon">Nome</span>
+                                            <input onkeyup="allowUpload()" id="note" name="note" class="form-control" placeholder="Nome documento">
+                                        </div>
+                                        <div class="input-group mb-md">
+                                            <span class="input-group-addon">File</span>
+                                            <input name="filename" onkeydown="return false" onchange="allowUpload()" id="filename" onclick="$('#fileupload').click()" type="text" class="form-control" placeholder="Scegli file">
+                                        </div>
+
+                                        @Html.DropDownListFor(x =>x.idTipologia, Model.listaTipologie ,"Scegli tipologia",
+                                        new { @class = "form-control",name="idTipologia", id="idTipologia" })
+
+                                        <br />
+                                        <input id="buttonUpload" data-enabled-if="note && idTipologia && fileupload"
+                                               class="btn btn-primary" onclick="return checkUpload()" type="submit" value="Upload"></input>
+
+                                    }
+                                    <span class="text-danger"><b>@Model.err</b></span>
+
+
+
+
+
+
+
+                                </div>
+                            </section>
+
+
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="modal fade right" id="doc-modal" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+                    <div class="modal-dialog modal-dialog-popin modal-lg">
+                        <div class="block-header bg-cdf" style="height: 0px; padding:0px;">
+                            <ul class="block-options visible-xs">
+                                <li>
+                                    <button data-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+                                </li>
+                            </ul>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+
+                        </div>
+                        <div class="modal-content" id="pdfcontent" style="text-align :center">
+                            <iframe style="width:100%;margin:8px;border:none" id="docframe"></iframe>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </main>
+
+            <!-- end: page -->
+        </section>
+    </div>
+
+
+    <aside id="sidebar-right" class="sidebar-right">
+        <div class="nano has-scrollbar">
+            <div class="nano-content" tabindex="0" style="right: -17px;">
+            </div>
+        </div>
+        <div class="nano-pane" style="opacity: 1; visibility: visible;">
+            <div class="nano-slider" style="height: 583px; transform: translate(0px, 0px);"></div>
+        </div>
+        </div>
+    </aside>
+
+
+</section>
+
+
+
+@section afterjs {
+    @Html.Raw( TempData["script"] )
+}
+
+@*@Html.Partial("../Richieste/_nuovarichiesta", Model.Raggruppamenti)
+
+    @Html.Partial("../Richieste/richiestapermesso")
+    @Html.Partial("../Richieste/_motivoRifiuto")
+    @Html.Partial("../Richieste/_validarifiutatutti")
+    @Html.Partial("../Richieste/richiestamaggiorazione")
+
+    @Html.Partial("../Richieste/_popupInizialePreSelezione")*@
+
+
+<div class="modal fade" id="giornata-modal" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+</div>
+<div class="modal fade" id="richiesta-modal" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+</div>
+<!-- FINE Partial view per modali -->
+
+<div id="pg-visible-xs" class="visible-xs"></div>
+<div id="pg-visible-sm" class="visible-sm"></div>
+<div id="pg-visible-md" class="visible-md"></div>
+<div id="pg-visible-lg" class="visible-lg"></div>
+
+

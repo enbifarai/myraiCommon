@@ -1,0 +1,103 @@
+﻿@using myRaiHelper;
+
+@model MyRaiServiceInterface.it.rai.servizi.digigappws.dayResponse
+
+@{
+    string codiceAssenza = "";
+}
+
+@if ( Model.timbrature != null && Model.timbrature.Count( ) == 0 )
+{
+    //se ci sono eccezioni ti macro
+    if ( Model.eccezioni != null && Model.eccezioni.Any( d => d.tipo_eccezione == "C" ) == true )
+    {
+        codiceAssenza = CommonHelper.ToTitleCase( Model.eccezioni.Where( d => d.tipo_eccezione == "C" ).FirstOrDefault( ).descrittiva_lunga );
+    }
+}
+
+@{
+    string ariaLabel = "";
+    if ( codiceAssenza == "" )
+    {
+        if ( Model.OrarioInBaseAingresso != null )
+        {
+            ariaLabel = "Il tuo orario di ingresso è " + Model.OrarioInBaseAingresso.OrarioDiIngresso + ".";
+            ariaLabel += "Il tuo orario di uscita è " + Model.OrarioInBaseAingresso.OrarioDiUscita + ".";
+        }
+        else if ( Model.orario != null )
+        {
+            ariaLabel = "Il tuo orario di ingresso è " + Model.orario.hhmm_entrata_48 + ".";
+            ariaLabel += "Il tuo orario di uscita è " + Model.orario.hhmm_uscita_48 + ".";
+        }
+    }
+}
+@if ( codiceAssenza == "" )
+{
+    <div class="rai-nav-fill bg-white rai-nav-margin">
+        <div class="rai-nav-fill-item bg-white" style="text-align: right;">
+            <a href="#" aria-label="">
+                <span class="icons icon-login h2" style="color:#c2cfd6;"></span>
+            </a>
+        </div>
+        <div class="rai-nav-fill-item-time bg-white" style="margin-right: 10px; margin-left: 10px; flex-grow: 1;">
+            @if ( Model.OrarioInBaseAingresso != null )
+            {
+                <span class="@(Model.OrarioInBaseAingresso.IngressoRed?"text-danger":"")">@Model.OrarioInBaseAingresso.OrarioDiIngresso</span>
+            }
+            else if ( Model.orario != null )
+            {
+                @Model.orario.hhmm_entrata_48
+            }
+            <span style="margin-left:10px; margin-right:10px;">&nbsp;</span>
+            @if ( Model.OrarioInBaseAingresso != null )
+            {
+                <span class="@(Model.OrarioInBaseAingresso.UscitaRed?"text-danger":"")">@Model.OrarioInBaseAingresso.OrarioDiUscita</span>
+            }
+            else if ( Model.orario != null )
+            {
+                @Model.orario.hhmm_uscita_48
+            }
+        </div>
+        <div class="rai-nav-fill-item bg-white rai-nav-last" style="text-align:left;">
+            <a href="#" aria-label="">
+                <span class="icons icon-logout h2" style="color:#c2cfd6;"></span>
+            </a>
+        </div>
+    </div>
+
+    if ( Model.OrarioInBaseAingresso != null && !String.IsNullOrWhiteSpace( Model.OrarioInBaseAingresso.DicituraSottoOrario ) )
+    {
+        <div class="row" style="text-align:center">
+            @Model.OrarioInBaseAingresso.DicituraSottoOrario
+        </div>
+    }
+}
+else
+{
+    <div class="widget-summary widget-summary-md" tabindex="0" aria-label="@ariaLabel">
+        <div class="widget-summary-col widget-summary-col-icon">
+            <div class="summary-icon bg-primary">
+                <i class="icons icon-calendar"></i>
+            </div>
+        </div>
+        <div class="widget-summary-col">
+            <div class="summary">
+                <h4 class="title">Sei in</h4>
+                <div class="info">
+                    <strong class="amount text-primary">@codiceAssenza </strong>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@{
+    var msg = CommonHelper.GetParametro<string>( EnumParametriSistema.MessaggioAssenteIngiustificato );
+}
+
+@if ( UtenteHelper.IsAbilitatoGapp( ) )
+{
+    <div class="rai-btn-fill" style="padding-top:15px;">
+        <a id="btnCercaIncentivati" class="btn full-width rai-btn-primary" title="Entra nella giornata" href="javascript:ShowPopupInizialeGoDate('@msg',false, '@(Model.giornata ==null?"": Model.giornata.data.ToString("dd/MM/yyyy"))')">Entra nella giornata</a>
+    </div>
+}

@@ -1,0 +1,85 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonModel.raiplace;
+@using MVCProject.Custom_Helpers;
+@using myRaiCommonManager;
+
+@model CestiniModel
+
+<style>
+    #SelectUser-error {
+        display: table-row;
+    }
+
+    #SelectUser-error {
+        display: table-row;
+    }
+</style>
+
+@using ( Ajax.BeginForm( "EditOrdine" , "Cestini" ,
+    new { } ,
+    new AjaxOptions
+    {
+        InsertionMode = InsertionMode.Replace ,
+        HttpMethod = "POST"
+    } ,
+    new
+    {
+        id = "form-AddRequest"
+    } ) )
+{
+    @Html.AntiForgeryToken( )
+    @Html.HiddenFor( m => m.richiestaCorrente.idOrdine )
+    @Html.HiddenFor( m => m.richiestaCorrente.codiceRichiesta )
+    @Html.HiddenFor( m => m.richiestaCorrente.dataInserimento )
+    @Html.HiddenFor( m => m.richiestaCorrente.idRichiesta )
+    @Html.HiddenFor( m => m.richiestaCorrente.progressivo )
+
+    if ( Model.ordine.DestinatarioCestino == myRai.Models.raiplace.DestinatarioEnum.Me )
+    {
+        @Html.Partial( "~/Views/RaiPlace/Cestini/subpartial/_singolaRichiestaMe.cshtml" )
+    }
+    else if ( Model.ordine.DestinatarioCestino == myRai.Models.raiplace.DestinatarioEnum.Interni )
+    {
+        @Html.Partial( "~/Views/RaiPlace/Cestini/subpartial/_singolaRichiestaInterni.cshtml" )
+    }
+    else if ( Model.ordine.DestinatarioCestino == myRai.Models.raiplace.DestinatarioEnum.Esterni )
+    {
+        @Html.Partial( "~/Views/RaiPlace/Cestini/subpartial/_singolaRichiestaEsterni.cshtml" )
+    }
+}
+
+<br />
+<br />
+<div class="row text-center">
+    <div class="col-sm-12">
+        <button class="cestini modifica btn btn-primary hidden medium-btn" onclick="javascript:editRequest();" type="button">MODIFICA RICHIESTA</button>
+        <button class="cestini annulla btn btn-primary hidden medium-btn" onclick="javascript:annulla();" type="button">ANNULLA MODIFICA</button>
+        <button class="cestini richiesta btn btn-primary hidden medium-btn" onclick="javascript:editRequest();" type="button">AGGIUNGI RICHIESTA</button>
+    </div>
+</div>
+<input id="tipo_DestinatarioCestino" type="hidden" value="@((int)Model.ordine.DestinatarioCestino)" />
+
+<script type="text/javascript">
+
+    function formatState(state) {
+        if (state.element == null || state.element.value == null || state.element.value == "") {
+            return state
+        }
+
+        var $state = $('<span value=' + state.element.value + ' data-prova="mia prova"><b>' + state.text + '</b> <label style="font-size:x-small;"> ' + state.element.dataset.description + '</label></span>');
+        return $state;
+    };
+
+    $('#richiestaCorrente_SelectTipoCestino').select2({
+        templateSelection: formatState,
+        templateResult: formatState
+    });
+
+    $('#richiestaCorrente_SelectTipoCestino').on("select2:selecting", function (e) {
+        var txt = e.params.args.data.text;
+        $('#richiestaCorrente_tipoCestino').val(txt);
+    });
+</script>

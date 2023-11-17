@@ -1,0 +1,124 @@
+﻿@model List<myRaiServiceHub.it.rai.servizi.hrpaga.ListaDatiDocumenti>
+
+@{
+    System.Web.Script.Serialization.JavaScriptSerializer ser = new System.Web.Script.Serialization.JavaScriptSerializer();
+    string json = ser.Serialize(Model);
+}
+
+@helper mostraData(string data)
+{
+    int anno = Convert.ToInt32(data.Substring(0, 4));
+    int mese = Convert.ToInt32(data.Substring(4, 2));
+    if (mese == 0)
+    {
+        @("Anno " + anno.ToString());
+    }
+    else
+    {
+        @(new DateTime(Convert.ToInt32(data.Substring(0, 4)), Convert.ToInt32(data.Substring(4, 2)), 1).ToString("MMMM yyyy"));
+    }
+}
+<script>
+    @Html.Raw("var jsmodel=" + json)
+    @Html.Raw("var matricolaDoc='" + ViewBag.matricola+ "'")
+</script>
+
+<div class="row push-10-t">
+    <div class="col-sm-12">
+        <div style="max-height:200px;overflow:hidden;overflow-y:auto;">
+            <table class="table rai-table rai-table-vcenter">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Data emissione</th>
+                        <th>Data competenza</th>
+                        <th>Descrizione</th>
+                        <th>Prg</th>
+                        <th>Note</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        if (Model != null && Model.Any())
+                        {
+                            Int32 prg = 0;
+                            string ultimaCompetenza = "";
+                            foreach (var item in Model)
+                            {
+                                if (ultimaCompetenza == item.DataCompetenza.Substring(0, 6))
+                                {
+                                    prg++;
+                                }
+                                else
+                                {
+                                    prg = 1;
+                                    ultimaCompetenza = item.DataCompetenza.Substring(0, 6);
+                                }
+                                <tr>
+                                    <td class="rai-font-md-neutral" style="font-size:18px;white-space:nowrap">
+                                        @if (item.FlagBlocco == 1)
+                                        {
+                                            <i class="fa fa-lock" aria-hidden="true" data-toggle="tooltip" data-placement="right" title="Bloccato"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="fa fa-unlock" aria-hidden="true" data-toggle="tooltip" data-placement="right" title="Sbloccato"></i>
+                                        }
+
+                                        @if (item.FlagStampa == 1)
+                                        {
+                                            <i class="fa fa-print" aria-hidden="true" data-toggle="tooltip" data-placement="right" title="Stampabile"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="fa fa-print" style="opacity:0.4" aria-hidden="true" data-toggle="tooltip" data-placement="right" title="Non stampabile"></i>
+                                        }
+
+                                        @if (item.FlagLetto == 1)
+                                        {
+                                            <i class="fa fa-check-circle-o" aria-hidden="true" data-toggle="tooltip" data-placement="right" title="Letto"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="fa fa-check-circle-o" style="opacity:0.4" aria-hidden="true" data-toggle="tooltip" data-placement="right" title="Non letto"></i>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="rai-font-md-neutral">
+                                            @mostraData(item.DataPubblicazione)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="rai-font-md-neutral">
+                                            @mostraData(item.DataCompetenza)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="rai-font-md-neutral">@item.DescrittivaTipoDoc</span>
+                                    </td>
+                                    <td>
+                                        <span class="rai-font-md-neutral">@prg</span>
+                                    </td>
+                                    <td>
+                                        <span class="rai-font-md-neutral">@(item.Nota + item.MessaggioCollegato)</span>
+                                    </td>
+                                    <td>
+                                        <a href="#" onclick="ShowPdfDoc('@item.ID', @item.DataCompetenza, '@item.DataContabile', '@item.DataPubblicazione','@item.Nota', '@item.DescrittivaTipoDoc');">
+                                            <i class="fa fa-file-o" style="font-size:18px;" aria-hidden="true" data-toggle="tooltip" data-placement="top" title="Apri documento"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            @Html.Partial("~/Views/Shared/_NoDati.cshtml")
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+

@@ -1,0 +1,84 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiData.Incentivi
+@model HrisTaskFilter
+
+@{
+    IncentiviEntities db = new IncentiviEntities();
+    List<SelectListItem> list = new List<SelectListItem>(){
+        new SelectListItem(){Value="",Text="Tutte"}
+    };
+    list.AddRange(db.XR_TSK_TIPOLOGIE.Select(x => x.COD_TIPOLOGIA).Distinct().OrderBy(x => x).Select(x => new SelectListItem() { Value = x, Text = x }));
+
+    List<SelectListItem> listSottotipologia = new List<SelectListItem>(){
+        new SelectListItem(){Value="",Text="Tutte"}
+    };
+    listSottotipologia.AddRange(db.XR_TSK_TIPOLOGIE.Where(x=>x.COD_SOTTOTIPOLOGIA!=null).Select(x => x.COD_SOTTOTIPOLOGIA).OrderBy(x => x).Select(x => new SelectListItem() { Value = x, Text = x }));
+}
+
+@using (Ajax.BeginForm("Elenco_Task", "DashboardController", new AjaxOptions
+{
+    InsertionMode = InsertionMode.Replace,
+    HttpMethod = "POST",
+    OnBegin = "$('#hris-task').addClass('rai-loader');",
+    UpdateTargetId = "hris-task",
+    OnSuccess = "$('#hris-task').removeClass('rai-loader');"
+}, new { id = "form-ricerca-task", @class = "", role = "search" }))
+{
+    <div class="form-group">
+        <div class="row push-10">
+            <div class="col-sm-12">
+                @Html.LabelFor(m => m.Tipologia, "Tipologia", new { @class = "rai-caption" })
+                @Html.RaiSelectFor(m => m.Tipologia, list)
+            </div>
+        </div>
+        <div class="row push-10">
+            <div class="col-sm-12">
+                @Html.LabelFor(m => m.Sottotipologia, "Sottotipologia", new { @class = "rai-caption" })
+                @Html.RaiSelectFor(m => m.Sottotipologia, listSottotipologia)
+            </div>
+        </div>
+        <div class="row push-10">
+            <div class="col-sm-12">
+                @Html.LabelFor(m => m.MatricolaCreatore, "Matricola", new { @class = "rai-caption" })
+                @Html.TextBoxFor(m => m.MatricolaCreatore, new { @class = "form-control" })
+            </div>
+        </div>
+        <div class="row push-10">
+            <div class="col-sm-12">
+                @Html.LabelFor(m => m.Esito, "Esito", new { @class = "rai-caption" })
+                @Html.TextBoxFor(m => m.Esito, new { @class = "form-control" })
+            </div>
+        </div>
+        <div class="row push-10">
+            <div class="col-sm-6">
+                @Html.LabelFor(m => m.DataDa, "Periodo da", new { @class = "rai-caption" })
+                <div class="input-group">
+                    <div class="input-group-addon">
+                        <i class="fa fa-calendar"></i>
+                    </div>
+                    @Html.TextBoxFor(m => m.DataDa, new { @class = "js-datetimepicker  form-control", data_format = "DD/MM/YYYY", data_locale = "it", placeholder = "Periodo da", autocomplete = "off" })
+                </div>
+            </div>
+            <div class="col-sm-6">
+                @Html.LabelFor(m => m.DataA, "Periodo a", new { @class = "rai-caption" })
+                <div class="input-group">
+                    <div class="input-group-addon">
+                        <i class="fa fa-calendar"></i>
+                    </div>
+                    @Html.TextBoxFor(m => m.DataA, new { @class = "js-datetimepicker  form-control", data_format = "DD/MM/YYYY", data_locale = "it", placeholder = "Periodo a", autocomplete = "off" })
+                </div>
+            </div>
+        </div>
+        <div class="row push-10 push-20-t">
+            <div class="col-sm-12">
+                @Html.RaiCheckBoxLabelFor(m=>m.EscludiSchedulati, "Escludi task schedulati", "")
+            </div>
+        </div>
+        <div class="row form-button">
+            <div class="col-sm-12 rai-btn-fill">
+                <input type="reset" class="btn rai-btn-secondary" />
+                <input type="submit" class="btn rai-btn-primary" value="Cerca"/>
+            </div>
+        </div>
+    </div>
+}

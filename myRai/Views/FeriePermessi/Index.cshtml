@@ -1,0 +1,219 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model FeriePermessiModel
+<!-- Icone -->
+@{
+    ViewBag.Title = "Ferie e Permessi";
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+}
+
+<style>
+    .info-container {
+        width: 100%;
+        overflow: hidden;
+        overflow-x: auto;
+    }
+
+    .info-scroll {
+        display: table;
+        width: 100%;
+    }
+
+    .info-item {
+        display: table-cell;
+        min-width: 110px;
+        padding: 5px 0px;
+    }
+
+    .info-container::-webkit-scrollbar {
+        height: 6px;
+        width: 4px;
+        border: 1px solid #d5d5d5;
+    }
+
+    .info-container::-webkit-scrollbar-track {
+        border-radius: 0;
+        background: #eeeeee;
+    }
+
+    .info-container::-webkit-scrollbar-thumb {
+        border-radius: 0;
+        background: #b0b0b0;
+    }
+</style>
+
+
+<section role="main" class="content-body" style="padding-top:10px">
+    <!-- start: page -->
+    <!-- Main Container -->
+    <main id="main-container">
+        <div class="content">
+            @{
+                int? annoRichiesto = (int?)SessionHelper.Get(SessionVariables.AnnoFeriePermessi);
+                if (annoRichiesto == null)
+                {
+                    annoRichiesto = DateTime.Now.Year;
+                }
+            }
+            <div class="row" style=" margin-top: 20px;">
+                <div class="col-xs-4" style="text-align: right;padding-top:10px">
+                    @if (annoRichiesto > DateTime.Now.Year - 4)
+                    {
+                        <span style="font-size: 20px" onclick="$('#waitmese').show();location.href='/feriepermessi?anno=@(annoRichiesto-1)'"
+                              class="glyphicon glyphicon-triangle-left text-primary pointer"></span>
+                    }
+                </div>
+                <div class="col-xs-4 text-center">
+                    <h2 class="text-primary" style="margin: 3px"><i id="waitmese" style="display:none;margin-right:6px" class="fa fa-spinner fa-spin"></i>@annoRichiesto</h2>
+                </div>
+                <div class="col-xs-1" style="text-align: left;padding-top:10px">
+                    @if (annoRichiesto < DateTime.Now.Year)
+                    {
+                        <span style="font-size: 20px" onclick="$('#waitmese').show();location.href='/feriepermessi?anno=@(annoRichiesto+1)'" class="glyphicon glyphicon-triangle-right  text-primary pointer"></span>
+                    }
+                </div>
+                <div class="col-xs-3" style="text-align: right">
+                    &nbsp;
+                </div>
+            </div>
+        </div>
+        <div class="row" style="padding-bottom: 20px;">
+            <div class="col-sm-12 text-center">
+                <a class="btn rai-btn-primary " href="javascript:showCalAnnuale(@annoRichiesto)">Riepilogo annuale</a>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-8">
+                @{bool GappChiuso = false;}
+                @if (UtenteHelper.GappChiuso())
+                {
+                    @Html.Partial("_cics_chiuso")
+                    GappChiuso = true;
+                    return;
+                }
+
+                @if (UtenteHelper.GetQuadratura() == Quadratura.Giornaliera)
+                {
+                    @Html.Partial("subpartial/poh_skeleton")
+                }
+
+                @if (Model.pianoFerieModel.dipendente.ferie.visualizzaFerie)
+                {
+                    @Html.Partial("subpartial/ferie_skeleton")
+                    @*@Html.RenderAsyncPanel(PanelType.Panel, "FE - Ferie", "getferie", "feriepermessi", true)*@
+                }
+                @if (Model.pianoFerieModel.dipendente.ferie.visualizzaFC)
+                {
+                    @Html.Partial("subpartial/permessiexfest_skeleton")
+                }
+                @if (Model.pianoFerieModel.dipendente.ferie.visualizzaPermessi)
+                {
+                    @Html.Partial("subpartial/permessiRetr_skeleton")
+                }
+                @if (Model.pianoFerieModel.dipendente.ferie.visualizzaPermessiGiornalisti)
+                {
+                    @Html.Partial("subpartial/permessiGiornalisti_skeleton")
+                }
+
+                @if (Model.pianoFerieModel.dipendente.ferie.visualizzaRecuperoNonLavorati)
+                {
+                    @Html.Partial("subpartial/recuperinonlavorati_skeleton")
+                }
+                @if (Model.pianoFerieModel.dipendente.ferie.visualizzaRecuperoRiposi)
+                {
+                    @Html.Partial("subpartial/recuperiMancatiRiposi_skeleton")
+                }
+                @if (Model.pianoFerieModel.dipendente.ferie.visualizzaRecuperoFestivi)
+                {
+                    @Html.Partial("subpartial/recuperiMancatiFestivi_skeleton")
+                }
+
+            </div>
+            <div class="col-sm-4">
+                @Html.Partial("subpartial/feriepermessiGraph_skeleton")
+                @if (UtenteHelper.IsAbilitatoGapp() && !UtenteHelper.GappChiuso())
+                {
+                    @*@Html.Partial( "EffettuaRichiesta" )*@
+
+
+                    @Html.RenderWidget(WidgetType.Normal, "Richieste" , "icons icon-flag" , "Da qui puoi fare le tue richieste" , action:
+                       new ActionTemplate()
+                       {
+                           Href = "JavaScript:ShowPopupIniziale('"+(myRai.Business.CommonManager.GetParametro<string>(EnumParametriSistema.MessaggioAssenteIngiustificato))+"')" ,
+                           Text = "Fai una richiesta"
+                       })
+
+                    @Html.Partial("subpartial/calendario_skeleton")
+                }
+
+            </div>
+        </div>
+
+    </main>
+</section>
+
+<div class="modal right fade" id="calendarioAnnuale-div" role="dialog" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-popin">
+
+        <div class="modal-content height100" id="calendarioAnnuale-content">
+
+
+
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal right fade" id="modal-pianifica-ferie" tabindex="-1" role="dialog" aria-labelledby="myModalLabel2">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header block-header bg-cdf">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel2">Pianifica le tue ferie</h4>
+            </div>
+            <div class="modal-body" id="modal-pianifica-ferie-body" style="min-height:93%;">
+            </div>
+        </div><!-- modal-content -->
+    </div><!-- modal-dialog -->
+</div><!-- modal -->
+
+@Html.Partial("../Richieste/_nuovarichiesta", Model.Raggruppamenti)
+@Html.Partial("../Richieste/_motivoRifiuto")
+
+<div class="modal fade" id="giornata-modal" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+</div>
+<div class="modal fade" id="richiesta-modal" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+</div>
+<!-- FINE Partial view per modali -->
+
+<div id="pg-visible-xs" class="visible-xs"></div>
+<div id="pg-visible-sm" class="visible-sm"></div>
+<div id="pg-visible-md" class="visible-md"></div>
+<div id="pg-visible-lg" class="visible-lg"></div>
+
+@section afterjs{
+    @Html.Raw(TempData["script"])
+
+    @*<script type="text/javascript">
+                $('a[data-target="#modal-pianifica-ferie"]').on('click', function () {
+                    var url = $(this).data('href');
+                    $.ajax({
+                        type: "GET",
+                        cache: false,
+                        async: false,
+                        url: url,
+                        success: function (response) {
+                            $('#modal-pianifica-ferie-body').html(response);
+                            $('#modal-pianifica-ferie').modal('show');
+                        },
+                        error: function (err) {
+                            location.reload();
+                        }
+                    });
+                });
+        </script>*@
+}

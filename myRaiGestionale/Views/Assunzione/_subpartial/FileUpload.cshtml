@@ -1,0 +1,135 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiCommonModel
+@using myRaiHelper
+@using myRaiData.Incentivi
+
+@model Assunzione_FileUploadVM
+
+@{
+    if ( Model != null && Model.Allegati != null && Model.Allegati.Any( ) )
+    {
+        foreach ( var m in Model.Allegati )
+        {
+            <tr id="riga-allegato-@m.Id" data-id="@m.Id" data-isprincipal="@(Model.Principale ? "1": "0")">
+                <td class="col-sm-8">
+                    <div class="widget-summary push-10">
+                        <div class="widget-summary-col widget-summary-col-icon">
+                            <div class="summary-icon" style=" font-size: 2rem;
+                                                width: 36px;
+                                                height: 36px;
+                                                line-height: 36px;
+                                                text-align: center;
+                                                background-color: #c2cfd6;
+                                                color: #516c7b;
+                                                -webkit-border-radius: 50%;
+                                                border-radius: 50%;">
+                                <i class="fa fa-file"></i>
+                            </div>
+                        </div>
+                        <div class="widget-summary-col">
+                            <div class="summary">
+                                <span id="nome-file-VSDIP-@m.Id" class="rai-font-md-bold" style="word-break: break-word;">@m.NomeFile</span>
+                                <br />
+                                <span id="total-VSDIP-@m.Id" class="rai-font-sm-neutral" style="word-break: break-word;">@(m.Length / 1000) KB</span>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td class="col-sm-4 text-right">
+                    <button class="btn rai-btn-small" id="visualizza-VSDIP-@m.Id" onclick="Assunzione_VisualizzaDocumentoTemporaneo('@m.Id')" aria-label="Visualizza" title="Visualizza" style="min-width:80px; margin-right: 5px;">Visualizza</button>
+
+                    @{
+                        if (Model.InModifica)
+                        {
+                            <button class="btn-action-icon" id="remove-VSDIP-@m.Id" onclick="Assunzione_CancellaUpl('@m.Id')"><i class="fa fa-trash-o"></i></button>
+                        }
+                        else
+                        {
+                            <button class="btn-action-icon" id="remove-VSDIP-@m.Id" onclick="Assunzione_CancellaUpl('@m.Id')"><i class="fa fa-trash-o"></i></button>
+                        }
+                    }
+                </td>
+            </tr>
+        }
+    }
+}
+<script type="text/javascript">
+    function Assunzione_VisualizzaDocumentoTemporaneo(idAllegato) {
+        RaiOpenAsyncModal('modal-viewer-temp-allegati', '/Assunzione/GetAllegatoTemporaneo', { idAllegato: idAllegato }, null, 'GET');
+    }
+
+    function Assunzione_CancellaUpl(idAllegato) {
+        if (event !== undefined)
+            event.preventDefault();
+
+        var isPrincipal = $('#riga-allegato-' + idAllegato).data('isprincipal');
+
+        swal({
+            title: 'Sei sicuro di voler eliminare il documento selezionato?',
+            type: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sì, elimina',
+            cancelButtonText: 'Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+            $.ajax({
+                url: "/Assunzione/EliminaAllegato",
+                type: "POST",
+                data: JSON.stringify({
+                    idAllegato: idAllegato
+                }),
+                contentType: "application/json; charset=utf-8",
+                dataType: 'html',
+                success: function (data) {
+                    swal({
+                        title: 'Documento eliminato correttamente',
+                        type: 'success',
+                        showConfirmButton: true,
+                        confirmButtonText: 'Ok',
+                        customClass: 'rai'
+                    });
+                    $('#riga-allegato-' + idAllegato).remove();
+                    $('#div-upload-principale').show();
+                    if (isPrincipal === 1) {
+                        var idDocOriginale = $('#identificativoAllegatoOriginale').val();
+                        if (idDocOriginale !== null && idDocOriginale !== "" && typeof idDocOriginale !== "undefined") {
+                            $('#identificativoAllegato').val(idDocOriginale);
+                            $('#identificativoAllegato').data('riposizionamento', 'true');
+                            $('#identificativoAllegato').data('contatore', '0');
+                        }
+                    }
+                    else {
+                        Assunzione_AbilitaButtonFase3();
+                    }
+                },
+                error: function (xhr, status) {
+                    swal({
+                        title: xhr.statusText,
+                        type: 'error',
+                        showConfirmButton: true,
+                        confirmButtonText: 'Ok',
+                        customClass: 'rai'
+                    });
+                }
+            });
+        });
+    }
+
+    function Assunzione_CancellaUplVirtuale(idAllegato) {
+        $('#riga-allegato-' + idAllegato).data('removed', 'true');
+        $('#riga-allegato-' + idAllegato).hide();
+        var isPrincipal = $('#riga-allegato-' + idAllegato).data('isprincipal');
+        if (isPrincipal === 1) {
+            var idDocOriginale = $('#identificativoAllegatoOriginale').val();
+            if (idDocOriginale !== null && idDocOriginale !== "" && typeof idDocOriginale !== "undefined") {
+                $('#identificativoAllegato').val(idDocOriginale);
+                $('#identificativoAllegato').data('riposizionamento', 'true');
+                $('#identificativoAllegato').data('contatore', '0');
+            }
+        }
+        else {
+            Assunzione_AbilitaButtonFase3();
+        }
+    }
+</script>

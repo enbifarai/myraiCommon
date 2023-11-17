@@ -1,0 +1,630 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model SectionMetersModel
+
+@*@if (Request.Browser.IsMobileDevice)
+    {
+        @Html.Partial("~/Views/Scrivania/subpartial/meters_mobile.cshtml")
+        return;
+    }*@
+
+@{
+    var countElem = 0;
+    var stringOne = "un giorno {0}";
+    var stringMulti = "{0} giorni {1}";
+    var listElem = new List<Tuple<double, string>>();
+    if (Model.FeCedute != 0)
+    {
+        countElem += 1;
+        //listElem.Add(new Tuple<double, string>(Model.FeCedute, Model.FeCedute==1?String.Format(stringOne, "ceduto"):String.Format(stringMulti, Model.FeCedute,"ceduti")));
+        listElem.Add(new Tuple<double, string>(Model.FeCedute, "cedute"));
+    }
+    if (Model.FeDonate != 0)
+    {
+        countElem += 1;
+        //listElem.Add(new Tuple<double, string>(Model.FeDonate, Model.FeDonate==1? String.Format(stringOne, "donati") : String.Format(stringMulti, Model.FeDonate, "donati")));
+        listElem.Add(new Tuple<double, string>(Model.FeDonate, "donate"));
+    }
+}
+
+
+@if ( myRai.Models.Utente.TipoDipendente( ) != "G" )
+{
+    <section class="rai panel">
+        <header class="panel-heading">
+            <div class="panel-actions">
+                <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblSitFeriePerm" aria-expanded="true"></a>
+
+            </div>
+
+            <h2 id="cont-arr" class="panel-title">Piano ferie 2021</h2>
+
+        </header>
+
+        <div class="panel-body" style="display: block;">
+
+            @Html.Partial( "~/Views/scrivania/subpartial/contatoripf.cshtml" )
+
+
+
+        </div>
+    </section>
+}
+@*else if ("326556,457816,019272,744353".Contains(myRai.Business.CommonManager.GetCurrentUserMatricola()))
+    {
+        <section class="rai panel">
+            <header class="panel-heading">
+                <div class="panel-actions">
+                    <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblSitFeriePerm" aria-expanded="true"></a>
+
+                </div>
+
+                <h2 id="cont-arr" class="panel-title">Piano ferie 2021</h2>
+
+            </header>
+
+            <div class="panel-body" style="display: block;">
+
+                @Html.Partial("~/Views/scrivania/subpartial/contatoripfG.cshtml")
+
+
+
+            </div>
+        </section>
+
+    }*@
+<div style="width: 100%">
+
+
+    <section class="rai panel">
+        <header class="panel-heading">
+            <div class="panel-actions">
+                <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblSitFeriePerm" aria-expanded="true"></a>
+
+            </div>
+
+            <h2 id="lblSitFeriePerm" class="panel-title">Situazione Ferie e Permessi</h2>
+
+        </header>
+        <div class="panel-body" style="display: block;">
+
+
+            @*ROW 3 GRAFICI -------------------------------------------------------------------------------------*@
+            @{
+                if ( Model.DatiScostamento != null )
+                {
+                    <div class="row push-20">
+                        <div class="col-xs-12 col-sm-4 col-md-4 col-lg-4 col-xl-4 no-padding-left no-padding-right">
+                            <div class="block block-transparent block-content-table no-margin-bottom">
+                                <div class="block-header block-content-mini">
+                                    <label class="rai-font-md">Giorni pianificati ad oggi</label>
+                                </div>
+                                <div class="block-content block-content-mini">
+                                    <div class="row">
+                                        <div class="col-xs-12 text-center">
+                                        @{ 
+                                            string tx = String.Format( "{0} di {1}" , Model.DatiScostamento.GiorniPianificatiAdOggi , Model.DatiScostamento.GiorniPianificati );
+                                        }
+                                            <label style="font-weight: 600; font-size: 24px;">@(tx)</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xs-12 col-sm-4 col-md-4 col-lg-4 col-xl-4 no-padding-left no-padding-right">
+                            <div class="block block-transparent block-content-table no-margin-bottom">
+                                <div class="block-header block-content-mini">
+                                    <label class="rai-font-md">Giorni effettivi ad oggi</label>
+                                </div>
+                                <div class="block-content block-content-mini">
+                                    <div class="row">
+                                        <div class="col-xs-12 text-center">
+                                            <label style="font-weight: 600; font-size: 24px;">@(Model.DatiScostamento.GiorniEffettivi)</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xs-12 col-sm-4 col-md-4 col-lg-4 col-xl-4 no-padding-left no-padding-right">
+                            <div class="block block-transparent block-content-table no-margin-bottom">
+                                <div class="block-header block-content-mini">
+                                    <label class="rai-font-md">Percentuale rispetto al piano ferie</label>
+                                </div>
+                                <div class="block-content block-content-mini">
+                                    <div class="row">
+                                        <div class="col-xs-12">
+                                            <div class="rai progress progress-chart progress-xl light" style="height: 23px;">
+                                                @{
+                                                    int percentuale = Model.DatiScostamento.Percentuale;
+                                                    int scostamento = Model.DatiScostamento.Scostamento;
+                                                    string txScostamento = "";
+
+                                                    txScostamento = Model.DatiScostamento.Scostamento.ToString( ) + "%";
+
+                                                    if ( Model.DatiScostamento.Scostamento < 100 )
+                                                    {
+                                                        int nuovo = ( percentuale * ( int ) scostamento ) / 100;
+                                                        <div class="progress-bar rai-bg-primary" role="progressbar" aria-valuenow="@nuovo" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                                                            <span class="sottotitolettoBox progress-bar-tooltip" id="span_before" style="line-height: 23px; font-size: 21px;">@(txScostamento)</span>
+                    </div>
+
+                                                        int nuovaPercentuale = percentuale - nuovo;
+
+                                                        <div class="progress-bar rai-bg-primary" role="progressbar" aria-valuenow="@(nuovaPercentuale.ToString())" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                                                            <span class="sottotitolettoBox progress-bar-tooltip" id="span_before" style="line-height: 23px; font-size: 21px;"></span>
+                                                        </div>
+
+                                                        int diffRimasta = 100 - ( nuovaPercentuale + nuovo );
+
+                                                        <div class="progress-bar rai-bg-primary" role="progressbar" aria-valuenow="@(diffRimasta)" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                                                            <span class="sottotitolettoBox progress-bar-tooltip" id="span_before" style="line-height: 23px; font-size: 21px;"></span>
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="progress-bar rai-bg-primary" role="progressbar" aria-valuenow="@(percentuale.ToString())" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                                                            <span class="sottotitolettoBox progress-bar-tooltip" id="span_before" style="line-height: 23px; font-size: 21px;">@(txScostamento)</span>
+                                                        </div>
+
+                                                        int diffRimasta = 100 - percentuale;
+
+                                                        <div class="progress-bar rai-bg-primary" role="progressbar" aria-valuenow="@(diffRimasta.ToString())" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                                                            <span class="sottotitolettoBox progress-bar-tooltip" id="span_before" style="line-height: 23px; font-size: 21px;"></span>
+                                                        </div>
+                                                    }
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+
+            <div class="row">
+                <div class="col-sm-6 col-xs-12 no-padding-left no-padding-right">
+                    <div class="block block-transparent block-content-table no-margin-bottom">
+                        <div class="block-header block-content-mini">
+                            <label class="rai-font-md">Ferie</label>
+                        </div>
+                        <div class="block-content block-content-mini">
+                            <div class="rai-chart scrivania graf" aria-label="Ferie: @(Model.ferie.ferieUsufruite) fruite, @(Model.ferie.feriePianificate) pianificate, @(Model.ferie.ferieRimanenti) non pianificate" tabindex="0">
+                                <div class="gr_graf" style="overflow:hidden;"></div>
+                            </div>
+                            <div class="row push-15-t">
+                                <div class="col-xs-1 col-sm-2">&nbsp;</div>
+                                <div class="col-xs-10 col-sm-8">
+                                    <table style="width: 100%">
+                                        <tr>
+                                            <td class="td-10 text-right">
+                                                <div class="rai-chart-legend scrivania ct-series-a"></div>
+                                            </td>
+                                            <td class=" td-graf rai-font-md"><b>@Model.ferie.ferieUsufruite</b> fruite</td>
+                                            @if (countElem > 0)
+                                            {
+                                                <td class="td-10 text-right"><div class="rai-chart-legend scrivania ct-series-d"></div></td>
+                                                <td class=" td-graf rai-font-md"><b>@listElem[0].Item1</b> @listElem[0].Item2</td>
+                                            }
+                                            else
+                                            {
+                                                <td class="td-10 td-graf"></td>
+                                                <td class=" td-graf rai-font-md"></td>
+                                            }
+                                        </tr>
+                                        <tr>
+                                            <td class="td-10 text-right">
+                                                <div class="rai-chart-legend scrivania ct-series-b"></div>
+                                            </td>
+                                            <td class=" td-graf rai-font-md"><b>@Model.ferie.feriePianificate</b> pianificate</td>
+                                            <td class="td-10 text-right">
+                                                <div class="rai-chart-legend ct-series-c"></div>
+                                            </td>
+                                            <td class=" td-graf rai-font-md"><b>@Model.ferie.ferieRimanenti</b> non pian.</td>
+                                        </tr>
+                                        @if (countElem > 1)
+                                        {
+                                            <tr>
+                                                <td class="td-10 text-right  text-right">
+                                                    <div class="rai-chart-legend scrivania ct-series-c"></div>
+                                                </td>
+                                                <td class=" td-graf rai-font-md"><b>@listElem[1].Item1</b> @listElem[1].Item2</td>
+                                                <td class="td-10 text-right"></td>
+                                                <td class=" td-graf rai-font-md"></td>
+                                            </tr>
+                                        }
+                                    </table>
+                                </div>
+                                <div class="col-xs-1 col-sm-2">&nbsp;</div>
+                            </div>
+                            <script>
+                        @{
+                            //percentuali per donut (somma 100):
+                            // float tot = Model.ferie.ferieSpettanti + Model.ferie.ferieAnniPrecedenti;
+                            float tot = Model.ferie.feriePianificate + (Model.ferie.ferieRimanenti>0?Model.ferie.ferieRimanenti:0) + Model.ferie.ferieUsufruite;
+                            int s1 = ((int)(((Model.ferie.feriePianificate) / tot) * 100));
+                            int s2 = ((int)((Model.ferie.ferieRimanenti / tot) * 100));
+                            if (s2 < 0)
+                            {
+                                s2 = 0;
+                            }
+                            int s3 = ((int)((Model.ferie.ferieUsufruite / tot) * 100));
+                            int s4 = ((int)((Model.ferie.ferieAnniPrecedenti / tot) * 100));
+                            Model.ferie.ferieRimanenti =(float)Math.Round(Model.ferie.ferieRimanenti,1);
+                         }
+
+                                var graf = new Chartist.Pie('.gr_graf', { series: [ @s3,@s1,@s2] },
+                        {
+                            donut: true,
+                            donutWidth: 20,
+                            startAngle: 270,
+                            total: 200,
+                            showLabel: false
+                        });
+                        graf.on("created", function () {
+                            var svg = document.getElementsByTagName('svg')[0];
+                            svg.setAttribute("transform", "scale(2)");
+                            svg.setAttribute("style", "position:relative;top:70px;");
+                            var newElementText = document.createElementNS("http://www.w3.org/2000/svg", 'text');
+                            var newElementTspan = document.createElementNS("http://www.w3.org/2000/svg", 'tspan');
+                            newElementText.setAttribute("y", "45%");
+                            newElementText.setAttribute("font-size", "12px");
+                            newElementText.setAttribute("style", "font-size:12px");
+                            newElementText.setAttribute("fill", "#333");
+                            newElementText.setAttribute("class", "rai-font-text-heading");
+                            newElementTspan.setAttribute("x", (svg.clientWidth / 2).toString());
+                            newElementTspan.setAttribute("text-anchor", "middle");
+                            newElementTspan.textContent = "@Model.ferie.ferieRimanenti";
+                            newElementText.appendChild(newElementTspan);
+                            svg.appendChild(newElementText)
+                        });
+
+                            </script>
+                        </div>
+                    </div>
+                </div>
+
+                @if (Model.pianoF.dipendente.ferie.visualizzaFC)
+                {
+                    <div class="col-sm-3 col-xs-12  no-padding-left no-padding-right">
+                        <div class="block block-transparent block-content-table no-margin-bottom">
+                            <div class="block-header block-content-mini">
+                                <label class="rai-font-md">Perm.retr.(Ex F.Naz.)</label>
+                            </div>
+                            <div class="block-content block-content-mini text-center">
+                                <div class="chart1" style="margin-top: 15px;" aria-label="Permessi retribuiti (ex Festività Nazionali): @(Model.ferie.exFestivitaUsufruite) fruite, @(Model.ferie.exFestivitaRimanenti) non pianificate" tabindex="0"
+                                     @*data-percent="@( (Model.ferie.exFestivitaRimanenti / (Model.ferie.exFestivitaRimanenti + Model.ferie.exFestivitaUsufruite)) * 100)"*@
+                                     data-percent="@( (Model.ferie.exFestivitaRimanenti / (Model.ferie.exFestivitaSpettanti )) * 100)">
+                                </div>
+                                <span class="graph-center-value">@Model.ferie.exFestivitaRimanenti</span>
+                                <div class="row">
+                                    <div class="col-xs-2">&nbsp;</div>
+                                    <div class="col-xs-8 text-center">
+                                        <table style="width: 100%">
+                                            @*<tr>
+                                                <td class="td-20 text-right">
+                                                    <div class="rai-chart-legend bg-default"></div>
+                                                </td>
+                                                <td class="td-80 td-graf rai-font-md"><b>@Model.ferie.exFestivitaUsufruite</b> fruite</td>
+
+                                                </tr>*@
+                                            <tr>
+                                                <td class="td-20 text-right">
+                                                    <div class="rai-chart-legend bg-cda"></div>
+                                                </td>
+                                                <td class="td-80 td-graf rai-font-md"><b>@Model.ferie.exFestivitaRimanenti</b> non pian.</td>
+
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    <div class="col-xs-2">&nbsp;</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                @if (Model.pianoF.dipendente.ferie.visualizzaPermessiGiornalisti)
+                {
+                    <div class="col-sm-3 col-xs-12  no-padding-left no-padding-right">
+                        <div class="block block-transparent block-content-table no-margin-bottom">
+                            <div class="block-header block-content-mini">
+                                <label class="rai-font-md">Perm.straord. giornalisti</label>
+                            </div>
+                            <div class="block-content block-content-mini text-center">
+                                <div class="chart1" style="margin-top: 15px;" aria-label="Permessi giornalisti: @(Model.ferie.permessiGiornalistiUsufruiti) fruite, @(Model.ferie.permessiGiornalistiRimanenti) non pianificate" tabindex="0"
+                                     @*data-percent="@( (Model.ferie.permessiGiornalistiRimanenti / (Model.ferie.permessiGiornalistiRimanenti + Model.ferie.permessiGiornalistiUsufruiti)) * 100)"*@
+                                     data-percent="@( (Model.ferie.permessiGiornalistiRimanenti / Model.ferie.permessiGiornalistiSpettanti) * 100)">
+                                </div>
+                                <span class="graph-center-value">@Model.ferie.permessiGiornalistiRimanenti</span>
+                                <div class="row">
+                                    <div class="col-xs-2">&nbsp;</div>
+                                    <div class="col-xs-8">
+                                        <table style="width: 100%">
+                                            @*<tr>
+                                                <td class="td-20 text-right">
+                                                    <div class="rai-chart-legend bg-default"></div>
+                                                </td>
+                                                <td class="td-80 td-graf rai-font-md"><b>@Model.ferie.permessiGiornalistiUsufruiti</b> fruiti</td>
+
+                                                </tr>*@
+                                            <tr>
+                                                <td class="td-20 text-right">
+                                                    <div class="rai-chart-legend bg-cda"></div>
+                                                </td>
+                                                <td class="td-80 td-graf rai-font-md"><b>@Model.ferie.permessiGiornalistiRimanenti</b> non pian.</td>
+
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    <div class="col-xs-2">&nbsp;</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @if (Model.pianoF.dipendente.ferie.visualizzaPermessi)
+                {
+                    <div class="col-sm-3 col-xs-12 no-padding-left no-padding-right">
+                        <div class="block block-transparent block-content-table no-margin-bottom">
+                            <div class="block-header block-content-mini">
+                                <label class="rai-font-md">Permesso retribuito</label>
+                            </div>
+                            <div class="block-content block-content-mini text-center">
+                                <div class="chart2" style="margin-top: 15px;" tabindex="0" aria-label="Permessi Retribuiti: @(Model.ferie.permessiUsufruiti) fruiti, @(Model.ferie.permessiRimanenti) non pianificati"
+                                     @*data-percent="@( (Model.ferie.permessiRimanenti / (
+                        Model.ferie.permessiRimanenti + Model.ferie.permessiUsufruiti + Model.ferie.permessiRichiesti+Model.ferie.permessiPianificati)
+
+                        ) * 100)"*@
+                                     data-percent="@((Model.ferie.permessiRimanenti/Model.ferie.permessiSpettanti)*100)">
+                                </div>
+                                <span class="graph-center-value">@Model.ferie.permessiRimanenti</span>
+                                <div class="row">
+                                    <div class="col-xs-2">&nbsp;</div>
+                                    <div class="col-xs-8">
+                                        <table style="width: 100%">
+                                            @*<tr>
+                                                <td class="td-20 text-right">
+                                                    <div class="rai-chart-legend bg-default"></div>
+                                                </td>
+                                                <td class="td-80 td-graf rai-font-md"><b>@Model.ferie.permessiUsufruiti</b> fruite</td>
+
+                                                </tr>*@
+                                            <tr>
+                                                <td class="td-20 text-right">
+
+                                                    <div class="rai-chart-legend bg-cda"></div>
+                                                </td>
+                                                <td class="td-80 td-graf rai-font-md"><b>@Model.ferie.permessiRimanenti</b> non pian.</td>
+
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    <div class="col-xs-2">&nbsp;</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else if (Model.pianoF.dipendente.ferie.visualizzaRecuperoRiposi)
+                {
+                    var countElemMr = 0;
+                    var listElemMR = new List<Tuple<double, string>>();
+                    if (Model.MRCeduti != 0)
+                    {
+                        countElemMr += 1;
+                        //listElemMR.Add(new Tuple<double, string>(Model.MRCeduti, Model.MRCeduti == 1 ? String.Format(stringOne, "ceduto") : String.Format(stringMulti, Model.MRCeduti, "ceduti")));
+                        listElemMR.Add(new Tuple<double, string>(Model.MRCeduti, "ceduti"));
+                    }
+                    if (Model.MRDonati != 0)
+                    {
+                        countElemMr += 1;
+                        //listElemMR.Add(new Tuple<double, string>(Model.MRDonati, Model.MRDonati == 1 ? String.Format(stringOne, "donati") : String.Format(stringMulti, Model.MRDonati, "donati")));
+                        listElemMR.Add(new Tuple<double, string>(Model.MRDonati, "donati"));
+                    }
+
+                    <div class="col-sm-3 col-xs-12 no-padding-left no-padding-right">
+                        <div class="block block-transparent block-content-table no-margin-bottom">
+                            <div class="block-header block-content-mini">
+                                <label class="rai-font-md">Mancato riposo</label>
+                            </div>
+                            <div class="block-content block-content-mini text-center">
+                                <div class="chart2" style="margin-top: 15px;" tabindex="0" aria-label="Mancati riposi: @(Model.ferie.recuperiMancatiRiposiUsufruiti) fruiti, @(Model.ferie.recuperiMancatiRiposiRimanenti) rimanenti"
+                                     data-percent="@( (Model.ferie.recuperiMancatiRiposiRimanenti / (Model.ferie.recuperiMancatiRiposiRimanenti + Model.ferie.recuperiMancatiRiposiUsufruiti)) * 100)">
+                                </div>
+                                <span class="graph-center-value">@Model.ferie.recuperiMancatiRiposiRimanenti</span>
+                                <div class="row">
+                                    <div class="col-xs-2">&nbsp;</div>
+                                    <div class="col-xs-8">
+                                        <table style="width: 100%">
+                                            <tr>
+                                                <td class="td-20 text-right">
+                                                    <div class="rai-chart-legend bg-default"></div>
+                                                </td>
+                                                <td class="td-80 td-graf rai-font-md"><b>@Model.ferie.recuperiMancatiRiposiUsufruiti</b> fruiti</td>
+
+                                            </tr>
+                                            <tr>
+                                                <td class="td-20 text-right">
+
+                                                    <div class="rai-chart-legend bg-cda"></div>
+                                                </td>
+                                                <td class="td-80 td-graf rai-font-md"><b>@Model.ferie.recuperiMancatiRiposiRimanenti</b> non pian.</td>
+
+                                            </tr>
+                                            @if (countElemMr > 0)
+                                            {
+                                                <tr>
+                                                    <td class="td-10 text-right"><div class="rai-chart-legend bg-feedback-error"></div></td>
+                                                    <td class=" td-graf rai-font-md"><b>@listElemMR[0].Item1</b> @listElemMR[0].Item2</td>
+                                                    @if (countElemMr > 1)
+                                                    {
+                                                        <td class="td-10 td-graf text-right"><div class="rai-chart-legend bg-feedback-error"></div></td>
+                                                        <td class=" td-graf rai-font-md"><b>@listElemMR[1].Item1</b> @listElemMR[1].Item2</td>
+                                                    }
+                                                    else
+                                                    {
+                                                        <td class="td-10 td-graf"></td>
+                                                        <td class=" td-graf rai-font-md"></td>
+                                                    }
+                                                </tr>
+                                            }
+                                        </table>
+                                    </div>
+                                    <div class="col-xs-2">&nbsp;</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @*-------------------------------------------------------------------------*@
+
+
+            </div>
+
+
+            @*ROW 3 DATI -----------------------------------------------------------------------------------------*@
+
+            @{
+                if ( Model.IsGiornalista && ( Model.PXCVisibili || Model.MNVisibili ) )
+                {
+                    <div class="row">
+                        <div class="col-lg-12 col-sm-12 text-center" style=" margin-top: 25px; ">
+                            <div class="row" style="margin-bottom: 5px;border-top: 2px dotted #eee;margin-top: 10px;font-weight: 700;">
+                                @{
+                                    string masterClass = "";
+                                    string subClass = "";
+                                    if ( Model.PXCVisibili && Model.MNVisibili )
+                                    {
+                                        masterClass = "col-lg-6 col-xs-6 no-pad-left no-pad-right";
+                                        subClass = "col-xs-10 col-md-offset-1";
+                                    }
+                                    else
+                                    {
+                                        masterClass = "col-lg-12 col-xs-12 no-pad-left no-pad-right";
+                                        subClass = "col-xs-11";
+                                    }
+
+                                    if ( Model.PXCVisibili )
+                                    {
+                                        <div class="@(masterClass)" style="padding: 15px;margin-bottom: 0px;">
+                                            <div class="col-xs-1">
+                                                <pie class=""></pie>
+                                            </div>
+                                            <div class="@(subClass)" style="margin-top: 12px;text-align: left;">
+                                                HAI DIRITTO A @(Model.TotalePXC) PXC
+                                            </div>
+                                        </div>
+                                    }
+                                    if ( Model.MNVisibili )
+                                    {
+                                        <div class="@(masterClass)" style="padding: 15px;margin-bottom: 0px;">
+                                            <div class="col-xs-1">
+                                                <pie class=""></pie>
+                                            </div>
+                                            <div class="@(subClass)" style="margin-top: 12px;text-align: left;">
+                                                @{
+                                                    double totale = Model.MNAnnoPrecedente + Model.TotaleMN;
+                                                    string testo = "";
+                                                    testo = String.Format( "HAI DIRITTO A {0} MN" , totale );
+
+                                                    if ( Model.MNAnnoPrecedente > 0 )
+                                                    {
+                                                        testo = String.Format( "HAI DIRITTO A {0} MN DI CUI {1} CON SCADENZA IL {2}" ,
+                                                        totale ,
+                                                        Model.MNAnnoPrecedente ,
+                                                        Model.ScadenzaMNAnnoPrecedente.GetValueOrDefault( ).ToString( "dd/MM/yyyy" ) );
+                                                    }
+
+                                                }
+                                                @testo
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+
+            @if (Model.spettanzapg == "1")
+            {
+                <div class="row" tabindex="0" aria-label="Hai ancora al PG">
+                    <div class="col-lg-12 col-sm-12 text-center">
+                        <div class="row" style="border-top: 2px dotted #eee;margin-top: 10px;font-weight: 700;">
+                            <div class="col-xs-2 col-md-offset-3">
+                                <pie class=""></pie>
+                            </div>
+                            <div class="col-xs-7" style="margin-top: 12px;text-align: left;">
+                                HAI DIRITTO AL PG
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            }
+
+            @if (Model.spettanzapg == "2")
+            {<div class="row" tabindex="0" aria-label="Hai ancora un quarto di PG">
+                    <div class="col-lg-12 col-sm-12 text-center" style=" margin-top: 25px; ">
+                        <div class="row" style="border-top: 2px dotted #eee;margin-top: 10px;font-weight: 700;">
+                            <div class="col-xs-2 col-md-offset-3">
+                                <pie class="fifty"></pie>
+                            </div>
+                            <div class="col-xs-7" style="margin-top: 12px;text-align: left;">
+                                HAI ANCORA UN QUARTO DI PG
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            }
+            @if (Model.spettanzapg == "3")
+            {
+                <div class="row" tabindex="0" aria-label="Hai già usufruito del PG">
+                    <div class="col-lg-12 col-sm-12 text-center" style=" margin-top: 25px; ">
+                        <div class="row" style="border-top: 2px dotted #eee;margin-top: 10px;font-weight: 700;">
+                            <div class="col-xs-3 col-md-offset-3">
+                                <pie class=""></pie>
+                            </div>
+                            <div class="col-xs-7" style="margin-top: 12px;text-align: left;">
+                                HAI GIÀ USUFRUITO DEL PG
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+
+        <div class="panel-footer">
+            <div class="rai-btn-fill">
+                <a class="btn rai-btn-small @(Model.HaAssenzeIngiustificate || Model.HaGiorniCarenza ? " disable" : "" )"
+                   href="/Feriepermessi" aria-label="Vedi il riepilogo ferie e permessi">Vedi riepilogo</a>
+
+                @if ( myRai.Models.Utente.IsAbilitatoGapp( ) )
+                {
+                    <a class="btn rai-btn-small  @(Model.HaAssenzeIngiustificate || Model.HaGiorniCarenza ? " disable" : "" )"
+                       href="javascript:ShowPopup('',1)" aria-label="Chiedi ferie o permessi">Chiedi permessi o ferie</a>
+                }
+            </div>
+        </div>
+    </section>
+</div>
+
+<script type="text/javascript">
+    $(function () {
+        $(".progress-bar").each(function () {
+            each_bar_width = $(this).attr('aria-valuenow');
+            $(this).width(each_bar_width + '%');
+        });
+    });
+</script>

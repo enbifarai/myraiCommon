@@ -1,0 +1,279 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiCommonModel
+@using myRaiHelper
+@using Newtonsoft.Json
+@using System.Web.Script.Serialization
+
+@model AttributiAggiuntivi
+
+@{
+    Layout = null;
+}
+
+@{ 
+    var a = Model;
+    string visibile = a.Visible ? "" : "display:none;";
+    string visibileSoloSinistra = a.VisibileSoloRead ? "display:none;" : "";
+    string lbID = "lb_" + a.Id;
+    string DBRefAttribute = a.DBRefAttribute;
+}
+
+<div class="col-xs-6">
+    @{
+        string tx = "";
+        if (a.Tipo == TipologiaAttributoEnum.Importo)
+        {
+            string txImporto = "0.00";
+
+            if (!String.IsNullOrEmpty(a.Valore))
+            {
+                txImporto = a.Valore;
+            }
+            txImporto = Convert.ToDouble(txImporto).ToString("N2");
+            tx = txImporto;
+        }
+        else if (a.Tipo == TipologiaAttributoEnum.Data)
+        {
+            if (a.Valore.Length > 10)
+            {
+                tx = a.Valore.Substring(0, 10);
+            }
+            if (a.Valore.Length == 10)
+            {
+                tx = a.Valore;
+            }
+        }
+        else
+        {
+            tx = a.Valore;
+        }
+
+        string label1 = a.Label + " ATTUALE";
+
+        @Html.Label(a.Id, label1, new { @class = "rai-caption" })
+        <br />
+        @Html.Label(a.Id, tx, new { @class = "rai-font-md", style = "margin-top: 15px;" })
+
+        @*if (a.Tipo == TipologiaAttributoEnum.Nota)
+            {
+                <br />
+            }
+            else
+            {
+                @Html.Label(a.Id, label1, new { @class = "rai-caption" })
+                <br />
+                @Html.Label(a.Id, tx, new { @class = "rai-font-md", style = "margin-top: 15px;" })
+            }*@
+    }
+</div>
+
+<div class="col-xs-6">
+    @{
+        if (a.Required)
+        {
+
+            @Html.LabelForRequiredObbl(x => a.Label, a.Label, new { @class = "rai-caption", style = visibileSoloSinistra, id = lbID, title = a.Label })
+        }
+        else
+        {
+            @Html.Label(a.Id, a.Label, new { @class = "rai-caption", id = lbID, title = a.Label, style = visibileSoloSinistra })
+        }
+
+        if (a.Tipo == TipologiaAttributoEnum.Data)
+        {
+            bool compilato = false;
+            if (!String.IsNullOrEmpty(a.ValoreInModifica))
+            {
+                compilato = true;
+            }
+
+            if (a.VisibileSoloRead)
+            {
+                compilato = true;
+                // se è visibile il solo dato di sinistra
+                // allora questa colonna va solo impostata con un campo nascosto
+                <input style="@(visibileSoloSinistra)" data-compilato="@(compilato.ToString().ToLower())" data-posizione="@(a.Ordinamento)" data-dbrefattribute="@(DBRefAttribute)" data-tipo="@((int)a.Tipo)" class="dem-customdata js-datetimepicker form-control" onchange="Dematerializzazione_MarkCompilato('@(a.Id)')" data-format="DD/MM/YYYY" data-locale="it" type="text" id="@(a.Id)" placeholder="@(a.Title)" value="@(a.ValoreInModifica)" data-hideinreadonly="@(a.HideInReadOnly)" @(a.Required ? "required=\"required\"" : "")>
+            }
+            else
+            {
+                <div id="calendario_@(a.Id)" class="input-group mb-md">
+                    <span onclick="$('#@(a.Id)').datetimepicker('show')" class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                    <input data-compilato="@(compilato.ToString().ToLower())" data-posizione="@(a.Ordinamento)" data-dbrefattribute="@(DBRefAttribute)" data-tipo="@((int)a.Tipo)" class="dem-customdata js-datetimepicker form-control" onchange="Dematerializzazione_MarkCompilato('@(a.Id)')" data-format="DD/MM/YYYY" data-locale="it" type="text" id="@(a.Id)" placeholder="@(a.Title)" value="@(a.ValoreInModifica)" data-hideinreadonly="@(a.HideInReadOnly)" @(a.Required ? "required=\"required\"" : "")>
+                </div>
+            }
+        }
+        else if (a.Tipo == TipologiaAttributoEnum.Numero)
+        {
+            <input data-posizione="@(a.Ordinamento)" data-dbrefattribute="@(DBRefAttribute)" style="width:100%;" data-tipo="@((int)a.Tipo)" id="@(a.Id)" name="@(a.Nome)" data-hideinreadonly="@(a.HideInReadOnly)" type="number" class="dem-customdata form-control form-control-value" placeholder="@(a.Title)" value="@(a.ValoreInModifica)" @(a.Required ? "required=\"required\"" : "") onchange="Dematerializzazione_MarkCompilato('@(a.Id)')" />
+        }
+        else if (a.Tipo == TipologiaAttributoEnum.Testo)
+        {
+            if (!String.IsNullOrEmpty(a.UrlLoadData))
+            {
+                if (a.VisibileSoloRead)
+                {
+                    // se è visibile il solo dato di sinistra
+                    // allora questa colonna va solo impostata con un campo nascosto
+                    <input data-hideinreadonly="@(a.HideInReadOnly)" data-posizione="@(a.Ordinamento)" data-dbrefattribute="@(DBRefAttribute)" style="width:100%; @(visibileSoloSinistra)" data-tipo="@((int)a.Tipo)" id="@(a.Id)" minlength="@(a.MinLength > 0 ? a.MinLength.ToString() : "")" maxlength="@(a.MaxLength > 0 ? a.MaxLength.ToString() : "")" type="text" class="dem-customdata form-control form-control-value dem-customdata" placeholder="@(a.Title)" value="@(a.ValoreInModifica)" @(a.Required ? "required=\"required\"" : "") onchange="Dematerializzazione_MarkCompilato('@(a.Id)')" />
+                }
+                else
+                {
+                    if (a.Required)
+                    {
+                        @Html.RaiAsyncSelectFor(x => a.ValoreInModifica, a.UrlLoadData, minCharInput: 1, expandView: false, tipoFiltro: SelectFilterType.StartsWith, showCodeInDropdown: false, attributes: new { required = (a.Required ? "required" : ""), data_tipo = (int)a.Tipo, id = a.Id, @class = "dem-customdata", style = visibileSoloSinistra, data_dbrefattribute = DBRefAttribute, data_posizione = a.Ordinamento, data_hideinreadonly = a.HideInReadOnly }, onSelectchange: (a.Required ? "Dematerializzazione_MarkCompilato('" + a.Id + "')" : ""))
+                    }
+                    else
+                    {
+                        @Html.RaiAsyncSelectFor(x => a.ValoreInModifica, a.UrlLoadData, minCharInput: 1, expandView: false, tipoFiltro: SelectFilterType.StartsWith, showCodeInDropdown: false, attributes: new { data_tipo = (int)a.Tipo, id = a.Id, @class = "dem-customdata", style = visibileSoloSinistra, data_dbrefattribute = DBRefAttribute, data_posizione = a.Ordinamento, data_hideinreadonly = a.HideInReadOnly })
+                    }
+                }
+            }
+            else
+            {
+                <input data-hideinreadonly="@(a.HideInReadOnly)" data-posizione="@(a.Ordinamento)" data-dbrefattribute="@(DBRefAttribute)" style="width:100%; @(visibileSoloSinistra)" data-tipo="@((int)a.Tipo)" id="@(a.Id)" minlength="@(a.MinLength > 0 ? a.MinLength.ToString() : "")" maxlength="@(a.MaxLength > 0 ? a.MaxLength.ToString() : "")" type="text" class="dem-customdata form-control form-control-value dem-customdata" placeholder="@(a.Title)" value="@(a.ValoreInModifica)" @(a.Required ? "required=\"required\"" : "") onchange="Dematerializzazione_MarkCompilato('@(a.Id)')" />
+            }
+        }
+        else if (a.Tipo == TipologiaAttributoEnum.Select)
+        {
+            @Html.DropDownList(a.Id,
+                    a.SelectListItems,
+                    a.Title,
+                    new { @class = "form-control dem-customdata", style=visibileSoloSinistra, data_dbrefattribute = DBRefAttribute, data_posizione = a.Ordinamento, data_tipo = a.Tipo, data_hideinreadonly = a.HideInReadOnly })
+        }
+        else if (a.Tipo == TipologiaAttributoEnum.Nota)
+        {
+            <textarea data-hideinreadonly="@(a.HideInReadOnly)" data-posizione="@(a.Ordinamento)" data-dbrefattribute="@(DBRefAttribute)" style="@(visibileSoloSinistra)" minlength="@(a.MinLength > 0 ? a.MinLength.ToString() : "")" maxlength="@(a.MaxLength > 0 ? a.MaxLength.ToString() : "")" data-tipo="@((int)a.Tipo)" id="@a.Id" class="dem-customdata form-control" title="@a.Title" rows="5" cols="200" @(a.Required ? "required=\"required\"" : "") onchange="Dematerializzazione_MarkCompilato('@(a.Id)')">@a.ValoreInModifica</textarea>
+        }
+        else if (a.Tipo == TipologiaAttributoEnum.Radio)
+        {
+            if (a.SelectListItems != null && a.SelectListItems.Any())
+            {
+                int count = 0;
+                foreach (var s in a.SelectListItems)
+                {
+                    count++;
+                    <div data-check-group="scelta-@(a.Nome)" class="form-check radio-custom radio-info primary" style="margin-top:10px; @(visibileSoloSinistra)">
+                        <input data-hideinreadonly="@(a.HideInReadOnly)" data-posizione="@(a.Ordinamento)" data-dbrefattribute="@(DBRefAttribute)" data-originalid="@(a.Id)" data-tipo="@((int)a.Tipo)" id="@(a.Id)_@(count)" name="@(a.Nome)" class="dem-customdata" data-check-group="scelta-@(a.Nome)" type="radio" value="@(s.Value)" @(s.Selected ? "checked=\"checked\"" : "") @(a.Required ? "required=\"required\"" : "") onchange="Dematerializzazione_MarkCompilato('@(a.Id)_@(count)')" />
+                        <label id="radio_@(a.Id)_@(count)" for="@(a.Nome)" class="rai-font-md">
+                            @(s.Text)
+                        </label>
+                    </div>
+
+                    <text>
+                        <script type="text/javascript">
+                            $('#@(a.Id)_@(count)').on('change', function () {
+                                Dematerializzazione_MarkCompilato('@(a.Id)_@(count)');
+                            });
+                        </script>
+                    </text>
+                }
+            }
+        }
+        else if (a.Tipo == TipologiaAttributoEnum.Importo)
+        {
+            string txImporto = "0.00";
+
+            if (!String.IsNullOrEmpty(a.Valore))
+            {
+                txImporto = a.Valore;
+            }
+            txImporto = Convert.ToDouble(txImporto).ToString("N2");
+            int tipo = (int)a.Tipo;
+
+            if (a.Required)
+            {
+                @Html.TextBoxFor(x => a.Id, new { id = a.Id, @class = "dem-customdata form-control form-control-value dem-importo", style = visibileSoloSinistra + " width: 100%", data_type = "currency", pattern = @"^\d{1,3}(.\d{3})*(\,\d+)?$", placeholder = a.Title, required = "required", value = a.ValoreInModifica, data_tipo = tipo, data_dbrefattribute = DBRefAttribute, data_posizione = a.Ordinamento, data_hideinreadonly = a.HideInReadOnly })
+            }
+            else
+            {
+                @Html.TextBoxFor(x => a.Id, new { id = a.Id, @class = "dem-customdata form-control form-control-value dem-importo", style = visibileSoloSinistra + "width: 100%", data_type = "currency", pattern = @"^\d{1,3}(.\d{3})*(\,\d+)?$", placeholder = a.Title, value = a.ValoreInModifica, data_tipo = tipo, data_dbrefattribute = DBRefAttribute, data_posizione = a.Ordinamento, data_hideinreadonly = a.HideInReadOnly })
+            }
+        }
+        else if (a.Tipo == TipologiaAttributoEnum.FixedHiddenValue)
+        {
+            <input data-hideinreadonly="@(a.HideInReadOnly)" data-posizione="@(a.Ordinamento)" data-dbrefattribute="@(DBRefAttribute)" style="display:none; width:100%; @(visibileSoloSinistra)" data-tipo="@((int)a.Tipo)" id="@(a.Id)" minlength="@(a.MinLength > 0 ? a.MinLength.ToString() : "")" maxlength="@(a.MaxLength > 0 ? a.MaxLength.ToString() : "")" type="text" class="dem-customdata form-control form-control-value" placeholder="@(a.Title)" value="@(a.Valore)" @(a.Required ? "required=\"required\"" : "") onchange="Dematerializzazione_MarkCompilato('@(a.Id)')" />
+        }
+        else if (a.Tipo == TipologiaAttributoEnum.SelectEstesa)
+        {
+            if (a.VisibileSoloRead)
+            {
+                // se è visibile il solo dato di sinistra
+                // allora questa colonna va solo impostata con un campo nascosto
+                <input data-hideinreadonly="@(a.HideInReadOnly)" data-posizione="@(a.Ordinamento)" data-dbrefattribute="@(DBRefAttribute)" style="width:100%; @(visibileSoloSinistra)" data-tipo="@((int)a.Tipo)" id="@(a.Id)" minlength="@(a.MinLength > 0 ? a.MinLength.ToString() : "")" maxlength="@(a.MaxLength > 0 ? a.MaxLength.ToString() : "")" type="text" class="dem-customdata form-control form-control-value dem-customdata" placeholder="@(a.Title)" value="@(a.ValoreInModifica)" @(a.Required ? "required=\"required\"" : "") onchange="Dematerializzazione_MarkCompilato('@(a.Id)')" />
+            }
+            else
+            {
+                @Html.RaiAsyncSelectFor(model => a.Id, a.UrlLoadData, 1, "Seleziona una sede", "Cerca", true, a.OnSelect, a.OnChange, new { id = a.Id, @class = "form-control dem-customdata", style = visibileSoloSinistra, data_dbrefattribute = DBRefAttribute, data_posizione = a.Ordinamento, data_tipo = a.Tipo, data_hideinreadonly = a.HideInReadOnly }, tipoFiltro: myRaiHelper.SelectFilterType.AllStartsWith, showCodeInDropdown: true)
+            }
+        }
+        else if (a.Tipo == TipologiaAttributoEnum.Check)
+        {
+            <div class="rai-checkbox" style="margin-top:10px; @(visibileSoloSinistra)">
+                <input type="checkbox" id="check_@(a.Id)" for="@(a.Nome)" checked="">
+                <label for="@(a.Nome)">@a.Valore</label>
+            </div>
+        }
+
+        <text>
+            <script type="text/javascript">
+                $('#@(a.Id)').on('change', function () {
+                    Dematerializzazione_MarkCompilato('@(a.Id)');
+                });
+            </script>
+        </text>
+
+        if (a.Azioni != null && a.Azioni.Any())
+        {
+            foreach (var az in a.Azioni)
+            {
+                string evento = az.Event.GetDescription();
+                if (az.Functions != null && az.Functions.Any())
+                {
+                    foreach (var f in az.Functions)
+                    {
+                        <text>
+                            <script type="text/javascript">
+                            @{
+                                string fxName = "";
+                                if (!String.IsNullOrEmpty(f.CallerArguments))
+                                {
+                                    fxName = String.Format("{0}({1})", f.Name, f.Arguments);
+                                }
+                                else
+                                {
+                                    fxName = String.Format("{0}()", f.Name);
+                                }
+
+                                <text>
+
+                                var @(f.Name) = new Function("@f.Arguments", @(Html.Raw(Json.Encode(f.Body))));
+
+                                </text>
+                            }
+
+                            $('#@(az.TargetID)').on('@(evento)', function () {
+                                @{
+                                    if (!String.IsNullOrEmpty(f.CallerArguments))
+                                    {
+                                        <text>
+                                        var fx = @(Html.Raw(Json.Encode(String.Format("{0}('{1}')", f.Name, f.CallerArguments))));
+                                        </text>
+                                    }
+                                    else
+                                    {
+                                        <text>
+                                        var fx = @(Html.Raw(Json.Encode(String.Format("{0}()", f.Name))));
+                                        </text>
+
+                                    }
+                                }
+                                eval(fx);
+                            });
+                            </script>
+                        </text>
+                    }
+                }
+            }
+        }
+    }
+</div>

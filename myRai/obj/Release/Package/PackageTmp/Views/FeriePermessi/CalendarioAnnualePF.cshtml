@@ -1,0 +1,2822 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model CalendarioFerie
+
+<style>
+    #calendarioAnnuale-pf-content.modal-content {
+        background-color: #F6F8F8;
+        overflow-y: hidden;
+        height: 100vh;
+    }
+
+        #calendarioAnnuale-pf-content.modal-content > .block > .block-header {
+            background-color: #ffffff;
+            height: 60px;
+        }
+
+    @@media only screen and (max-width: 768px) {
+        #calendarioAnnuale-pf-content.modal-content > .block > .block-header {
+            padding: 15px 10px;
+        }
+    }
+
+    #calendarioAnnuale-pf-content.modal-content > .block > .block-header > .block-options {
+        position: absolute;
+        right: 15px;
+        top: 15px;
+    }
+
+    @@media only screen and (max-width: 768px) {
+        #calendarioAnnuale-pf-content.modal-content > .block > .block-header > .block-options {
+            right: 10px;
+        }
+    }
+
+    #calendarioAnnuale-pf-content.modal-content > .block > .block-content {
+        overflow-y: auto;
+        height: 93vh;
+    }
+
+    @@media (resolution:1.25dppx) {
+        #calendarioAnnuale-pf-content.modal-content > .block > .block-content {
+            overflow-y: auto;
+            height: 92vh;
+        }
+    }
+
+    @@media (min-resolution:1.5dppx) {
+        #calendarioAnnuale-pf-content.modal-content > .block > .block-content {
+            overflow-y: auto;
+            height: 89vh;
+        }
+    }
+
+    .div-table-calendario-pf {
+        padding-top: 20px !important;
+    }
+
+
+
+
+
+
+    #pf2021-content.modal-content {
+        background-color: #F6F8F8;
+        overflow-y: hidden;
+        height: 100vh;
+    }
+
+        #pf2021-content.modal-content > .block > .block-header {
+            background-color: #ffffff;
+            height: 60px;
+        }
+
+    @@media only screen and (max-width: 768px) {
+        #pf2021-content.modal-content > .block > .block-header {
+            padding: 15px 10px;
+        }
+    }
+
+    #pf2021-content.modal-content > .block > .block-header > .block-options {
+        position: absolute;
+        right: 15px;
+        top: 15px;
+    }
+
+    @@media only screen and (max-width: 768px) {
+        #pf2021-content.modal-content > .block > .block-header > .block-options {
+            right: 10px;
+        }
+    }
+
+    #pf2021-content.modal-content > .block > .block-content {
+        overflow-y: auto;
+        height: 93vh;
+    }
+
+    @@media (resolution:1.25dppx) {
+        #pf2021-content.modal-content > .block > .block-content {
+            overflow-y: auto;
+            height: 92vh;
+        }
+    }
+
+    @@media (min-resolution:1.5dppx) {
+        #pf2021-content.modal-content > .block > .block-content {
+            overflow-y: auto;
+            height: 89vh;
+        }
+    }
+
+    .div-table-calendario-pf {
+        padding-top: 20px !important;
+    }
+</style>
+
+<div class="rai block block-transparent remove-margin">
+    <input type="hidden" id="arretratiRR15" value="@Model.ArretratiRR15" />
+    <input type="hidden" id="arretratiRN15" value="@Model.ArretratiRN15" />
+    <input type="hidden" id="arretratiFE15" value="@Model.ArretratiFE15" />
+    <input type="hidden" id="arretratiRRRN15" value="@Model.ArretratiRRRN15" />
+    <input type="hidden" id="ArretratiEntroMarzoG" value="@Model.ArretratiEntroMarzoG" />
+    <input type="hidden" id="ArretratiEntroDicembreG" value="@(Model.ArretratiEntroDicembreG+Model.ArretratiEntroMarzoG)" />
+    <input type="hidden" id="arretratiSomma" value="@(Model.ArretratiFE15+Model.ArretratiRN15+Model.ArretratiRR15)" />
+
+    <div class="block-header bg-cdf" style="height: 58px; ">
+
+        <div class="calendario-annoVisualizzato rai-font-modal-heading" style="width:100%;padding-left:0px;">
+
+            @if (DateTime.Now > Model.DataChiusuraPianoFerie)
+            {
+
+                <span>Piano ferie @Model.Anno <span class="hidden-xs">- Chiuso il @Model.DataChiusuraPianoFerie.ToString("dd/MM/yyyy")</span> </span>
+            }
+            else if (Model.DataFirmaSedeDipendente != null)
+            {
+                <span>Piano ferie @Model.Anno <span class="hidden-xs">- Convalidato il @(((DateTime)Model.DataFirmaSedeDipendente).ToString("dd/MM/yyyy")) da @Model.ConvalidatoreSedeDipendente</span></span>
+            }
+            else if (Model.DataApprovazionePfDipendente != null)
+            {
+                <span>Piano ferie @Model.Anno <span class="hidden-xs">- Approvato il @(((DateTime)Model.DataApprovazionePfDipendente).ToString("dd/MM/yyyy")) da @Model.ApprovatoreSedeDipendente</span></span>
+            }
+            else
+            {
+                <span> Piano Ferie @Model.Anno </span>
+            }
+        </div>
+        <div class="block-options">
+            @*@if (Model.HaEstensioneMarzo)
+            {
+                <button onclick="Show2021()" type="button" class="btn btn-action-con" style="
+                    margin-right: 8px;
+                    color: #444;
+                    font-weight: 600;">
+                    Gen/Mar 2021
+                </button>
+                }*@
+
+            <button data-dismiss="modal" type="button" class="btn btn-action-icon"><i class="glyphicon glyphicon-remove"></i></button>
+        </div>
+    </div>
+
+    <div class="block-content" id="toscroll">
+        <input type="hidden" value="@Model.resocontoFerie.recuperiMancatiRiposiRimanenti" id="RR-residui" />
+        <input type="hidden" value="@Model.resocontoFerie.recuperiNonLavoratiRimanenti" id="RN-residui" />
+        <div class="row">
+            <div class="col-sm-12">
+                <input type="hidden" id="anno-corrente" value="@Model.Anno" />
+
+                <div class="sezione-calendario-feriePermessi" style="padding-top:0px;">
+                    <div class="div-table-calendario-pf">
+
+                        @if (DateTime.Now > Model.DataChiusuraPianoFerie)
+                        {
+
+                            <label class="visible-xs rai-font-md push-20">Chiuso il @Model.DataChiusuraPianoFerie.ToString("dd/MM/yyyy")</label>
+                        }
+                        else if (Model.DataFirmaSedeDipendente != null)
+                        {
+                            <label class="visible-xs rai-font-md push-20">Convalidato il @(((DateTime)Model.DataFirmaSedeDipendente).ToString("dd/MM/yyyy")) da @Model.ConvalidatoreSedeDipendente</label>
+                        }
+                        else if (Model.DataApprovazionePfDipendente != null)
+                        {
+                            <label class="visible-xs rai-font-md push-20">Approvato il @(((DateTime)Model.DataApprovazionePfDipendente).ToString("dd/MM/yyyy")) da @Model.ApprovatoreSedeDipendente</label>
+                        }
+
+                        @{
+                            int StatoPF = (int)Model.PianoFerieDip.StatoPianoFerie;
+                        }
+                        @if (Model.PianoFerieDip.PianoFerieDB != null && !String.IsNullOrWhiteSpace(Model.PianoFerieDip.PianoFerieDB.nota_responsabile))
+                        {
+                            <span class="nota-resp-title">Nota del responsabile</span><br />
+                            <p class="text-primary nota-resp-body">@Model.PianoFerieDip.PianoFerieDB.nota_responsabile</p>
+                        }
+                        <input type="hidden" id="statopf" value="@StatoPF" />
+
+                        <div id="anyalert" style="padding:0px;margin:0px">
+                            @Html.Partial("_alertarretrati", Model)
+                        </div>
+
+
+                        <table class="calendario-table" id="piano-ferie-table">
+                            <tr>
+                                <td class="combo-tipo tdDay tdDayGrayCal @(Model.resocontoFerie.recuperiMancatiRiposiRimanenti > 0 || Model.resocontoFerie.recuperiNonLavoratiRimanenti > 0?"bg-primary":"")">
+                                    <select id="select-tipo" class="form-control">
+                                        <option value="FE">FE</option>
+                                        @if (Model.resocontoFerie.recuperiMancatiRiposiRimanenti > 0)
+                                        {
+                                            <option value="RR">RR</option>
+                                        }
+                                        @if (Model.resocontoFerie.recuperiMancatiFestiviRimanenti > 0)
+                                        {
+                                            <option value="RF">RF</option>
+                                        }
+                                        @if (Model.resocontoFerie.recuperiNonLavoratiRimanenti > 0)
+                                            {
+                                                <option value="RN">RN</option>
+                                        }
+
+                                    </select>
+                                </td>
+                                @for (int i = 0; i < 31; i++)
+                                {
+                                    <td class="thDay">
+                                        @(i + 1)
+
+                                    </td>
+                                }
+
+                            </tr>
+                            @{
+                                string cls = "tdDay";
+                                int dayprogr = 0;
+                            }
+                            @for (int i = 1; i < 13; i++)
+                            {
+
+                                <tr>
+                                    <td class="tdMonth"><span class="text-primary"><b>@myRai.Business.CommonManager.TraduciMeseDaNumLett(i.ToString("00"))</b></span></td>
+                                    @for (int d = 1; d < 32; d++)
+                                    {
+                                        string datateor = d.ToString().PadLeft(2, '0') + "-" + i.ToString().PadLeft(2, '0');
+
+                                        bool GiornoPianificatoPianoFerie = Model.PianoFerieDip.GiorniPianoFerie.Any(x => x.data.Day == d && x.data.Month == i && x.data.Year==Model.Anno && x.eccezione == "FE");
+
+                                        bool GiornoPianificatoPianoFerieFEM = Model.PianoFerieDip.GiorniPianoFerie.Any(x => x.data.Day == d && x.data.Month == i && x.data.Year == Model.Anno && x.eccezione == "FEM");
+
+                                        bool GiornoPianificatoPianoFeriePF = Model.PianoFerieDip.GiorniPianoFerie.Any(x => x.data.Day == d && x.data.Month == i && x.data.Year == Model.Anno && x.eccezione == "PF");
+
+                                        bool GiornoPianificatoPianoFeriePR = Model.PianoFerieDip.GiorniPianoFerie.Any(x => x.data.Day == d && x.data.Month == i && x.data.Year == Model.Anno && x.eccezione == "PR");
+
+                                        bool GiornoPianificatoPianoFeriePX = Model.PianoFerieDip.GiorniPianoFerie.Any(x => x.data.Day == d && x.data.Month == i && x.data.Year == Model.Anno && x.eccezione == "PX");
+
+                                        string nota = Model.PianoFerieDip.GiorniPianoFerie.Where(x => x.data.Day == d && x.data.Month == i).Select(x => x.nota_responsabile).FirstOrDefault();
+                                        bool GiornoRR = Model.DateRR.Any(x => x.Month == i && x.Day == d)
+                                             ;
+
+
+                                        bool GiornoRF = Model.DateRF.Any(x => x.Month == i && x.Day == d);
+                                        bool GiornoRN = Model.DateRN.Any(x => x.Month == i && x.Day == d);
+                                        bool GiornoPX = Model.DatePX.Any(x => x.Month == i && x.Day == d);
+                                        DateTime CurrentDay = new DateTime(2000, 1, 1);
+                                        try
+                                        {
+                                            CurrentDay = new DateTime(Model.Anno, i, d);
+                                        }
+                                        catch (Exception ex)
+                                        {
+
+                                        }
+                                        string DateFEM_FEP = Model.DateFEM_FEP.Contains(CurrentDay) ? " fem-fep " : "";
+
+                                        var currDay = Model.DaysShowed.Find(f => f.giorno.Day == d && f.giorno.Month == i);
+                                        if (currDay != null)
+                                        {
+                                            dayprogr++;
+
+                                            int dayofweek = (int)currDay.giorno.DayOfWeek;
+                                            if (dayofweek == 0)
+                                            {
+                                                dayofweek = 7;
+                                            }
+
+                                            var daysh = Model.DaysShowed.Find(f => f.giorno.Day == d && f.giorno.Month == i);
+
+                                            if (Model.DateToBeGray.Contains(currDay.giorno))
+                                            //if (Model.DaysShowed.Find(f => f.giorno.Day == d && f.giorno.Month == i).giorno.DayOfWeek == DayOfWeek.Saturday || Model.DaysShowed.Find(f => f.giorno.Day == d && f.giorno.Month == i).giorno.DayOfWeek == DayOfWeek.Sunday)
+                                            {
+                                                cls = "tdDayGrayCal";
+                                            }
+                                            else
+                                            {
+                                                cls = "tdDay";
+                                            }
+                                            if (daysh.tipoGiornata.ToUpper() == "A" || daysh.tipoGiornata.ToUpper() == "B")
+                                            {
+                                                cls = "tdDayGrayCal";
+                                            }
+                                            string orarioReale = Model.resocontoFerie.giornate.Where(x => x.dataTeorica == currDay.giorno.ToString("dd-MM"))
+                                                    .Select(x => x.orarioReale).FirstOrDefault();
+
+                                            if (daysh.tipoFeriePermesso.Trim() == "" || daysh.tipoFeriePermesso.Trim() == "PX"
+                                            )
+                                            {
+                                                <td data-datecomplete="@(currDay.giorno.ToString("dd/MM/yyyy"))" data-orario="@orarioReale" data-progr="@dayprogr" data-dayweek="@dayofweek" data-intday="@currDay.giorno.ToString("MMdd")" data-thisday="@(currDay.giorno.ToString("dd-MM"))" class="@DateFEM_FEP tdCalWid @cls @(String.IsNullOrWhiteSpace(nota)?"":"has-note") @(StatoPF!=0 && CurrentDay<DateTime.Now?"past":"")
+                                    @(currDay.giorno < Model.PianoFerieDip.Definizioni.data_chiusura.AddDays(-4)?" noclick ":"")
+                                    @(   ((
+                                   //(Model.IsMazziniDatesCoveredByC2==false
+                                   //&& Model.CodiceOrario2!=null &&  ! Model.CodiceOrario2.StartsWith("9") && currDay.giorno==new DateTime (2020,12,7) && (Model.DataFineLavoro ==null || Model.DataFineLavoro> currDay.giorno))
+                                   // ||
+                                   ( Model.IsMazziniDatesCoveredByC1==false &&
+                                   Model.CodiceOrario1 !=null && ! Model.CodiceOrario1.StartsWith("9") && currDay.giorno==new DateTime (2021,6,28) && (Model.DataFineLavoro ==null || Model.DataFineLavoro> currDay.giorno))
+                                    )
+
+                                    && myRai.Business.CommonManager.IsMazzini()?" sede-mazzini " :"") )
+                                                    @(        ( Model.IsTorinoCavalliCoveredByC==false &&
+                                   Model.CodiceOrarioTorinoCavalli1 !=null && ! Model.CodiceOrarioTorinoCavalli1.StartsWith("9") && currDay.giorno==new DateTime (2021,6,25) && (Model.DataFineLavoro ==null || Model.DataFineLavoro> currDay.giorno))
+                                   && myRai.Models.Utente.IsTorinoCavalli()?" sede-torinocavalli " :"")
+
+                                                    "
+                                                    @if (cls != "tdDayGrayCal" && StatoPF == 0) { @: style="cursor:pointer"
+                                                    }>
+                                                    @if (GiornoPianificatoPianoFerie)
+                                                    {
+                                                        <pie class="pie-cal-anno @(StatoPF==0?"pie-fe":StatoPF==1?"pie-inapp":"pie-appr") pianif "
+                                                             @if (!String.IsNullOrWhiteSpace(nota)) { @: data-toggle="tooltip" data-original-title="@nota"
+                                                             }></pie>
+                                                    }
+                                                    @if (GiornoPianificatoPianoFerieFEM)
+                                                    {
+                                                        <pie class="pie-cal-anno @(StatoPF==0?"pie-fe":StatoPF==1?"pie-inapp":"pie-appr") pianif-FEM "
+                                                             @if (!String.IsNullOrWhiteSpace(nota)) { @: data-toggle="tooltip" data-original-title="@nota"
+                                                             }></pie>
+                                                    }
+                                                    @if (GiornoPianificatoPianoFeriePF)
+                                                    {
+                                                        <pie class="pie-cal-anno @(StatoPF==0?"pie-fe":StatoPF==1?"pie-inapp":"pie-appr") pianif-PF "
+                                                             @if (!String.IsNullOrWhiteSpace(nota)) { @: data-toggle="tooltip" data-original-title="@nota"
+                                                             }></pie>
+                                                    }
+                                                    @if (GiornoPianificatoPianoFeriePR)
+                                                    {
+                                                        <pie class="pie-cal-anno @(StatoPF==0?"pie-fe":StatoPF==1?"pie-inapp":"pie-appr") pianif-PR "
+                                                             @if (!String.IsNullOrWhiteSpace(nota)) { @: data-toggle="tooltip" data-original-title="@nota"
+                                                             }></pie>
+                                                    }
+                                                    @if (GiornoPianificatoPianoFeriePX)
+                                                    {
+                                                        <pie class="pie-cal-anno @(StatoPF==0?"pie-fe":StatoPF==1?"pie-inapp":"pie-appr") pianif-PX "
+                                                             @if (!String.IsNullOrWhiteSpace(nota)) { @: data-toggle="tooltip" data-original-title="@nota"
+                                                             }></pie>
+                                                    }
+                                                    @if (GiornoRR)
+                                                    {
+                                                        <pie class="pie-cal-anno @(StatoPF==0?"pie-fe":StatoPF==1?"pie-inapp":"pie-appr") pianif-RR "
+                                                             @if (!String.IsNullOrWhiteSpace(nota)) { @: data-toggle="tooltip" data-original-title="@nota"
+                                                             }></pie>
+                                                    }
+                                                    @if (GiornoRF)
+                                                    {
+                                                        <pie class="pie-cal-anno @(StatoPF==0?"pie-fe":StatoPF==1?"pie-inapp":"pie-appr") pianif-RF "
+                                                             @if (!String.IsNullOrWhiteSpace(nota)) { @: data-toggle="tooltip" data-original-title="@nota"
+                                                             }></pie>
+                                                    }
+                                                    @if (GiornoRN)
+                                                    {
+                                                        <pie class="pie-cal-anno @(StatoPF==0?"pie-fe":StatoPF==1?"pie-inapp":"pie-appr") pianif-RN "
+                                                             @if (!String.IsNullOrWhiteSpace(nota)) { @: data-toggle="tooltip" data-original-title="@nota"
+                                                             }></pie>
+                                                    }
+                                                    @if (GiornoPX)
+                                                    {
+                                                        <pie class="pie-cal-anno pie-pg" title="PX">     </pie>
+                                                    }
+                                                </td>
+                                            }
+                                            else
+                                            {
+                                                bool busy = false;
+                                                <td data-datecomplete="@(currDay.giorno.ToString("dd/MM/yyyy"))" data-orario="@orarioReale" data-progr="@dayprogr" data-dayweek="@dayofweek" data-intday="@currDay.giorno.ToString("MMdd")" class="@DateFEM_FEP tdCalWid @cls @(StatoPF!=0 && CurrentDay<DateTime.Now?"past":"")">
+                                                    @if (daysh.Frazione.StartsWith("I"))
+                                                    {
+
+                                                        if (!daysh.tipoFeriePermesso.ToUpper().StartsWith("M"))
+                                                        {
+                                                            busy = true;
+                                                            <pie class="pie-hand pie-cal-anno pie-@(daysh.tipoFeriePermesso.ToLower())" title="@(Model.DaysShowed.Find(f => f.giorno.Day == d && f.giorno.Month == i).tipoFeriePermesso)"></pie>
+                                                        }
+                                                    }
+                                                    @if (daysh.Frazione.StartsWith("M"))
+                                                    {
+                                                        busy = true;
+                                                        <pie class="pie-hand pie-cal-anno fifty pie-@(daysh.tipoFeriePermesso.ToLower())" title="@(daysh.tipoFeriePermesso)"></pie>
+                                                    }
+                                                    @if (daysh.Frazione.StartsWith("U"))
+                                                    {
+                                                        busy = true;
+                                                        <pie class="pie-hand pie-cal-anno twentyfive pie-@(daysh.tipoFeriePermesso.ToLower())" title="@(Model.DaysShowed.Find(f => f.giorno.Day == d && f.giorno.Month == i).tipoFeriePermesso)"></pie>
+                                                    }
+                                                    @if (GiornoPianificatoPianoFerie && !busy)
+                                                    {
+                                                        @:<pie class="pie-cal-anno pie-fe pianif"></pie>
+                                                    }
+                                                </td>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <td class="tdDayGrayCal">&nbsp;</td>
+                                        }
+                                    }
+                                </tr>
+                            }
+
+                            <tr>
+                                <td class="tdDay tdDayGrayCal"></td>
+                                @for (int i = 0; i < 31; i++)
+                                {
+                                    <td class="thDay">
+                                        @(i + 1)
+
+                                    </td>
+                                }
+
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div style="padding-top:20px;margin-left:44px">
+
+                        <h3 id="RF-rim" style="display:none">@Model.resocontoFerie.recuperiMancatiFestiviRimanenti</h3>
+                        @*DIV TEST----------------------------------------------------------*@
+                        <div class="row">
+                            <div class="col-xs-4 col-sm-4" style="text-align: center;background: #f5f5f5;border-right: solid 1px #fff;
+">Ferie</div>
+
+                            @if (myRai.Models.Utente.TipoDipendente() != "G" && (Model.resocontoFerie.recuperiMancatiRiposiRimanenti > 0 ||
+                                Model.resocontoFerie.recuperiNonLavoratiRimanenti > 0))
+                            {
+                                <div class="col-xs-2 col-sm-2" style="text-align: center;background: #f5f5f5;border-left: solid 1px #fff;
+">Recuperi</div>
+                            }
+                            <div class="col-xs-2 col-sm-2" style="text-align: center;background: #f5f5f5;border-left: solid 1px #fff;
+">Stato</div>
+                            @*@if (Model.ItemFoglioExcelArretrati != null)
+                            {
+                                <div class="col-xs-2 col-sm-2" style="
+    text-align: center;
+    background: #f5f5f5;
+    border-left: solid 1px #fff;
+">Accordi</div>
+                                        }*@
+
+                        </div>
+                        <div class="row">
+                            <div class="col-xs-2 col-sm-2" style="padding-right:0px;padding-left:0px;">
+                                <div style="border:solid 1px #ddd;padding-right:15px;padding-left:15px">
+                                    <span style="font-weight:600">Minimo da pian. entro il 31/12</span>
+                                    <br />
+                                    @if (myRai.Models.Utente.TipoDipendente() == "G")
+                                    {
+                                        <em style="font-size:12px">@(Model.PianoFerieDip.PF_PercentualeSuSpettanza)% spett. (@Model.PianoFerieDip.PF_InteroSuSpettanza)  </em>
+                                    }
+                                    else
+                                    {
+                                        <em style="font-size:12px">@(Model.PianoFerieDip.PF_PercentualeSuSpettanza)% spett. (@Model.PianoFerieDip.PF_InteroSuSpettanza) + @Model.PianoFerieDip.PF_PercentualeSuArretrati % arretrati (@Model.ArretratiFE15)</em>
+                                    }
+
+
+                                    @*else
+                    {
+                        <em style="font-size:12px">@(Model.PianoFerieDip.PF_PercentualeSuSpettanza)% spett. (@(Model.PianoFerieDip.PF_InteroSuSpettanza)) + gg da accordi (@Model.FEperFoglioExcelArretrati)</em>
+                    }*@
+
+                                </div>
+                                <div style="border:solid 1px #ddd;padding-top: 6px;border-top:none;padding-left:15px">
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <h3 style="margin-top:3px" class="text-primary">
+                                                @if (myRai.Models.Utente.TipoDipendente() == "G")
+                                                {
+                                                    <span id="pian-su-tot">@(Model.PianoFerieDip.PF_InteroSuSpettanza)</span>
+                                                }
+                                                else
+                                                {
+                                                    <span id="pian-su-tot">@(Model.PianoFerieDip.PF_InteroSuSpettanza + Model.ArretratiFE15)</span>
+                                                }
+
+
+                                                @*@if (Model.ItemFoglioExcelArretrati == null)
+                                {
+                                    <span id="pian-su-tot">@(Model.PianoFerieDip.PF_InteroSuSpettanza + Model.ArretratiFE15)</span>
+                                }
+                                else
+                                                {
+                                                    <span id="pian-su-tot">@(Model.PianoFerieDip.PF_InteroSuSpettanza + Model.FEperFoglioExcelArretrati)</span>
+                                }*@
+
+                                            </h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xs-2 col-sm-2" style="padding-right:0px;padding-left:0px;">
+                                <div style="border:solid 1px #ddd;padding-right:15px;padding-left:15px">
+                                    <span style="font-weight:600">
+                                        @Model.PianoFerieDip.PF_Intero75percento da pianificare entro il <b>
+                                            <span id="data-limite">
+                                                @(Model.UtenteProduzione ? "31/12" :
+                                    
+Model.PianoFerieDip.PF_DataLimite.ToString("dd/MM"))
+                                            </span>
+                                        </b>
+                                    </span>
+                                    <br />
+                                    <em style="font-size:12px">@Model.PianoFerieDip.PF_PercentualeSuTotale % su @(Model.PianoFerieDip.PF_InteroSuSpettanza )</em>
+                                </div>
+                                <div style="border:solid 1px #ddd;padding-top: 6px;border-top:none;padding-right:15px;padding-left:15px">
+                                    <div class="row">
+                                        <div class="col-xs-4 col-sm-6">
+                                            <h3 style="margin-top:3px" class="text-primary">
+                                                <span id="pian-per">@Model.PianoFerieDip.PF_GiaSalvatiEntro30Settembre</span>
+                                                @if (Model.ItemFoglioExcelArretrati != null && Model.NonPartecipantiRaggiungimentoPercheFruiteMarzo > 0)
+                                                {
+                                                    <span style="font-size: 18px;color: red;"><sup>*</sup><span></span></span>
+                                                }
+
+                                                <span style="display:none" id="pian-pulsante">@(Model.PianoFerieDip.PF_Intero75percento)</span>
+
+                                            </h3>
+                                        </div>
+                                        <div class="col-xs-8 col-sm-6">
+
+                                            <div id="ch1" class="chart-pf" data-percent="">
+
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                            @if (Model.ItemFoglioExcelArretrati != null)
+                            {
+                                <div class="col-xs-2 col-sm-2" style="padding-right:0px;padding-left:0px;">
+                                    <div style="border:solid 1px #ddd;padding-right:15px;padding-left:15px">
+                                        <span style="font-weight:600">
+                                            @Model.TOTALEperFoglioExcelArretrati da accordi entro il @(
+Model.UtenteProduzione ? "31/12" : Model.HaEstensioneMarzo ? "31/3/21" : "31/10"
+                                            )
+                                        </span>
+                                        <br />
+                                        @if (Model.HaEstensioneMarzo)
+                                        {
+                                        <em style="font-size:12px"> @(Model.FEperFoglioExcelArretrati) FE + @(Model.RRperFoglioExcelArretrati) RR + @(Model.RFperFoglioExcelArretrati) RF </em>
+                                        }
+                                        else
+                                        {
+                                        <em style="font-size:12px">@(Model.RRperFoglioExcelArretrati) RR +@(Model.RFperFoglioExcelArretrati) RF + @(Model.FEperFoglioExcelArretrati) FE  </em>
+                                        }
+
+
+                                    </div>
+                                    <div style="border:solid 1px #ddd;padding-top: 6px;border-top:none;padding-right:15px;padding-left:15px">
+                                        <div class="row">
+                                            <div class="col-xs-4 col-sm-6">
+                                                <h3 style="margin-top:3px" class="text-primary">
+                                                    <span id="pian-31ott">@Model.PianoFerieDip.PF_GiaSalvatiEntro31Ottobre</span>
+                                                    <span style="font-size: 18px;color: red;">
+                                                        <sup>**</sup>
+                                                    </span>
+
+                                                    <span style="display:none" id="pian-31ott-totale">
+                                                        @(Model.TOTALEperFoglioExcelArretrati)
+                                                        @*@(Model.PianoFerieDip.PF_Intero75percento + Model.ItemFoglioExcelArretrati.da_fare
+                                                            -Model.ItemFoglioExcelArretrati.fruite_11_31)*@
+                                                    </span>
+                                                </h3>
+                                            </div>
+                                            <div class="col-xs-8 col-sm-6">
+
+                                                <div id="ch31ott" class="chart-pf" data-percent="">
+                                                    @*grafico 31ott*@
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            @if (myRai.Models.Utente.TipoDipendente() != "G" && (Model.resocontoFerie.recuperiMancatiRiposiRimanenti > 0 ||
+                                Model.resocontoFerie.recuperiNonLavoratiRimanenti > 0))
+                            {
+                                <div class="col-xs-2 col-sm-2" style="padding-right:0px;padding-left:0px;display:@(Model.ItemFoglioExcelArretrati != null ? "none" : "")">
+                                    <div style="border:solid 1px #ddd;padding-right:15px;padding-left:15px; display:@(Model.ItemFoglioExcelArretrati!=null ? "none":"")">
+                                        <span style="font-weight:600">RR + RN residui</span>
+                                        <br />
+
+                                        <em style="font-size:12px">Almeno @(Model.ArretratiRRRN15) da pianif.</em>
+
+
+
+                                    </div>
+                                    <div style="border:solid 1px #ddd;padding-right:15px;padding-left:15px;
+padding-top: 6px;border-top:none;display:@(Model.ItemFoglioExcelArretrati != null ? "none" : "")">
+                                        <div class="row">
+                                            <div class="col-xs-4 col-sm-6">
+                                                <h3 id="RR-rim" style="margin-top:3px" class="text-primary">@(Model.resocontoFerie.recuperiMancatiRiposiRimanenti + Model.resocontoFerie.recuperiNonLavoratiRimanenti)</h3>
+
+                                                <input type="hidden" id="RR-hid" value="@(Model.resocontoFerie.recuperiMancatiRiposiRimanenti + Model.resocontoFerie.recuperiNonLavoratiRimanenti)" />
+                                            </div>
+                                            <div class="col-xs-8 col-sm-6">
+                                                <div id="chrr" class="chart-pf" data-percent="">
+
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                            }
+                            else
+                            {
+                                <h3 id="RR-rim" style="margin-top:3px;display:none" class="text-primary">@(Model.resocontoFerie.recuperiMancatiRiposiRimanenti + Model.resocontoFerie.recuperiNonLavoratiRimanenti)</h3>
+                                <input type="hidden" id="RR-hid" value="@(Model.resocontoFerie.recuperiMancatiRiposiRimanenti + Model.resocontoFerie.recuperiNonLavoratiRimanenti)" />
+                            }
+                            @if (StatoPF == 0 || StatoPF == 1)
+                            {
+                                //statopf
+                                <div class="col-xs-2 col-sm-2" style="padding-right:0px;padding-left:0px;">
+                                    <div style="border:solid 1px #ddd;padding-right:15px;padding-left:15px">
+                                        <span style="font-weight:600">&nbsp;</span>
+                                        <h3 style="margin-top:3px;margin-top: -4px;
+    margin-bottom: 1px;" class="text-primary">
+                                            @Model.PianoFerieDip.StatoPianoFerie.ToString().Replace("_", " ")
+                                        </h3>
+                                    </div>
+                                    @if (Model.DataApprovazionePfDipendente == null && DateTime.Now < Model.DataChiusuraPianoFerie && (StatoPF == 0 || StatoPF == 1))
+                                    {
+                                        <div style="border:solid 1px #ddd;padding-top: 6px;border-top:none;padding-right:15px;padding-left:15px">
+                                            @if (StatoPF == 0)
+                                            {
+                                                <a id="puls-cons" href="javascript:Consolida()" aria-label="Consolida piano ferie"
+                                                   style="margin-bottom:5px" class="rai-btn-primary btn btn-full text-uppercase">INVIA</a>
+                                            }
+                                            else if (StatoPF == 1)
+                                            {
+                                                <a id="puls-cons" href="javascript:Sconsolida()" aria-label="Sconsolida piano ferie"
+                                                   style="margin-bottom:5px" class="rai-btn-primary btn btn-full
+                                                   text-uppercase @(Model.OltreSogliaModifica ? "disabled" : "")">ANNULLA</a>
+                                            }
+
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="col-xs-2 col-sm-2" style="padding-right:0px;padding-left:0px;">
+                                    <div style="border:solid 1px #ddd;padding-right:15px;padding-left:15px;height:91px">
+                                        <span style="font-weight:600">&nbsp;</span>
+                                        <h3 style="margin-top:3px;margin-top: -4px;
+    margin-bottom: 1px;" class="text-primary">
+                                            @Model.PianoFerieDip.StatoPianoFerie.ToString().Replace("_", " ")
+                                        </h3>
+                                    </div>
+                                </div>
+                            }@*<div class="col-sm-2" style="padding-right:0px;padding-left:0px;">
+                                            <div style="border:solid 1px #ddd;padding-right:15px;padding-left:15px">
+                                                <span style="font-weight:600">Stato</span>
+                                                <h3 style="margin-top:3px;margin-top: -4px;
+                                margin-bottom: 1px;" class="text-primary">@Model.PianoFerieDip.StatoPianoFerie.ToString().Replace("_", " ")</h3>
+                                            </div>
+                                            <div style="border:solid 1px #ddd;padding-top: 6px;border-top:none;padding-right:15px;padding-left:15px">
+
+                                            </div>
+                                        </div>*@
+                        </div>
+
+
+
+
+                        <div class="row">
+                            <div class="col-xs-2 col-sm-2" style="padding-right:0px;padding-left:0px;">
+                                <div style="border:solid 1px #ddd;padding-right:15px;padding-left:15px">
+                                    <span style="font-weight:600">Massimo pianificabile</span>
+                                    <br />
+                                    <em style="font-size:12px">Spettanza (@Model.PianoFerieDip.PF_InteroSuSpettanza) + arretrati (@Model.PianoFerieDip.PF_TotaleArretrati)</em>
+                                </div>
+                                <div style="border:solid 1px #ddd;padding-top: 6px;border-top:none;padding-right:15px;padding-left:15px">
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <h3 style="margin-top:3px" class="text-primary"><span id="pian-max">@Model.PianoFerieDip.PF_Residue</span> </h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xs-2 col-sm-2" style="padding-right:0px;padding-left:0px;">
+                                <div style="border:solid 1px #ddd;padding-right:15px;padding-left:15px">
+                                    <span style="font-weight:600">Pianificati totali</span>
+                                    <br />
+                                    <em style="font-size:12px">&nbsp;</em>
+                                </div>
+                                <div style="border:solid 1px #ddd;padding-top: 6px;border-top:none;padding-right:15px;padding-left:15px">
+                                    <div class="row">
+                                        <div class="col-xs-4 col-sm-6">
+                                            <h3 style="margin-top:3px" class="text-primary">
+                                                <span id="pian-totali">@Model.PianoFerieDip.PF_GiaSalvatiTotali</span>
+                                                @if (Model.ItemFoglioExcelArretrati != null && Model.NonPartecipantiRaggiungimentoPercheFruiteMarzo > 0)
+                                                {
+                                                    <span style="font-size: 18px;color: red;"><sup>*</sup><span></span></span>
+                                                }
+                                            </h3>
+                                        </div>
+                                        <div class="col-xs-8 col-sm-6">
+                                            <div id="ch2" class="chart-pf" data-percent="">
+
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                </div>
+                            </div>
+                            @if (Model.resocontoFerie.recuperiNonLavoratiRimanenti > 0)
+                            {
+                                @*<div class="col-xs-2 col-sm-2" style="padding-right:0px;padding-left:0px">
+                                    <div style="border:solid 1px #ddd;padding-right:15px;padding-left:15px">
+                                        <span style="font-weight:600">RN residui</span>
+                                        <br />
+                        <em style="font-size:12px">Almeno @(Model.ArretratiRN15) da pianif.</em>
+
+                                    </div>
+                                    <div style="border:solid 1px #ddd;padding-top: 6px;border-top:none;padding-right:15px;padding-left:15px">
+                                        <div class="row">
+                                            <div class="col-xs-4 col-sm-6">
+                                                <h3 id="RN-rim" style="margin-top:3px" class="text-primary">@Model.resocontoFerie.recuperiNonLavoratiRimanenti</h3>
+                                                <input type="hidden" id="RN-hid" value="@Model.resocontoFerie.recuperiNonLavoratiRimanenti" />
+
+                                            </div>
+                                            <div class="col-xs-8 col-sm-6">
+                                                <div id="chrn" class="chart-pf" data-percent="">
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                </div>*@
+                            }
+
+
+                        </div>
+                        @if (Model.ArretratiEntroMarzoG > 0)
+                        {
+                            <div style="display:none" class="row" id="arretrati-g-marzo">
+                                <div class="col-xs-2 col-sm-2" style="padding-right:0px;padding-left:0px">
+                                    <div style="border:solid 1px #ddd;padding-right:15px;padding-left:15px;height:50px;border-right:none">
+                                        <span style="font-weight:600">Arretrati entro il 31/3</span>
+                                        <br />
+                                        <em style="font-size:12px;display:block;margin-bottom:3px">(FE + RR + RN)</em>
+                                    </div>
+
+                                </div>
+                                <div class="col-xs-2 col-sm-2" style="padding-right:0px;padding-left:0px;text-align:center">
+                                    <div style="border:solid 1px #ddd;padding-right:15px;padding-left:15px;height:50px;padding-top:10px;;border-right:none;border-left:none">
+                                        <div class="rai progress progress-xs m-2 light" style="margin-bottom: 8px;margin-top: 10px;">
+                                            <div id="pbar-g" class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="0" aria-="" valuemin="0" aria-valuemax="100" style="width: 0%;">
+
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+
+
+                                </div>
+                                <div class="col-xs-2 col-sm-2" style="padding-right:0px;padding-left:0px;">
+                                    <div style="border:solid 1px #ddd;padding-right:15px;padding-left:15px;height:50px;padding-top:12px;border-left:none">
+                                        Pianificati <span id="arr-g">0</span>/Da pianificare <span id="max-arr-g"> @Model.ArretratiEntroMarzoG</span>
+                                    </div>
+
+                                </div>
+                                </div>
+                            }
+                        @*@if (Model.ArretratiFE15 + Model.ArretratiRN15 + Model.ArretratiRR15 > 10)
+        {*@
+                        @{
+                            //IsDirigente
+                            bool MostraDirigenti = myRai.Models.Utente.TipoDipendente() == "D";
+                            int maxBarra = Model.ArretratiFE15 + Model.ArretratiRRRN15;
+
+                            if (maxBarra > 10 && ! MostraDirigenti)
+                            {
+                                maxBarra = 10;
+                            }
+
+
+                        }
+                        @if (MostraDirigenti)
+                        {
+                            <input type="hidden" id="dirigente" />
+                        }
+                        @if (maxBarra > 0)
+                        {
+                            <div class="row" id="arretrati-oltre-10">
+                                <div class="col-xs-2 col-sm-2" style="padding-right:0px;padding-left:0px">
+                                    <div style="border:solid 1px #ddd;padding-right:15px;padding-left:15px;height:50px;border-right:none">
+                                        <span style="font-weight:600">Arretrati entro il @(MostraDirigenti?"31/12":"30/6")</span>
+                                        <br />
+                                        <em style="font-size:12px;display:block;margin-bottom:3px">@(MostraDirigenti==true?"(FE)":"(FE + RR + RN)")</em>
+                                    </div>
+
+                                </div>
+                                <div class="col-xs-2 col-sm-2" style="padding-right:0px;padding-left:0px;text-align:center">
+                                    <div style="border:solid 1px #ddd;padding-right:15px;padding-left:15px;height:50px;padding-top:10px;;border-right:none;border-left:none">
+                                        <div class="rai progress progress-xs m-2 light" style="margin-bottom: 8px;margin-top: 10px;">
+                                            <div id="pbar-arretrati" class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="0" aria-="" valuemin="0" aria-valuemax="100" style="width: 0%;">
+
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+
+
+                                </div>
+                                <div class="col-xs-2 col-sm-2" style="padding-right:0px;padding-left:0px;">
+                                    <div style="border:solid 1px #ddd;padding-right:15px;padding-left:15px;height:50px;padding-top:12px;border-left:none">
+                                        Pianificati <span id="arr-barra"></span>/Da pianificare <span id="max-barra">@maxBarra</span>
+                                    </div>
+
+                                </div>
+                                
+                                <div class="col-sm-12" style="padding-left: 0px;">
+                                    <em style="font-size:12px">Nota: Il conteggio della pianificazione degli arretrati delle ferie inzia dopo aver pianificato il 75% della spettanza dell'anno corrente (@Model.PianoFerieDip.PF_Intero75percento)</em>
+                                </div>
+                                                   
+
+                                        </div>
+                                    }
+                       
+
+                        @if (Model.ArretratiEntroDicembreG > 0)
+                        {
+                            <div class="row" id="arretrati-g-dicembre">
+                                <div class="col-xs-2 col-sm-2" style="padding-right:0px;padding-left:0px">
+                                    <div style="border:solid 1px #ddd;padding-right:15px;padding-left:15px;height:50px;border-right:none">
+                                        <span style="font-weight:600">Arretrati entro il 31/12</span>
+                                        <br />
+                                        <em style="font-size:12px;display:block;margin-bottom:3px">(FE + RR)</em>
+                                    </div>
+
+                                </div>
+                                <div class="col-xs-2 col-sm-2" style="padding-right:0px;padding-left:0px;text-align:center">
+                                    <div style="border:solid 1px #ddd;padding-right:15px;padding-left:15px;height:50px;padding-top:10px;;border-right:none;border-left:none">
+                                        <div class="rai progress progress-xs m-2 light" style="margin-bottom: 8px;margin-top: 10px;">
+                                            <div id="pbar-g-dic" class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="0" aria-="" valuemin="0" aria-valuemax="100" style="width: 0%;">
+
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+
+
+                                </div>
+                                <div class="col-xs-2 col-sm-2" style="padding-right:0px;padding-left:0px;">
+                                    <div style="border:solid 1px #ddd;padding-right:15px;padding-left:15px;height:50px;padding-top:12px;border-left:none">
+                                        Pianificati <span id="arr-g-dic">0</span>/Da pianificare <span id="max-arr-g-dic"> @(Model.ArretratiEntroDicembreG + Model.ArretratiEntroMarzoG)</span>
+                                    </div>
+
+                                </div>
+                                </div>
+                            }
+                        @*END TEST---------------------------------------------------------*@
+
+
+
+
+                    </div>
+
+                    <input type="hidden" id="mazzini-covered1" value="@Model.IsMazziniDatesCoveredByC1.ToString()" />
+                    <input type="hidden" id="mazzini-covered2" value="@Model.IsMazziniDatesCoveredByC2.ToString()" />
+                    <input type="hidden" id="torinocavalli-covered" value="@Model.IsTorinoCavalliCoveredByC.ToString()" />
+
+                    <input type="hidden" id="rr-usu" value="@(Model.resocontoFerie.recuperiMancatiRiposiUsufruiti+Model.resocontoFerie.recuperiMancatiRiposiPianificati+Model.resocontoFerie.recuperiMancatiRiposiRichiesti)" />
+                    <input type="hidden" id="rn-usu" value="@(Model.resocontoFerie.recuperiNonLavoratiUsufruiti +Model.resocontoFerie.recuperiNonLavoratiPianificati+Model.resocontoFerie.recuperiNonLavoratiRichiesti)" />
+
+                    @if (Model.ItemFoglioExcelArretrati != null && Model.NonPartecipantiRaggiungimentoPercheFruiteMarzo > 0)
+                    {
+                        <div style="margin-left:40px">
+                            <span style="font-size: 14px;color: red;">*<span></span></span>
+
+                            @if (Model.NonPartecipantiRaggiungimentoPercheFruiteMarzo == 1)
+                            {
+                                <span><b>1</b> giorno non conteggiato perchè fruito tra 11/31 marzo</span>
+                            }
+                            else
+                            {
+                                <span><b>@Model.NonPartecipantiRaggiungimentoPercheFruiteMarzo</b> giorni non conteggiati perchè fruiti tra 11/31 marzo</span>
+                            }
+                        </div>
+
+                    }
+                    @if (Model.ItemFoglioExcelArretrati != null)
+                    {
+                        <div style="margin-left:40px">
+                            <span style="font-size: 14px;color: red;">**<span></span></span>
+                            <span>Valore già decurtato di eventuali ferie donate</span>
+                        </div>
+                    }
+
+                    <div style="margin-left:40px">
+                        <table class="legenda-table">
+                            <tr class="legenda-table-header">
+                                <td>&nbsp</td>
+                                <td>Anno Prec.</td>
+                                <td>Spett.</td>
+                                <td>Fruite</td>
+                                <td>Pian.</td>
+                                <td>Residue</td>
+                            </tr>
+                            @{
+                                string trClass = "";
+
+                            }
+                            @for (int i = 0; i < Model.tipiGiornataSel.Count; i++)
+                            {
+                                if (i % 2 == 1)
+                                {
+                                    trClass = "legenda-tr-alternate";
+                                }
+                                else
+                                {
+                                    trClass = "";
+                                }
+                                <tr class="@trClass">
+                                    <td><pie class="pie-cal-anno pie-@Model.tipiGiornataSel[i].siglaSemplice.ToLower().Trim()"></pie>@Model.tipiGiornataSel[i].tipoDesc (@Model.tipiGiornataSel[i].sigla.ToUpper().Trim())</td>
+                                    <td>@Model.tipiGiornataSel[i].resoconto.AnnoPrec</td>
+                                    <td>@Model.tipiGiornataSel[i].resoconto.Spettanti</td>
+                                    <td>@Model.tipiGiornataSel[i].resoconto.Usufruite</td>
+                                    <td>@Model.tipiGiornataSel[i].resoconto.Pianificate</td>
+                                    <td data-residue="@(Model.tipiGiornataSel[i].sigla.ToUpper().Trim())">@Model.tipiGiornataSel[i].resoconto.Residue</td>
+                                </tr>
+                            }
+                        </table>
+                    </div>
+
+
+                    <input id="tdabilitate" type="hidden" value="@(Model.DataApprovazionePfDipendente==null &&  DateTime.Now < Model.DataChiusuraPianoFerie?"1":"0")" />
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+<script type="text/javascript">
+            var HaMezzaGiornata = @(Model.PianoFerieDip.HaMezzaGiornata.ToString().ToLower());
+            var UtenteProduzione = @Model.UtenteProduzione.ToString().ToLower() ;
+            var HaEstensioneMarzo =@Model.HaEstensioneMarzo.ToString().ToLower() ;
+
+    @if (Model.ItemFoglioExcelArretrati != null)
+    {
+        <text>
+    var RRperFoglioExcelArretrati = @Model.RRperFoglioExcelArretrati.ToString().Replace(',','.') ;
+    var RFperFoglioExcelArretrati = @Model.RFperFoglioExcelArretrati.ToString().Replace(',','.')  ;
+    var FEperFoglioExcelArretrati = @Model.FEperFoglioExcelArretrati.ToString().Replace(',','.')  ;
+            var TOTALEperFoglioExcelArretrati = @Model.TOTALEperFoglioExcelArretrati.ToString().Replace(',','.')  ;
+
+       </text>
+    }
+            StartupPF();
+            //  MezzagiornataCombo();
+            PermessiCombo();
+
+    var proced = true;
+    var procedTO = true;
+
+    var cellemazzini = $(".sede-mazzini").length;
+
+    if (cellemazzini > 0) {
+        $(".sede-mazzini").each(function () {
+            if ($(this).html().trim() == "") {
+                proced = false;
+            }
+        });
+    }
+    var celleTO = $(".sede-torinocavalli").length;
+    if (celleTO > 0) {
+        $(".sede-torinocavalli").each(function () {
+            if ($(this).html().trim() == "") {
+                procedTO = false;
+            }
+        });
+    }
+
+
+    if (HaEstensioneMarzo) {
+        Load2021();
+    }
+
+    if (!proced) {
+        alertMazzini();
+    }
+    if (!procedTO) {
+        alertTorino();
+    }
+
+    function Show2021() {
+        $("#pf2021").modal("show");
+        init2021();
+    }
+    function IsDirigente() {
+        return $("#dirigente").length > 0;
+    }
+
+    function Load2021() {
+        $("#pf2021-content").html("");
+        $("#pf2021-content").addClass("rai-loader");
+
+        $.ajax({
+            url: '/feriepermessi/getpf2021',
+            type: "GET",
+            dataType: "html",
+            data: {},
+            success: function (data) {
+                $("#pf2021-content").removeClass("rai-loader");
+                $("#pf2021-content").html(data);
+            }
+        });
+    }
+    function IsTD95(td) {
+        return $(td).attr("data-orario") == "95";
+    }
+    function IsTD96(td) {
+        return $(td).attr("data-orario") == "96";
+    }
+    function IsTDwithOneFreeDaySameWeekLeft(td) {
+
+        var day = parseInt($(td).attr("data-dayweek"));
+        if (day == 1) return null;
+        var progr = parseInt($(td).attr("data-progr"));
+        for (var i = day - 1; i >= 1; i--) {
+            progr--;
+            var tdPrec = $("td[data-progr='" + progr + "']");
+            if ($(tdPrec).html().trim() == "")
+                return $(tdPrec).attr("data-datecomplete");
+        }
+        return null;
+    }
+    function IsTDwithOneFreeDaySameWeekRight(td) {
+
+        var day = parseInt($(td).attr("data-dayweek"));
+        if (day == 6) return null;
+        if (day == 7) day = 0;
+        var progr = parseInt($(td).attr("data-progr"));
+        for (var i = day + 1; i <=5 ; i++) {
+            progr++;
+            var tdSucc = $("td[data-progr='" + progr + "']");
+            if ($(tdSucc).html().trim() == "")
+                return $(tdSucc).attr("data-datecomplete");
+        }
+        return null;
+    }
+    function IsTDin7GiorniFerie(td) {
+        debugger
+        var progr = parseInt($(td).attr("data-progr"));
+        var skipOrario = "95";
+        if ($(td).attr("data-orario") == "95")
+            skipOrario = "96";
+
+        var ferieSX = 0;
+        var ferieDX = 0;
+        for (var i = progr - 1; i > 0; i--) {
+            var tdPrec = $("td[data-progr='" + i + "']");
+            if ($(tdPrec).html().trim() != "" || $(tdPrec).attr("data-orario") == skipOrario)
+                ferieSX++;
+            else
+                break;
+        }
+        for (var i = progr + 1; i <=365; i++) {
+            var tdSucc = $("td[data-progr='" + i + "']");
+            if ($(tdSucc).html().trim() != "" || $(tdSucc).attr("data-orario") == skipOrario)
+                ferieDX++;
+            else
+                break;
+        }
+        var totConsecutivi = ferieSX + ferieDX + 1;
+        return totConsecutivi >= 7;
+    }
+
+    function GetTipoDip() {
+        return '@myRai.Models.Utente.TipoDipendente()';
+    }
+    function StartupPF() {
+
+
+
+        //CheckStatoPulsante();
+
+        grafico31ott();
+        drawgraf31ott();
+
+        graficopf1();
+        drawgraf1();
+        graficopf2();
+        drawgraf2();
+
+        drawgrafrr();
+        if ($('#select-tipo option[value=RR]').length > 0 || $('#select-tipo option[value=RN]').length > 0) {
+            debugger
+            AggiornaRrOnLoad();
+        }
+        if ($('#select-tipo option[value=RN]').length > 0) {
+            AggiornaRnOnLoad();
+        }
+        if ($('#select-tipo option[value=RF]').length > 0) {
+            AggiornaRF_onLoad();
+        }
+
+        //drawgrafrr();
+        drawgrafrn();
+
+        CheckStatoPulsante();
+
+
+
+        var isMouseDown = false,
+            isHighlighted;
+        var waitingCell = "<i style='color:white' class='fa fa-spinner fa-spin'></i>";
+        if ($("#tdabilitate").val() == "1") {
+
+
+
+            $("#piano-ferie-table td")
+                .mousedown(function () {
+                    //if ($(this).hasClass("sede-mazzini")) {
+                    //    return;
+                    //}
+                    if ($(this).hasClass("combo-tipo")) {
+                        return;
+                    }
+                    if ($(this).hasClass("noclick") && $(this).html().trim()=="") {
+                        debugger
+                        swal("Attenzione","Per date fino al @(Model.DataChiusuraPianoFerie.AddDays(-5).ToString("dd/MM/yyyy")) utilizzare il pannello richieste della giornata","info")
+                        return;
+                    }
+
+                    var n = Number($("#statopf").val());
+                    if (n > 0) return;
+                    isMouseDown = true;
+                    if (
+                        ($(this).hasClass("tdDayGrayCal") && GetTipoDip()!="G")
+
+                        || $(this).hasClass("tdMonth") || $(this).hasClass("pf-cell-highlighted")) return;
+                    CellClicked($(this));
+                    return false;
+                })
+                .mouseover(function () {
+                    //if ($(this).hasClass("sede-mazzini")) {
+                    //    return;
+                    //}
+                    if ($(this).hasClass("noclick")) {
+
+                        return;
+                    }
+                    var n = Number($("#statopf").val());
+                    if (n > 0) return;
+                    if (isMouseDown) {
+                        if ($(this).hasClass("tdDayGrayCal") || $(this).hasClass("tdMonth") || $(this).hasClass("pf-cell-highlighted")) return;
+                        CellClicked($(this));
+                    }
+                });
+
+            $(document)
+                .mouseup(function () {
+                    //if ($(this).hasClass("sede-mazzini")) {
+                    //    return;
+                    //}
+                    if ($(this).hasClass("noclick")) {
+
+                        return;
+                    }
+                    isMouseDown = false;
+                });
+
+
+        }
+    }
+
+    function AggiornaRF_onLoad() {
+        var RFnowOnPanel =
+            $("#piano-ferie-table tr:lt(11) pie.pianif-RF").length +
+            $("#piano-ferie-table tr:lt(11) pie[title='RF']").length;
+        if (RFnowOnPanel > 0 && $("#RF-rim").text() != "") {
+            var RFrim = parseFloat($("#RF-rim").text().replace(",", "."));
+            RFrim = RFrim - RFnowOnPanel;
+            if (RFrim < 0) RFrim = 0;
+            $("#RF-rim").text(RFrim)
+        }
+    }
+
+    function AggiornaRrOnLoad() {
+        debugger
+        var RRpann = $(".pianif-RR").length + $(".pianif-RN").length;
+           // + parseFloat($("#rr-usu").val().replace(",", "."))
+           // + parseFloat($("#rn-usu").val().replace(",", "."));
+        var RRgapp = $("pie[title='RR']").length;
+        var RNgapp = $("pie[title='RN']").length;
+         
+        var RRhid = parseFloat($("#RR-hid").val().replace(",", "."));
+        $("#RR-rim").text(RRhid - RRpann - RRgapp - RNgapp);
+        var perc = (RRpann / RRhid) * 100;
+        if ($("#chrr").length > 0) {
+            $("#chrr").attr("data-percent", perc);
+            $('#chrr').data('easyPieChart').update(perc);
+        }
+        return;
+
+
+        var RRpann = $("pie.pianif-RR").length +       parseFloat($("#rr-usu").val().replace(",", "."));//  $("pie.pie-rr").length;
+
+        if (RRpann > 0 && $("#RR-rim").text() != "") {
+            var RRh3 = parseFloat($("#RR-rim").text().replace(",", "."));
+            if (RRh3 > 0) {
+                RRh3 = RRh3 - RRpann;
+                $("#RR-rim").text(RRh3);
+                var RRhid = parseFloat($("#RR-hid").val().replace(",", "."));
+                var perc = (RRpann / RRhid) * 100;
+                $("#chrr").attr("data-percent", perc);
+            }
+        }
+    }
+
+    function AggiornaRnOnLoad() {
+        var RNpann = $("pie.pianif-RN").length + parseFloat($("#rn-usu").val().replace(",", "."));// $("pie.pie-rn").length;
+
+        if (RNpann > 0 && $("#RN-rim").text() != "") {
+            var RNh3 = parseFloat($("#RN-rim").text().replace(",", "."));
+            if (RNh3 > 0) {
+                RNh3 = RNh3 - RNpann;
+                $("#RN-rim").text(RNh3);
+                var RNhid = parseFloat($("#RN-hid").val().replace(",", "."));
+                var perc = (RNpann / RNhid) * 100;
+                $("#chrn").attr("data-percent", perc);
+            }
+        }
+            }
+
+            function PermessiCombo() {
+                if (HaRN() && PuoInserirePermesso("RN")) {
+                    if ($("#select-tipo option[value='RN']").length == 0) {
+                        $('#select-tipo').prepend('<option value="RN">RN</option>');
+                    }
+                }
+                if (HaPF() && PuoInserirePermesso("PF")) {
+                    if ($("#select-tipo option[value='PF']").length == 0) {
+                        $('#select-tipo').prepend('<option value="PF">PF</option>');
+                    }
+                }
+                if (HaPR() && PuoInserirePermesso("PR")) {
+                    if ($("#select-tipo option[value='PR']").length == 0) {
+                        $('#select-tipo').prepend('<option value="PR">PR</option>');
+                    }
+                }
+                if (HaPX() && PuoInserirePermesso("PX")) {
+                    if ($("#select-tipo option[value='PX']").length == 0) {
+                        $('#select-tipo').prepend('<option value="PX">PX</option>');
+                    }
+                }
+            }
+            function PuoInserirePermesso(perm) {
+                var q = parseFloat($("td[data-residue="+perm+"]").html());
+                return (q - quantiPermessi(perm)) >= 1;
+            }
+
+            function quantiPermessi(perm) {
+        var blink = $(".pf-cell-highlighted").length;
+                var quante =blink +  $("#piano-ferie-table .pie-fe.pianif-"+perm).length +
+                    $("#piano-ferie-table .pie-fe[title="+perm+"]").length;
+                return quante;
+            }
+            function HaPR() {
+                return $("td[data-residue=PR]").length > 0;
+            }
+            function HaPF() {
+                return $("td[data-residue=PF]").length > 0;
+            }
+            function HaPX() {
+                return $("td[data-residue=PX]").length > 0;
+            }
+            function HaRN() {
+                return $("td[data-residue=RN]").length > 0;
+            }
+    function MezzagiornataCombo() {
+                if (HaMezzaGiornata) {
+                    if (EsisteFEMSuPannello() || EsisteFEPSuPannello()) {
+
+                    }
+                    else {
+                        debugger
+                        if ($("#select-tipo option[value='FEP']").length == 0) {
+                            $('#select-tipo').prepend('<option value="FEP">FEP</option>');
+
+                        }
+
+
+                        if ($("#select-tipo option[value='FEM']").length == 0) {
+                            $('#select-tipo').prepend('<option value="FEM">FEM</option>');
+
+                        }
+
+
+                    }
+                }
+    }
+    function drawgrafrn() {
+        $('#chrn').easyPieChart({
+            "barColor": "#f00", "delay": 300, scaleColor: false, lineWidth: 5, size: 60
+        });
+    }
+
+    function drawgrafrr() {
+        $('#chrr').easyPieChart({
+            "barColor": "#f00", "delay": 300, scaleColor: false, lineWidth: 5, size: 60
+        });
+    }
+
+    function grafico31ott() {
+        var g1 = parseFloat($("#pian-31ott").text().replace(",", "."));
+        var g2 = parseFloat($("#pian-31ott-totale").text().replace(",", "."));
+        var perc = (g1 / g2) * 100;
+        if (g1 >= g2) perc = 100;
+        $("#ch31ott").attr("data-percent", perc);
+        return perc;
+    }
+    function drawgraf31ott() {
+        $('#ch31ott').easyPieChart({
+            "barColor": "#f00", "delay": 300, scaleColor: false, lineWidth: 5, size: 60
+        });
+    }
+    function graficopf1() {
+       // var g1 = Number($("#pian-per").text());
+        var g1 = parseFloat($("#pian-per").text().replace(",","."));
+        //var g2 = Number($("#pian-pulsante").text());
+        var g2 = parseFloat($("#pian-pulsante").text().replace(",", "."));
+        var perc = (g1 / g2) * 100;
+        if (g1 >= g2) perc = 100;
+        $("#ch1").attr("data-percent", perc);
+        return perc;
+    }
+
+    function drawgraf1() {
+        $('#ch1').easyPieChart({
+            "barColor": "#f00", "delay": 300, scaleColor: false, lineWidth: 5, size: 60
+        });
+    }
+    function graficopf2() {
+       // var g1 = Number($("#pian-totali").text());
+        var g1 = parseFloat($("#pian-totali").text().replace(",", "."));
+       // var g2 = Number($("#pian-su-tot").text());
+        var g2 = parseFloat($("#pian-su-tot").text().replace(",", "."));
+
+        var perc = (g1 / g2) * 100;
+        if (g1 >= g2) perc = 100;
+        $("#ch2").attr("data-percent", perc);
+        return perc;
+    }
+    function drawgraf2() {
+        $('#ch2').easyPieChart({
+            "barColor": "#f00", "delay": 300, scaleColor: false, lineWidth: 5, size: 60
+        });
+    }
+    function alertMazzini() {
+        swal("Attenzione", "Per i dipendenti della tua sede Rai, la data del 28/06  deve essere obbligatoriamente selezionata. Per inserire in tale data permessi non inclusi in questo pannello, utilizzare la funzione tradizionale 'Ferie e Permessi'", "info");
+
+    }
+    function alertTorino() {
+        swal("Attenzione", "Per i dipendenti della tua sede Rai, la data del 25/06  deve essere obbligatoriamente selezionata. Per inserire in tale data permessi non inclusi in questo pannello, utilizzare la funzione tradizionale 'Ferie e Permessi'", "info");
+
+    }
+    function CheckCambiTurno() {
+        var error = null;
+        var days = [];
+
+        $("#piano-ferie-table td[data-progr]").each(function () {
+            if (IsTD95(this) && $(this).html().trim() != "") {
+                 debugger
+                if (IsTDin7GiorniFerie(this) == false) {
+                    error = "Nella pianificazione della settimana è necessario prevedere il giorno di <b>non lavorato</b> e <b>riposo</b>.";
+                    $(this).mousedown();
+                    return false;
+                }
+                var daydispo = IsTDwithOneFreeDaySameWeekLeft(this);
+
+                if (daydispo == null) {
+                    error = "Nella pianificazione della settimana è necessario prevedere il giorno di <b>non lavorato</b> e <b>riposo</b>.";
+                    $(this).mousedown();
+                    return false;
+                }
+                else {
+                    var dayswap = $(this).attr("data-datecomplete") + "-" + daydispo;
+                    days.push(dayswap);
+                }
+            }
+            if (IsTD96(this) && $(this).html().trim() != "") {
+
+                if (IsTDin7GiorniFerie(this) == false) {
+                    error = "Nella pianificazione della settimana è necessario prevedere il giorno di <b>non lavorato</b> e <b>riposo</b>.";
+                    $(this).mousedown();
+                    return false;
+                }
+                var daydispo = IsTDwithOneFreeDaySameWeekRight(this);
+
+                if (daydispo == null) {
+                    error = "Nella pianificazione della settimana è necessario prevedere il giorno di <b>non lavorato</b> e <b>riposo</b>.";
+                    $(this).mousedown();
+                    return false;
+                }
+                else {
+                    var dayswap = $(this).attr("data-datecomplete") + "-" + daydispo;
+                    days.push(dayswap);
+                }
+            }
+        });
+
+        var response = {};
+        response.error = error;
+        response.days = days;
+        return response;
+    }
+
+    function Consolida() {
+        if ($("#puls-cons").attr("disabled") == "disabled") return;
+        var lock = IsLockedByAlert();
+
+        var procedi = true;
+        var procediTO = true;
+
+        var cellemazzini = $(".sede-mazzini").length;
+
+        if (cellemazzini > 0) {
+            $(".sede-mazzini").each(function () {
+                debugger
+                if ($(this).html().trim() == "") {
+                    if ($(this).attr("data-thisday") == "28-06") {
+                        if ($("#mazzini-covered1").val().toLowerCase() != "true") {
+                            procedi = false;
+                        }
+                    }
+                    //if ($(this).attr("data-thisday") == "07-12") {
+                    //    if ($("#mazzini-covered2").val().toLowerCase() != "true") {
+                    //        procedi = false;
+                    //    }
+                    //}
+                }
+            });
+        }
+        if (!procedi) {
+                alertMazzini();
+                return;
+        }
+        var celleTO = $(".sede-torinocavalli").length;
+        if (celleTO > 0) {
+            $(".sede-torinocavalli").each(function () {
+                debugger
+                if ($(this).html().trim() == "") {
+                    if ($(this).attr("data-thisday") == "25-06") {
+                        if ($("#torinocavalli-covered").val().toLowerCase() != "true") {
+                            procediTO = false;
+                        }
+                    }
+                }
+            });
+        }
+        if (!procediTO) {
+
+            alertTorino();
+                return;
+
+        }
+
+
+        if (lock!=null) {
+            swal("Attenzione","Il Piano Ferie non rispetta uno dei criteri di fruizione degli arretrati (" + lock + ")",  "info");
+            return;
+        }
+
+        var cambiTurno = null;
+        if (GetTipoDip() == "G") {
+            var response = CheckCambiTurno();
+            if (response.error != null) {
+
+                swal({
+                    customClass: 'rai',
+                    icon: 'info',
+                    html:response.error,
+                    confirmButtonText:         'OK',
+                })
+
+                //swal({
+                //    title: "",
+                //    text: response.error,
+                //    type: 'error',
+                //    customClass: 'rai'
+                //});
+                return;
+            }
+            else
+                cambiTurno =(response.days.toString())
+        }
+
+
+        swal({
+            title: 'Confermi ?',
+            text: "Il piano ferie verrà inviato all'approvazione del responsabile",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Conferma',
+            cancelButtonText: 'Annulla'
+        }).then(function () {
+            var anno = $("#anno-corrente").val();
+            $("#puls-cons").attr("disabled", "disabled");
+            $.ajax({
+                url: '/feriepermessi/consolida',
+                type: "POST",
+                dataType: "json",
+                data: { anno: anno, cambiTurno:cambiTurno },
+                success: function (data) {
+                    if (data.result) {
+                        $("#calendarioAnnuale-pf-content").load("/FeriePermessi/GetCalendarioAnnualePF?anno=" + anno);
+                        $("#stato-pfer").text("In approvazione");
+                    }
+                    else {
+                        $("#puls-cons").removeAttr("disabled");
+                        swal("", data.error, "error");
+
+                    }
+                }
+            });
+            });
+
+
+
+    }
+    function Sconsolida() {
+        if ($("#puls-cons").attr("disabled") == "disabled") return;
+
+        swal({
+            title: 'Confermi ?',
+            text: "Il piano ferie verrà rimosso dallo stato di attesa approvazione e potrà essere modificato",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Conferma',
+            cancelButtonText: 'Annulla'
+        }).then(function () {
+
+            var anno = $("#anno-corrente").val();
+            $("#puls-cons").attr("disabled", "disabled");
+            $.ajax({
+                url: '/feriepermessi/sconsolida',
+                type: "POST",
+                dataType: "json",
+                data: { anno: anno },
+                success: function (data) {
+                    if (data.result) {
+                        $("#calendarioAnnuale-pf-content").load("/FeriePermessi/GetCalendarioAnnualePF?anno=" + anno);
+                        $("#stato-pfer").text("");
+                    }
+                    else {
+                        $("#puls-cons").removeAttr("disabled");
+                        swal("", data.error, "error");
+                    }
+                }
+            });
+        });
+
+    }
+    function stampaCal() {
+        return window.location = '@Url.Action("StampaPdf", "FeriePermessi")';
+    }
+
+    function RemoveEcc(cell, dataClicked, oltreLimite, oltreLimite31ott) {
+
+        var RimossaFE = $(cell).find("pie.pianif").length > 0;
+        var RimossaRR = $(cell).find("pie.pianif-RR").length > 0;
+        var RimossaRF = $(cell).find("pie.pianif-RF").length > 0;
+        var RimossaRN = $(cell).find("pie.pianif-RN").length > 0;
+
+        var rowTD = 11;
+        if (HaEstensioneMarzo) rowTD = 13;
+
+        var tPF = $(cell).find(".pianif-PF");
+        if ($(tPF).length > 0) {
+            $(cell).addClass("pf-cell-highlighted");
+            $.ajax({
+                url: '/feriepermessi/removeDayPianoFerie',
+                type: "POST",
+                dataType: "json",
+                data: { date: formattedDate(dataClicked) },
+                success: function (data) {
+                    $(cell).removeClass("pf-cell-highlighted");
+                    if (data.result) {
+                        $(cell).html("");
+                    }
+                    PermessiCombo();
+
+                }
+            });
+        }
+
+
+        var tPR = $(cell).find(".pianif-PR");
+        if ($(tPR).length > 0) {
+            $(cell).addClass("pf-cell-highlighted");
+            $.ajax({
+                url: '/feriepermessi/removeDayPianoFerie',
+                type: "POST",
+                dataType: "json",
+                data: { date: formattedDate(dataClicked) },
+                success: function (data) {
+                    $(cell).removeClass("pf-cell-highlighted");
+                    if (data.result) {
+                        $(cell).html("");
+                    }
+                    PermessiCombo();
+
+
+                }
+            });
+        }
+
+
+        var tPX = $(cell).find(".pianif-PX");
+        if ($(tPX).length > 0) {
+            $(cell).addClass("pf-cell-highlighted");
+            $.ajax({
+                url: '/feriepermessi/removeDayPianoFerie',
+                type: "POST",
+                dataType: "json",
+                data: { date: formattedDate(dataClicked) },
+                success: function (data) {
+                    $(cell).removeClass("pf-cell-highlighted");
+                    if (data.result) {
+                        $(cell).html("");
+                    }
+                    PermessiCombo();
+
+                }
+            });
+        }
+
+
+        var tfem = $(cell).find(".pianif-FEM");
+        if ($(tfem).length > 0) {
+            $(cell).addClass("pf-cell-highlighted");
+            $.ajax({
+                url: '/feriepermessi/removeDayPianoFerie',
+                type: "POST",
+                dataType: "json",
+                data: { date: formattedDate(dataClicked) },
+                success: function (data) {
+                    $(cell).removeClass("pf-cell-highlighted");
+
+                    if (data.result) {
+                        $(cell).html("");
+
+                        $("#pian-totali").text(parseFloat($("#pian-totali").text().replace(",", ".")) - .5);
+                        var p2 = graficopf2();
+                        $('#ch2').data('easyPieChart').update(p2);
+
+                        if (!oltreLimite) {
+                            $("#pian-per").text(parseFloat($("#pian-per").text().replace(",", ".")) - .5);
+                            var p = graficopf1();
+                            $('#ch1').data('easyPieChart').update(p);
+                        }
+
+                        if (Exist31ott()) {
+                            if (!oltreLimite31ott) {
+
+                                    var quanteSuPf = $("#piano-ferie-table tr:lt("+rowTD+") .pie-fe.pianif").length +
+                                    $("#piano-ferie-table tr:lt("+rowTD+") .pie-fe[title=FE]").length;
+
+                                if ($("#piano-ferie-table tr:lt("+rowTD+") .pie-fe.pianif-FEM").length > 0 ||
+                                    $("#piano-ferie-table tr:lt("+rowTD+") .pie-fe.pianif-FEP").length > 0) {
+                                    quanteSuPf += .5;
+                                }
+                                if (HaEstensioneMarzo) {
+                                    quanteSuPf += $("#piano-ferie-table-2021 .pie-fe.pianif").length +
+                                        $("#piano-ferie-table-2021 .pie-fe[title=FE]").length;
+                                }
+                                    //$("#piano-ferie-table tr:lt(11) .pie-fe").length;
+                                    if (quanteSuPf < FEperFoglioExcelArretrati) {
+                                        $("#pian-31ott").text(parseFloat($("#pian-31ott").text().replace(",", ".")) - .5);
+                                        var p31ott = grafico31ott();
+                                        $('#ch31ott').data('easyPieChart').update(p31ott);
+                                    }
+
+
+
+                            }
+                        }
+                    }
+                    CheckStatoPulsante();
+                }
+            });
+        }
+
+        var t = $(cell).find(".pianif");
+        if ($(t).length > 0) {
+            $(cell).addClass("pf-cell-highlighted");
+            $.ajax({
+                url: '/feriepermessi/removeDayPianoFerie',
+                type: "POST",
+                dataType: "json",
+                data: { date: formattedDate(dataClicked) },
+                success: function (data) {
+                    $(cell).removeClass("pf-cell-highlighted");
+
+                    if (data.result) {
+
+                        $(cell).html("");
+                        $("#pian-totali").text(parseFloat($("#pian-totali").text().replace(",", ".")) - 1);
+                        var p2 = graficopf2();
+                        $('#ch2').data('easyPieChart').update(p2);
+                        if (!oltreLimite) {
+                            $("#pian-per").text(parseFloat($("#pian-per").text().replace(",", ".")) - 1);
+                            var p = graficopf1();
+                            $('#ch1').data('easyPieChart').update(p);
+                        }
+                        debugger
+                        if (Exist31ott()) {
+                            if (!oltreLimite31ott) {
+                                if (RimossaFE) {
+                                    var quanteSuPf = $("#piano-ferie-table tr:lt("+rowTD+") .pie-fe.pianif").length +
+                                        $("#piano-ferie-table tr:lt(" + rowTD +") .pie-fe[title=FE]").length;
+
+                                    if (HaEstensioneMarzo) {
+                                        quanteSuPf += $("#piano-ferie-table-2021 .pie-fe.pianif").length +
+                                            $("#piano-ferie-table-2021 .pie-fe[title=FE]").length;
+                                    }
+
+                                    //$("#piano-ferie-table tr:lt(11) .pie-fe").length;
+                                    if (quanteSuPf < FEperFoglioExcelArretrati) {
+                                        $("#pian-31ott").text(parseFloat($("#pian-31ott").text().replace(",", ".")) - 1);
+                                        var p31ott = grafico31ott();
+                                        $('#ch31ott').data('easyPieChart').update(p31ott);
+                                    }
+                                }
+
+
+                            }
+                        }
+
+                    }
+                    else {
+
+                    }
+                    CheckStatoPulsante();
+                }
+            });
+        }
+
+        var tRF = $(cell).find(".pianif-RF");
+        if ($(tRF).length > 0) {
+            $(cell).addClass("pf-cell-highlighted");
+            $.ajax({
+                url: '/feriepermessi/removeDayPianoFerie',
+                type: "POST",
+                dataType: "json",
+                data: { date: formattedDate(dataClicked) },
+                success: function (data) {
+
+                    $(cell).removeClass("pf-cell-highlighted");
+                    if (data.result) {
+                        $(cell).html("");
+
+                        if (Exist31ott()) {
+                            if (!oltreLimite31ott) {
+                                var RFnowOnPanel =// $("pie.pianif-RR").length + $("pie[title='RR']").length;
+                                    $("#piano-ferie-table tr:lt(" + rowTD +") pie.pianif-RF").length +
+                                    $("#piano-ferie-table tr:lt(" + rowTD + ") pie[title='RF']").length;
+
+                                if (HaEstensioneMarzo) {
+                                    RFnowOnPanel += $("#piano-ferie-table-2021 pie.pianif-RF").length +
+                                        $("#piano-ferie-table-2021 pie[title='RF']").length;
+                                }
+
+                                if (RFnowOnPanel < RFperFoglioExcelArretrati) {
+                                    $("#pian-31ott").text(parseFloat($("#pian-31ott").text().replace(",", ".")) - 1);
+                                    var p31ott = grafico31ott();
+                                    $('#ch31ott').data('easyPieChart').update(p31ott);
+                                }
+                            }
+                        }
+                        var RFrim = parseFloat($("#RF-rim").text().replace(",", ".")) +1;
+                        $("#RF-rim").text(RFrim);
+                    }
+
+                    CheckStatoPulsante();
+                }
+            });
+        }
+
+
+        var tRR = $(cell).find(".pianif-RR");
+        if ($(tRR).length > 0) {
+            $(cell).addClass("pf-cell-highlighted");
+            $.ajax({
+                url: '/feriepermessi/removeDayPianoFerie',
+                type: "POST",
+                dataType: "json",
+                data: { date: formattedDate(dataClicked) },
+                success: function (data) {
+                    $(cell).removeClass("pf-cell-highlighted");
+
+                    if (data.result) {
+                        $(cell).html("");
+                        if (Exist31ott()) {
+                            if (!oltreLimite31ott) {
+                                var RRnowOnPanel =// $("pie.pianif-RR").length + $("pie[title='RR']").length;
+                                    $("#piano-ferie-table tr:lt(" + rowTD +") pie.pianif-RR").length +
+                                    $("#piano-ferie-table tr:lt(" + rowTD + ") pie[title='RR']").length;
+                                if (HaEstensioneMarzo) {
+                                    RRnowOnPanel +=
+                                        $("#piano-ferie-table-2021 pie.pianif-RR").length +
+                                        $("#piano-ferie-table-2021 pie[title='RR']").length;
+                                }
+                                if (RRnowOnPanel < RRperFoglioExcelArretrati) {
+                                    $("#pian-31ott").text(parseFloat($("#pian-31ott").text().replace(",", ".")) - 1);
+                                    var p31ott = grafico31ott();
+                                    $('#ch31ott').data('easyPieChart').update(p31ott);
+                                }
+                            }
+                        }
+                        var RRpann = $(".pianif-RR").length + $(".pianif-RN").length
+                            + parseFloat($("#rr-usu").val().replace(",", "."))
+                            + parseFloat($("#rn-usu").val().replace(",", "."));
+
+                        var RRhid = parseFloat($("#RR-hid").val().replace(",","."));
+                        $("#RR-rim").text(RRhid - RRpann);
+                        var perc = (RRpann / RRhid) * 100;
+                        if ($("#chrr").length > 0) {
+                        $("#chrr").attr("data-percent", perc);
+                        $('#chrr').data('easyPieChart').update(perc);
+                    }
+
+                    }
+                    else {
+                    }
+                    CheckStatoPulsante();
+                }
+            });
+        }
+
+        var tRN = $(cell).find(".pianif-RN");
+        if ($(tRN).length > 0) {
+            $(cell).addClass("pf-cell-highlighted");
+            $.ajax({
+                url: '/feriepermessi/removeDayPianoFerie',
+                type: "POST",
+                dataType: "json",
+                data: { date: formattedDate(dataClicked) },
+                success: function (data) {
+                    $(cell).removeClass("pf-cell-highlighted");
+                    debugger
+                    if (data.result) {
+                        $(cell).html("");
+                        PermessiCombo();
+                        //var RNpann = $(".pianif-RN").length + parseFloat($("#rn-usu").val().replace(",", "."));// $("pie.pie-rr").length;
+                        //var RNhid = parseFloat($("#RN-hid").val().replace(",", "."));
+                        //$("#RN-rim").text(RNhid - RNpann);
+                        //var perc = (RNpann / RNhid) * 100;
+                        //$("#chrn").attr("data-percent", perc);
+                        //$('#chrn').data('easyPieChart').update(perc);
+
+                        var RRpann = $(".pianif-RR").length + $(".pianif-RN").length
+                            + parseFloat($("#rr-usu").val().replace(",", "."))
+                            + parseFloat($("#rn-usu").val().replace(",", "."));
+
+                        var RRhid = parseFloat($("#RR-hid").val().replace(",", "."));
+                        $("#RR-rim").text(RRhid - RRpann);
+                        var perc = (RRpann / RRhid) * 100;
+                        if ($("#chrr").length > 0) {
+                            $("#chrr").attr("data-percent", perc);
+                            $('#chrr').data('easyPieChart').update(perc);
+                        }
+
+
+                    }
+                    else {
+                    }
+                    CheckStatoPulsante();
+                }
+            });
+        }
+            }
+
+
+    function EsisteFEPSuPannello() {
+        return $(".pianif-FEP").length > 0;
+            }
+
+    function EsisteFEMSuPannello() {
+        return $(".pianif-FEM").length > 0;
+    }
+
+    function Exist31ott() {
+        return $("#ch31ott").length > 0;
+    }
+    function CellClicked(cell) {
+        debugger
+        var isExt = ($(cell).attr("data-ext") == "2021") ;
+
+        if ($(cell).hasClass("past")) return;
+
+        var sel = '<pie class="pie-cal-anno pie-fe pianif"></pie>';
+        var selRR = '<pie class="pie-cal-anno pie-fe pianif-RR"></pie>';
+        var selRN = '<pie class="pie-cal-anno pie-fe pianif-RN"></pie>';
+        var selRF = '<pie class="pie-cal-anno pie-fe pianif-RF"></pie>';
+
+        var selFEP = '<pie class="pie-cal-anno pie-fe pianif-FEP"></pie>';
+        var selFEM = '<pie class="pie-cal-anno pie-fe pianif-FEM"></pie>';
+
+        var selPR = '<pie class="pie-cal-anno pie-fe pianif-PR"></pie>';
+        var selPF = '<pie class="pie-cal-anno pie-fe pianif-PF"></pie>';
+        var selPX = '<pie class="pie-cal-anno pie-fe pianif-PX"></pie>';
+
+        var waitingCell = "<i style='color:white' class='fa fa-spinner fa-spin'></i>";
+
+        var month = Number($(cell).parent().index());
+        var day = Number($(cell).index());
+        var year = Number($("#anno-corrente").val());// new Date().getFullYear();
+        if (isExt) year = 2021;
+
+        var p = ($("#data-limite").text()+"/"+$("#anno-corrente").val()).split("/");
+        var dataLimite = new Date(Number(p[2].trim()), Number(p[1].trim()) - 1, Number(p[0].trim()));
+
+        var dataLimite31ott = new Date(2020, 9, 31);
+        if (UtenteProduzione) dataLimite31ott = new Date(2020, 12, 31);
+        if (HaEstensioneMarzo) dataLimite31ott = new Date(2021, 2, 31);
+
+        var dataClicked = new Date(year, month - 1, day);
+        var oltreLimite = (dataClicked > dataLimite);
+        var oltreLimite31ott = (dataClicked > dataLimite31ott);
+
+        var maxPianificabili = parseFloat($("#pian-max").text().replace(",", "."));
+
+        var EccSel = $("#select-tipo").val();
+        if (isExt) EccSel = $("#select-tipo-2021").val();
+
+        if (isExt && $(cell).html().trim() == "") {
+            if (EccSel == "FE") {
+                var FEsu2021 =
+                    $(".pf-cell-highlighted").length + 
+                    $("#piano-ferie-table-2021 .pie-fe.pianif").length +
+                    $("#piano-ferie-table-2021 .pie-fe[title=FE]").length;
+                if (FEsu2021 >= FEperFoglioExcelArretrati)
+                    return;
+            }
+            if (EccSel == "RR") {
+                var RRsu2021 =
+                    $(".pf-cell-highlighted").length + 
+                    $("#piano-ferie-table-2021 pie.pianif-RR").length +
+                    $("#piano-ferie-table-2021 pie[title='RR']").length;
+                if (RRsu2021 >= RRperFoglioExcelArretrati)
+                    return;
+            }
+        }
+        debugger
+        if ($(cell).html().trim() != "") {
+            RemoveEcc(cell, dataClicked, oltreLimite, oltreLimite31ott);
+            //AggiornaAlert();
+            return;
+        }
+        if (EccSel == "FEM") {
+            if ($(cell).html().trim() == "") {
+                if (EsisteFEMSuPannello() || EsisteFEPSuPannello()) return;
+                if ( ! $(cell).hasClass("fem-fep")) return;
+
+                if (parseFloat($("#pian-totali").text().replace(",", ".")) + $(".pf-cell-highlighted").length + 0.5 > maxPianificabili) return;
+
+                if (parseFloat($("#pian-totali").text().replace(",", ".")) + $(".pf-cell-highlighted").length >= maxPianificabili) return;
+
+                $(cell).addClass("pf-cell-highlighted");
+                $(cell).html(waitingCell);
+
+                $.ajax({
+                    url: '/feriepermessi/addDayPianoFerie',
+                    type: "POST",
+                    dataType: "json",
+                    data: { date: formattedDate(dataClicked), ecc: "FEM" },
+                    success: function (data) {
+                        $(cell).removeClass("pf-cell-highlighted");
+                        $(cell).html("");
+
+                        if (data.result) {
+
+                            $(cell).html(selFEM);
+                            $("#pian-totali").text(parseFloat($("#pian-totali").text().replace(",", ".")) + .5);
+                            var p2 = graficopf2();
+                            $('#ch2').data('easyPieChart').update(p2);
+
+                            if (!oltreLimite) {
+                                $("#pian-per").text(parseFloat($("#pian-per").text().replace(",", ".")) + .5);
+                                var p1 = graficopf1();
+                                $('#ch1').data('easyPieChart').update(p1);
+                            }
+                            if (Exist31ott()) {
+                                if (!oltreLimite31ott) {
+                                    var feNow = parseFloat($("#pian-31ott").text());
+                                    if (feNow < FEperFoglioExcelArretrati) {
+                                        $("#pian-31ott").text(parseFloat($("#pian-31ott").text().replace(",", ".")) + .5);
+                                        var p31ott = grafico31ott();
+                                        $('#ch31ott').data('easyPieChart').update(p31ott);
+                                    }
+                                }
+                            }
+
+                        }
+                        else {
+
+                        }
+                        CheckStatoPulsante();
+                    }
+                });
+            }
+        }
+
+        if (EccSel == "RN") {
+
+            var blink = $(".pf-cell-highlighted").length;
+            if (GetRNresiduiGapp() - GetRNpannello() - blink <= 0) return;
+
+
+            if (PuoInserirePermesso("RN")) {
+                $(cell).addClass("pf-cell-highlighted");
+                $(cell).html(waitingCell);
+
+                $.ajax({
+                    url: '/feriepermessi/addDayPianoFerie',
+                    type: "POST",
+                    dataType: "json",
+                    data: { date: formattedDate(dataClicked), ecc: "RN" },
+                    success: function (data) {
+                        $(cell).removeClass("pf-cell-highlighted");
+                        $(cell).html("");
+
+                        if (data.result) {
+                            $(cell).html(selRN);
+
+                            var RRtot = $(".pianif-RR").length + $(".pianif-RN").length;
+                            debugger
+                            RRrim = parseFloat($("#RR-rim").text().replace(",", "."));
+                            RRrim--;
+                            $("#RR-rim").text(RRrim);
+                            var RimanentiIniziali = parseFloat($("#RR-hid").val().replace(",", "."));
+                            var perc = (RRtot / RimanentiIniziali) * 100;
+                            if ($("#chrr").length > 0)
+                            {
+                            $("#chrr").attr("data-percent", perc);
+                            $('#chrr').data('easyPieChart').update(perc);
+                            }
+                
+                           
+
+                            //var RNtot = $(".pianif-RN").length;
+                            //RNrim = parseFloat($("#RN-rim").text().replace(",", "."));
+                            //RNrim--;
+                            //$("#RN-rim").text(RNrim);
+                            //var RimanentiIniziali = parseFloat($("#RN-hid").val().replace(",", "."));
+                            //var perc = (RNtot / RimanentiIniziali) * 100;
+                            //$("#chrn").attr("data-percent", perc);
+                            //$('#chrn').data('easyPieChart').update(perc);
+                        }
+                        CheckStatoPulsante();
+                    }
+                });
+            }
+        }
+        if (EccSel == "PR") {
+            if (PuoInserirePermesso("PR")) {
+                $(cell).addClass("pf-cell-highlighted");
+                $(cell).html(waitingCell);
+
+                $.ajax({
+                    url: '/feriepermessi/addDayPianoFerie',
+                    type: "POST",
+                    dataType: "json",
+                    data: { date: formattedDate(dataClicked), ecc: "PR" },
+                    success: function (data) {
+                        $(cell).removeClass("pf-cell-highlighted");
+                        $(cell).html("");
+
+                        if (data.result) {
+                            $(cell).html(selPR);
+
+                        }
+                    }
+                });
+            }
+        }
+        if (EccSel == "PF") {
+            if (PuoInserirePermesso("PF")) {
+                $(cell).addClass("pf-cell-highlighted");
+                $(cell).html(waitingCell);
+
+                $.ajax({
+                    url: '/feriepermessi/addDayPianoFerie',
+                    type: "POST",
+                    dataType: "json",
+                    data: { date: formattedDate(dataClicked), ecc: "PF" },
+                    success: function (data) {
+                        $(cell).removeClass("pf-cell-highlighted");
+                        $(cell).html("");
+
+                        if (data.result) {
+                            $(cell).html(selPF);
+
+                        }
+                    }
+                });
+            }
+        }
+        if (EccSel == "PX") {
+            if (PuoInserirePermesso("PX")) {
+                $(cell).addClass("pf-cell-highlighted");
+                $(cell).html(waitingCell);
+
+                $.ajax({
+                    url: '/feriepermessi/addDayPianoFerie',
+                    type: "POST",
+                    dataType: "json",
+                    data: { date: formattedDate(dataClicked), ecc: "PX" },
+                    success: function (data) {
+                        $(cell).removeClass("pf-cell-highlighted");
+                        $(cell).html("");
+
+                        if (data.result) {
+                            $(cell).html(selPX);
+
+                        }
+                    }
+                });
+            }
+        }
+
+        if (EccSel == "FE") {
+            if ($(cell).html().trim() == "") {
+
+                if (parseFloat($("#pian-totali").text().replace(",", ".")) + $(".pf-cell-highlighted").length + 1 > maxPianificabili) return;
+
+                if (parseFloat($("#pian-totali").text().replace(",", ".")) + $(".pf-cell-highlighted").length >= maxPianificabili) return;
+                $(cell).addClass("pf-cell-highlighted");
+                $(cell).html(waitingCell);
+                $.ajax({
+                    url: '/feriepermessi/addDayPianoFerie',
+                    type: "POST",
+                    dataType: "json",
+                    data: { date: formattedDate(dataClicked), ecc:"FE" },
+                    success: function (data) {
+                        debugger
+                        $(cell).removeClass("pf-cell-highlighted");
+                        $(cell).html("");
+
+                        if (data.result) {
+
+                            $(cell).html(sel);
+                            $("#pian-totali").text(parseFloat($("#pian-totali").text().replace(",",".")) + 1);
+                            var p2 = graficopf2();
+                            $('#ch2').data('easyPieChart').update(p2);
+
+                            if (!oltreLimite) {
+                                $("#pian-per").text(parseFloat($("#pian-per").text().replace(",", ".")) + 1);
+                                var p1 = graficopf1();
+                                $('#ch1').data('easyPieChart').update(p1);
+                            }
+                            if (Exist31ott()) {
+                                if (!oltreLimite31ott) {
+                                    var feNow = parseFloat($("#pian-31ott").text());
+                                    if (feNow < FEperFoglioExcelArretrati) {
+                                        $("#pian-31ott").text(parseFloat($("#pian-31ott").text().replace(",", ".")) + 1);
+                                        var p31ott = grafico31ott();
+                                        $('#ch31ott').data('easyPieChart').update(p31ott);
+                                    }
+                                }
+                            }
+
+                        }
+                        else {
+
+                        }
+                        CheckStatoPulsante();
+                    }
+                });
+            }
+        }
+
+        if (EccSel == "RF") {
+            if ($(cell).html().trim() == "") {
+                var blink = $(".pf-cell-highlighted").length;
+                var RFrim = parseFloat($("#RF-rim").text().replace(",", "."));
+                if (RFrim - blink <= 0) return;
+
+                $(cell).addClass("pf-cell-highlighted");
+                $(cell).html(waitingCell);
+                $.ajax({
+                    url: '/feriepermessi/addDayPianoFerie',
+                    type: "POST",
+                    dataType: "json",
+                    data: { date: formattedDate(dataClicked), ecc: "RF" },
+                    success: function (data) {
+
+                        $(cell).removeClass("pf-cell-highlighted");
+                        $(cell).html("");
+
+                        if (data.result) {
+                            $(cell).html(selRF);
+                            var RFtot = $(".pianif-RF").length;
+                            RFrim = parseFloat($("#RF-rim").text().replace(",", "."));
+                            RFrim--;
+                            $("#RF-rim").text(RFrim);
+
+                            if (Exist31ott()) {
+                                if (!oltreLimite31ott) {
+
+                                    var RFnowOnPanel =
+                                        $("#piano-ferie-table tr:lt(11) pie.pianif-RF").length +
+                                        $("#piano-ferie-table tr:lt(11) pie[title='RF']").length;
+                                    // $("pie.pianif-RR").length + $("pie[title='RR']").length;
+                                    if (RFnowOnPanel <= RFperFoglioExcelArretrati) {
+                                        $("#pian-31ott").text(parseFloat($("#pian-31ott").text().replace(",", ".")) + 1);
+                                        var p31ott = grafico31ott();
+                                        $('#ch31ott').data('easyPieChart').update(p31ott);
+                                    }
+                                }
+                            }
+                        }
+                        CheckStatoPulsante();
+                    }
+                });
+
+            }
+        }
+        if (EccSel == "RR") {
+            if ($(cell).html().trim() == "") {
+
+                var blink = $(".pf-cell-highlighted").length;
+                var RRrim = parseFloat($("#RR-rim").text().replace(",", "."));
+                if (RRrim-blink <= 0) return;
+
+                if (GetRRresiduiGapp() - GetRRpannello() - blink <= 0) return;
+
+
+                $(cell).addClass("pf-cell-highlighted");
+                $(cell).html(waitingCell);
+
+                $.ajax({
+                    url: '/feriepermessi/addDayPianoFerie',
+                    type: "POST",
+                    dataType: "json",
+                    data: { date: formattedDate(dataClicked),ecc:"RR" },
+                    success: function (data) {
+                        $(cell).removeClass("pf-cell-highlighted");
+                        $(cell).html("");
+
+                        if (data.result) {
+                            $(cell).html(selRR);
+                            var RRtot = $(".pianif-RR").length + $(".pianif-RN").length;
+                            debugger
+                            RRrim = parseFloat($("#RR-rim").text().replace(",", "."));
+                            RRrim--;
+                            $("#RR-rim").text(RRrim);
+                            var RimanentiIniziali = parseFloat($("#RR-hid").val().replace(",", "."));
+                            var perc = (RRtot / RimanentiIniziali) * 100;
+                            if ($("#chrr").length > 0) {
+                            $("#chrr").attr("data-percent", perc);
+                            $('#chrr').data('easyPieChart').update(perc);
+                            }
+
+                            //$("#pian-totali").text(Number($("#pian-totali").text()) + 1);
+                            //var p2 = graficopf2();
+                            //$('#ch2').data('easyPieChart').update(p2);
+
+                            //if (!oltreLimite) {
+                            //    $("#pian-per").text(Number($("#pian-per").text()) + 1);
+                            //    var p1 = graficopf1();
+                            //    $('#ch1').data('easyPieChart').update(p1);
+                            //}
+                            if (Exist31ott()) {
+                                if (!oltreLimite31ott) {
+
+
+                                    var RRnowOnPanel =
+                                        $("#piano-ferie-table tr:lt(11) pie.pianif-RR").length +
+                                        $("#piano-ferie-table tr:lt(11) pie[title='RR']").length;
+                                       // $("pie.pianif-RR").length + $("pie[title='RR']").length;
+                                    if (RRnowOnPanel <= RRperFoglioExcelArretrati) {
+                                        $("#pian-31ott").text(parseFloat($("#pian-31ott").text().replace(",", ".")) + 1);
+                                        var p31ott = grafico31ott();
+                                        $('#ch31ott').data('easyPieChart').update(p31ott);
+                                    }
+
+                                }
+                            }
+                        }
+                        else {
+
+                        }
+                        CheckStatoPulsante();
+                    }
+                });
+            }
+        }
+        //if (EccSel == "RN") {
+        //    if ($(cell).html().trim() == "") {
+        //        var blink = $(".pf-cell-highlighted").length;
+        //        var RNrim = parseFloat($("#RN-rim").text().replace(",", "."));
+        //        if (RNrim-blink <= 0) return;
+
+        //        $(cell).addClass("pf-cell-highlighted");
+        //        $(cell).html(waitingCell);
+        //        $.ajax({
+        //            url: '/feriepermessi/addDayPianoFerie',
+        //            type: "POST",
+        //            dataType: "json",
+        //            data: { date: formattedDate(dataClicked), ecc: "RN" },
+        //            success: function (data) {
+        //                $(cell).removeClass("pf-cell-highlighted");
+        //                $(cell).html("");
+
+        //                if (data.result) {
+        //                    $(cell).html(selRN);
+        //                    var RNtot = $(".pianif-RN").length;
+        //                    RNrim = parseFloat($("#RN-rim").text().replace(",", "."));
+        //                    RNrim--;
+        //                    $("#RN-rim").text(RNrim);
+        //                    var RimanentiIniziali = parseFloat($("#RN-hid").val().replace(",", "."));
+        //                    var perc = (RNtot / RimanentiIniziali) * 100;
+        //                    $("#chrn").attr("data-percent", perc);
+        //                    $('#chrn').data('easyPieChart').update(perc);
+
+        //                    if (Exist31ott()) {
+        //                        if (!oltreLimite31ott) {
+        //                            $("#pian-31ott").text(parseFloat($("#pian-31ott").text().replace(",", ".")) + 1);
+        //                            var p31ott = grafico31ott();
+        //                            $('#ch31ott').data('easyPieChart').update(p31ott);
+        //                        }
+        //                    }
+        //                }
+        //                else {
+
+        //                }
+        //                CheckStatoPulsante();
+        //            }
+        //        });
+        //    }
+        //}
+      //  AggiornaAlert();
+
+
+
+    }
+    function AggiornaAlert() {
+        $.ajax({
+            url: '/feriepermessi/GetAlertArretrati',
+            type: "GET",
+            dataType: "html",
+            data: {},
+            success: function (data) {
+                $("#anyalert").html(data);
+            }
+        });
+    }
+    function PulsanteAbilitato31ott() {
+        if (!Exist31ott()) return true;
+
+        var Pianificati31ott = parseFloat($("#pian-31ott").text().replace(",", "."));
+        var Pianificati31ottDovuto = parseFloat($("#pian-31ott-totale").text().replace(",", "."));
+        var diff = Pianificati31ottDovuto - Pianificati31ott;
+        ColoraChart("ch31ott", diff <= 0);
+        return diff <= 0;
+    }
+    function PulsanteAbilitatoPerFerie() {
+
+        var PianificatiTotali = parseFloat($("#pian-totali").text().replace(",", "."));
+        var MassimoPianificabile = parseFloat($("#pian-su-tot").text().replace(",", "."));
+
+        var DaPianificareEntro = parseFloat($("#pian-pulsante").text().replace(",", "."));
+        var PianificatiEntro = parseFloat($("#pian-per").text().replace(",", "."));
+
+        var diffEntro = DaPianificareEntro - PianificatiEntro;
+        var diffTotali = MassimoPianificabile - PianificatiTotali;
+
+        var abilitatoEntro = diffEntro <= 0.99;
+        var abilitatoTotali = diffTotali <= 0.99;
+        if ($("#arretrati-oltre-10").length == 0) {
+            var fe = FEentroGiugno();
+            var fe15 = $("#arretratiFE15").val();
+
+            if (fe < fe15)
+                abilitatoEntro = false;
+        }
+
+        ColoraChart("ch1", abilitatoEntro);
+        ColoraChart("ch2", abilitatoTotali);
+
+        return (abilitatoEntro & abilitatoTotali);
+    }
+
+    function ColoraChart(elementId, abil) {
+
+        var element = $("#" + elementId);
+
+        var attrPer = $(element).attr("data-percent");
+        if (attrPer == "") return;
+
+        var perc = parseFloat(attrPer);
+        if (abil)
+            $(element).data('easyPieChart').options.barColor = '#5fc645';
+        else
+            $(element).data('easyPieChart').options.barColor = '#ff0000';
+
+        $(element).data('easyPieChart').update(perc);
+    }
+
+    function AggiornaBarraArretrati30g() {
+
+        if ($("#arretrati-oltre-10").length == 0)
+            return true;
+
+        var RRRNfoundGiugno = 0;
+        var FEfoundGiugno = 0;
+        var FEfoundSettembre = 0;
+        var FEdaMettereEntro30sett = parseInt($("#pian-pulsante").text());
+        var maxbarra = parseInt($("#max-barra").text());
+        debugger
+        $("td[data-intday").each(function () {
+            if ($(this).attr("data-intday") <= 630) { //30giugno
+
+                RRRNfoundGiugno += $(this).find("pie.pianif-RR").length + $(this).find("pie.pianif-RN").length +
+                    + $(this).find("pie[title='RN']").length + $(this).find("pie[title='RR']").length;
+
+                FEfoundGiugno += $(this).find("pie.pianif").length + $(this).find("pie[title='FE']").length ;
+            }
+        });
+        if (IsDirigente()) {
+            FEfoundGiugno = 0;
+            $("td[data-intday").each(function () {
+                if ($(this).attr("data-intday") <= 1231) { //31dic
+                    FEfoundGiugno += $(this).find("pie.pianif").length + $(this).find("pie[title='FE']").length;
+                }
+            });
+        }
+        $("td[data-intday").each(function () {
+            if ($(this).attr("data-intday") <= 930) { //30settembre
+
+                FEfoundSettembre += $(this).find("pie.pianif").length + $(this).find("pie[title='FE']").length;
+            }
+        });
+        var FEperbarra = 0;
+        var Eccedenza30Sett = FEfoundSettembre - FEdaMettereEntro30sett   ;
+        if (Eccedenza30Sett > 0) {
+          if (FEfoundGiugno >= Eccedenza30Sett)
+                FEperbarra = Eccedenza30Sett;
+            else
+                FEperbarra = FEfoundGiugno;
+
+        }
+        var totsubarra = RRRNfoundGiugno + FEperbarra;
+        if (totsubarra > maxbarra)
+            totsubarra = maxbarra;
+
+        var barraperc = (totsubarra / maxbarra) * 100;
+        $("#pbar-arretrati").css("width", barraperc + "%");
+        $("#arr-barra").text(totsubarra);
+
+        if (totsubarra >= maxbarra)
+            $("#pbar-arretrati").css("background-color", "#5fc645");
+        else
+            $("#pbar-arretrati").css("background-color", "#ff0000");
+
+        return totsubarra >= maxbarra;
+    }
+
+    function PulsanteAbilitatoPerRR() {
+        debugger
+        if ($("#chrr").length == 0)
+            return true;
+
+
+        debugger
+        var sommaArretrati = parseInt($("#arretratiSomma").val());
+
+        var arr = $("#arretratiRRRN15").val();
+        if ($('#select-tipo option[value=RR]').length == 0 && $('#select-tipo option[value=RN]').length == 0) return true;
+        if ($("#RR-hid").val() == "0") return true;
+
+        var RRfoundGiugno = 0;
+
+        $("td[data-intday").each(function () {
+            if ($(this).attr("data-intday") <= 630) { //30giugno
+                RRfoundGiugno += $(this).find("pie.pianif-RR").length + $(this).find("pie.pianif-RN").length;
+            }
+        });
+
+        var RRfoundAll = $("pie.pianif-RR").length + $("pie.pianif-RN").length;
+
+        debugger
+        var RRpann = 0;
+        if (sommaArretrati < 10)
+            RRpann = RRfoundGiugno + parseFloat($("#rr-usu").val().replace(",", "."))
+                + parseFloat($("#rn-usu").val().replace(",", "."));
+        else
+            RRpann = RRfoundAll + parseFloat($("#rr-usu").val().replace(",", "."))
+                + parseFloat($("#rn-usu").val().replace(",", "."));
+
+        var abilitato = RRpann >= arr;
+        ColoraChart("chrr", abilitato);
+
+        return abilitato;
+        //if ($('#select-tipo option[value=RR]').length == 0) return true;
+        //if ($("#RR-hid").val() == "0") return true;
+
+        //var soglia10 =Math.floor( parseFloat(  $("#RR-hid").val().replace(",",".")) * 0);
+        //var RRpann = $("pie.pianif-RR").length + parseFloat($("#rr-usu").val().replace(",", "."));// $("pie.pie-rr").length;
+
+        //var abilitato = RRpann >= soglia10;
+        //ColoraChart("chrr",abilitato);
+        //return abilitato;
+    }
+
+
+            function PulsanteAbilitatoPerRN() {
+                return true;
+
+        var sommaArretrati = parseInt($("#arretratiSomma").val());
+
+        var arr = $("#arretratiRN15").val();
+        if ($('#select-tipo option[value=RN]').length == 0) return true;
+        if ($("#RN-hid").val() == "0") return true;
+
+        var RNfoundGiugno = 0;
+
+            $("td[data-intday").each(function () {
+                if ($(this).attr("data-intday") <= 630) { //30giugno
+                    RNfoundGiugno += $(this).find("pie.pianif-RN").length;
+                }
+            });
+
+        var RNfoundAll = $("pie.pianif-RN").length;
+
+        debugger
+        //var RNpann = $("pie.pianif-RN").length + parseFloat($("#rn-usu").val().replace(",", "."));// $("pie.pie-rn").length;
+        var RNpann = 0;
+        if (sommaArretrati<10)
+            RNpann = RNfoundGiugno + parseFloat($("#rn-usu").val().replace(",", "."));// $("pie.pie-rn").length;
+        else
+            RNpann = RNfoundAll + parseFloat($("#rn-usu").val().replace(",", "."));// $("pie.pie-rn").length;
+
+        var abilitato = RNpann >= arr;
+        ColoraChart("chrn",abilitato);
+
+        return abilitato;
+    }
+    function FEentroGiugno() {
+        var FEfoundGiugno = 0;
+        $("td[data-intday").each(function () {
+            if ($(this).attr("data-intday") <= 630) { //30giugno
+                FEfoundGiugno += $(this).find("pie.pianif").length + $(this).find("pie[title='FE']").length;
+            }
+        });
+        return FEfoundGiugno;
+    }
+
+    function ArretratiTotali() {
+
+        var RNfound = 0;
+        var RRfound = 0;
+        var FEfound = 0;
+
+        $("td[data-intday").each(function () {
+                RNfound += $(this).find("pie.pianif-RN").length + $(this).find("pie[title='RN']").length;
+                RRfound += $(this).find("pie.pianif-RR").length + $(this).find("pie[title='RR']").length;
+                FEfound += $(this).find("pie.pianif").length + $(this).find("pie[title='FE']").length;
+        });
+        var tot = RNfound + RRfound + FEfound;
+        return tot;
+
+    }
+
+    function CheckBarra31Dicembre() {
+        if ($("#arretrati-g-dicembre").length == 0)
+            return true;
+
+        var spettFerie = parseInt( $("#pian-su-tot").text());
+        var FEfoundMarzo = 0;
+        var RRfoundMarzo = 0;
+        var RNfoundMarzo = 0;
+        $("td[data-intday").each(function () {
+            if ($(this).attr("data-intday") <= 1231) {
+                FEfoundMarzo += $(this).find("pie.pianif").length + $(this).find("pie[title='FE']").length;
+                RRfoundMarzo += $(this).find("pie.pianif-RR").length + $(this).find("pie[title='RR']").length;
+               // RNfoundMarzo += $(this).find("pie.pianif-RN").length + $(this).find("pie[title='RN']").length;
+            }
+        });
+        FEfoundMarzo = FEfoundMarzo - spettFerie;
+        if (FEfoundMarzo < 0) FEfoundMarzo = 0;
+
+        var tot = FEfoundMarzo + RRfoundMarzo + RNfoundMarzo;
+        var maxbarra = parseInt($("#ArretratiEntroDicembreG").val());
+        if (tot > maxbarra) tot = maxbarra;
+
+        if (tot >= maxbarra) {
+            barraperc = 100;
+            $("#pbar-g-dic").css("background-color", "#5fc645");
+            tot = maxbarra;
+        }
+        else {
+            barraperc = (tot / maxbarra) * 100;
+            $("#pbar-g-dic").css("background-color", "#ff0000");
+        }
+        $("#pbar-g-dic").css("width", barraperc + "%");
+        $("#arr-g-dic").text(tot);
+        return tot >= maxbarra;
+    }
+
+    function CheckBarra31Marzo() {
+        if ($("#arretrati-g-marzo").length == 0)
+            return true;
+
+        var FEfoundMarzo = 0;
+        var RRfoundMarzo = 0;
+        var RNfoundMarzo = 0;
+        $("td[data-intday").each(function () {
+            if ($(this).attr("data-intday") <= 331) {
+                FEfoundMarzo += $(this).find("pie.pianif").length + $(this).find("pie[title='FE']").length;
+                RRfoundMarzo += $(this).find("pie.pianif-RR").length + $(this).find("pie[title='RR']").length;
+                RNfoundMarzo += $(this).find("pie.pianif-RN").length + $(this).find("pie[title='RN']").length;
+            }
+        });
+        var tot = FEfoundMarzo + RRfoundMarzo + RNfoundMarzo;
+
+        var maxbarra = parseInt($("#ArretratiEntroMarzoG").val());
+        if (tot > maxbarra) tot = maxbarra;
+
+
+        if (tot >= maxbarra) {
+            barraperc = 100;
+            $("#pbar-g").css("background-color", "#5fc645");
+            tot = maxbarra;
+        }
+        else {
+            barraperc = (tot / maxbarra) * 100;
+            $("#pbar-g").css("background-color", "#ff0000");
+        }
+        $("#pbar-g").css("width", barraperc + "%");
+        $("#arr-g").text(tot);
+        return true;
+        //return tot >= maxbarra;
+    }
+    function AlmenoUnGiorno() {
+        var RNfound = 0;
+        var RRfound = 0;
+        var FEfound = 0;
+
+        $("td[data-intday").each(function () {
+            if ($(this).attr("data-intday") <= 1231) { 
+                RNfound += $(this).find("pie.pianif-RN").length;// + $(this).find("pie[title='RN']").length;
+                RRfound += $(this).find("pie.pianif-RR").length;// + $(this).find("pie[title='RR']").length;
+                FEfound += $(this).find("pie.pianif").length;// + $(this).find("pie[title='FE']").length;
+            }
+        });
+        if (RNfound + RRfound + FEfound > 0)
+            $("#puls-cons").removeAttr("disabled");
+        else
+            $("#puls-cons").attr("disabled", "disabled");
+    }
+    function CheckBarra30Giugno() {
+        if ($("#arretrati-oltre-10").length == 0) //se non vis true
+            return true;
+
+        return AggiornaBarraArretrati30g();//new vers
+
+
+        var RNfoundGiugno = 0;
+        var RRfoundGiugno = 0;
+        var FEfoundGiugno = 0;
+
+        $("td[data-intday").each(function () {
+            if ($(this).attr("data-intday") <= 630) { //30giugno
+                RNfoundGiugno += $(this).find("pie.pianif-RN").length + $(this).find("pie[title='RN']").length;
+                RRfoundGiugno += $(this).find("pie.pianif-RR").length + $(this).find("pie[title='RR']").length;
+                FEfoundGiugno += $(this).find("pie.pianif").length + $(this).find("pie[title='FE']").length;
+            }
+        });
+        debugger
+        if (IsDirigente()) {
+            FEfoundGiugno = 0;
+            $("td[data-intday").each(function () {
+                if ($(this).attr("data-intday") <= 1231) { //31dic
+                    FEfoundGiugno += $(this).find("pie.pianif").length + $(this).find("pie[title='FE']").length;
+                }
+            });
+        }
+        var arrFE = parseInt($("#arretratiFE15").val());
+        if (FEfoundGiugno > arrFE) FEfoundGiugno = arrFE;
+
+        var arrRR = parseInt($("#arretratiRR15").val());
+        if (RRfoundGiugno > arrRR) RRfoundGiugno = arrRR;
+
+        var arrRN = parseInt($("#arretratiRN15").val());
+        if (RNfoundGiugno > arrRN) RNfoundGiugno = arrRN;
+
+        var tot = RNfoundGiugno + RRfoundGiugno + FEfoundGiugno;
+        var barraperc = 0;
+        var maxbarra = parseInt($("#max-barra").text());
+
+        if (tot >= maxbarra) {
+            barraperc = 100;
+            $("#pbar-arretrati").css("background-color", "#5fc645");
+            tot = maxbarra;
+        }
+        else {
+            barraperc = (tot / maxbarra) * 100;
+            $("#pbar-arretrati").css("background-color", "#ff0000");
+        }
+        $("#pbar-arretrati").css("width", barraperc + "%");
+        $("#arr-barra").text(tot);
+        return tot >= maxbarra;
+    }
+    var SenzaVincoli =@(Model.IsSedeSenzaVincoli.ToString().ToLower());
+    if (SenzaVincoli) CheckStatoPulsante();
+
+    function CheckStatoPulsante() {
+
+        if (SenzaVincoli)
+        {
+            AlmenoUnGiorno();
+            return;
+        }
+        debugger
+        var abfe = PulsanteAbilitatoPerFerie();
+
+        var abrr = PulsanteAbilitatoPerRR();
+        var abrn = PulsanteAbilitatoPerRN();
+        var OkEntro30giugno = CheckBarra30Giugno();
+        var OkEntro31Marzo = CheckBarra31Marzo();
+        var OkEntro31Dicembre = CheckBarra31Dicembre();
+
+        //if (Exist31ott()) {
+        //    abrr = true;
+        //    abrn = true;
+        //}
+        //var ab31ott = PulsanteAbilitato31ott();
+
+        if (abfe && abrr && abrn  && OkEntro30giugno && OkEntro31Marzo && OkEntro31Dicembre) {
+            $("#puls-cons").removeAttr("disabled");
+        }
+        else {
+            $("#puls-cons").attr("disabled", "disabled");
+        }
+
+        var somma = parseInt($("#arretratiSomma").val());
+
+        if (somma >= 50 && ArretratiTotali() >= 50) {
+            console.log(somma, ArretratiTotali());
+            $("#puls-cons").removeAttr("disabled");
+        }
+
+
+
+        return;
+
+
+    }
+    function formattedDate(d) {
+        return [d.getDate(), d.getMonth() + 1, d.getFullYear()]
+            .map(n => n < 10 ? '0'+n : n).join('/');
+    }
+
+
+    function IsLockedByAlert() {
+        var lock  = null;
+        $("label.alert-per-arr").each(function () {
+
+            if ($(this).text().indexOf("7-10") >= 0 || $(this).text().indexOf("11-30") >= 0) {
+                lock = $(this).text();
+            }
+        })
+        return lock;
+    }
+
+
+    function GetRRpannello() {
+        return $(".pianif-RR").length;
+    }
+    function GetRNpannello() {
+        return $(".pianif-RN").length;
+    }
+    function GetRRresiduiGapp() {
+        return parseInt($("#RR-residui").val());
+    }
+    function GetRNresiduiGapp() {
+        return parseInt($("#RN-residui").val());
+    }
+
+</script>

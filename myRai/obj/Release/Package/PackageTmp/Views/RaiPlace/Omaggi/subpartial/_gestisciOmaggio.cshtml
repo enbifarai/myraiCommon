@@ -1,0 +1,212 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonModel.raiplace;
+@using MVCProject.Custom_Helpers;
+@using myRaiCommonManager;
+
+@model Omaggio
+
+@using (Html.BeginModal("Omaggio"))
+{
+<form id="form-gestioneomaggio" class="js-form1 validation form-horizontal" method="post" action="/Omaggi/GestisciOmaggio" novalidate="novalidate">
+    <div class="row">
+        <div class="form-group" style="margin:0px;">
+            <div id="riga-omaggio">
+                <div class="col-sm-7">
+                    @using (Html.BeginPanel(PanelType.Panel, "Dati omaggio", false))
+                    {
+                        @Html.HiddenFor(m => m.Id)
+                        @Html.HiddenFor(m => m.Utente.Matricola)
+                        @Html.HiddenFor(m => m.Utente.Id_Utente)
+                        @Html.HiddenFor(m => m.UtenteEsterno)
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                @Html.LabelFor(m => m.Data_Ricezione, "Data ricezione", new { @class = "rai-caption" })
+                                <div class="input-group" style="position: relative">
+                                    @Html.TextBoxFor(m => m.Data_Ricezione, new { @class = "js-datetimepicker form-control", id = "data_ricezione", data_format = "DD/MM/YYYY", data_locale = "it", placeholder = "Selezionare Data ricezione", required = "required", onchange = "CtrInput($(this));" })
+                                    <span style="cursor: pointer" onclick="$('#data_ricezione').datetimepicker('show')" class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                                </div>
+                                <div>
+                                    @Html.ValidationMessageFor(m => m.Data_Ricezione, "La data ricezione è obbligatoria", new { @class = "field-validation-error hidden" })
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                @Html.LabelFor(m => m.Tipo, "Tipologia", new { @class = "rai-caption" })
+                                @Html.DropDownListFor(m => m.Tipo_id, new SelectList(@myRai.Controllers.OmaggiController.GetTipiOmaggio(Model.Tipo_id), "Value", "Text", "Selected"), "Selezionare", new { @class = "form-control", onchange = "CtrInput($(this));", required = "required" })
+                                @Html.ValidationMessageFor(m => m.Tipo_id, "Selezionare il tipo omaggio", new { @class = "field-check-error hidden" })
+                            </div>
+                        </div>
+
+                        <div id="dente" class="row push-10">
+                            <div class="col-sm-12">
+                                @Html.LabelFor(m => m.Ente_Beneficiario, "Ente Beneficiario", new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.Ente_Beneficiario, htmlAttributes: new { @class = "form-control", onchange = "CtrInput($(this));" })
+                            </div>
+                        </div>
+
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                @Html.LabelFor(m => m.Motivo, "Occasione di ricezione", new { @class = "rai-caption" })
+                                @Html.DropDownListFor(m => m.Motivo_id, new SelectList(@myRai.Controllers.OmaggiController.GetMotiviOmaggio(Model.Motivo_id), "Value", "Text", "Selected"), "Selezionare", new { @class = "form-control motivo-option", onchange = "editMotivo();", required = "required" })
+                                <input class="editOption" id="editOption" name="editOption" onchange="CtrInput($(this));" />
+                                @Html.ValidationMessageFor(m => m.Motivo_id, "Selezionare l'occasione di ricezione", new { @class = "field-validation-error hidden" })
+                                <span class="field-validation-valid field-validation-error hidden" data-valmsg-for="editOption" data-valmsg-replace="false">Immettere una occasione di ricezione o selezionarla dalla lista</span>
+                            </div>
+                        </div>
+
+                        <div id="notealtro" class="row push-10">
+                            <div class="col-sm-12">
+                                @Html.LabelFor(m => m.Note_Altro, "Note  Occasione Di Ricezione", new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.Note_Altro, htmlAttributes: new { @class = "form-control", onchange = "CtrInput($(this));" })
+                            </div>
+                        </div>
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                @Html.LabelFor(m => m.Mittente, new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.Mittente, htmlAttributes: new { @class = "form-control", required = "required", onchange = "CtrInput($(this));" })
+                                @Html.ValidationMessageFor(m => m.Mittente, "Il mittente è obbligatorio", new { @class = "field-validation-error hidden" })
+                            </div>
+                        </div>
+                        <div id="ddescrizione" class="row push-10">
+                            <div class="col-sm-12">
+                                @Html.LabelFor(m => m.Descrizione, new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.Descrizione, htmlAttributes: new { @class = "form-control", required = "required", onchange = "CtrInput($(this));" })
+                                @Html.ValidationMessageFor(m => m.Descrizione, "La descrizione è obbligatoria", new { @class = "field-validation-error hidden" })
+                            </div>
+                        </div>
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                @Html.LabelFor(m => m.Valore, new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.Valore, htmlAttributes: new { @class = "form-control", required = "required", onchange = "CtrInput($(this));", onkeypress = "return onlyNumeric(event,'valore');" })
+                                @Html.ValidationMessageFor(m => m.Valore, "Il valore è obbligatorio", new { @class = "field-validation-error hidden" })
+                            </div>
+                        </div>
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                @Html.LabelFor(m => m.Flag_UfficioSpedizioni, "Pervenuto tramite ufficio spedizioni?", new { @class = "rai-caption" })
+                                <div>
+                                    <div class="rai-radio radio-inline">
+                                        @Html.RadioButtonFor(m => m.Flag_UfficioSpedizioni, true, htmlAttributes: new { @onclick = "javascript:RadioUfficioSpedizioni('true');" })
+                                        <label>Sì</label>
+                                    </div>
+                                    <div class="rai-radio radio-inline">
+                                        @Html.RadioButtonFor(m => m.Flag_UfficioSpedizioni, false, htmlAttributes: new { @onclick = "javascript:RadioUfficioSpedizioni('false');" })
+                                        <label>No</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="divufficio" class="row push-10" hidden="@(!Model.Flag_UfficioSpedizioni)">
+                            <div class="col-sm-12">
+                                @Html.LabelFor(m => m.UfficioSpedizioni, "Ufficio Spedizioni", new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.UfficioSpedizioni, htmlAttributes: new { @class = "form-control", required = "required", pattern = "[0-9]{10}", onchange = "CtrInput($(this));", onkeypress = "return onlyNumeric(event);" })
+                                @Html.ValidationMessageFor(m => m.UfficioSpedizioni, "L'ufficio spedizioni è obbligatorio", new { @class = "field-validation-error hidden" })
+                            </div>
+                        </div>
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                @Html.LabelFor(m => m.Note, new { @class = "rai-caption" })
+                                @Html.TextAreaFor(m => m.Note, htmlAttributes: new { @class = "form-control" })
+                            </div>
+                        </div>
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+
+                                @Html.LabelFor(m => m.Flag_Accetto, "Omaggio Accettato?", new { @class = "rai-caption" })
+                                <div>
+                                    <div class="rai-radio radio-inline">
+                                        @Html.RadioButtonFor(m => m.Flag_Accetto, true, htmlAttributes: new { @onclick = "javascript:RadioAccettoOmaggio('true');" })
+                                        <label>Sì</label>
+                                    </div>
+                                    <div class="rai-radio radio-inline">
+                                        @Html.RadioButtonFor(m => m.Flag_Accetto, false, htmlAttributes: new { @onclick = "javascript:RadioAccettoOmaggio('false');" })
+                                        <label>No</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                @Html.LabelFor(m => m.Note_Accetto, "Motivo", new { @class = "rai-caption" })
+                                @Html.TextAreaFor(m => m.Note_Accetto, htmlAttributes: new { @class = "form-control", required = "required", onchange = "CtrInput($(this));" })
+                                @Html.ValidationMessageFor(m => m.Note_Accetto, "Il Motivo del rifiuto è obbligatorio", new { @class = "field-validation-error hidden", @id = "Note_Accetto_Error" })
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="col-sm-5">
+                    @using (Html.BeginPanel(PanelType.NoHeader, ""))
+                    {
+                        using (Html.BeginBlock(BlockType.ContentTable, "Dati utente"))
+                        {
+                            <div class="row push-10">
+                                <div class="col-sm-12">
+                                    @Html.LabelFor(m => m.Utente.Nome, new { @class = "rai-caption" })
+                                    @Html.TextBoxFor(m => m.Utente.Nome, htmlAttributes: !Model.UtenteEsterno ? (object)new { @readonly = true, @class = "form-control", required = "required", onchange = "CtrInput($(this));" } : new { @class = "form-control", required = "required", onchange = "CtrInput($(this));" })
+                                    @Html.ValidationMessageFor(m => m.Utente.Nome, "Il nome è obbligatorio", new { @class = "field-validation-error hidden" })
+                                </div>
+                            </div>
+                            <div class="row push-10">
+                                <div class="col-sm-12">
+                                    @Html.LabelFor(m => m.Utente.Cognome, new { @class = "rai-caption" })
+                                    @Html.TextBoxFor(m => m.Utente.Cognome, htmlAttributes: !Model.UtenteEsterno ? (object)new { @readonly = true, @class = "form-control", required = "required", onchange = "CtrInput($(this));" } : new { @class = "form-control", required = "required", onchange = "CtrInput($(this));" })
+                                    @Html.ValidationMessageFor(m => m.Utente.Cognome, "Il cognome è obbligatorio", new { @class = "field-validation-error hidden" })
+                                </div>
+                            </div>
+                            <div class="row push-10">
+                                <div class="col-sm-12">
+                                    @Html.LabelFor(m => m.Utente.Indirizzo_Mail, "Indirizzo e-mail", new { @class = "rai-caption" })
+                                    @Html.TextBoxFor(m => m.Utente.Indirizzo_Mail, htmlAttributes: !Model.UtenteEsterno ? (object)new { @readonly = true, @class = "form-control", required = "required", onchange = "CtrInput($(this));" } : new { @class = "form-control", required = "required", onchange = "CtrInput($(this));" })
+                                    @Html.ValidationMessageFor(m => m.Utente.Indirizzo_Mail, "Indirizzo e-mail non valido", new { @class = "field-validation-error hidden" })
+                                </div>
+                            </div>
+                            <div class="row push-10">
+                                <div class="col-sm-12">
+                                    <span class="rai-font-sm">E' inoltre possibile, inserendo di seguito l'indirizzo mail del proprio responsabile, inviare una comunicazione automatica con i presenti dati (vedi regolamentazione aziendale)</span>
+                                    <br />
+                                    @Html.LabelFor(m => m.Mail_Responsabile, "Indirizzo e-mail del responsabile", new { @class = "rai-caption" })
+                                    @Html.TextBoxFor(m => m.Mail_Responsabile, htmlAttributes: new { @class = "form-control", onchange = "CtrInput($(this));" })
+                                    @Html.ValidationMessageFor(m => m.Mail_Responsabile, "Indirizzo e-mail del responsabile non valido", new { @class = "field-validation-error hidden" })
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row push-10">
+        <div class="col-xs-12 " id="dbtn">
+            <input type="button" id="btnInserisciOmaggio" class="btn rai-btn-primary full-width" title="Avanti" value="Avanti" onclick="RiepilogoOmaggio()" />
+        </div>
+    </div>
+    <div id="riepilogo" hidden>
+        @using (Html.BeginPanel(PanelType.Panel, "Riepilogo", false))
+        {
+            <div class="row push-10">
+                <div class="col-sm-12">
+                    <div class="col-sm-1"></div>
+                    <div class="col-sm-10 rai-font-md" id="testo-riepilogo"></div>
+                    <div class="col-sm-1"></div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="rai-btn-fill">
+                        <input type="button" id="btnIndietro" class="btn rai-btn-secondary" title="Indietro" value="Indietro" onclick="IndietroOmaggio()" />
+                        <input type="submit" id="btnConfermaOmaggio" class="btn rai-btn-primary" title="Registra" value="@((Model.Id == 0) ? "Registra" : "Modifica")" onclick="GestisciOmaggio()" />
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</form>
+}
+
+
+

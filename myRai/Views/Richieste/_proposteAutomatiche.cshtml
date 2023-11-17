@@ -1,0 +1,240 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model ProposteAutomaticheModel
+
+
+<div id="propostetoday" aria-labelledby="lblPropAutoDay">
+
+    <div class="row push-10-t" style="margin-left:-15px;margin-right:-15px;">
+        <div class="col-sm-12 no-padding">
+            <div class="rai-nav-fill" style="padding:10px;">
+                <div class="rai-nav-fill-item">&nbsp;</div>
+                <div class="rai-nav-fill-item text-right"><a aria-label="Vai al giorno precedente" @(UtenteHelper.GiornateAssenteIngiustificato(CommonHelper.GetCurrentUserMatricola(), false).Count > 0 ? "style=display:none" : "") class="daybefore" href="javascript:ScorriBack()"><i class="icons icon-arrow-left-circle"></i></a></div>
+                <div class="rai-nav-fill-item-label"><span class="font-w600  tit-richieste" style="text-align:center;text-transform:none;">Proposte automatiche per il :</span> <span id="lblPropAutoDay" class="giorno-display" style="text-align: center;font-weight:bold;margin-top:2px"></span></div>
+                <div class="rai-nav-fill-item"><a aria-label="Vai al giorno successivo" tabindex="0" @(UtenteHelper.GiornateAssenteIngiustificato(CommonHelper.GetCurrentUserMatricola(), false).Count > 0 ? "style=display:none" : "") class="dayafter" href="javascript:ScorriAhead()"><i class="icons icon-arrow-right-circle"></i></a></div>
+                <div class="rai-nav-fill-item">&nbsp;</div>
+            </div>
+        </div>
+    </div>
+
+    @if (UtenteHelper.TipoDipendente() != "G")
+    {
+        <div class="row push-20-t">
+            <div class="col-sm-12">
+                <span>
+                    Prima di richiedere le maggiorazioni, ricordati di giustificare prima l'eventuale carenza di orario
+                </span>
+            </div>
+        </div>
+    }
+
+    <div class="row push-20-t">
+        <div class="col-sm-12">
+            <table class="table rai-table rai-table-vcenter" id="table-ecc-auto">
+                @if (Model.EccezioniProposte.Count() > 0)
+                {
+                    <thead>
+                        <tr class="prop-auto-head">
+                            <th colspan="2">SEGNALAZIONE</th>
+                            <th class="text-center hidden-xs">DALLE</th>
+                            <th class="text-center hidden-xs">ALLE</th>
+                            <th class="text-center hidden-xs">QUANTITA</th>
+                        </tr>
+                    </thead>
+                }
+                <tbody>
+
+                    @*PROPOSTE CICS----------------------------------------------------*@
+                    @{ bool grey = false;}
+                    @for (int i = 0; i < Model.EccezioniProposte.Count(); i++)
+                    {
+                        var eccezione = Model.EccezioniProposte[i];
+
+                        string ariaLabel = eccezione.descrittiva_lunga;
+                        if (!String.IsNullOrWhiteSpace(eccezione.dalle) && eccezione.dalle.Trim() != "00:00")
+                        {
+                            ariaLabel += " dalle " + eccezione.dalle;
+                        }
+                        if (!String.IsNullOrWhiteSpace(eccezione.alle) && eccezione.alle.Trim() != "00:00")
+                        {
+                            ariaLabel += " alle " + eccezione.alle;
+                        }
+                        ariaLabel += ". Quantità " + eccezione.qta;
+
+
+                        grey = !grey;
+                        <tr @*class="@(grey?"tr-alt":"")"*@ data-indexprop="@i">
+                            <td class="text-center">
+
+                                <label class="css-input css-checkbox css-checkbox-rounded css-checkbox-sm css-checkbox-info">
+
+                                    <input type="checkbox" class="cb-ecc-auto" name="CBproposta" value="@i"
+                                           @if (eccezione.cod == "ROH") { @: disabled="disabled" checked="checked" id="cb-roh"
+                                           }
+                                           data-dalle="@(eccezione.dalle != null ? eccezione.dalle.Trim() : eccezione.dalle)"
+                                           data-alle="@(eccezione.alle != null ? eccezione.alle.Trim() : eccezione.alle)"
+                                           data-quan="@(eccezione.qta != null ? eccezione.qta.Trim() : eccezione.qta)"
+                                           data-date="@eccezione.data"
+                                           data-cod="@eccezione.cod"
+                                           data-att-ceiton-obbl="@eccezione.RichiedeAttivitaCeiton"
+                                           data-iniettata-non-da-gapp="@eccezione.IniettataDaRaiPerMe"
+                                           data-ricalcolata="@eccezione.RicalcolataDaRaiPerMe"
+                                           data-quantita-IpotesiNoCarenza="@eccezione.qta_IpotesiNocarenza"
+                                           aria-label="@ariaLabel" /><span></span>
+
+                                </label>
+                            </td>
+                            <td>
+                                <b>@eccezione.cod</b> - @eccezione.descrittiva_lunga
+                                <div class="visible-xs">
+                                    @if (!String.IsNullOrWhiteSpace(eccezione.dalle) && eccezione.dalle.Trim() != "00:00")
+                                    {
+                                        <span class="rai-font-sm">dalle @eccezione.dalle </span>
+                                    }
+                                    @if (!String.IsNullOrWhiteSpace(eccezione.alle) && eccezione.alle.Trim() != "00:00")
+                                    {
+                                        <span class="rai-font-sm">alle @eccezione.alle </span>
+                                    }
+                                </div>
+                                <div class="visible-xs">
+                                    <span class="rai-font-sm">Quantità: @eccezione.qta</span>
+                                </div>
+                            </td>
+                            <td class="text-center hidden-xs">
+                                @if (!String.IsNullOrWhiteSpace(eccezione.dalle) && eccezione.dalle.Trim() != "00:00")
+                                {
+                                    <span>@eccezione.dalle</span>
+                                }
+                                else
+                                {
+                                    <span></span>
+                                }
+                            </td>
+                            <td class="text-center hidden-xs">
+                                @if (!String.IsNullOrWhiteSpace(eccezione.alle) && eccezione.alle.Trim() != "00:00")
+                                {
+                                    <span>@eccezione.alle</span>
+                                }
+                                else
+                                {
+                                    <span></span>
+                                }
+                            </td>
+                            <td style="text-align:center" class="hidden-xs">
+                                <span class="rai-label">@eccezione.qta</span>
+                            </td>
+
+                        </tr>
+
+
+                        <tr>
+                            <td colspan="5" class="@(eccezione.cod=="ROH"?"":"hide")" id="tdnota-@i">
+                                <span>Nota:</span>
+                                <textarea data-charmin="@eccezione.CaratteriObbligatoriNota.ToString()" id="txa-@i" class="form-control nota-su-auto" rows="4" placeholder="Inserisci una nota"></textarea>
+                            </td>
+                        </tr>
+                    }
+                    @*("~/Views/ExtraParams/attivitaCeiton.cshtml"*@
+
+
+                    @*PROPOSTE PRONTUARIO----------------------------------------------------*@
+                    @{
+                        int MacroCounter = 0;
+
+                    }
+                    @if (Model.MacroEccezioniProposte != null)
+                    {
+                        foreach (var macro in Model.MacroEccezioniProposte)
+                        {
+                            MacroCounter++;
+                            if (macro.eccezioniProposte != null && macro.eccezioniProposte.Count > 0)
+                            {
+                                <tr><td colspan="5" style="height:10px;"></td></tr>
+                                <tr><td class="bg-cel border-prop" colspan="5">@macro.testo</td></tr>
+                                <tr class="prop-auto-head">
+
+                                    <th class="text-center border-prop" style="font-weight:normal" colspan="2">SEGNALAZIONE</th>
+                                    <th class="text-center hidden-xs"></th>
+                                    <th class="text-center hidden-xs"></th>
+                                    <th class="text-center hidden-xs">QUANTITA</th>
+
+                                </tr>
+
+                                grey = false;
+                                foreach (var eccezioneProposta in macro.eccezioniProposte)
+                                {
+                                    grey = !grey;
+
+                                    string ariaLabel = eccezioneProposta.descrittiva_lunga;
+
+                                    <tr class="@(grey?"tr-alt":"")" data-indexprop="@eccezioneProposta.cod">
+                                        <td class="text-center border-prop">
+                                            <label class="css-input css-checkbox css-checkbox-rounded css-checkbox-sm css-checkbox-info">
+
+                                                <input type="checkbox" class="cb-ecc-auto" data-quan="@eccezioneProposta.qta" name="CBproposta" value="ECPR-@(MacroCounter.ToString()+ "-"+ eccezioneProposta.cod)"
+                                                       data-date="@eccezioneProposta.data"
+                                                       data-gruppo="@MacroCounter"
+                                                       data-domanda="1"
+                                                       data-cod="@eccezioneProposta.cod" aria-label="@ariaLabel" /><span></span>
+
+                                            </label>
+                                        </td>
+                                        <td colspan="3"><b>@eccezioneProposta.cod</b> - @eccezioneProposta.descrittiva_lunga</td>
+
+                                        <td class="hidden-xs" style="text-align:center">
+                                            <span class="label label-info">1</span>
+                                        </td>
+                                    </tr>
+
+
+                                    <tr>
+                                        <td colspan="5" class="hide border-prop" id="tdnota-ECPR-@(MacroCounter.ToString()+ "-"+ eccezioneProposta.cod)">
+                                            <span>Nota:</span>
+                                            <textarea data-charmin="@eccezioneProposta.CaratteriObbligatoriNota.ToString()" id="txa-ECPR-@(MacroCounter.ToString()+ "-"+ eccezioneProposta.cod)" class="form-control nota-su-auto" rows="4" placeholder="Inserisci una nota"></textarea>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+
+                        }
+                    }
+                    <tr>
+                        <td colspan="5" class="text-center">
+                            <div class="rai-btn-fill">
+                                <button onclick="AccettaProposte()" style="margin-top:20px;margin-bottom:20px" id="button-conferma-auto" type="button" disabled="disabled" class="btn btn-primary">
+                                    Conferma selezionate
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="ecc-remove">
+                        <td colspan="5" style="background-color:#fff">
+                            <h5>
+                                Non hai trovato nessuna opzione utile tra le nostre proposte automatiche? Scegli manualmente
+                            </h5>
+                        </td>
+                    </tr>
+                    <tr class="ecc-remove">
+                        <td colspan="5" class="no-border" style="background-color:#fff;text-align:center">
+                            <div class="rai-btn-fill">
+                                <button onclick="ScegliDaWizard()" type="button" class="btn rai-btn-secondary">
+                                    Scegli manualmente
+                                </button>
+                                @if (Model.ShowPannelloCarenzeButton)
+                                {
+                                    <button onclick="GetProposteAuto(undefined)" type="button" class="btn btn-default btn-scriv bg-puls_dash">
+                                        Vai a pannello carenze
+                                    </button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script>if ($("#cb-roh").length) $("#cb-roh").change();</script>

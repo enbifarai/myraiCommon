@@ -1,0 +1,178 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+@model APIfoundModel
+
+@{ 
+    int counter = 0;
+}
+<table class="table rai-table rai-table-vcenter rai-table-high-row rai-table-collapsable rai-table-borderless"
+       style="border-bottom:solid 1px #ddd" data-ignore-scroll="true">
+
+    <thead>
+        <tr>
+            <th></th>
+            <th class="rai-table-td-toggle"></th>
+
+        </tr>
+    </thead>
+    <tbody class="rai-table-collapsable-header">
+        <tr>
+            <td class="rai-caption">
+                COMUNICAZIONI TELEMATICHE
+                @if (Model.APIs.Any())
+                {
+                    <span id="api-badge" style="margin-left: 5px;margin-top: -4px;" class="badge bg-primary">
+                        @Model.APIs.Count()
+                    </span>
+                }
+            </td>
+            <td style="width:240px;text-align:right;padding-right:20px">
+                <i class="fa fa-chevron-down"></i>
+            </td>
+        </tr>
+    </tbody>
+    <tbody class="no-border">
+
+
+        @if (!Model.APIs.Any())
+        {
+            <tr id="agg-com">
+                <td>
+                    <span>Nessun dato trovato</span>
+                </td>
+                <td>
+                    @*<button class="btn rai-btn-small"   onclick="AggiungiNuovaComunicazione('@Model.matricola')">Aggiungi nuova comunicazione</button>*@
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" style="padding: 0px; padding-bottom: 16px;">
+                    <div id="nuova-com">
+                        <div style="float:right;margin-right:20px">
+                            <button onclick="AggiornaAPI('@Model.matricola')" class="btn rai-btn-secondary" style="padding-left:30px;padding-right:30px"><i class="fa fa-pencil" ></i> Invia</button>
+                            
+                        </div>
+                       
+                    </div>
+                </td>
+            </tr>
+        }
+        else
+        {
+            <tr>
+                <td colspan="2">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <table style="width:100%" class="table rai-table rai-table-vcenter rai-table-high-row rai-table-collapsable rai-table-borderless">
+                                <thead>
+                                    <tr>
+                                        <th>Data Inizio</th>
+                                        <th>Data Fine</th>
+                                        <th>Tipo comunicazione</th>
+                                        <th>Data Invio</th>
+                                        <th>Stato invio</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                @foreach (var item in Model.APIs.OrderByDescending(x=>x.ID))
+                                {
+                                    counter++;
+                                    string dis = "";
+                                    if (Model.CodiciComunicazioniAnnullate.Contains(item.CODICE_COMUNICAZIONE_API))
+                                    {
+                                        dis = "disabled";
+                                    }
+                                    bool conf = false;
+                                    <tr>
+                                        <td><span>@item.PERIODO_DAL.ToString("dd/MM/yyyy")</span></td>
+                                        <td><span>@item.PERIODO_AL.ToString("dd/MM/yyyy")</span></td>
+                                        <td>
+
+                                            <span>@(item.TIPOLOGIA_API == "I" ? "Nuova" : item.TIPOLOGIA_API == "M" ? "Modifica" : item.TIPOLOGIA_API == "A" ? "Annullamento" : "Revoca")</span>
+
+
+                                        </td>
+                                        <td>
+                                            @if (item.DATA_INVIO_API != null)
+                                            {
+                                                <span>@(item.DATA_INVIO_API.Value.ToString("dd/MM/yyyy HH:mm"))</span>
+                                            }
+
+                                        </td>
+                                        <td>
+                                            @if (!String.IsNullOrWhiteSpace(item.ERRORE))
+                                            {
+                                                <span class="text-danger" title="@item.ERRORE">Errore</span>
+                                            }
+                                            else if (!String.IsNullOrWhiteSpace(item.CODICE_COMUNICAZIONE_API))
+                                            {
+                                                conf = true;
+                                                <span title="@item.CODICE_COMUNICAZIONE_API" class="text-success">Confermato</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-warning">In attesa</span>
+                                            }
+
+                                        </td>
+                                        <td>
+                                            @if (conf)
+                                            {
+                                                if (item.TIPOLOGIA_API == "I" && counter == 1)
+                                                {
+                                                    <button class="btn btn-action-icon" title="Richiedi stato della comunicazione telematica" onclick="InfoComunicazione('@item.CODICE_COMUNICAZIONE_API', '@item.MATRICOLA')"><i style="font-size:132%" class="fa fa-info"></i></button>
+
+                                                }
+                                                else if (item.TIPOLOGIA_API == "I" && Model.APIs.Count() > 1 &&
+                                                    Model.APIs.Any(x => x.TIPOLOGIA_API != "I"))
+                                                {
+                                                    //non mettere il pulsante
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn btn-action-icon" title="Richiedi stato della comunicazione telematica" onclick="InfoComunicazione('@item.CODICE_COMUNICAZIONE_API', '@item.MATRICOLA')"><i style="font-size:132%" class="fa fa-info"></i></button>
+
+                                                }
+                                            }
+                                        </td>
+                                    </tr>
+
+                                }
+                                <tr id="agg-com">
+                                    <td colspan="6" style="text-align:right">
+                                        @*<button   class="btn rai-btn-small" onclick="AggiungiNuovaComunicazione('@Model.matricola')">Aggiungi nuova comunicazione</button>*@
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" style="padding: 0px; padding-bottom: 16px;">
+                    <div id="nuova-com">
+
+                    </div>
+                </td>
+            </tr>
+
+        }
+        @if (!String.IsNullOrWhiteSpace(Model.CF))
+        {
+        <tr>
+            <td colspan="6" style="padding-top:0px;padding-left:28px;text-align:right">
+
+              
+
+
+                <span style="display:none">Leggi stato API</span>
+                <button style="display:none" class="btn btn-action-icon" title="Richiedi comunicazioni telematiche relative a questo CF" onclick="InfoApiCF('@Model.CF')">
+                    <i style="font-size:132%" class="fa fa-info"></i>
+                </button>
+            </td>
+        </tr>
+
+        }
+    </tbody>
+</table>
+

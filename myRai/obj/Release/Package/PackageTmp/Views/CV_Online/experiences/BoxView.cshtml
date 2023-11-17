@@ -1,0 +1,360 @@
+﻿@model myRaiCommonModel.cvModels.cvModel
+@using myRaiHelper;
+@using MVCProject.Custom_Helpers
+
+@*  ****************** FREAK - PROVA HTML BOX ESPERIENZE PROFESSIONALI ****************** *@
+
+@{
+    //prelevo tutti i dati della matricola
+    string text_tooltip = "Le esperienze sono riepilogate per ambiti temporali di 5 anni in 5 anni. Per ciascun periodo indicare le esperienze professionali più significative e qualificanti dal punto di vista professionale, sia aziendali che extra aziendali. Indicare per prime le esperienze più recenti.";
+    var lista = Model.experencies;
+    int anno_now = DateTime.Now.Year;
+    int mese_now = DateTime.Now.Month;
+    int giorno_now = DateTime.Now.Day;
+    string data_comp;
+    int anno_base = 2002;
+    int diff;
+    int[,] arr_fasce;
+    string matricola;
+
+    data_comp = anno_now.ToString() + mese_now.ToString().PadLeft(2, '0') + giorno_now.ToString().PadLeft(2, '0');
+
+    matricola = myRaiHelper.UtenteHelper.EsponiAnagrafica()._matricola;
+
+    //Freak - Accordion su Esperienze in corso
+    //      - Accordion si Esperienze precedenti
+    var lista_inCorso = Model.experencies.Where(e => e._dataFine == null || (e._dataFine != null && (Convert.ToInt32(e._dataFine)) >= (Convert.ToInt32(data_comp)))).OrderByDescending(d => d._dataFine).OrderByDescending(d2 => d2._dataInizio).ToList();
+
+    var lista_precedenti = Model.experencies.Where(e => (e._dataFine != null && (Convert.ToInt32(e._dataFine)) < (Convert.ToInt32(data_comp)))).OrderByDescending(d => d._dataFine).OrderByDescending(d2 => d2._dataInizio).ToList();
+
+    // Freak - Fine creazione panel
+    int count_incorso = lista_inCorso.Count;
+    int count_precedenti = lista_precedenti.Count;
+
+    int range = 5;
+    int count_final, count;
+
+    int anno_tmp;
+
+    diff = anno_now - anno_base;
+    if (diff % range == 0)
+    {
+        count_final = diff / range + 1;
+    }
+    else
+    {
+        count_final = (diff / range) + 1;
+    }
+
+    arr_fasce = new int[count_final, 2];
+
+    count = -1;
+    anno_tmp = anno_base;
+    while (count < count_final - 1)
+    {
+        count++;
+        arr_fasce[count, 0] = anno_tmp;
+        arr_fasce[count, 1] = anno_tmp + range - 1;
+        anno_tmp += range;
+    }
+}
+<section class="rai panel">
+    <header class="panel-heading bg-primary">
+        <h2 class="panel-title text-white">
+            <span tabindex="0">Esperienze</span>
+            <span tabindex="0" id="popEsperienze" data-popover-content="#myPopover" class="push-5-l" data-toggle="popover" data-html="true" data-container="body" data-placement="right" title="" data-content="Indica le esperienze lavorative sia Rai che Extra Rai più significative e qualificanti per la tua formazione dal punto di vista professionale.Puoi anche inserire più esperienze nello stesso periodo utilizzando più schede. Puoi cancellare, modificare, duplicare una scheda già compilata cliccando sui puntini accanto ai dati sintetici." data-original-title="&nbsp;" data-trigger="focus" aria-label="Visualizza informazioni sezione">
+                <i id="" class="fa fa-info-circle"></i>
+            </span>
+        </h2>
+        <div class="panel-actions">
+            <button href="#" class="btn btn-action-icon" aria-label="Aggiungi esperienza" tabindex="0" aria-expanded="true"
+                    data-toggle="modal" data-target="#modalExperiencesInserimnento" @Html.IntroTourAttributes(Model.TourElements, "tour-index-plus")
+                    onclick="InizializzaTuttoDopoAjax('exp'); " data-tourdb="tour-index-plus">
+                <span class="fa fa-plus"></span>
+            </button>
+        </div>
+
+    </header>
+
+    <div class="panel-body">
+        <!-- -->
+
+        <div class="rai panel-group rai removebottom " id="accexperiences">
+            @{
+
+                int number_elements;
+                string hidden = "";
+                number_elements = count_incorso;
+
+                if (number_elements == 0)
+                {
+                    hidden = "hide";
+                }
+
+                <div class="rai panel rai panel-accordion ">
+                    <!-- pull-b-5  -->
+                    <div class="panel-heading">
+                        <h4 class="panel-title">
+                            <a class="accordion-toggle  " data-toggle="collapse" data-parent="#accordion" href="#exp0" aria-expanded="true" aria-label="Esperienze in corso">
+                                In corso
+                            </a>
+                        </h4>
+                        <div class="panel-actions @hidden">
+                            <span style=" " class="rai-notification">@count_incorso</span>
+                        </div>
+                    </div>
+                    <div id="exp0" class="accordion-body collapse in" aria-expanded="true">
+                        @*style="height: 0px;"*@
+                        <div class="panel-body panel-body-nopadding-xs">
+                            @if (number_elements == 0)
+                            {
+                                @Html.Partial("~/Views/CV_Online/partials/_no_elements.cshtml");
+                            }
+                            <table class="js-table-sections table rai-table table-hover" id="exp-0" role="grid">
+                                <tbody class="">
+                                    @{
+                                        string not_primo_elemento = "";
+                                        string not_border = "td_not_border";
+
+                                        int cnt = 0;
+                                        int tbIX = -1;
+                                    }
+                                    @foreach (var elem in lista_inCorso)
+                                    {
+                                        cnt++;
+                                        if (cnt == 1)
+                                        {
+                                            tbIX = 0;
+                                        }
+                                        else
+                                        {
+                                            tbIX = -1;
+                                        }
+                                        string inizio = "", fine = "";
+                                        int data_fine;
+                                        string logo = "";
+                                        if (elem._flagEspRai == "1")
+                                        {
+                                            logo = "di di-logo";
+                                        }
+                                        else
+                                        {
+                                            logo = "di di-extrarai";
+                                        }
+
+                                        if (String.IsNullOrEmpty(elem._dataFine))
+                                        {
+                                            fine = "in corso";
+                                        }
+                                        else
+                                        {
+                                            data_fine = Convert.ToInt32(elem._dataFine.Substring(0, 4));
+                                            fine = (data_fine >= anno_now) ? "in corso" : elem.GetDataFine("/"); //elem._dataFine.Substring( 6, 2 ) + "/" + elem._dataFine.Substring( 4, 2 ) + "/" + elem._dataFine.Substring( 0, 4 );
+                                        }
+
+                                        string composizione;
+
+                                        if (!String.IsNullOrWhiteSpace(elem._dataInizio))
+                                        {
+                                            inizio = elem.GetDataInizio("/"); // elem._dataInizio.Substring(6, 2) + "/" + elem._dataInizio.Substring(4, 2) + "/" + elem._dataInizio.Substring(0, 4);
+                                        }
+
+                                        composizione = inizio + " - " + fine;
+                                        <tr tabindex="@tbIX" arial-labelledby="titoloVoce" role="row" onfocus="onFocusRow(this);">
+                                            <td class="hidden-xs text-center @not_border" style="width:40px;">
+                                                <figure class="profile-picture">
+                                                    <i class="@logo fa-5x text-primary push-10"></i>
+                                                </figure>
+                                            </td>
+                                            <td class="text-left @not_border">
+                                                <span class="text-bold" id="titoloVoce">@elem._ultRuolo</span><br />
+                                                <span class="rai-font-sm">@elem._societa</span><br />
+                                                <span class="rai-font-sm-neutral">@composizione</span><br />
+                                            </td>
+                                            <td class="rai-table-td-action @not_border">
+                                                <div class="btn-group flex-wrap dropleft">
+                                                    <button type="button" class="btn btn-default btn-scriv text-uppercase bg-puls_dash dropdown-toggle icons icon-options-vertical text-primary" data-toggle="dropdown" aria-expanded="false" tabindex="-1" role="link"></button>
+                                                    <div class="dropdown-menu" style="background: #f3f3f3!important; font-weight:700; min-width:110px; margin-left:-75px;">
+                                                        <button class="btn btn-default btn-scriv text-uppercase bg-puls_dash dropdown-item h4 text-primary" data-toggle="modal" onclick="ConfermaCancellazione_Experencies('@elem._matricola', '@elem._prog')" style="display: inherit; margin: 4px 2px;"> Cancella</button>
+                                                        @if (elem._flagEspRai == "1")
+                                                        {
+                                                            <button class="btn btn-default btn-scriv text-uppercase bg-puls_dash dropdown-item h4 text-primary"  onclick="ModificaExperiencesRai(@myRaiHelper.CommonHelper.TransformDates(Json.Encode(elem)), 'frkModificaExperiences')" style="display: inherit; margin: 4px 2px;"> Modifica</button>
+                                                            <button class="btn btn-default btn-scriv text-uppercase bg-puls_dash dropdown-item h4 text-primary"  onclick="CopiaExperiencesRai(@myRaiHelper.CommonHelper.TransformDates(Json.Encode(elem)), 'frkModificaExperiences')" style="display: inherit; margin: 4px 2px;"> Duplica</button>
+                                                        }
+                                                        else
+                                                        {
+                                                            <button class="btn btn-default btn-scriv text-uppercase bg-puls_dash dropdown-item h4 text-primary"  onclick="ModificaExperiencesExtraRai(@myRaiHelper.CommonHelper.TransformDates(Json.Encode(elem)), 'frkModificaExperiences')" style="display: inherit; margin: 4px 2px;"> Modifica</button>
+                                                            <button class="btn btn-default btn-scriv text-uppercase bg-puls_dash dropdown-item h4 text-primary"  onclick="CopiaExperiencesExtraRai(@myRaiHelper.CommonHelper.TransformDates(Json.Encode(elem)), 'frkModificaExperiences')" style="display: inherit; margin: 4px 2px;"> Duplica</button>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        not_primo_elemento = "actions-hover actions-fade";
+                                        not_border = "";
+                                    }
+                                </tbody>
+                            </table>
+                            @Html.Partial("limitaTR", new myRaiCommonModel.limitaTRmodel("exp-0", "box-experiences", 3, count_incorso))
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <div class="panel rai panel-accordion rai ">
+                <!-- pull-b-5  -->
+                @{
+                    /*
+                    int annoInizioAnte;
+
+                    annoInizioAnte = Convert.ToInt32(anno_base + "0101");
+
+                    var ante_record = Model.experencies.Where(x => (Convert.ToInt32(x._dataInizio)) < annoInizioAnte).ToList();
+                    */
+                    int number_elements_ante;
+                    string hidden_ante = "";
+
+                    number_elements_ante = lista_precedenti.Count;
+
+                    if (number_elements_ante == 0)
+                    {
+                        hidden_ante = "hide";
+                    }
+
+                }
+                <div class="panel-heading">
+
+                    <h4 class="panel-title">
+                        <a class="accordion-toggle collapsed  " data-toggle="collapse" data-parent="#accordion" href="#exp1" aria-expanded="false" aria-label="Esperienze in corso">
+                            Pregresse
+                        </a>
+                    </h4>
+
+                    <div class="panel-actions @hidden_ante">
+                        <span style="" class="rai-notification">@count_precedenti</span>
+                    </div>
+
+
+                </div>
+                <div id="exp1" class="accordion-body collapse" aria-expanded="false" style="height: 0px;">
+                    <div class="panel-body panel-body-nopadding-xs">
+                        @if (number_elements_ante == 0)
+                        {
+                            @Html.Partial("~/Views/CV_Online/partials/_no_elements.cshtml");
+                        }
+                        <table class="js-table-sections table rai-table table-hover" id="exp-1" role="grid">
+                            <tbody>
+                                @{
+                                    string not_primo_elemento_ante = "";
+                                    string not_border_ante = "td_not_border";
+                                    tbIX = 0;
+                                    cnt = 0;
+                                }
+                                @foreach (var elem in lista_precedenti)
+                                {
+                                    cnt++;
+                                    if (cnt == 1)
+                                    {
+                                        tbIX = 0;
+                                    }
+                                    else
+                                    {
+                                        tbIX = -1;
+                                    }
+                                    string inizio, fine;
+                                    int data_fine;
+                                    string logo = "";
+                                    if (elem._flagEspRai == "1")
+                                    {
+                                        logo = "di di-logo";
+                                    }
+                                    else
+                                    {
+                                        logo = "di di-extrarai";
+                                    }
+                                    data_fine = Convert.ToInt32(elem._dataFine.Substring(0, 4));
+                                    string composizione;
+                                    inizio = elem.GetDataInizio("/"); // elem._dataInizio.Substring(6, 2) + "/" + elem._dataInizio.Substring(4, 2) + "/" + elem._dataInizio.Substring(0, 4);
+
+                                    fine = elem.GetDataFine("/"); // _dataFine.Substring(6, 2) + "/" + elem._dataFine.Substring(4, 2) + "/" + elem._dataFine.Substring(0, 4);
+                                    composizione = inizio + " - " + fine;
+
+
+                                    <tr tabindex="@tbIX" arial-labelledby="titoloVocePreg" role="row" onfocus="onFocusRow(this);">
+                                        <td class="hidden-xs text-center @not_border_ante" style="width:40px;">
+                                            <figure class="profile-picture">
+                                                <i class="@logo fa-5x text-primary push-10"></i>
+                                            </figure>
+                                        </td>
+                                        <td class="text-left @not_border_ante">
+                                            <span class="rai-font-md" id="titoloVocePreg">@elem._ultRuolo</span><br />
+                                            <span class="rai-font-sm">@elem._societa</span><br />
+                                            @if (!String.IsNullOrWhiteSpace(elem._direzione))
+                                            {
+                                                <span class="rai-font-sm">@elem._direzione</span><br />
+                                            }
+                                            <span class="rai-font-sm-neutral text-italic">@composizione</span>
+                                        </td>
+                                        <td class="@not_primo_elemento_ante @not_border_ante rai-table-td-action" style="vertical-align:top!important">
+
+                                            <div class="btn-group flex-wrap dropleft">
+                                                <button type="button" class="btn btn-action-icon dropdown-toggle icons icon-options-vertical " data-toggle="dropdown" aria-expanded="false" tabindex="-1" role="link"></button>
+                                                <div class="dropdown-menu" style="background: #f3f3f3!important; font-weight:700; min-width:110px; margin-left:-75px;">
+                                                    <button class="btn btn-default btn-scriv text-uppercase bg-puls_dash dropdown-item h4 text-primary" data-toggle="modal" onclick="ConfermaCancellazione_Experencies('@elem._matricola', '@elem._prog')" style="display: inherit; margin: 4px 2px;"> Cancella</button>
+                                                    @if (elem._flagEspRai == "1")
+                                                    {
+                                                        <button class="btn btn-default btn-scriv text-uppercase bg-puls_dash dropdown-item h4 text-primary" onclick="ModificaExperiencesRai(@myRaiHelper.CommonHelper.TransformDates(Json.Encode(elem)), 'frkModificaExperiences')" style="display: inherit; margin: 4px 2px;"> Modifica</button>
+                                                        <button class="btn btn-default btn-scriv text-uppercase bg-puls_dash dropdown-item h4 text-primary" onclick="CopiaExperiencesRai(@myRaiHelper.CommonHelper.TransformDates(Json.Encode(elem)), 'frkModificaExperiences')" style="display: inherit; margin: 4px 2px;"> Duplica</button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button class="btn btn-default btn-scriv text-uppercase bg-puls_dash dropdown-item h4 text-primary"  onclick="ModificaExperiencesExtraRai(@myRaiHelper.CommonHelper.TransformDates(Json.Encode(elem)), 'frkModificaExperiences')" style="display: inherit; margin: 4px 2px;"> Modifica</button>
+                                                        <button class="btn btn-default btn-scriv text-uppercase bg-puls_dash dropdown-item h4 text-primary" onclick="CopiaExperiencesExtraRai(@myRaiHelper.CommonHelper.TransformDates(Json.Encode(elem)), 'frkModificaExperiences')" style="display: inherit; margin: 4px 2px;"> Duplica</button>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    not_primo_elemento_ante = "actions-hover actions-fade";
+                                    not_border_ante = "";
+                                }
+                            </tbody>
+                        </table>
+                        @Html.Partial("limitaTR", new myRaiCommonModel.limitaTRmodel("exp-1", "box-experiences", 3, count_precedenti))
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+
+    </div>
+</section>
+
+@* FREAK - MODALE PER INSERIMENTO ESPERIENZE PROFESSIONALI *@
+@Html.Partial("experiences/partials/_modalInserimento", new myRaiCommonModel.cvModels.cvModel.Experiences(CommonHelper.GetCurrentUserMatricola()))
+@* ******************************************************* *@
+
+@* FREAK - DIV per Modale di Modifica *@
+<div class="rai modal right fade " id="frkModificaExperiences" role="dialog" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-popin">
+        <div class="rai modal-content">
+            <div id="frkModificaExperiences-internal" data-modal-wrapper=""></div>
+        </div>
+    </div>
+</div>
+
+
+@*<div class="modal right fade modalCheck" role="dialog" aria-hidden="true" id="frkModificaExperiences">
+
+</div>*@
+
+<script>
+    fixBarCV("form-insertexperiences");
+
+    $( '[data-toggle="popover"]' ).popover( {
+        template: '<div class="popover"><div class="arrow"></div><div><span style="float:left; width:100%; display:inline;" class="popover-title"></span><span class="customPopOverCloser" style="float:right; width:5%; margin-top: -30px; margin-left: -3px; dispay:inline; cursor:pointer;" aria-hidden="true">x</span></div><div class="clearfix"></div><div class="popover-content"></div></div>',
+        html: true
+    } );
+</script>
+@* ********************************** *@

@@ -1,0 +1,133 @@
+﻿@model myRaiCommonModel.Gestionale.AggiuntaDipendente
+
+@{
+    var partTimeList = new List<SelectListItem>()
+{
+new SelectListItem(){Value="", Text="No"},
+new SelectListItem(){Value="Verticale", Text="Verticale"},
+new SelectListItem(){Value="Orizzontale", Text="Orizzontale"}
+};
+
+    var tipologie = myRaiCommonManager.Cessazione.CessazioneManager.GetTipologie();
+}
+
+@using (Html.BeginModal("Creazione pratica"))
+{
+    using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Nuova pratica", false))
+    {
+        using (Html.BeginForm("AggiungiDip", "Cessazione", FormMethod.Post, new { @id = "form-Add-Dip", style = "padding:10px;" }))
+        {
+            @Html.HiddenFor(m => m.IdPersona)
+            @Html.HiddenFor(m => m.Matricola)
+            <div class="form-group">
+                <div class="rai-loader" id="profileWidget">
+
+                </div>
+
+                <div class="row">
+                    <div class="col-sm-12">
+                        @Html.LabelForRequiredObbl(m=>m.Tipologia, "Tipologia cessazione", new { @class="rai-caption"})
+                        @Html.RaiSelectFor(m => m.Tipologia, new SelectList(myRaiGestionale.Controllers.CessazioneController.getTipologie()), "Seleziona la tipologia di cessazione", onSelectchange: "ToggleTipologia()", attributes: new { required = "required" }, hideSearch: true)
+                    </div>
+                </div>
+
+
+                @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Dati posizione"))
+                {
+                    <div class="row push-10">
+                        <div class="col-sm-6 ">
+                            @Html.LabelForRequiredObbl(model => model.Sede, "Sede", new { @class = "rai-caption" })
+                            @Html.TextBoxFor(m => m.Sede, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Sede", required = "required" })
+                        </div>
+                        <div class="col-sm-6 ">
+                            @Html.LabelForRequiredObbl(model => model.DataAssunzione, "Data Assunzione", new { @class = "rai-caption" })
+                            @Html.TextBoxFor(m => m.DataAssunzione, new { @class = "js-datetimepicker form-control form-control-value", style = "width: 100%", placeholder = "Data Assunzione", data_format = "DD/MM/YYYY", required = "required" })
+                        </div>
+                    </div>
+                    <div class="row push-10">
+                        <div class="col-sm-6">
+                            @Html.LabelForRequiredObbl(model => model.DataAnzianita, "Data Anzianità", new { @class = "rai-caption" })
+                            @Html.TextBoxFor(m => m.DataAnzianita, new { @class = "js-datetimepicker form-control form-control-value", style = "width: 100%", placeholder = "Data Anzianità", data_format = "DD/MM/YYYY", required = "required" })
+                        </div>
+                        <div class="col-sm-6">
+                            @Html.LabelFor(model => model.Parttime, "Part-Time", new { @class = "rai-caption" })
+                            @*@Html.TextBoxFor(m => m.Parttime, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Part-Time" })*@
+                            @Html.RaiSelectFor(m => m.Parttime, partTimeList, hideSearch: true)
+                        </div>
+                    </div>
+                    <div class="row  push-10">
+                        <div class="col-sm-6">
+                            @Html.LabelFor(model => model.CauseVertenze, "Cause/Vertenze", new { @class = "rai-caption" })
+                            @Html.TextBoxFor(m => m.CauseVertenze, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Cause/Vertenze" })
+                        </div>
+                    </div>
+                }
+
+
+                @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Dati cessazione"))
+                {
+                    <div class="row  push-10" data-tipologia="1">
+                        <div class="col-sm-6">
+                            @Html.LabelForRequiredObbl(model => model.UnaTantum, "Importo Una Tantum", new { @class = "rai-caption" })
+                            @Html.TextBoxFor(m => m.UnaTantum, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Una Tantum", required = "required" })
+                        </div>
+                        <div class="col-sm-6">
+                            @Html.LabelForRequiredObbl(model => model.IncentivoLordo, "Importo Incentivo Lordo", new { @class = "rai-caption" })
+                            @Html.TextBoxFor(m => m.IncentivoLordo, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Incentivo Lordo", required = "required" })
+                        </div>
+                    </div>
+                    <div class="row  push-10">
+                        <div class="col-sm-6 ">
+                            @Html.LabelForRequiredObbl(model => model.DataCessazione, "Data Cessazione", new { @class = "rai-caption" })
+                            @Html.TextBoxFor(m => m.DataCessazione, new { @class = "js-datetimepicker form-control form-control-value", style = "width: 100%", placeholder = "Data Cessazione", data_format = "DD/MM/YYYY", required = "required", onblur = "SetMinPagamento()" })
+                        </div>
+                        <div class="col-sm-6 ">
+                            @Html.LabelForRequiredObbl(model => model.DataPagamento, "Data Pagamento", new { @class = "rai-caption" })
+                            @Html.TextBoxFor(m => m.DataPagamento, new { @class = "js-datetimepicker form-control form-control-value", style = "width: 100%", placeholder = "Data Pagamento", data_format = "DD/MM/YYYY" })
+                        </div>
+                    </div>
+                }
+
+                @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Dati aggiuntivi"))
+                {
+                    <div class="row push-10">
+                        <div class="col-sm-6">
+                            @Html.LabelFor(model => model.NumeroTelefono, "Numero Telefono", new { @class = "rai-caption" })
+                            @Html.TextBoxFor(m => m.NumeroTelefono, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Nome" })
+                        </div>
+                        <div class="col-sm-6">
+                            @Html.LabelFor(model => model.Nota, "Nota", new { @class = "rai-caption" })
+                            @Html.TextBoxFor(m => m.Nota, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Nome" })
+                        </div>
+                    </div>
+                }
+
+
+            </div>
+            <div class="row push-10-t">
+                <div class="col-sm-12">
+                    <input type="submit" id="btnCerca" class="btn btn-primary full-width" title="Aggiungi" value="Aggiungi" onclick="IncPreSubmit()" />
+                </div>
+            </div>
+        }
+    }
+}
+<script language="javascript">
+    $('#profileWidget').load('@Url.Action("Header_DatiDipendente","Anagrafica", new { idPersona=Model.IdPersona })');
+    $('#profileWidget').removeClass('rai-loader');
+
+    InitDatePicker();
+    $('#DataCessazione').data("DateTimePicker").minDate($('#DataAssunzione').val());
+
+    function SetMinPagamento() {
+        $('#DataPagamento').data("DateTimePicker").minDate($('#DataCessazione').val());
+
+    }
+
+    function ToggleTipologia(radio) {
+        var tipo = $(radio).val();
+
+        $('#form-Add-Dip [data-tipologia]').hide();
+        $('#form-Add-Dip [data-tipologia="' + tipo + '"]').show();
+    }
+</script>

@@ -1,0 +1,276 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonModel.RaiAcademy;
+@using MVCProject.Custom_Helpers;
+@using myRaiCommonManager;
+@using myRai.Controllers.RaiAcademy;
+@using System.Web.Optimization
+
+@model CatalagoRaiPlace
+
+@{
+    ViewBag.Title = "RaiPlace";
+    Layout = "~/Views/RaiAcademy/LayoutRaiPlace.cshtml";
+}
+<div class="raiplace-content">
+    <div class="row">
+        <div class="col-xs-12 col-sm-6 no-padding">
+            <div class="wrapper raiplace-box-formazione">
+                <div class="row push-20">
+                    <div class="col-sm-12">
+                        <h3 class="raiplace-box-header text-center">La mia formazione</h3>
+                    </div>
+                </div>
+                <div class="row" style="padding:10px;">
+                    <div class="col-xs-12 col-sm-8 text-center">
+                        @foreach ( var corso in Model.CorsiFatti.Take( 3 ) )
+                        {
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <label class="CorsoFattoFine text-left">Concluso il @corso.DataFine.ToString( "dd-MM-yyyy" )</label>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <label class="CorsoFattoTitolo text-left">@corso.Titolo</label>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <div class="col-xs-12 col-sm-4 text-center">
+                        <div class="raiplace-circle bg-primary" style="margin:10px">
+                            <p class="CorsiFattiNumero">@Model.CorsiFatti.Count( )</p>
+                            <p class="CorsiFattiConclusi">Corsi conclusi</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center">
+                <a href="" class="raiplaceCircleLink">&nbsp;</a>
+            </div>
+        </div>
+        <div class="col-xs-12  col-sm-6 no-padding">
+            <div class="wrapper raiplace-box-cv ">
+                <div class="row push-40">
+                    <div class="col-sm-12">
+                        <h3 class="raiplace-box-header text-center">Il mio CV</h3>
+                    </div>
+                </div>
+                <div class="row" style="padding:10px">
+                    <div class="col-xs-12 col-sm-8 text-center">
+                        <p class="" style="margin-top:30px;padding-left:15px;font-size:18px;"><strong>Aggiorna subito</strong> il tuo curriculum per avere un’offerta formativa su misura per te</p>
+                    </div>
+                    <div class="col-xs-12 col-sm-4 text-center">
+                        <div class="chart1 " tabindex="0"
+                             data-percent="@Model.CVPerc">
+                        </div>
+                        <label class="graph-center-value raiplace-cv-span">@(Model.CVPerc)%</label>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center">
+                <a href="" class="raiplaceCircleLink">&nbsp;</a>
+            </div>
+        </div>
+    </div>
+    @*    <div class="row">
+            <div class="col-sm-6">
+                <div class="text-center">
+                    <a href="" class="raiplaceCircleLink">&nbsp;</a>
+                </div>
+            </div>
+            <div class="col-sm-6">
+
+            </div>
+        </div>*@
+
+    <br />
+    <br />
+    <br />
+    <br />
+
+    <div class="row">
+        <div class="col-sm-12">
+            <h2 class="catalogo text-center" style="margin-bottom:32px;">Esplora</h2>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-12">
+            <p class="catalogo text-center">Scopri i corsi e le novità formative del Catalogo, organizzato per Aree formative e Ambiti tematici</p>
+        </div>
+    </div>
+
+    @foreach ( var categoria in Model.Categorie )
+    {
+        <div class="row category">
+            <div class="col-sm-6">
+                <h4 class="raiplace" style="margin:0px;">@categoria.nomeCategoria</h4>
+            </div>
+            <div class="col-sm-6">
+                <div class="tematicaLink">
+                    <label class="tematicaLink-vediTutti" onclick="location.href='@Url.Action("Index", new { area = categoria.idCategoria })'">Vedi tutti</label>
+                    <label class="fa fa-arrow-right" onclick="location.href='@Url.Action("Index", new { area = categoria.idCategoria })'"></label>
+                </div>
+            </div>
+        </div>
+
+        <div class="row push-10 tematiche">
+            <div class="col-sm-12">
+                @foreach ( var tematica in categoria.tematiche )
+                {
+                    <a class="btn btn-md btn-light" href="@Url.Action("Index", new { area = categoria.idCategoria, tema = tematica.idTematica })">@tematica.codTematica</a>
+                }
+            </div>
+        </div>
+
+        <div class="row">
+            @{
+                bool corsoOnline = false;
+                int counter = 0;
+            }
+
+            @foreach ( var corso in categoria.corsi.Take( 3 ) )
+            {
+                corsoOnline = corso.TipoMetodoFormativo == MetodoEnum.FAD;
+                //if (corso.MetodoFormativo != null)
+                //{
+                //    corsoOnline = corso.MetodoFormativo.ToUpper().Trim() == "LIVE E-LEARNING";
+
+                //}
+
+                string dataInizio = corso.DataInizioDisponibilita.HasValue && corso.DataInizioDisponibilita.Value > DateTime.MinValue ? corso.DataInizioDisponibilita.Value.ToString( "yyyyMMdd" ) : corsoOnline ? "99999999" : "99999998";
+
+                string ariaLabel = "";
+                ariaLabel += corso.Titolo + ". ";
+                ariaLabel += corso.MiIncuriosisce ? "Corso aggiunto ai preferiti." : "";
+                ariaLabel += "Metodo formativo: " + ( corso.TipoMetodoFormativo == MetodoEnum.FAD ? "corso online" : "corso in presenza" ) + ".";
+                ariaLabel += "Tipo offerta: " + corso.Stato + ".";
+                ariaLabel += "Premi le frecce su e giù per scorrere tra i corsi, invio per entrare nel dettaglio e spazio per aggiungere il corso ai preferiti.";
+
+                string imgStyle = "";
+                string urlImg = "";
+                string backgroundColor = "";
+                imgStyle = "background-size:cover";
+                urlImg = Url.Action( "GetCourseImage2" , "RaiAcademy" , new { idCorso = corso.Id } );
+
+                <div aria-label="@ariaLabel" tabindex="@(counter == 1 ? "0" : "-1")" onkeydown="moveToListItem(event, this)" class="col-sm-4" style="margin-bottom: 10px;">
+                    <section class="card mt-4 @(corso.Id > 0 ? "cursor-pointer" : "")" onclick="gotoDetail('@(corso.Id > 0 ? Url.Action("DettaglioCorso", "RaiAcademy", new { idCorso = corso.Id }) : "")');">
+                        <header class="card-header academy-raiplace-header academy-img" style="background-image:url('@urlImg');@imgStyle@backgroundColor" id="corso_@corso.Id">
+                            <div class="card-header-icon">
+                                @if ( corsoOnline )
+                                {
+                                    @*<div class="academy-label bg-primary"  style="margin-top:90px"><i class="fa fa-desktop"></i>&nbsp;CORSO ONLINE</div>*@
+                                }
+                                else
+                                {
+                                    if ( corso.DataInizioDisponibilita == null || corso.DataInizioDisponibilita < DateTime.Today )
+                                    {
+                                        @*<div class="academy-label bg-da-definire"  style="margin-top:90px">DATA DA DEFINIRE</div>*@
+                                    }
+                                    else
+                                    {
+                                        @*<div class="col-xs-3 col-sm-3 academy-calendario-container"  style="margin-top:40px">
+                                                <div class="academy-giorno">
+                                                    @(Convert.ToDateTime(corso.DataInizioDisponibilita).Day.ToString())
+                                                </div>
+                                                <div class="academy-mese bg-primary">@(Convert.ToDateTime(corso.DataInizioDisponibilita).ToString("MMMM").Substring(0, 3))</div>
+                                            </div>*@
+                                    }
+                                }
+                            </div>
+                        </header>
+                        <div class="card-body">
+                            <div class="row">
+                                @{
+                                    bool hasDateStart = !corsoOnline && corso.DataInizioDisponibilita != null && corso.DataInizioDisponibilita >= DateTime.Today;
+                                }
+                                @if ( hasDateStart )
+                                {
+                                    <div class="col-sm-2 academy-calendario-container" style="margin-top:5px;">
+                                        <div class="academy-giorno">
+                                            @(Convert.ToDateTime( corso.DataInizioDisponibilita ).Day.ToString( ))
+                                        </div>
+                                        <div class="academy-mese bg-primary">@(Convert.ToDateTime( corso.DataInizioDisponibilita ).ToString( "MMMM" ).Substring( 0 , 3 ))</div>
+                                    </div>
+                                }
+
+                                <div class="col-sm-@(hasDateStart?"10":"12") academy-titoli-thumbnail" style="padding-left: 15px;">
+                                    <div class="academy-tematica-thumbnail academy-ellipsis text-primary text-bold" style="font-size:14px" title="@corso.Tematica">
+                                        @(corso.Tematica)
+                                    </div>
+
+                                    <div class="academy-titolo-thumbnail text-primary academy-ellipsis-2row">
+                                        @if ( corso.Id > 0 )
+                                        {
+                                            <a tabindex="-1" role="link" class="text-bold" style="font-size: 1.2em !important;" href="@Url.Action("DettaglioCorso", "RaiAcademy", new { idCorso = corso.Id })" id="corso_@corso.Id)" title="@corso.Titolo">
+                                                @(corso.Titolo)
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            @corso.Titolo
+                                        }
+                                    </div>
+                                </div>
+                                @*<div class="col-sm-1"></div>*@
+                            </div>
+                            <div class="row">
+
+
+                                @{
+                                    string colWidths = "col-xs-6 col-sm-6";
+                                    int countSection = 0;
+
+
+                                    if ( !String.IsNullOrWhiteSpace( corso.MetodoFormativo ) )
+                                    {
+                                        countSection++;
+                                    }
+
+                                    if ( corso.Stato != StatoCorsoTipoOffertaEnum.NonDefinito )
+                                    {
+                                        countSection++;
+                                    }
+
+                                    if ( countSection == 0 )
+                                    {
+                                        countSection++;
+                                    }
+                                    colWidths = String.Format( "col-xs-{0} col-sm-{0}" , 12 / countSection );
+                                }
+
+                                @if ( !String.IsNullOrWhiteSpace( corso.MetodoFormativo ) )
+                                {
+                                    <div class="@(colWidths) academy-ellipsis" style="padding-left:5px;">
+                                        <span class="academy-tipologia-thumbnail" style="font-size:14px;" title="@corso.MetodoFormativo"><i class="fa fa-suitcase"></i>&nbsp;@corso.MetodoFormativo</span>
+                                    </div>
+                                }
+                                @if ( corso.Stato != StatoCorsoTipoOffertaEnum.NonDefinito )
+                                {
+                                    <div class="@(colWidths) academy-ellipsis" style="padding-left:5px;">
+                                        <span class="academy-stato-thumbnail" style="font-size:14px;" title="@corso.Stato.GetAmbientValue()"><i class="fa fa-tag"></i>&nbsp;@corso.Stato.GetAmbientValue( )</span>
+                                    </div>
+                                }
+
+                            </div>
+                        </div>
+
+                    </section>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section afterjs {
+    <script language="javascript">
+
+
+        $('.chart1').easyPieChart({
+            "barColor": "#000000", "delay": 300, scaleColor: false, lineWidth: 8, size: 125
+        });
+    </script>
+}
+

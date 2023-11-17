@@ -1,0 +1,154 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonModel.RaiAcademy;
+@using MVCProject.Custom_Helpers;
+
+@model Pacchetto
+@{
+    var urlIlias = myRai.Business.CommonManager.GetParametro<string>(myRai.Business.EnumParametriSistema.AcademyUrlIlias);
+    bool showNumModulo = Model.Pillole.Any() && Model.Pillole.All(x => x.Url.StartsWith(urlIlias));
+}
+
+<div class="row">
+    <div class="col-sm-12">
+        <h2>Corsi</h2>
+        <div id="corsi" class="academy-tab-body" role="tabpanel" tabindex="-1" aria-label="Corsi">
+            @*<label class="academy-tab-body-bold">Tutte le pillole del pacchetto @Model.Corso.Titolo</label>
+                <br />*@
+
+            @if (showNumModulo)
+            {
+                string testoLabel = "Il pacchetto è composto da ";
+                if ( Model.Pillole.Count( ) == 1 )
+                {
+                    testoLabel += "1 modulo formativo.";
+                }
+                else
+                {
+                    testoLabel += Model.Pillole.Count( ) + " moduli formativi.";
+                }
+
+
+                <label class="academy-tab-body">@testoLabel</label>
+            }
+            <br />
+            @{
+                string tabIndex = "0";
+            }
+            <div role="grid">
+                @foreach ( var pillola in Model.Pillole )
+                {
+                    string classIcon = "";
+                    if (pillola.Completato)
+                    {
+                        classIcon = "object-complete fa fa-check";
+                    }
+                    else
+                    {
+                        if (pillola.Tipo == "tst")
+                        {
+                            classIcon = "text-primary fa fa-puzzle-piece push-5-r";
+                        }
+                        else
+                        {
+                            classIcon = "text-primary icons icon-social-youtube";
+                        }
+                    }
+
+
+                    <div class="row academy-tab-body panel-primary table-row-primary" role="row" tabindex="@tabIndex" onfocus="onFocusRow(this)" aria-label="@pillola.Nome">
+                        <div class="col-lg-9 hidden-xs">
+                            <label class="@classIcon push-10-t " style="font-weight: 600; font-size:20px;">&nbsp;</label>
+                            <label style="color: #777777;font-size:16px;">@pillola.Nome</label>
+                        </div>
+                        <div class="col-xs-2 visible-xs push-10-t">
+                            <label class="@classIcon push-10-t " style="font-weight: 600; font-size:20px;">&nbsp;</label>
+                        </div>
+                        <div class="col-xs-10 visible-xs push-10-t">
+                            <label style="color: #777777;font-size:16px;">@pillola.Nome</label>
+                        </div>
+                        <div class="hidden-xs col-lg-3">
+                            @if ( Model.Iscritto == IscrittoEnum.Iscritto || ( Model.Iscritto == IscrittoEnum.NonIscritto && Model.TipoOfferta != StatoCorsoTipoOffertaEnum.SuRichiesta ) )
+                            {
+                                string buttonText = "Accedi";
+                                string btnclass = "btn-primary";
+                                if ( pillola.Iniziato )
+                                {
+                                    buttonText = "Riprendi";
+                                    btnclass = "btn-warning";
+                                }
+                                else if ( pillola.Completato )
+                                {
+                                    buttonText = "Completato";
+                                    btnclass = "btn-success";
+                                }
+
+                                <a onclick="openScorm(event, @Model.IdCorso, '@pillola.Nome','@pillola.Url')" href="@pillola.Url" target="_blank" role="link" tabindex="-1" class="btn btn-md @btnclass btn-academy-resource @(pillola.Abilitato?"":"disable")" style="font-weight: 600;">@buttonText</a>
+                            }
+                            else if ( Model.Iscritto == IscrittoEnum.RichiestaInAttesa )
+                            {
+                                <a role="link" tabindex="-1" class="btn btn-md btn-primary btn-academy-resource disable" style="font-weight: 600;">Richiesta effettuata</a>
+                            }
+                            else
+                            {
+                                <a role="link" tabindex="0" class="btn btn-md btn-primary btn-academy-resource academy-auth-required" data-rich-id="@Model.IdCorso" data-rich-idEdiz="0" href="javascript:Iscriviti(@Model.IdCorso)" style="">Richiedi autorizzazione</a>
+                            }
+                        </div>
+                        <div class="visible-xs col-xs-12 text-right ">
+                            @if ( Model.Iscritto == IscrittoEnum.Iscritto || ( Model.Iscritto == IscrittoEnum.NonIscritto && Model.TipoOfferta != StatoCorsoTipoOffertaEnum.SuRichiesta ) )
+                            {
+                                string buttonText = "Accedi";
+                                string btnclass = "btn-primary";
+                                if ( pillola.Iniziato )
+                                {
+                                    buttonText = "Riprendi";
+                                    btnclass = "btn-warning";
+                                }
+                                else if ( pillola.Completato )
+                                {
+                                    buttonText = "Completato";
+                                    btnclass = "btn-success";
+                                }
+
+                                <a onclick="openScorm(event, @Model.IdCorso, '@pillola.Nome','@pillola.Url')" href="@pillola.Url" target="_blank" role="link" tabindex="-1" class="btn btn-xs @btnclass btn-academy-resource @(pillola.Abilitato?"":"disable")" style="font-weight: 600;">@buttonText</a>
+                            }
+                            else if ( Model.Iscritto == IscrittoEnum.RichiestaInAttesa )
+                            {
+                                <a role="link" tabindex="-1" target="_blank" class="btn btn-xs btn-primary btn-academy-resource disable" style="font-weight: 600;">Richiesta effettuata</a>
+                            }
+                            else
+                            {
+                                <a role="link" tabindex="0" class="btn btn-xs btn-primary btn-academy-resource academy-auth-required" data-rich-id="@Model.IdCorso" data-rich-idEdiz="0" href="javascript:Iscriviti(@Model.IdCorso)" style="">Richiedi autorizzazione</a>
+                            }
+                        </div>
+                    </div>
+
+                    tabIndex = "-1";
+                }
+            </div>
+        </div>
+        @*                @if (corsoSuRich)
+            {
+                <div class="row academy-overlay-auth">
+                    <h3>È necessaria l'autorizzazione per poter visionare i contenuti</h3>
+                    <a class="btn btn-md btn-primary push-20-b" href="javascript:Iscriviti(@Model.Corso.Id)">Richiedi autorizzazione</a>
+                </div>
+            }*@
+    </div>
+</div>
+<br />
+
+@if (Model.Pillole.Any(x => x.Url.StartsWith(urlIlias)))
+{
+<script>
+    function LoadIliasLogin() {
+        debugger
+        if ($('#iliasLogger').attr('src') == 'about:blank') {
+            $('#iliasLogger').attr('src', '@urlIlias');
+        }
+    }
+    LoadIliasLogin();
+</script>
+}

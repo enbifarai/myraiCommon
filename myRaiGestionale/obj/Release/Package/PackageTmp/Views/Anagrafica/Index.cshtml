@@ -1,0 +1,130 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+@using MVCProject.Custom_Helpers
+@model AnagraficaModel
+
+@{
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    ViewBag.Title = "HRIS - Anagrafica Dipendente";
+}
+
+<script src="~/assets/js/plugins/jquery-validation/additional-methods.min.js"></script>
+<section role="main" class="content-body">
+    <main id="main-container">
+        <div class="content">
+            <div class="row">
+                <div class="col-md-8">
+                    <div id="anag-container">
+                        @Html.Partial("~/Views/_RaiDesign/PanelNoHeader_skeleton.cshtml")
+                    </div>
+                    @*@Html.AsyncPartial("Anagrafica", "View_DatiDipendente", , TempData, routeValues: new { m = Model.Matricola, idPersona = Model.IdPersona, isNeoMatr = Model.IsNeoMatr })*@
+                </div>
+                <div class="col-md-4">
+                    <div class="panel">
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-sm-8">
+                                    <label class="push-5-t"><b>Cerca un altro dipendente</b></label>
+                                </div>
+                                <div class="col-sm-4 text-right">
+                                    <button class="btn rai-btn-small" onclick="AnagRicercaDip()">Cerca</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="widget-container">
+                        @Html.Partial("~/Views/_RaiDesign/PanelNoHeader_skeleton.cshtml")
+                    </div>
+                    @*@Html.AsyncPartial("Anagrafica", "Widget_DatiDipendente", "~/Views/_RaiDesign/PanelNoHeader_skeleton.cshtml", TempData, routeValues: new { m = Model.Matricola, idPersona = Model.IdPersona, isNeoMatr = Model.IsNeoMatr })*@
+
+                    @if (!Model.IsNeoMatr)
+                    {
+                        using (Html.BeginPanel(PanelType.PanelNoPadding, "Richieste in corso"))
+                        {
+                            <div id="notifiche-container">
+
+                            </div>
+
+                            @*<div class="row">
+                                    <div class="col-sm-12">
+                                        <button class="btn rai-btn-small" onclick="OpenModalRichiesteDematerializzazione(@Model.Matricola, @Model.IdPersona)">Apri modale nuova richiesta</button>
+                                    </div>
+                                </div>*@
+                            @*<div class="row">
+                                    <div class="col-sm-12">
+                                        <button class="btn rai-btn-small" onclick="OpenModalInserimentoDOC(@Model.Matricola, @Model.IdPersona)">Modale creazione nuovo documento</button>
+                                    </div>
+                                </div>*@
+                            @*<div class="row">
+                                    <div class="col-sm-12">
+                                        <button class="btn rai-btn-small" onclick="OpenModalviewer(@Model.Matricola, @Model.IdPersona, 1)">Apri modale viewer</button>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <a href="@Url.Action("ScaricaPDF","Dematerializzazione")?idDoc=6" class="btn rai-btn-small" >Scarica file</a>
+                                    </div>
+                                </div>*@
+                        }
+                        @*@Html.RenderAsyncPanel(PanelType.PanelNoPadding, "Richieste in corso", "GetRichieste", "Anagrafica", routeValues: new { m = Model.Matricola })*@
+
+                        using (Html.BeginPanel(PanelType.PanelNoPadding, "Gestisci dipendente"))
+                        {
+                            <div id="gestione-container">
+
+                            </div>
+
+                            @*<div class="row">
+                                    <div class="col-sm-12">
+                                        <button class="btn rai-btn-small" onclick="HrisModalAnagDip('@Model.Matricola')">Apri modale</button>
+                                    </div>
+                                </div>*@
+                        }
+                    }
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- end: page -->
+</section>
+
+@Html.RenderModal("anagrafica", size: ModalSize.Half)
+@Html.RenderModal("indirizzo")
+@Html.RenderModal("stati-rapporto", size: ModalSize.Half)
+@Html.RenderModal("iban")
+@Html.RenderModal("studio")
+
+@Html.RenderModal("richiesta", size: ModalSize.Half)
+
+@Html.RenderModal("storico", size: ModalSize.Half)
+@Html.RenderModal("storico-carriera")
+
+@*Modali per gestioni*@
+@Html.RenderModal("add-dip", size: ModalSize.Half)
+@Html.RenderModal("dettaglioInc", size: ModalSize.Half)
+@Html.RenderModal("pratica")
+
+@Html.RenderModal("edit-daticontr", size: ModalSize.Half)
+
+@Html.RenderModal("richiestaDematerializzazione", size: ModalSize.Half)
+
+
+@*@Html.RenderModal( "viewerDoc" , size: ModalSize.Half )*@
+
+@section afterjs {
+    <script>
+        RaiUpdateWidget('anag-container', '@Url.Action("View_DatiDipendente", "Anagrafica")', 'html', { m: '@Model.Matricola', idPersona: @Model.IdPersona, isNeoMatr:@(Model.IsNeoMatr ? "true" : "false") }, false, null, true);
+        RaiUpdateWidget('widget-container', '@Url.Action("Widget_DatiDipendente", "Anagrafica")', 'html', { m: '@Model.Matricola', idPersona: @Model.IdPersona, isNeoMatr:@(Model.IsNeoMatr ? "true" : "false"), actionState:true }, false, null, true);
+    </script>
+    @if (!Model.IsNeoMatr)
+    {
+        <script>
+            RaiUpdateWidget('notifiche-container', '@Url.Action("GetRichieste", "Anagrafica")', 'html', { m: '@Model.Matricola' }, false, null, true);
+            RaiUpdateWidget('gestione-container', '@Url.Action("GetGestioni","Anagrafica")', 'html', { m: '@Model.Matricola' }, false, null, true);
+        </script>
+    }
+
+    @Html.Raw(TempData["script"])
+}

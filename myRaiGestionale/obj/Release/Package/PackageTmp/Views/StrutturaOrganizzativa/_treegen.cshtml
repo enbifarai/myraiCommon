@@ -1,0 +1,84 @@
+﻿@model myRaiCommonModel.Gestionale.GenericTreeModel
+
+<section class="panel" id="panelAlbero">
+    <header class="panel-heading">
+        <h2 class="panel-title" style="display:inline">Catalogo Processi</h2>
+        <div class="panel-actions rai-panel-actions">
+            @*<button class="btn btn-action-icon" title="Ricerca personale" alt="Ricerca personale" onclick="ricercaDipendenteStr()"><div class="fa fa-users"></div></button>*@
+            <button class="btn btn-action-icon" title="Ricerca processo" alt="Ricerca processo" onclick="ricercaProcesso()"><div class="fa fa-sitemap"></div></button>
+        </div>
+    </header>
+    <div class="panel-body" style="padding-right:30px" id="tree-body">
+        <div id="search-str" class="hide">
+            <input id="search-box" placeholder="Ricerca processo..." onkeyup="treeSearch()" type="text" class="form-control" style="padding: 4px;height: 26px;font-size: 12px;margin-bottom:10px">
+        </div>
+
+        <div class="widget-summary push-10" id="jstree-proc" style="display:none;font-size:88%">
+
+            @{
+                var item = Model.TreeItems.Where(x => x.ItemAlbero.id == x.ItemAlbero.subordinato_a).FirstOrDefault();
+                bool HasChild = Model.TreeItems.Any(z => z.ItemAlbero.subordinato_a == item.ItemAlbero.id && z.ItemAlbero.subordinato_a != z.ItemAlbero.id);
+            }
+
+            <ul>
+                <li data-jstree='{"icon":"fa fa-home"}' data-idprocesso="@item.ItemProcesso.id">
+                    @item.ItemProcesso.nome_processo
+
+                    @if (HasChild)
+                    {
+                        @DrawAlbero(item);
+                    }
+                </li>
+            </ul>
+
+        </div>
+        <div class="summary-footer">
+
+        </div>
+    </div>
+</section>
+
+@helper DrawAlbero(myRaiCommonModel.Gestionale.TreeItem item)
+{
+    <ul>
+        @foreach (var child in Model.TreeItems.Where(x => x.ItemAlbero.subordinato_a == item.ItemAlbero.id && x.ItemAlbero.subordinato_a != x.ItemAlbero.id)
+            .OrderBy(x => x.ItemProcesso.num_ordine)
+            .ThenBy(x => x.ItemProcesso.nome_processo)
+            )
+        {
+            string icon = "fa fa-file";
+            if (Model.TreeItems.Any(z => z.ItemAlbero.subordinato_a == child.ItemAlbero.id && z.ItemAlbero.subordinato_a != z.ItemAlbero.id))
+            {
+                icon = "fa fa-folder";
+            }
+            bool HasChild = Model.TreeItems.Any(z => z.ItemAlbero.subordinato_a == item.ItemAlbero.id && z.ItemAlbero.subordinato_a != z.ItemAlbero.id);
+
+            <li data-jstree='{"icon":"@icon"}' data-idprocesso="@child.ItemProcesso.id">
+                @child.ItemProcesso.nome_processo
+
+                @if (HasChild)
+                {
+                    @DrawAlbero(child)
+                }
+            </li>
+        }
+    </ul>
+
+}
+
+
+
+
+
+<script>
+    var h = window.innerHeight;
+    var d = document.getElementById("tree-body");
+    d.style.height = (h - 250).toString() + "px";
+    d.style.maxHeight = (h - 250).toString() + "px";
+    d.style.overflowY = "auto";
+
+    ActivateTree();
+
+  //  $("#tree-body").css("max-height", (h - 220).toString() + "px").css("overflow-y", "auto");
+</script>
+

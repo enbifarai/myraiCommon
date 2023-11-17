@@ -1,0 +1,79 @@
+﻿@using myRaiHelper
+@using myRaiGestionale.Controllers
+@model myRaiCommonModel.Gestionale.ElencoAnagrafiche
+
+@if (Model == null || Model.anagrafiche == null || Model.anagrafiche.Count() == 0)
+{
+    <div class="row">
+        <div class="col-sm-12 text-center">
+            <h4>Nessun dipendente trovato</h4>
+        </div>
+    </div>
+}
+else
+{
+    int countPeople = Model.anagrafiche.Count();
+    var elencoProv = PoliticheRetributiveController.GetProvS(true);
+
+    <div class="row">
+        <div class="col-xs-12 ">
+            <div style="height:340px;overflow-x:hidden;overflow-y:auto;">
+                <table class="table table-hover rai-table rai-table-vcenter" role="grid">
+                    <thead>
+                        <tr>
+                            <th>Nominativo</th>
+                            <th>Matricola</th>
+                            <th>Direzione/Sezione</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    @{
+                        foreach (var dip in Model.anagrafiche)
+                        {
+                            bool justAdded = false; // dip.XR_PRV_DIPENDENTI.Any(x=>x.ID_CAMPAGNA==Model.IdCampagna && (Model.IdCampagna==1 || (x.DECORRENZA!=null && x.DECORRENZA.Value==Model.Decorrenza)));
+                            var jAdd = dip.XR_PRV_DIPENDENTI.FirstOrDefault(x => x.ID_CAMPAGNA == Model.IdCampagna && (Model.IdCampagna == 1 || (x.DECORRENZA != null && x.DECORRENZA.Value == Model.Decorrenza)));
+
+                            //var recServ = dip.XR_SERVIZIO.OrderByDescending(x => x.DTA_FINE).FirstOrDefault();
+
+                            <tr data-row-persona="@dip.ID_PERSONA"  role="row" style="margin:3px; border-top:1px solid lightgray;">
+                                <td class=" @(justAdded?"disable":"")" data-id-persona="@dip.ID_PERSONA">
+                                    <a href="#" onclick="GestShowAnteprima(@dip.ID_PERSONA)"><h5 class="text-bold" style="width:100%;margin-top:5px;margin-bottom:5px;">@dip.DES_COGNOMEPERS.TitleCase() @dip.DES_NOMEPERS.TitleCase()</h5></a>
+                                </td>
+                                <td class=" @(justAdded?"disable":"")" data-id-persona="@dip.ID_PERSONA">
+                                    <label class="text-italic" style="width:100%;margin-bottom:0px;">@dip.COD_MATLIBROMAT</label>
+                                </td>
+                                <td class=" @(justAdded?"disable":"")" data-id-persona="@dip.ID_PERSONA">
+                                    <label class="text-muted" style="width:100%;margin-bottom:0px;">@dip.DES_SERVIZIO<br />@dip.DES_DENOMUNITAORG</label>
+                                </td>
+                                <td class=" text-right @(justAdded?"":"actions-hover")" style="vertical-align:middle;">
+                                    @foreach (var item in elencoProv.Where(x => x.CUSTOM == null || !x.CUSTOM.Value))
+                                    {
+                                        <a id="link-@dip.ID_PERSONA-@item.ID_PROV" data-prov="@dip.ID_PERSONA" href="#" style="text-decoration:none;" alt="@item.NOME" title="@item.NOME" class="text-gray @(justAdded?"disable":"")" onclick="CallCreaPraticaSingola(@item.ID_PROV,@dip.ID_PERSONA)">
+                                            <i class="@item.ICONA " style="font-size:18px;">&nbsp;</i>
+                                        </a>
+                                    }
+                                        @*<a id="REMOVE_@dip.ID_PERSONA" href="#" style="@(justAdded?"":"display:none;")opacity:1;text-decoration:none;" alt="Rimuovi pratica" title="Rimuovi pratica" class="text-primary" onclick="@(justAdded?"GestRimuoviPersona("+dip.ID_PERSONA+","+jAdd.ID_DIPENDENTE+")":"")">
+                                        <i class="icon icon-trash" style="font-size:18px;">&nbsp;</i>
+                                        </a>*@
+                                    <a id="OPER_@dip.ID_PERSONA" style="display:none;">
+                                        <span class="block block-opt-refresh">&nbsp;</span>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="row push-5-t">
+        <div class="col-sm-12" style="padding: 0 20px 0 20px">
+            @foreach (var item in elencoProv.Where(x => x.CUSTOM == null || !x.CUSTOM.Value))
+            {
+                <label style="margin:5px 10px;"><i class="text-primary @item.ICONA" style="font-size:20px;"></i> @item.NOME</label>
+            }
+        </div>
+    </div>
+}

@@ -1,0 +1,229 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model List<HotelSingoloModel>
+
+@{
+    var db = new myRaiData.alberghiEntities();
+    int now = Convert.ToInt32(DateTime.Now.ToString("yyyyMMdd"));
+}
+
+
+@if (Model.Count > 0)
+{
+    <table class="js-table-sections table-hover rai-table" id="table-alberghi" style="margin-top: 30px; margin-left: 12px; margin-right: 12px">
+        <thead>
+            <tr>
+                <th style="width: 33%">Albergo</th>
+                <th style="width: 33%">Città</th>
+                <th style="width: 33%">Distanza</th>
+                <th></th>
+            </tr>
+        </thead>
+
+
+        @foreach (var item in Model)
+        {
+            <tbody class="js-table-sections-header" data-distance="@item.Distanza">
+                <tr>
+                    <td><span class="rai-font-md-bold">@item.hotel.Nome</span><br />
+                        @for (int i = 0; i < @item.hotel.Categoria.Simbolo_Categoria.Trim().Length; i++)
+                        {
+                            <i class="fa fa-star" style="color: #ddd" aria-hidden="true"></i>
+                        }
+                    </td>
+                    <td>@item.hotel.Città.Nome_Città </td>
+                    <td>
+                        @if (item.Distanza != null)
+                        {
+                            <span>@item.Distanza km</span>
+                        }
+                    </td>
+                    <td style="width: 40px; padding-top: 16px; padding-right: 6px" class="text-center">
+                        <i class="fa fa-angle-right"></i>
+                    </td>
+                </tr>
+            </tbody>
+            <tbody data-distance="@item.Distanza">
+                <tr>
+                    <td colspan="4">
+                        <div class="row">
+                            <div class="col-md-4">
+                                @item.hotel.Nome
+                                <br />
+                                @item.hotel.Indirizzo
+                                <br />
+                                @item.hotel.Città.Nome_Città (@item.hotel.Città.Province.Sigla_Provincia)<br />
+                                @foreach (var rec in item.hotel.Recapiti.OrderBy(x => x.Id_Tipo_Recapito == 3).ThenBy(x => x.Id_Tipo_Recapito == 4).ThenBy(x => x.Id_Tipo_Recapito == 2).ThenBy(x => x.Id_Tipo_Recapito == 1))
+                                {
+                                    if (rec.Id_Tipo_Recapito == 1)
+                                    {
+                                        @:Tel @rec.Recapito <br />
+                                    }
+                                    if (rec.Id_Tipo_Recapito == 2)
+                                    {
+                                        @:Fax @rec.Recapito <br />
+                                    }
+                                    if (rec.Id_Tipo_Recapito == 3)
+                                    {
+                                        <br />
+                                    <a class="btn btn-default bg-puls_dash btn-scriv " style="margin-right: 10px;margin-top:10px;margin-bottom:10px;background-color:#aaa" href="http://@rec.Recapito" target="_blank">SITO</a><br />
+                                    }
+                                    if (rec.Id_Tipo_Recapito == 4)
+                                    {
+                                        <a href="mailto:@rec.Recapito">@rec.Recapito</a>
+                                    }
+
+                                }
+                            </div>
+                            @*</td>*@
+                            @*<td style="vertical-align: top">*@
+                            <div class="col-md-4">
+                                @*string s = Encoding.ASCII.GetString(new byte[]{ 65 });*@
+                                @{
+                                    byte car = 64;
+                                    string note_prezzi = "";
+                                    string valore = "";
+
+                                    bool addNote = false;
+                                    string subNote_DataInizio = String.Empty;
+                                    string subNote_ValDataInizio = String.Empty;
+                                    string subNote_Note = String.Empty;
+
+                                }
+
+                                @foreach (var prezzo in item.hotel.Prezzi)
+                                {
+                                    addNote = false;
+                                    subNote_DataInizio = String.Empty;
+                                    subNote_ValDataInizio = String.Empty;
+                                    subNote_Note = String.Empty;
+
+                                    var val = db.Prezzi_Validità.Where(a => a.Id_Prezzo == prezzo.Id_Prezzo).FirstOrDefault();
+
+                                    //Se è presente una validità e questa è terminata, non visualizzo il prezzo
+                                    if (val != null)
+                                    {
+                                        DateTime dataFine = DateTime.ParseExact(val.Data_Fine, "yyyyMMdd", null);
+                                        if (dataFine < DateTime.Today)
+                                        {
+                                            continue;
+                                        }
+                                    }
+
+                                    //if (val == null)
+                                    string nuovovalore = prezzo.Prezzo.ToString();
+                                    if (valore != nuovovalore)
+                                    {
+
+                                    <span class="text-primary"><b>€ @((prezzo.Prezzo / 100).ToString() + ".00")</b>  @prezzo.Tipologia_Camera.Descrizione_Tipologia @prezzo.Descrittiva
+
+                                            @if (!String.IsNullOrWhiteSpace(prezzo.Data_Inizio))
+                                            {
+                                                addNote = true;
+                                                subNote_DataInizio = "dal " + prezzo.Data_Inizio.Substring(2, 2) + "/" + prezzo.Data_Inizio.Substring(0, 2) + " al " + prezzo.Data_Fine.Substring(2, 2) + "/" + prezzo.Data_Fine.Substring(0, 2);
+                                            }
+
+                                            @if (val != null && val.Data_Inizio != "")
+                                            {
+                                                addNote = true;
+                                                subNote_ValDataInizio = "dal " + val.Data_Inizio.Substring(6, 2) + "/" + val.Data_Inizio.Substring(4, 2) + "/" + val.Data_Inizio.Substring(0, 4) + " al " + val.Data_Fine.Substring(6, 2) + "/" + val.Data_Fine.Substring(4, 2) + "/" + val.Data_Fine.Substring(0, 4);
+                                            }
+
+                                            @if (!String.IsNullOrWhiteSpace(prezzo.Note))
+                                            {
+                                                addNote = true;
+                                                subNote_Note = prezzo.Note;
+                                            }
+
+                                            @if (addNote)
+                                            {
+                                                car++;
+                                                string s = System.Text.Encoding.ASCII.GetString(new byte[] { car });
+                                                note_prezzi += "<br/>" + s;
+                                                if (!String.IsNullOrEmpty(subNote_DataInizio))
+                                                {
+                                                    note_prezzi += " - " + subNote_DataInizio;
+                                                }
+                                                if (!String.IsNullOrEmpty(subNote_ValDataInizio))
+                                                {
+                                                    note_prezzi += " - " + subNote_ValDataInizio;
+                                                }
+                                                if (!String.IsNullOrEmpty(subNote_Note))
+                                                {
+                                                    note_prezzi += " - " + subNote_Note;
+                                                }
+                                                @Html.Raw("(" + s + ")")
+                                            }
+                                        </span>
+                                        <br />
+                                    }
+                                    //else if (val != null)
+                                    else
+                                    {
+                                        string s = System.Text.Encoding.ASCII.GetString(new byte[] { car });
+                                        if (!String.IsNullOrWhiteSpace(prezzo.Data_Inizio))
+                                        {
+                                            int ini = Convert.ToInt32(prezzo.Data_Inizio);
+                                            int fine = Convert.ToInt32(prezzo.Data_Fine);
+                                            note_prezzi += " - dal " + prezzo.Data_Inizio.Substring(2, 2) + "/" + prezzo.Data_Inizio.Substring(0, 2) + " al " + prezzo.Data_Fine.Substring(2, 2) + "/" + prezzo.Data_Fine.Substring(0, 2);
+                                        }
+                                    }
+
+                                    valore = nuovovalore;
+                                }
+                                <br />
+                                @Html.Raw("<em>" + note_prezzi + "</em>")
+                            </div>
+                            @*</td>*@
+                            @*<td style="vertical-align: top">*@
+                            <div class="col-md-4">
+                                <ul>
+                                    @if (item.hotel.Note != "")
+                                    {
+                                        <li>@item.hotel.Note </li>
+                                    }
+
+                                    @foreach (var note in item.hotel.Note1)
+                                    {
+                                        <li>@note.Descrizione_Note </li>
+                                    }
+                                </ul>
+                            </div>
+                            @*</td>*@
+                            @*<td></td>*@
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+
+
+        }
+
+
+
+    </table>
+
+
+}
+else
+{
+    <div class="row" style="margin-top: 20px; margin-left: -20px; margin-right: -20px">
+        <div class="col-sm-12 bg-cel"
+             style="padding-left: 20px; padding-top: 6px; padding-right: 20px; padding-bottom: 6px; margin-top: 5px; text-align: center; font-style: italic; font-weight: 600">
+            Non ci sono hotel nel comune selezionato. Prova ad aumentare il raggio di ricerca.
+        </div>
+    </div>
+}
+<div class="row">
+    <div class="col-sm-12">
+        <a onclick="aumentaRaggio()" id="aumenta-raggio"
+            class="btn rai-btn-secondary full-width">
+            <i id="waithotel" style="display: none; margin-right: 8px" class="fa fa-spinner fa-spin"></i>
+            Aumenta il raggio di ricerca</a>
+    </div>
+</div>
+
+

@@ -1,0 +1,460 @@
+﻿@model myRaiCommonModel.cvModels.cvModel.Studies
+@using MVCProject.Custom_Helpers
+
+@{ 
+    var title = "Aggiungi un titolo di studio";
+    if (!String.IsNullOrWhiteSpace(Model._codTipoTitolo))
+    {
+        switch (Model._codTipoTitolo)
+        {
+            case "DI":
+                title = "Modifica diploma";
+                break;
+            case "MA":
+                title = "Modifica specializzazione";
+                break;
+            case "LA":
+                title = "Modifica laurea";
+                break;
+            default:
+                title = "Modifica il titolo di studio";
+                break;
+        }
+
+    }
+}
+
+
+@using (Html.BeginModal(title))
+{
+    using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Dati generali", false, new List<myRaiHelper.ActionTemplate>()
+{
+new myRaiHelper.ActionTemplate()
+{
+OnClick = "StartTitoliTour(true);return false;",
+Icon = "fa fa-life-ring",
+Text = " Tutorial"
+}
+}))
+    {
+        <div class="row">
+                <div class="col-sm-12">
+                    <div class="rai-radio-container rai-radio-inline">
+                <div class="rai-radio">
+                    <input type="radio" id="flag-dip" data-label="Diploma" name="_flagStudies" value="1" checked="checked"
+                           onchange="ShowStudy('dip')" />
+                    <label for="flag-dip" class="h4 titleSezione centerFlag">Diploma</label>
+                </div>
+                <div class="rai-radio">
+                    <input type="radio" id="flag-lau" data-label="Laurea" name="_flagStudies" value="1"
+                           onchange="ShowStudy('lau')" />
+                    <label for="flag-lau" class="h4 titleSezione centerFlag">Laurea</label>
+                </div>
+                <div class="rai-radio">
+                    <input type="radio" id="flag-mas" data-label="Specializzazione" name="_flagStudies" value="1"
+                           onchange="ShowStudy('spe')" />
+                    <label for="flag-mas" class="h4 titleSezione centerFlag">Specializzazione</label>
+                </div>
+            </div>
+                </div>
+
+        </div>
+
+        using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Dettagli"))
+        {
+            <div class="rai form-group">
+
+                @using (Html.BeginForm("/", "CV_Online", FormMethod.Post, new { id = "form-inserimentocv-dip", @class = "mb-lg form-inserimentocv" }))
+                {
+                    @Html.HiddenFor(m => m.OldCodTitolo)
+                    <div id="panel-diploma">
+                        <div class="row">
+                            @* --------------------NOME DIPLOMA-----------------*@
+                            <div class=" frk_codTipoTitolo col-md-12 push-10" @Html.TourAttributes(Model.TourElements, "tour-studio-diploma")>
+                                    @Html.LabelForRequiredObbl(m => m.Diplomi, "Diploma", new { @class="requiredobbl frk_codTipoTitolo_text titleElements rai-caption rai-caption" })
+                                @Html.DropDownListFor(modelitem => modelitem._codTitolo, Model.Diplomi, new { @data_minimum_results_for_search = "Infinity", @class = "js-select2 rai form-control", @style = "width:100%" })
+                                @Html.ValidationMessageFor(m => m._codTitolo)
+                            </div>
+                        </div>
+                        <div class="row">
+                            @* --------------------PERIODO DIPLOMA-----------------*@
+                            <div class="frk_codTipoTitolo col-md-6" @Html.TourAttributes(Model.TourElements, "tour-studio-diploma-periodo1")>
+                                    @Html.LabelForRequiredObbl(m => m._dataInizio, "Periodo", new { @class="requiredobbl frk_codTipoTitolo_text titleElements rai-caption rai-caption" })
+                                <div class="input-group date" style="position: relative">
+                                    <span class="input-group-addon" style="cursor:pointer" onclick="$('.annoinizio').datetimepicker('show')"><i class="icons icon-calendar"></i></span>
+                                        @Html.TextBoxFor(m => m._dataInizio, new { @class="js-datetimepicker rai form-control annoinizio ", data_format="YYYY", placeholder="Dal"})
+                                </div>
+                                @Html.ValidationMessageFor(m => m._dataInizio)
+                            </div>
+                            <div class="frk_codTipoTitolo col-md-6" @Html.TourAttributes(Model.TourElements, "tour-studio-diploma-periodo2")>
+                                <label class="frk_codTipoTitolo_text titleElements rai-caption rai-caption" >&nbsp;</label>
+                                <div class="input-group date" style="position: relative">
+                                    <span class="input-group-addon" style="cursor:pointer" onclick="$('.annofine').datetimepicker('show')"><i class="icons icon-calendar"></i></span>
+                                        @Html.TextBoxFor(m => m._dataFine, new { @class="js-datetimepicker rai form-control annofine ", data_format="YYYY", placeholder="al"})
+                                </div>
+                                @Html.ValidationMessageFor(m => m._dataFine)
+                            </div>
+                        </div>
+                        <br />
+
+
+                        @{ ViewBag.contesto = "diploma";}
+                        @Html.Partial("~/Views/CV_Online/studies/viewstudiesPartials/votoscala.cshtml", Model)
+
+
+
+                        <div class="row">
+                            @* --------------------ISTITUTO DIPLOMA-----------------*@
+                            <h5 class="push-20-t push-10 titleSezione col-md-12">Dettaglio istituto o ente erogatore</h5>
+                            <div class="push-10 col-md-12 istituto-for-diploma" @Html.TourAttributes(Model.TourElements, "tour-studio-diploma-nome")>
+                                @Html.LabelForRequiredObbl(x => x._istituto, "Nome", new { @class="titleElements rai-caption rai-caption" })
+                                @Html.TextBoxFor(m => m._istituto, new { @class="rai form-control ", placeholder="Inserisci a testo libero",  id="_istituto" })
+                                @Html.ValidationMessageFor(m => m._istituto)
+                            </div>
+
+                        </div>
+                        @{ ViewBag.contesto = "diploma";}
+                        @Html.Partial("~/Views/CV_Online/studies/viewstudiesPartials/EnteAddress.cshtml", Model)
+
+                    </div>
+                }
+
+
+                @using (Html.BeginForm("/", "CV_Online", FormMethod.Post, new { id = "form-inserimentocv-lau", @class = "mb-lg form-inserimentocv" }))
+                {
+                    @Html.HiddenFor(m => m.OldCodTitolo)
+                    <div class="hide" id="panel-laurea">
+
+                        <div class="row">
+                            @* --------------------TIPO LAUREA-----------------*@
+                            <div class="frk_codTipoTitolo col-md-12 push-10"
+                                 @Html.TourAttributes(Model.TourElements, "tour-studio-laurea-tipo")>
+                                     @Html.LabelForRequiredObbl(m => m.TipiLauree, "Tipo Laurea", new { @class="requiredobbl frk_codTipoTitolo_text titleElements rai-caption rai-caption" })
+                                @Html.DropDownListFor(modelitem => modelitem._codTipoTitolo, Model.TipiLauree,
+                                 new  {
+                                            @class="js-select2 rai form-control sel-tipo-laurea",
+                                       @style="width:100%",
+                                       onchange="getLauree()",
+                                        @data_minimum_results_for_search="Infinity"
+                                 })
+
+                                @Html.ValidationMessageFor(modelitem => modelitem._codTipoTitolo)
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            @* --------------------CLASSE LAUREA-----------------*@
+                            <div class="frk_codTipoTitolo col-md-12 push-10"
+                                 @Html.TourAttributes(Model.TourElements, "tour-studio-laurea-classe")>
+                                      @Html.LabelForRequiredObbl(m => m.Lauree, "Classe di Laurea", new { @class="requiredobbl frk_codTipoTitolo_text titleElements rai-caption rai-caption" })
+                                @Html.DropDownListFor(modelitem => modelitem._codTitolo, Model.Lauree,
+                                 new  {
+                                            @class="js-select2 rai form-control sel-laurea",
+                                       @style="width:100%",
+                                        @data_minimum_results_for_search="Infinity"
+                                 })
+
+                                @Html.ValidationMessageFor(modelitem => modelitem._codTitolo)
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            @* --------------------CORSO LAUREA-----------------*@
+                            <div class="frk_corsoLaurea push-10 col-md-12"
+                                 @Html.TourAttributes(Model.TourElements, "tour-studio-laurea-corso")>
+                                        @Html.LabelForRequiredObbl(x => x._corsoLaurea, "Corso di Laurea", new { @class="titleElements rai-caption rai-caption requiredobbl" })
+                                        @Html.TextBoxFor(m => m._corsoLaurea, new { @class="rai form-control ", placeholder="Inserisci il corso di laurea. Es. Corso di Laurea in Beni Artistici e dello Spettacolo", id="_corsoLaurea" })
+                                @Html.ValidationMessageFor(m => m._corsoLaurea)
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            @* --------------------PERIODO LAUREA-----------------*@
+                            <div class="frk_codTipoTitolo col-md-6"
+                                 @Html.TourAttributes(Model.TourElements, "tour-studio-laurea-periodo1")>
+                                          @Html.LabelForRequiredObbl(m => m._dataInizio, "Periodo", new { @class="requiredobbl frk_codTipoTitolo_text titleElements rai-caption rai-caption" })
+                                <div class="input-group date" style="position: relative">
+                                    <span class="input-group-addon" style="cursor:pointer" onclick="$('.annoinizio').datetimepicker('show')"><i class="icons icon-calendar"></i></span>
+                                             @Html.TextBoxFor(m => m._dataInizio, new { @class="js-datetimepicker rai form-control annoinizio ", data_format="YYYY", placeholder="Dal"})
+                                </div>
+                                @* @Html.ValidationMessageFor(m => m._dataInizio)*@
+                            </div>
+                            <div class="frk_codTipoTitolo col-md-6"
+                                 @Html.TourAttributes(Model.TourElements, "tour-studio-laurea-periodo2")>
+                                        <label class="frk_codTipoTitolo_text titleElements rai-caption rai-caption" >&nbsp;</label>
+                                <div class="input-group date" style="position: relative">
+                                    <span class="input-group-addon" style="cursor:pointer" onclick="$('.annofine').datetimepicker('show')"><i class="icons icon-calendar"></i></span>
+                                                @Html.TextBoxFor(m => m._dataFine, new { @class="js-datetimepicker rai form-control annofine ", data_format="YYYY", placeholder="al"})
+                                </div>
+                                @Html.ValidationMessageFor(m => m._dataFine)
+                            </div>
+                        </div>
+                        <br />
+
+                        @{ ViewBag.contesto = "laurea";}
+                        @Html.Partial("~/Views/CV_Online/studies/viewstudiesPartials/votoscala.cshtml", Model)
+
+
+                        <div class="row">
+                            @* --------------------RICONOSCIMENTO LAUREA-----------------*@
+                            <div class="push-10 col-md-9"
+                                 @Html.TourAttributes(Model.TourElements, "tour-studio-laurea-ric")>
+                                                <label for="_riconoscimento" class="titleElements rai-caption rai-caption">Riconoscimento</label>
+                                                @Html.TextBoxFor(m => m._riconoscimento, new { @class="rai form-control ", placeholder="Es. con dignità di stampa, summa cum laude",  id="_riconoscimento" })
+                                @Html.ValidationMessageFor(m => m._riconoscimento)
+                            </div>
+                            <div class="col-md-1">
+                                <div class="rai-checkbox push-20-t">
+                                    <input type="checkbox" class="lode-lau" name="_lode"
+                                           @if (Model._lode == 'S') { @: checked="checked"
+                                           }
+                                           value="@Model._lode" />
+                                    <label for="_lode" class="rai-caption"> Lode</label>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            @* --------------------TITOLO TESI LAUREA-----------------*@
+                            <div class="col-md-12"
+                                 @Html.TourAttributes(Model.TourElements, "tour-studio-laurea-titolo")>
+
+                                    <label for="_titoloTesi" class="titleElements rai-caption rai-caption">Titolo della tesi</label>
+                                    @Html.TextBoxFor(m => m._titoloTesi, new { @class="rai form-control ", placeholder="Inserisci a testo libero",  id="_titoloTesi" })
+                                @Html.ValidationMessageFor(m => m._titoloTesi)
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            @* --------------------ISTITUTO LAUREA-----------------*@
+                            <h5 class="push-20-t push-10 titleSezione col-md-12">Dettaglio istituto o ente erogatore</h5>
+                            <div class="push-10 col-md-12 istituto-for-diploma"
+                                 @Html.TourAttributes(Model.TourElements, "tour-studio-laurea-nome")>
+                                        @Html.LabelForRequiredObbl(x => x._istituto, "Nome", new { @class="titleElements rai-caption rai-caption requiredobbl " })
+                                     @*   @Html.TextBoxFor(m => m._istituto, new { @class="rai form-control ", placeholder="Inserisci a testo libero",  id="_istituto" })
+                                *@
+
+                                @Html.DropDownListFor(modelitem => modelitem._codIstituto, Model.EntiErogatori,
+                             new  {
+                                            @class="js-select2 rai form-control",
+                                   @style="width:100%",
+                                   @data_hidden_testolibero="istituto-lau",
+                                   @data_allow_insert = "true"
+                             })
+                                @Html.ValidationMessageFor(m => m._codIstituto)
+                            </div>
+                            @Html.HiddenFor(m => m._istituto, new { @class = "istituto-lau" })
+
+                        </div>
+
+                        @{ ViewBag.contesto = "laurea";}
+                        @Html.Partial("~/Views/CV_Online/studies/viewstudiesPartials/EnteAddress.cshtml", Model)
+                    </div>
+                }
+
+
+                @using (Html.BeginForm("/", "CV_Online", FormMethod.Post, new { id = "form-inserimentocv-mas", @class = "mb-lg form-inserimentocv" }))
+                {
+                    @Html.HiddenFor(modelItem => modelItem._prog)
+                    @Html.HiddenFor(m => m.OldCodTitolo)
+                    <div class="hide" id="panel-master">
+                        <div class="row">
+                            @* --------------------TIPO MASTER-----------------*@
+                            <div class="frk_codTipoTitolo col-md-12 push-10"
+                                 @Html.TourAttributes(Model.TourElements, "tour-studio-spec-tipo")>
+                                    @Html.LabelForRequiredObbl(m => m._titoloSpecializ, "Tipo Specializzazione o titolo di merito", new { @class="requiredobbl frk_codTipoTitolo_text titleElements rai-caption rai-caption" })
+                                @Html.DropDownListFor(modelitem => modelitem._codTitolo, Model.Master,
+                                 new  {
+                                            @class="js-select2 rai form-control",
+                                       @style="width:100%",
+                                        @data_minimum_results_for_search="Infinity"
+                                 })
+
+                                @Html.ValidationMessageFor(modelitem => modelitem._codTitolo)
+                            </div>
+                        </div>
+                        <div class="row">
+                            @* --------------------TITOLO MASTER-----------------*@
+                            <div class="frk_titoloSpecializ push-10 col-md-12"
+                                 @Html.TourAttributes(Model.TourElements, "tour-studio-spec-titolo")>
+                                    @Html.LabelForRequiredObbl(x => x._titoloSpecializ, "Ambito/Titolo in", new { @class="titleElements rai-caption rai-caption" })
+                                     @Html.TextBoxFor(m => m._titoloSpecializ, new { @class="rai form-control push-10 ", placeholder="Inserisci a testo libero. Es. Gestione d'impresa Cinematografica e Televisiva, Comunicazione e nuove tecnologie", id="_titoloSpecializ" })
+                                @Html.ValidationMessageFor(m => m._titoloSpecializ)
+                            </div>
+                        </div>
+
+                        @* --------------------PERIODO MASTER-----------------*@
+                        @*                             <div class="row">
+                                   <div class="frk_codTipoTitolo col-md-6"
+                                       @Html.TourAttributes(Model.TourElements,"tour-studio-spec-periodo1")
+                                       >
+                                          @Html.LabelForRequiredObbl(m => m._dataInizio, "Periodo", new { @class="requiredobbl frk_codTipoTitolo_text titleElements rai-caption rai-caption" })
+                                        <div class="input-group date" style="position: relative">
+                                           <span class="input-group-addon" style="cursor:pointer" onclick="$('.annoinizio').datetimepicker('show')"><i class="icons icon-calendar"></i></span>
+                                             @Html.TextBoxFor(m => m._dataInizio, new { @class="js-datetimepicker rai form-control annoinizio ", data_format="DD/MM/YYYY", placeholder="Dal"})
+                                       </div>
+                                       @Html.ValidationMessageFor(m => m._dataInizio)
+                                   </div>
+                                   <div class="frk_codTipoTitolo col-md-6"
+                                       @Html.TourAttributes(Model.TourElements,"tour-studio-spec-periodo2")
+                                       >
+                                        <label class="frk_codTipoTitolo_text titleElements rai-caption rai-caption" >&nbsp;</label>
+                                        <div class="input-group date" style="position: relative">
+                                           <span class="input-group-addon" style="cursor:pointer" onclick="$('.annofine').datetimepicker('show')"><i class="icons icon-calendar"></i></span>
+                                                @Html.TextBoxFor(m => m._dataFine, new { @class="js-datetimepicker rai form-control annofine ", data_format="DD/MM/YYYY", placeholder="al"})
+                                          </div>
+                                       @Html.ValidationMessageFor(m => m._dataFine)
+                                   </div>
+                            </div>*@
+
+                        @* --------------------PERIODO MASTER-----------------*@
+                        <div class="row">
+                            <div class="frk_codTipoTitolo col-md-6"
+                                 @Html.TourAttributes(Model.TourElements, "tour-studio-spec-periodo1")>
+                                          @Html.LabelForRequiredObbl(m => m._dataInizio, "Periodo", new { @class="requiredobbl frk_codTipoTitolo_text titleElements rai-caption rai-caption" })
+                                <div class="input-group date" style="position: relative">
+                                    <span class="input-group-addon" style="cursor:pointer" onclick="$('.annoinizio').datetimepicker('show')"><i class="icons icon-calendar"></i></span>
+                                             @Html.TextBoxFor(m => m._dataInizio, new { @class="js-datetimepicker rai form-control annoinizio ", data_format="YYYY", placeholder="Dal"})
+                                </div>
+                            </div>
+                            <div class="frk_codTipoTitolo col-md-6"
+                                 @Html.TourAttributes(Model.TourElements, "tour-studio-spec-periodo2")>
+                                        <label class="frk_codTipoTitolo_text titleElements rai-caption rai-caption" >&nbsp;</label>
+                                <div class="input-group date" style="position: relative">
+                                    <span class="input-group-addon" style="cursor:pointer" onclick="$('.annofine').datetimepicker('show')"><i class="icons icon-calendar"></i></span>
+                                                @Html.TextBoxFor(m => m._dataFine, new { @class="js-datetimepicker rai form-control annofine ", data_format="YYYY", placeholder="al"})
+                                </div>
+                                @Html.ValidationMessageFor(m => m._dataFine)
+                            </div>
+                        </div>
+                        <br />
+
+                        @{ ViewBag.contesto = "spec";}
+                        @Html.Partial("~/Views/CV_Online/studies/viewstudiesPartials/votoscala.cshtml", Model)
+
+                        <div class="row">
+                            @* --------------------RICONOSCIMENTO MASTER-----------------*@
+                            <div class="push-10 col-md-9"
+                                 @Html.TourAttributes(Model.TourElements, "tour-studio-spec-ric")>
+                                                <label for="_riconoscimento" class="titleElements rai-caption rai-caption">Riconoscimento</label>
+                                                @Html.TextBoxFor(m => m._riconoscimento, new { @class="rai form-control ", placeholder="Es. con dignità di stampa, summa cum laude",  id="_riconoscimento" })
+                                @Html.ValidationMessageFor(m => m._riconoscimento)
+                            </div>
+                            <div class="col-md-1">
+                                <div class="rai-checkbox push-20-t">
+                                    <input type="checkbox" class="lode-mas" name="_lode"
+                                           @if (Model._lode == 'S') { @: checked="checked"
+                                           }
+                                           value="@Model._lode" />
+                                        <label for="_lode"  class="titleElements rai-caption rai-caption"> Lode</label>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            @* --------------------ULTERIORI INFO MASTER-----------------*@
+                            <div class="frk_info push-10 col-md-12"
+                                 @Html.TourAttributes(Model.TourElements, "tour-studio-spec-info")>
+                                <div class="">
+                                            <label for="_info" class="titleElements rai-caption rai-caption">Ulteriori informazioni</label>
+                                    @Html.TextAreaFor(mbox=>mbox._note,new {
+                                                @class="rai form-control",
+                                        @rows="5"
+                                    })
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            @* --------------------ISTITUTO MASTER-----------------*@
+                            <h5 class="push-20-t push-10 titleSezione col-md-12">Dettaglio istituto o ente erogatore</h5>
+                            <div class="push-10 col-md-12 istituto-for-diploma"
+                                 @Html.TourAttributes(Model.TourElements, "tour-studio-spec-nome")>
+                                        @Html.LabelForRequiredObbl(x => x._istituto, "Nome", new { @class="titleElements rai-caption rai-caption requiredobbl" })
+                                @Html.DropDownListFor(modelitem => modelitem._codIstituto, Model.EntiErogatori,
+                              new  {
+                                            @class="js-select2 rai form-control sel-master",
+                                    @style="width:100%",
+                                    @data_hidden_testolibero="istituto-mas",
+                                    @data_allow_insert = "true"
+                              })
+                                @Html.ValidationMessageFor(m => m._codIstituto)
+                                @Html.HiddenFor(m => m._istituto, new { @class = "istituto-mas" })
+                            </div>
+
+                        </div>
+                        @{ ViewBag.contesto = "spec";}
+                        @Html.Partial("~/Views/CV_Online/studies/viewstudiesPartials/EnteAddress.cshtml", Model)
+                    </div>
+                }
+
+            </div>
+        }
+
+        <div class="row push-20-t">
+            <div class="text-center">
+                <a href="@Html.Raw(Request.Url.Scheme + "://" + Request.Url.Authority + Request.ApplicationPath.TrimEnd('/') + "/cv_online/pdf")" target="_blank" target="_blank"><p class="text-bold">Visualizza l'anteprima del tuo CV</p></a><br />
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-12">
+                <button class="btn rai-btn-primary full-width" type="submit" onclick="SubmitStudies(this)">Salva</button>
+            </div>
+        </div>
+
+                        <div id="savedbmodstudies" class="alert alert-primary" style="position:fixed;bottom:10px;right:10px;display:none;z-index:100; width:250px;">
+            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+            <i class="fa fa-refresh fa-spin"></i> Salvataggio in corso
+        </div>
+    }
+}
+
+
+
+
+
+
+@if (Model._codTipoTitolo != null)
+{
+    <script>
+         $("#flag-dip").attr("disabled", "disabled");
+         $("#flag-lau").attr("disabled", "disabled");
+         $("#flag-mas").attr("disabled", "disabled");
+    </script>
+    if (Model._codTipoTitolo == "DI")
+    {
+        <script>
+                $("#flag-dip").removeAttr("disabled");
+                $("#flag-dip").click();
+        </script>
+    }
+    else if (Model._codTipoTitolo == "MA")
+    {
+        <script>
+                $("#flag-mas").removeAttr("disabled");
+                $("#flag-mas").click();
+        </script>
+    }
+    else
+    {
+        <script>
+                 $("#flag-lau").removeAttr("disabled");
+                 $("#flag-lau").click();
+        </script>
+    }
+}
+
+<script>
+
+    $.validator.unobtrusive.parse($("#form-inserimentocv-new"));
+    $.validator.unobtrusive.parse($("#form-inserimentocv-dip"));
+    $.validator.unobtrusive.parse($("#form-inserimentocv-lau"));
+    $.validator.unobtrusive.parse($("#form-inserimentocv-mas"));
+
+    InitSelect2("#form-inserimentocv-dip ");
+    InitSelect2("#form-inserimentocv-lau ");
+    InitSelect2("#form-inserimentocv-mas ");
+    InitDatePicker();
+</script>

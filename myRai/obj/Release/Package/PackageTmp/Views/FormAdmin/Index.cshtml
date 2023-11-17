@@ -1,0 +1,208 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model List<myRaiData.MyRai_FormPrimario>
+
+@{
+    ViewBag.Title = "Gestione questionario";
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+}
+
+<style>
+    .note-editor.panel {
+        box-shadow: none;
+        -webkit-box-shadow: none;
+    }
+
+        .note-editor.panel .panel-heading {
+            padding: 2px 4px 4px 4px !important;
+        }
+
+    .note-editor.note-frame {
+        border: solid 1px #c2cfd6;
+    }
+
+        .note-editor.note-frame:focus {
+            -webkit-box-shadow: none !important;
+            box-shadow: none !important;
+            border-color: #1d79cb;
+        }
+
+        .note-editor.note-frame:hover {
+            border-color: #849fae;
+        }
+
+            .note-editor.note-frame:hover.note-editor.note-frame:focus {
+                border-color: #1d79cb;
+            }
+</style>
+
+
+<section role="main" class="content-body">
+    <main id="main-container">
+        <div class="content">
+            <div class="row">
+                <div class="col-sm-8">
+                    @{
+                        bool GappChiuso = false;
+                    }
+
+                    @if (!UtenteHelper.GappChiuso())
+                    {
+                        @*@Html.Partial("listaforms", Model)*@
+
+                        @Html.RenderAsyncPanel(PanelType.PanelNoPadding, "Form presenti", "listaforms", "FormAdmin", false, sectionId: "listaform")
+                    }
+                    else
+                    {
+                        @Html.Partial("_cics_chiuso")
+                        GappChiuso = true;
+                    }
+                </div>
+                <div class="col-sm-4">
+                    @Html.RenderWidget(WidgetType.Normal, "Creazione form", "icons icon-doc", "Vuoi inserire un form?", action:new ActionTemplate()
+                       {
+                           Text="Aggiungi",
+                           OnClick="newForm(0)"
+                       })
+
+                    @using (Html.BeginPanel(PanelType.SearchPanel, "Ricerca", false))
+                    {
+                        using (Html.BeginForm("listaforms", "FormAdmin", FormMethod.Post, new { id = "form-search" }))
+                        {
+                            <div class="rai form-group">
+                                <div class="row push-10">
+                                    <div class="col-sm-12">
+                                        <label class="rai-caption" id="lbl-search-titolo" for="search-titolo">Titolo</label>
+                                        <input class="rai form-control" id="search-titolo" aria-labelledby="lbl-search-titolo">
+                                    </div>
+                                </div>
+                                <div class="row push-10">
+                                    <div class="col-sm-12">
+                                        <label class="rai-caption">Tipologia</label>
+                                        @Html.RaiSelect("search-tipo", myRai.Controllers.FormAdminController.GetTipologie())
+                                    </div>
+                                </div>
+                                <div class="row push-10-t">
+                                    <div class="col-sm-12">
+                                        <div class="rai-btn-fill">
+                                            <button class="btn rai-btn-primary" onclick="CercaElementi(this)" style="height:48px">Cerca</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- end: page -->
+</section>
+
+@Html.RenderModal("form-primario")
+
+@Html.RenderModal("form-secondario")
+
+@Html.RenderModal("form-question")
+
+<div class="modal right fade" id="modal-form-question" role="dialog" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-popin">
+
+        <input type="hidden" id="id-form-question" />
+        <div class="modal-content height100">
+
+            <div class="block block-themed block-transparent remove-margin-b">
+                <div class="block-header bg-cdf" style="height: 58px;">
+                    <ul class="block-options visible-xs">
+                        <li>
+                            <button data-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+                        </li>
+                    </ul>
+                    <h4 id="tit-que" class="lead" style="float: left; margin: -3px 0 0 0px; font-size: 2.1rem; color: #fff;">
+                        Nuova voce
+                    </h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+
+                </div>
+
+                <div class="row no-margin-left-right" id="form-question-content">
+
+
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var toolBar=@Html.Raw(CommonHelper.GetParametro <string>(EnumParametriSistema.ToolbarSummernote));
+
+	function CercaElementi(button) {
+        event.preventDefault();
+
+        $('#container_FormAdmin_listaforms').addClass('rai-loader');
+
+        $(button).addClass("disable");
+
+        var form = $('#form-search');
+        $(form).parent().addClass("rai-loader");
+
+        var searchTitolo = $('#search-titolo').val();
+        var searchTipo = $('#search-tipo').val();
+
+        $.ajax({
+            url: $(form).attr("action"),
+            type: "POST",
+            data: { titolo: searchTitolo, tipologia: searchTipo },
+            dataType: 'html',
+            success: function (data) {
+                $('#container_FormAdmin_listaforms').html(data);
+                $(button).removeClass("disable");
+                $(form).parent().removeClass("rai-loader");
+                $('#container_FormAdmin_listaforms').removeClass('rai-loader');
+            },
+            error: function (a, b, c) {
+                swal({ title: "Ops...", text: ' ' + b + ' ' + c, type: 'error' });
+                $(button).removeClass("disable");
+                $(form).parent().removeClass("rai-loader");
+                $('#container_FormAdmin_listaforms').removelass('rai-loader');
+            }
+        })
+    }
+</script>
+
+@section afterjs {
+    @Html.Raw(TempData["script"])
+    <script>
+        $.ajax({
+            url: "http://svilraiplace3.intranet.rai.it/wp-json/raiplace_rest/user_theme/p103650/1",
+            type: 'POST',
+            headers: { 'keystring': '59881203878321920' },
+            data: {},
+            error: function (a, b, c) {
+                console.log(a);
+                console.log(b);
+                console.log(c);
+            },
+            success: function (data) {
+                alert(data);
+            }
+        });
+    </script>
+}
+
+<!-- FINE Partial view per modali -->
+
+<div id="pg-visible-xs" class="visible-xs"></div>
+<div id="pg-visible-sm" class="visible-sm"></div>
+<div id="pg-visible-md" class="visible-md"></div>
+<div id="pg-visible-lg" class="visible-lg"></div>
+
+

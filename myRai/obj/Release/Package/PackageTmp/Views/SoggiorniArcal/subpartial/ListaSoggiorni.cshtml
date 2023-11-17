@@ -1,0 +1,183 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+@using System.Globalization
+
+@model StoricoSoggiorni
+@{
+    Layout = null;
+}
+
+<section class="panel" style="margin-bottom: 50px;">
+    <header class="panel-heading">
+        <h2 class="panel-title">Storico Richieste</h2>
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblNotifiche" aria-expanded="true"></a>
+        </div>
+    </header>
+    <div class="panel-body" style="padding: 0px; padding-top: 15px;">
+
+        <div id="tableContainer" class="col-lg-12 text-center no-padding">
+            <div class="table-responsive">
+                <table class="table table-responsive-lg table-hover mb-0 rai-table">
+                    <thead class="text-left">
+                        <tr>
+                            <td class="col-lg-5 " style="padding-left: 40px">Struttura</td>
+                            <td class="col-lg-2 ">Periodo</td>
+                            <td class="col-lg-3 ">Catalogo</td>
+                            <td class="col-lg-1 ">Status</td>
+                            <td class="col-lg-1" style="min-width: 70px;">@*ICONA ACCORDION*@</td>
+                        </tr>
+                        <tr>
+                            <td class="col-lg-12" colspan="12"></td>
+                        </tr>
+                    </thead>
+                    <tbody class="text-left">
+                        @if ( Model.SoggiorniRichiesti != null )
+                        {
+                            if ( Model.SoggiorniRichiesti.Any( ) )
+                            {
+                                foreach ( var soggiorno in Model.SoggiorniRichiesti )
+                                {
+                                    <tr class="accordion-sintesi" style="cursor: pointer;">
+                                        <td style="padding: 0;">
+                                            <blockquote class="b-thin" style="padding-left: 36px; margin: 0;">
+                                                <span class="h6 text-bold text-primary text-capitalize" style="font-weight: 500;">@soggiorno.NomeStruttura.ToLower( )</span><br />
+                                            </blockquote>
+                                        </td>
+                                        <td>
+                                            <span class="text-nowrap">@(soggiorno.InizioSoggiorno.HasValue ? soggiorno.InizioSoggiorno.Value.ToShortDateString( ) : "n.d.") - </span>
+                                            <span class="text-nowrap">@(soggiorno.FineSoggiorno.HasValue ? soggiorno.FineSoggiorno.Value.ToShortDateString( ) : "n.d.")</span>
+                                        </td>
+                                        <td class="h6 text-capitalize">
+                                            @soggiorno.NomeCatalago.ToLower( )
+                                        </td>
+                                        <td>
+                                            @{ var status = Model.StatiRichieste.FirstOrDefault( n => n.StatoRichiestaCode == soggiorno.CodeStatusRichiesta );
+                                                if ( status != null )
+                                                {
+                                                    var base64 = Convert.ToBase64String( status.StatoRichiestaIcona );
+                                                    var imgSrc = String.Format( "data:image/gif;base64,{0}" , base64 );
+
+                                                    <table>
+                                                        <tr>
+                                                            <td class="text-center">
+                                                                <img title="@status.StatoRichiestaDetail" src="@imgSrc" width="16" height="16" style="margin-right: 12px" />
+                                                            </td>
+                                                            <td>
+                                                                <span>@status.StatoRichiestaBreve</span>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-center">@soggiorno.CodeStatusRichiesta</span>
+                                                }
+                                            }
+                                        </td>
+                                        <td class="text-center" style="vertical-align: middle;">
+                                            <i class="accordion-showdetail icons small icon-arrow-down"></i>
+                                        </td>
+                                    </tr>
+
+                                    <tr class="accordion-dettagli" hidden="hidden">
+                                        <td colspan="3" style="padding-left: 40px">
+                                            <table class="col-lg-12">
+                                                <tr>
+                                                    <td colspan="12">
+                                                        <span><em>ID Richiesta:  </em></span><span class="text-bold">@(soggiorno.CodeCatalago > 0 ? soggiorno.CodeCatalago + "." : "")@(soggiorno.CodeRichiesta).@(soggiorno.CodeScelta)</span>
+                                                    </td>
+                                                </tr>
+
+                                                @{ int contaAlloggi = 1;
+
+                                                    if ( soggiorno.Partecipanti != null && soggiorno.Partecipanti.Any( ) )
+                                                    {
+                                                        foreach ( var alloggio in soggiorno.Partecipanti.GroupBy( n => n.CodeProgAlloggio ) )
+                                                        {
+                                                            <tr>
+                                                                <td colspan="12" style="padding-left: 3em;">
+                                                                    <em>Sistemazione n°@(contaAlloggi++):  </em><span class="text-bold text-uppercase">@alloggio.First( ).DescrizAlloggio</span>
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="padding-left: 6em;">
+                                                                    <span><em>Partecipanti:</em></span>
+                                                                </td>
+                                                                <td>
+                                                                    <span><em>Data di Nascita:</em></span>
+                                                                </td>
+                                                            </tr>
+                                                            foreach ( var partecipante in alloggio )
+                                                            {
+                                                                <tr>
+                                                                    <td style="padding-left: 6em;">
+                                                                        <span class="text-bold text-uppercase">@partecipante.Nominativo</span>
+                                                                    </td>
+                                                                    <td>
+                                                                        <span>@(partecipante.DataDiNascita.HasValue ? partecipante.DataDiNascita.Value.ToShortDateString( ) : "n.d.")</span>
+                                                                    </td>
+                                                                </tr>
+                                                            }
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        <tr>
+                                                            <td colspan="12" style="padding-left: 3em;">
+                                                                <span class="text-bold">Impossibile caricare i dati sui partecipanti al soggiorno. Contattare l'assistenza tecnica.</span>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                }
+                                            </table>
+                                        <td colspan="2" style="padding-right: 20px;">
+                                            @{ var statusValutaz = Model.StatiRichieste.FirstOrDefault( n => n.StatoRichiestaCode == soggiorno.CodeStatusValutazione );
+                                                if ( statusValutaz != null )
+                                                {
+                                                    var base64 = Convert.ToBase64String( statusValutaz.StatoRichiestaIcona );
+                                                    var imgSrc = String.Format( "data:image/gif;base64,{0}" , base64 );
+
+                                                    <table>
+                                                        <tr>
+                                                            <td>
+                                                                <img title="@statusValutaz.StatoRichiestaDetail" src="@imgSrc" width="16" height="16" style="margin-right: 12px" />
+                                                            </td>
+                                                            <td>
+                                                                <span>@statusValutaz.StatoRichiestaBreve</span>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                }
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="12" class="col-lg-12 text-bold" style="border-top: none; padding-left: 36px;">Nessuna richiesta presente.</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="12" class="col-lg-12 text-bold" style="border-top: none; padding-left: 36px;">Impossible caricare i dati sui soggiorni. Contattare l'assistenza tecnica.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+@section afterjs {
+    <script type="text/javascript">
+        AttivaAccordion();
+    </script>
+}

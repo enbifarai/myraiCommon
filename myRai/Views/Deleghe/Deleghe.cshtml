@@ -1,0 +1,72 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+@using System.Linq.Expressions
+
+@model DelegheModel
+
+<section class="panel" id="panel-docdipendente">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+            <a href="#" class="panel-action panel-action-refresh" id="button-refresh-del" type="button" data-toggle="block-option" data-action="refresh_toggle"
+               data-refreshurlllll="/notifiche/refreshMieNotifiche" data-parentdiv="panel-docdipendente"
+               data-refreshelements="docdipendente" data-refresh-partial
+               data-action-mode="demo">
+            </a>
+        </div>
+        <h2 class="panel-title">Le mie deleghe</h2>
+    </header>
+
+    @{
+        var lambdas = new Expression<Func<Delega , bool>>[] {
+        x => x.Delega_da <= DateTime.Today && x.Delega_a >= DateTime.Today || (x.Delega_da > DateTime.Today && x.Delega_a > DateTime.Today),
+        x=>(x.Delega_da<DateTime.Today && x.Delega_a <DateTime.Today) };
+    }
+    <div id="divdeleghe" class="block panel-body no-padding">
+        <ul class="nav nav-tabs nav-tabs-alt  nav-justified" data-toggle="tabs">
+            <li class="tabbianco active">
+                <a data-toggle="tabs" id="a1" href="#tab1">ATTIVE</a>
+            </li>
+            <li class="tabbianco">
+                <a data-toggle="tabs" id="a2" href="#tab2">NON ATTIVE</a>
+            </li>
+        </ul>
+        <div class="block-content tab-content">
+            @for ( int i = 0 ; i < lambdas.Length ; i++ )
+            {
+                <div class="tab-pane @(i==0?"active":"")" id="tab@(i+1)">
+                    <table class="js-table-sections table table-hover">
+                        <thead>
+                        <th class="fixed-20"></th>
+                        <th>Dal</th>
+                        <th>Al</th>
+                        <th>Matricola</th>
+                        <th>Nominativo</th>
+                        <th>Azioni</th>
+                        </thead>
+                        <tbody>
+                            @foreach ( var delega in Model.ListaDeleghe.Where( lambdas[i].Compile( ) ) )
+                            {
+                                <tr>
+                                    <td></td>
+                                    <td>@delega.Delega_da.ToString( "dd/MM/yyyy" )</td>
+                                    <td>@delega.Delega_a.ToString( "dd/MM/yyyy" )</td>
+                                    <td>@delega.MatricolaDelegato</td>
+                                    <td> @delega.NominativoDelegato</td>
+                                    <td style="text-align:center">
+
+                                        <i class="icons icon-trash h4" style="cursor:pointer"
+                                           onclick="CancellaDelega('@delega.Delega_da.ToString("dd/MM/yyyy")','@delega.Delega_a.ToString("dd/MM/yyyy")','@delega.MatricolaDelegato','@delega.NominativoDelegato')">
+                                        </i>
+
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</section>

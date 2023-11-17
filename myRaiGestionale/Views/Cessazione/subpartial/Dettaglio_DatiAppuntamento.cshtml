@@ -1,0 +1,110 @@
+﻿@using myRaiHelper
+@using myRaiGestionale.Controllers
+@using myRaiCommonModel.Gestionale
+@model CessazioneModel
+
+@{
+    myRaiData.Incentivi.XR_INC_OPERSTATI oper = Model.Pratica.XR_INC_OPERSTATI.First(x => x.ID_STATO == (int)IncStato.Appuntamento && x.DATA_FINE_VALIDITA == null);
+
+    string matricola = CommonHelper.GetCurrentUserMatricola();
+    bool isAdmin = CessazioneHelper.IsRoleAdmin(matricola);
+    bool isRelind = CessazioneHelper.EnabledToSubFunc(matricola, "RELIND");
+    bool isGest = CessazioneHelper.EnabledToSubFunc(matricola,  "GEST");
+}
+
+<div class="rai-table-info">
+    <div class="row">
+        <div class="col-sm-6 ">
+            <label class="">Data</label>
+        </div>
+        <div class="col-sm-6">
+            <label>@(Model.Pratica.DATA_APPUNTAMENTO != null ? Model.Pratica.DATA_APPUNTAMENTO.Value.ToString("dd/MM/yyyy HH:mm") : "-")</label>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-6 ">
+            <label class="">Sindacato</label>
+        </div>
+        <div class="col-sm-6">
+            <label>@(Model.Pratica.XR_INC_SIGLESINDACALI != null ? Model.Pratica.XR_INC_SIGLESINDACALI.SINDACATO : "-")</label>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-6 ">
+            <label class="">Rappresentante Sindacato</label>
+        </div>
+        <div class="col-sm-6">
+            <label>@(Model.Pratica.XR_INC_RAPPRSINDACATO != null && !String.IsNullOrWhiteSpace(Model.Pratica.XR_INC_RAPPRSINDACATO.COGNOME) ? Model.Pratica.XR_INC_RAPPRSINDACATO.COGNOME + " " + Model.Pratica.XR_INC_RAPPRSINDACATO.NOME : "-")</label>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-6 ">
+            <label class="">Rappresentante Industria</label>
+        </div>
+        <div class="col-sm-6">
+            <label>@(Model.Pratica.XR_INC_RAPPRINDUSTRIA != null && !String.IsNullOrWhiteSpace(Model.Pratica.XR_INC_RAPPRINDUSTRIA.COGNOME) ? Model.Pratica.XR_INC_RAPPRINDUSTRIA.COGNOME + " " + Model.Pratica.XR_INC_RAPPRINDUSTRIA.NOME : "-")</label>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-6 ">
+            <label class="">Rappresentante RAI</label>
+        </div>
+        <div class="col-sm-6">
+            <label>@(Model.Pratica.XR_INC_RAPPRRAI != null && Model.Pratica.XR_INC_RAPPRRAI.ID_RAPPRRAI > 0 ? Model.Pratica.XR_INC_RAPPRRAI.ANAGPERS.DES_COGNOMEPERS.TitleCase() + " " + Model.Pratica.XR_INC_RAPPRRAI.ANAGPERS.DES_NOMEPERS.TitleCase() : "-")</label>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-6 ">
+            <label class="">Banca</label>
+        </div>
+        <div class="col-sm-6">
+            <label>@(Model.Pratica.BANCA != null ? Model.Pratica.BANCA : "-")</label>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-6 ">
+            <label class="">IBAN</label>
+        </div>
+        <div class="col-sm-6">
+            <label style="word-break:break-all">
+                @if (Model.Pratica.IBAN != null)
+                {
+                    <span>@Model.Pratica.IBAN.Substring(0, 4) @Model.Pratica.IBAN.Substring(4, 4) @Model.Pratica.IBAN.Substring(8, 4) @Model.Pratica.IBAN.Substring(12, 4) @Model.Pratica.IBAN.Substring(16, 4) @Model.Pratica.IBAN.Substring(20, 4) @Model.Pratica.IBAN.Substring(24, 3)</span>
+                }
+                else
+                {
+                    <text>"-"</text>
+                }
+            </label>
+        </div>
+    </div>
+</div>
+@{
+    bool canModifyVerb = !Model.Pratica.XR_INC_OPERSTATI.Any(x => x.ID_STATO == (int)IncStato.VerbaleFirmato) && Model.Pratica.DATA_BOZZA_INVIO.HasValue && Model.Pratica.DATA_BOZZA_RICEZIONE.HasValue;
+}
+
+@*Modifica verbali abilitata solo per chi non ha filtri sulle sedi*@
+@if (canModifyVerb)
+{
+    <div class="row">
+        <div class="col-sm-12">
+            <input id="inputAttachVerbMod" class="hidden" type="file" name="browse" onchange="AggiungiVerbale(@Model.Pratica.ID_DIPENDENTE, @oper.ID_OPER)" accept="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+            <a class="cursor-pointer text-italic" onclick="$('#inputAttachVerbMod').trigger('click')">Aggiungi verbale modificato</a>
+            @if (oper.XR_INC_OPERSTATI_DOC != null && oper.XR_INC_OPERSTATI_DOC.Where(x => x.NOT_TAG == "BozzaVerbale").Count() > 0)
+            {
+                <span> - </span><a class="cursor-pointer text-italic" href="@Url.Action("CreaVerbaleDoc", new { idDip=Model.Pratica.ID_DIPENDENTE, originale=true})" target="_blank">Scarica il verbale originale</a>
+                <span> - </span><a class="cursor-pointer text-italic" onclick="ShowCronologiaVerbali(@Model.Pratica.ID_DIPENDENTE, @oper.ID_OPER)">Visualizza cronologia modifiche</a>
+            }
+        </div>
+    </div>
+}
+
+@if (!Model.Pratica.XR_INC_OPERSTATI.Any(x => x.ID_STATO == (int)IncStato.VerbaleFirmato && x.DATA_FINE_VALIDITA == null))
+{
+    <div class="row push-10-t">
+        <div class="col-sm-12">
+            <a class="btn rai-btn-small full-width" href="@Url.Action("CreaVerbaleDoc", new {idDip=Model.Pratica.ID_DIPENDENTE})" title="Scarica il verbale"><i class="icons icon-doc"></i> Scarica il verbale</a>
+        </div>
+    </div>
+
+}

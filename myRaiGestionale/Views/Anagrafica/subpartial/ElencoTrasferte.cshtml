@@ -1,0 +1,140 @@
+﻿@using myRaiCommonModel
+@using myRaiHelper
+@model AnagraficaTrasferte
+<style>
+    .table-cedo td {
+        padding: 4px 8px !important;
+    }
+</style>
+@{
+    Layout = null;
+}
+
+@{
+    string macroStato = "";
+
+    switch (Model.Trasferte.MacroStato)
+    {
+        case myRaiCommonModel.ess.TrasferteMacroStato.Aperte:
+            macroStato = "Aperte";
+            break;
+        case myRaiCommonModel.ess.TrasferteMacroStato.Concluse:
+            macroStato = "Concluse";
+            break;
+        default:
+            break;
+    }
+
+    string tx = null;
+
+    using (var db = new myRaiData.digiGappEntities())
+    {
+        var item = db.MyRai_ParametriSistema.Where(p => p.Chiave.Equals("TrasferteStatiEsclusi")).FirstOrDefault();
+
+        if (item != null)
+        {
+            tx = item.Valore1;
+        }
+    }
+    <input id="trasferte_matricola" type="hidden" value=@Model.Matricola />
+
+    <div class="block" style="margin-bottom:0px;">
+        <div class="row">
+            <div class="row push-10" style="margin:15px 10px">
+              
+                <div class="col-sm-12">
+                    <div class="rai-nav-fill">
+                        <div class="rai-nav-fill-item">
+
+                        </div>
+                        <div class="rai-nav-fill-item">
+                            <div class="form-group form-group-sm">
+                                <div class="input-group">
+                                    <span onclick="$('#datameseTrasferta').datetimepicker('show')" class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                                    <input class="js-datetimepicker form-control" value=@DateTime.Today.ToString("MMMM yyyy") data-format="MMMM YYYY" data-locale="it" type="text" id="datameseTrasferta" placeholder="Mese" onchange="javascript:cambioData(this)">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rai-nav-fill-item">
+
+                        </div>
+                    </div>
+
+                   
+                </div>
+              
+            </div>
+            </div>
+        <ul class="nav nav-tabs nav-tabs-alt nav-justified" data-toggle="tabs" role="tablist">
+            <li class="active" role="presentation">
+                <a href="#tab1" class="rai-badge-anchor" id="hrefTab1" tabindex="0" role="tab" aria-selected="true" aria-controls="tab1" onclick="LoadTrasferte(this, 'aperte')">
+                    Aperte
+                </a>
+            </li>
+            <li class="" role="presentation">
+                <a href="#tab2" class="rai-badge-anchor" id="hrefTab2" tabindex="0" role="tab" aria-selected="false" aria-controls="tab2" onclick="LoadTrasferte(this, 'concluse')">
+                    Concluse
+                </a>
+            </li>
+        </ul>
+
+        <div class="block-content tab-content" style="padding:23px 5px 1px;overflow:unset;">
+            <div class="tab-pane active" id="tab1" role="tabpanel">
+
+                <div id="tblTrasferteContainer">
+                    <div class="table-responsive">
+                        <table class="rai-table table trasferte" id="table-trasferte">
+                            <thead>
+                                <tr>
+                                    <td class="col-xs-5 text-left">Foglio di viaggio</td>
+                                    <td class="col-xs-2">Sp. Prev</td>
+                                    <td class="col-xs-2">Rimborsi</td>
+                                    <td class="col-xs-2">Anticipi</td>
+                                    <td class="col-xs-1">&nbsp;</td>
+                                </tr>
+                            </thead>
+                            <tbody id="bodyTrasferteaperte" data-target="trasferteloaded">
+                                @{
+                                    if (Model.Trasferte.Data.Viaggi == null || !Model.Trasferte.Data.Viaggi.Any())
+                                    {
+                                        <tr>
+                                            <td colspan="6" class="text-center">
+                                                @Html.Partial("~/Views/Shared/_NoDati.cshtml")
+                                            </td>
+                                        </tr>
+                                    }
+                                    else
+                                    {
+                                        @Html.Partial("~/Views/Anagrafica/subpartial/Tab_DatiTrasferte.cshtml", Model)
+                                    }
+                                }
+                            </tbody>
+                            <tbody id="bodyTrasferteconcluse" data-target=""></tbody>
+
+                        </table>
+
+                    </div>
+                    <input id="trasferte_statoVisibile" type="hidden" value=@macroStato.ToLower() />
+
+                    @*     @if (Model.Trasferte.HasNext)
+        {*@
+                    <div class="text-center">
+                        <i id="divCaricamentoInCorso@(macroStato)" class="rai-loader" style="height:50px; display:none;"></i>
+                    </div>
+                    <div class="section-bottom" id="DivAltreTrasferte@(macroStato)">
+
+                        <a id="toggle-AltreTrasferte" class=@((Model.Trasferte.HasNext)?"":"hidden") style="top:20px;" data-tourdb="tour-index-arrowdown" data-step="7" data-intro="<h5 class=&quot; titolo-tour text-primary text-bold&quot;></h5><p class=&quot;testo-tour&quot;>Quando trovi questo simbolo puoi espandere la sezione. Ci sono altre trasferte che non vedi dalla pagina principale.</p>" data-toggle="collapse" data-target="#collAltreTrasferte@(macroStato)" class="apri-panel" onclick="toggleTrasferte(this)"><i class="fa fa-2x push-7-t font-w600 fa-angle-down text-white"></i></a>
+                    </div>
+                    @*   }*@
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+}
+<script>
+    InitDatePicker();
+  
+</script>
+

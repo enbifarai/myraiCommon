@@ -1,0 +1,225 @@
+﻿@model myRaiHelper.sidebarModel
+
+@{
+    string section = "";
+    if (myRaiHelper.SessionHelper.Get("GEST_SECTION") != null)
+    {
+        section = (string)myRaiHelper.SessionHelper.Get("GEST_SECTION");
+    }
+}
+
+@helper MenuRaiPerMe(string section)
+{
+    Model.sezioni = Model.sezioni.Where(s => s.Titolo != null && !s.Titolo.StartsWith("*")).ToList();
+
+    if (Model.sezioni.Any(a => a.codiceMy == "MY"))
+    {
+        foreach (var sez in Model.sezioni.Where(a => a.codiceMy == "MY").OrderBy(x => x.progressivo))
+        {
+            //Sezioni
+            if (sez.customView == null)
+            {
+            }
+            else
+            {
+
+                string s = "";
+
+                if (sez.attivo)
+                {
+                    s = "active";
+                }
+
+                <li role="presentation">
+                    <a role="menuitem" tabindex="1000" class="@s nav-active rai-sidebar-item" href="@sez.customView">
+                        <i class="fa fa-home" aria-hidden="true"></i>
+                        <span class="rai-text-normal">@sez.nomeSezione</span>
+                    </a>
+                </li>
+            }
+        }
+    }
+
+    if (section == "PERSONE")
+    {
+        if (Model.sezioni.Any(a => a.codiceMy == "G_PERS_ANAG"))
+        {
+            @VoceMenuRaiPerMe("Persone", "G_PERS_ANAG", "fa fa-user")
+        }
+    }
+
+    if (section == "GESTIONE")
+    {
+
+        if (Model.sezioni.Any(a => a.codiceMy == "G_GESTCESS"))
+        {
+            @VoceMenuRaiPerMe("Gestione", "G_GESTCESS", "fa fa-info-circle")
+        }
+
+        if (Model.sezioni.Any(a => a.codiceMy == "G_SVILVAL"))
+        {
+            @VoceMenuRaiPerMe("Sviluppo", "G_SVILVAL", "fa fa-inbox")
+        }
+
+        if (Model.sezioni.Any(a => a.codiceMy == "G_RISEDIT"))
+        {
+            @VoceMenuRaiPerMe("Risorse editoriali", "G_RISEDIT", "fa fa-video-camera")
+        }
+    }
+    if (section == "AMMINISTRAZIONE")
+    {
+        if (Model.sezioni.Any(a => a.codiceMy == "G_GESTAMM"))
+        {
+            @VoceMenuRaiPerMe("Amministrazione", "G_GESTAMM", "fa fa-info-circle")
+        }
+    }
+
+    if (section == "FORMAZIONE")
+    {
+
+    }
+
+    if (section == "ORGANIZZAZIONE")
+    {
+        if (Model.sezioni.Any(a => a.codiceMy == "G_INC"))
+        {
+            @VoceMenuRaiPerMe("Organizzazione", "G_INC", "fa fa-book")
+        }
+    }
+
+    if (Model.sezioni.Any(a => a.codiceMy == "G_RICHIESTE"))
+    {
+        @VoceMenuRaiPerMe("Richieste", "G_RICHIESTE", "fa fa-list")
+    }
+
+    if (Model.sezioni.Any(a => a.codiceMy == "G_ADMIN"))
+    {
+        @VoceMenuRaiPerMe("Impostazioni", "G_ADMIN", "fa fa-cog")
+    }
+
+
+}
+
+
+
+@helper VoceMenuRaiPerMe(string menuTitle, string menuCode, string menuIcon)
+{
+    <li class="nav-parent" role="presentation">
+        <a role="menuitem" aria-haspopup="true" tabindex="1010" class="rai-sidebar-item ">
+            <i class="@menuIcon" aria-hidden="true"></i>
+            <span class="rai-text-normal">@menuTitle</span>
+        </a>
+        <ul role="menu" class="nav nav-children">
+
+
+            @foreach (var sez in Model.sezioni.Where(a => a.codiceMy == menuCode).OrderBy(x => x.progressivo))
+            {
+                if (sez.vociMenu.Count > 0)
+                {
+                    <li class="nav-parent " role="presentation">
+                        <a role="menuitem" aria-label="@sez.nomeSezione" class="rai-sidebar-item " aria-haspopup="true" tabindex="1011">
+
+                            <span class="rai-text-subitem">@sez.nomeSezione</span>
+                        </a>
+                        <ul role="menu" class="nav nav-children">
+                            @foreach (var voce in sez.vociMenu.OrderBy(x => x.progressivo))
+                            {
+                                <li role="presentation">
+                                    <a role="menuitem" aria-label="@sez.nomeSezione" href="@voce.customView" class="rai-sidebar-item"><span class="pad-left-15">@voce.nomeSezione</span></a>
+                                </li>
+                            }
+                        </ul>
+                    </li>
+                }
+                else
+                {
+                    string s = "";
+                    if (sez.attivo)
+                    {
+                        s = "nav-active";
+                    }
+
+                    <li role="presentation">
+                        <a role="menuitem" aria-label="@sez.nomeSezione" tabindex="1020" class="@s rai-sidebar-item  gapp-rich-@sez.RichiedeGapp.ToString()  gapp-chiuso-@myRaiHelper.UtenteHelper.GappChiuso().ToString()" href="@sez.customView">
+
+                            <span class="rai-text-subitem">@sez.nomeSezione</span>
+                        </a>
+                    </li>
+                }
+            }
+        </ul>
+    </li>
+}
+
+<!-- start: sidebar -->
+<aside id="sidebar-left" class="rai-sidebar rai-sidebar-light sidebar-left">
+
+    <div class="nano">
+        <div class="nano-content">
+            <nav id="menu" class="nav-main" role="navigation">
+
+
+                @{
+                    if (!Model.HeaderName.Equals("Svil_Header", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        <ul role="menubar" aria-label="Navigazione" class="nav nav-main  visible-xs">
+                            @{
+                                if (Model.HeaderMenu != null)
+                                {
+                                    foreach (var voce in Model.HeaderMenu.Where(m => m.MinimizedModeEnabled).ToList())
+                                    {
+                                        <li role="presentation">
+                                            <a role="menuitem" tabindex="1030" class="nav-active" href="@(voce.Link)" title="@(voce.Title)">
+                                                <i class="icons text-primary" aria-hidden="true"></i>
+                                                <span>@(voce.Descrizione)</span>
+                                            </a>
+                                        </li>
+                                    }
+                                }
+                            }
+
+                            <li class="nav-parent nav-expanded" role="presentation">
+                                <a role="menuitem" tabindex="1040" class="nav-active">
+                                    <i class="icons icon-home text-primary" aria-hidden="true"></i>
+                                    <span>RAI PER ME</span>
+                                </a>
+
+                                <ul role="menu" class="nav nav-children">
+                                    @if (Model.sezioni != null)
+                                    {
+                                        @MenuRaiPerMe(section)
+                                    }
+                                </ul>
+
+                            </li>
+                        </ul>
+                    }
+                }
+
+                <ul role="menubar" aria-label="Navigazione" aria-orientation="vertical" class="nav nav-main @( !Model.HeaderName.Equals("Svil_Header", StringComparison.InvariantCultureIgnoreCase) ? "hidden-xs" : "")">
+                    @if (Model.sezioni != null)
+                    {
+                        @MenuRaiPerMe(section)
+                    }
+                </ul>
+            </nav>
+
+
+        </div>
+    </div>
+
+    @*@if (@ViewData["viewhelp"] != null)
+        {
+
+        <ul class="nav nav-main ">
+            <li>
+                <a id="guida" tabindex="1100" class="nav-active rai-sidebar-help" href="javascript:Info('@ViewData["viewhelp"]');">
+                    <span class="interactive-primary-color rai-text-normal text-center">Guida all'utilizzo</span>
+                </a>
+            </li>
+        </ul>
+        }*@
+
+
+</aside>
+<!-- end: sidebar -->

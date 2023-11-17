@@ -1,0 +1,134 @@
+﻿
+@using myRaiGestionale.Controllers
+@using myRaiCommonModel.Gestionale
+@model myRaiCommonModel.Gestionale.Pratica
+
+@if (!Model.IsPreview)
+{
+    var varRich = Model.Dipendente.XR_PRV_DIPENDENTI_VARIAZIONI.FirstOrDefault(x => x.ID_PROV == Model.Dipendente.ID_PROV_RICH);
+    using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Provvedimento richiesto"))
+    {
+        <div class="row">
+            <div class="col-sm-12">
+                <table class="table table-hover rai-table rai-table-vcenter" role="grid" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th class="text-right" style="min-width:90px">Diff. RAL / Importo</th>
+                            <th class="text-right" style="min-width:90px">Costo annuo</th>
+                            <th class="text-right" style="min-width:90px">Costo periodo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                @Model.Dipendente.XR_PRV_PROV_RICH.NOME
+                            </td>
+                            @if (varRich != null)
+                            {
+                                <td class="text-right">
+                                    @if (Model.CanShowData || Model.Dipendente.ID_PROV_RICH == 2)
+                                    {
+                                        <label>@String.Format("{0:N2} €", varRich.DIFF_RAL)</label>
+                                    }
+                                    else
+                                    {
+                                        <label>***</label>
+                                    }
+                                </td>
+                                <td class="text-right">
+                                    @if (Model.CanShowData || Model.Dipendente.ID_PROV_RICH == 2)
+                                    {
+                                        <label>@String.Format("{0:N2} €", varRich.COSTO_ANNUO)</label>
+                                    }
+                                    else
+                                    {
+                                        <label>***</label>
+                                    }
+                                </td>
+                                <td class="text-right">
+                                    @if (Model.CanShowData || Model.Dipendente.ID_PROV_RICH == 2)
+                                    {
+                                        <label>@String.Format("{0:N2} €", varRich.COSTO_PERIODO)</label>
+                                    }
+                                    else
+                                    {
+                                        <label>***</label>
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    }
+}
+
+
+<div class="block block-content-table block-transparent">
+    <div class="block-header block-content-mini ">
+        <label class="rai-font-table-heading">Gestione provvedimento</label>
+        <div class="block-options">
+            @if (!Model.IsPreview && Model.EnableGest)
+            {
+                <a class="btn btn-action-icon" href="#" onclick="GestRefreshDipData(@Model.Dipendente.ID_DIPENDENTE)"><i class="fa fa-refresh"></i></a>
+            }
+        </div>
+    </div>
+
+    <div class="block-content block-content-mini">
+        <div class="alert  alert-success" id="alertMessage" style="display:none; margin: 10px 20px 0px 20px; padding: 5px 15px 5px 15px;">
+
+        </div>
+
+        <div id="ModificaProvvedimentoContainer" class="block-content block-content-mini block-content-full">
+            @Html.Partial("../PoliticheRetributive/subpartial/Modifica_Provvedimento")
+        </div>
+    </div>
+</div>
+<!--fine contenuto-->
+
+@{
+    string stringLog = "<table class='table table-hover table-responsive' role='grid' style='font-size:14px; text-align:left;'>";
+    stringLog += "<thead><tr>" +
+        "<th>Data</th>" +
+        "<th>Operatore</th>" +
+        "<th>Operazione</th>" +
+        "</tr></thead><tbody>";
+    if (Model.LogOperazioni != null)
+    {
+        foreach (var log in Model.LogOperazioni.OrderBy(x => x.ID_LOG))
+        {
+            stringLog += "<tr>" +
+                        "<td>" + (log.TMS_TIMESTAMP.HasValue ? log.TMS_TIMESTAMP.Value.ToString("dd/MM/yy HH:mm") : "-") + "</td>" +
+                        "<td>" + log.SINTESI1.DES_COGNOMEPERS + " " + log.SINTESI1.DES_NOMEPERS + "</td>" +
+                        "<td>" + log.MESSAGGIO.Replace("\r\n", "<br/>") + "</td>" +
+                        "</tr>";
+        }
+    }
+    stringLog += "</tbody></table>";
+}
+
+<script>
+    function ShowLog()
+    {
+        swal({
+            title: 'Log operazioni',
+            text: "",
+            html: "@Html.Raw(stringLog)",
+            width: 800,
+            //input: 'text',
+            //type: 'warning',
+            //showCancelButton: true,
+            //confirmButtonColor: '#3085d6',
+            //cancelButtonColor: '#d33',
+            confirmButtonText: 'Ok',
+            //cancelButtonText: 'No, cancel!',
+            confirmButtonClass: 'btn btn-primary btn-lg',
+            //cancelButtonClass: 'btn btn-danger',
+            buttonsStyling: false
+        });
+    }
+</script>

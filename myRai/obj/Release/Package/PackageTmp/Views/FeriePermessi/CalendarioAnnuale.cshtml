@@ -1,0 +1,133 @@
+﻿@model myRaiCommonModel.CalendarioFerie
+
+    <div class="block-header bg-cdf" style="height: 58px; width: 1440px;position:fixed;">
+        <ul class="block-options visible-xs">
+            <li>
+                <button data-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+            </li>
+        </ul>
+        <div class="calendario-annoVisualizzato">Anno Visualizzato @Model.Anno.ToString()</div>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+
+    </div>
+
+    <div class="sezione-calendario-feriePermessi">
+       
+        <div class="div-table-calendario">
+             
+                        <table class="calendario-table">
+                            <tr>
+                                <td class="tdDay"></td>
+                                @for (int i = 0; i < 31; i++)
+                                {
+                                    <td class="thDay">
+                                        @(i + 1)
+                                    </td>
+                                }
+                            </tr>
+                            @{
+                                string cls = "tdDay";
+                            }
+                            @for (int i = 1; i < 13; i++)
+                            {
+                                <tr>
+                        <td class="tdMonth"><span class="text-primary"><b>@myRai.Business.CommonManager.TraduciMeseDaNumLett(i.ToString("00"))</b></span></td>
+                                    @for (int d = 1; d < 32; d++)
+                                    {
+                                        var currDay = Model.DaysShowed.Find(f => f.giorno.Day == d && f.giorno.Month == i);
+                                        if (currDay != null)
+                                        {
+                                            if (Model.DaysShowed.Find(f => f.giorno.Day == d && f.giorno.Month == i).giorno.DayOfWeek == DayOfWeek.Saturday || Model.DaysShowed.Find(f => f.giorno.Day == d && f.giorno.Month == i).giorno.DayOfWeek == DayOfWeek.Sunday)
+                                            {
+                                                cls = "tdDayGrayCal";
+                                            }
+                                            else
+                                            {
+                                                cls = "tdDay";
+                                            }
+                                            if (Model.DaysShowed.Find(f => f.giorno.Day == d && f.giorno.Month == i).tipoGiornata.ToUpper() == "A" || Model.DaysShowed.Find(f => f.giorno.Day == d && f.giorno.Month == i).tipoGiornata.ToUpper() == "B")
+                                            {
+                                                cls = "tdDayGrayCal";
+                                            }
+                                            if (Model.DaysShowed.Find(f => f.giorno.Day == d && f.giorno.Month == i).tipoFeriePermesso.Trim() == "")
+                                            {
+                                                <td class="tdCalWid @cls">&nbsp;</td>
+                                            }
+                                            else
+                                            {
+                                                <td class="tdCalWid @cls">
+                                                    @if (Model.DaysShowed.Find(f => f.giorno.Day == d && f.giorno.Month == i).Frazione.StartsWith("I"))
+                                                    {
+
+                                                        if (!Model.DaysShowed.Find(f => f.giorno.Day == d && f.giorno.Month == i).tipoFeriePermesso.ToUpper().StartsWith("M"))
+                                                        {
+                                                            <pie class="pie-hand pie-cal-anno pie-@(Model.DaysShowed.Find(f => f.giorno.Day == d && f.giorno.Month == i).tipoFeriePermesso.ToLower())" title="@(Model.DaysShowed.Find(f => f.giorno.Day == d && f.giorno.Month == i).tipoFeriePermesso)"></pie>
+                                                        }
+                                                    }
+                                                    @if (Model.DaysShowed.Find(f => f.giorno.Day == d && f.giorno.Month == i).Frazione.StartsWith("M"))
+                                                    {
+                                                        <pie class="pie-hand pie-cal-anno fifty pie-@(Model.DaysShowed.Find(f => f.giorno.Day == d && f.giorno.Month == i).tipoFeriePermesso.ToLower())" title="@(Model.DaysShowed.Find(f => f.giorno.Day == d && f.giorno.Month == i).tipoFeriePermesso)"></pie>
+                                                    }
+                                                    @if (Model.DaysShowed.Find(f => f.giorno.Day == d && f.giorno.Month == i).Frazione.StartsWith("U"))
+                                                    {
+                                                        <pie class="pie-hand pie-cal-anno twentyfive pie-@(Model.DaysShowed.Find(f => f.giorno.Day == d && f.giorno.Month == i).tipoFeriePermesso.ToLower())" title="@(Model.DaysShowed.Find(f => f.giorno.Day == d && f.giorno.Month == i).tipoFeriePermesso)"></pie>
+                                                    }
+                                                </td>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <td class="tdDayGrayCal">&nbsp;</td>
+                                        }
+                                    }
+                                </tr>
+                            }
+                        </table>
+                    </div>
+                        <div class="containerLegend">
+                            <table class="legenda-table">
+                                <tr class="legenda-table-header">
+                                    <td>&nbsp</td>
+                                    <td>Anno Prec.</td>
+                                    <td>Spett.</td>
+                                    <td>Fruite</td>
+                                    <td>Pian.</td>
+                                    <td>Residue</td>
+                                </tr>
+                                @{
+                                    string trClass = "";
+                                }
+                                @for (int i = 0; i < Model.tipiGiornataSel.Count; i++)
+                                {
+                                    if (i % 2 == 1)
+                                    {
+                                        trClass = "legenda-tr-alternate";
+                                    }
+                                    else
+                                    {
+                                        trClass = "";
+                                    }
+                                    <tr class="@trClass">
+                                        <td><pie class="pie-cal-anno pie-@Model.tipiGiornataSel[i].siglaSemplice.ToLower().Trim()"></pie>@Model.tipiGiornataSel[i].tipoDesc (@Model.tipiGiornataSel[i].sigla.ToUpper().Trim())</td>
+                                        <td>@Model.tipiGiornataSel[i].resoconto.AnnoPrec</td>
+                                        <td>@Model.tipiGiornataSel[i].resoconto.Spettanti</td>
+                                        <td>@Model.tipiGiornataSel[i].resoconto.Usufruite</td>
+                                        <td>@Model.tipiGiornataSel[i].resoconto.Pianificate</td>
+                                        <td>@Model.tipiGiornataSel[i].resoconto.Residue</td>
+                                    </tr>
+                                }
+                            </table>
+                            <div style="padding-left:35%;padding-top:3%;">
+                                <a class="btn btn-default bg-puls_dash btn-scriv" href="@Url.Action("StampaPdf","FeriePermessi")" style="width:192px;font-size:13px;">SCARICA IL PDF</a>
+                            </div>
+                        </div>
+
+            </div>
+
+
+
+<script type="text/javascript">
+    function stampaCal() {
+        return window.location = '@Url.Action("StampaPdf", "FeriePermessi")';
+    }
+</script>

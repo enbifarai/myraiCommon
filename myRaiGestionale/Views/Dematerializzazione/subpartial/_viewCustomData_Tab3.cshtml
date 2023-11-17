@@ -1,0 +1,167 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiCommonModel
+@using myRaiHelper
+
+@model List<AttributiAggiuntivi>
+
+@{
+    Layout = null;
+}
+
+@{
+    if (Model != null && Model.Any())
+    {
+        var attrs = Model.OrderBy(w => w.Ordinamento).ToList();
+        List<string> gruppi = new List<string>();
+        foreach (var a in attrs.Where(w => w.Tipo != TipologiaAttributoEnum.FixedHiddenValue).ToList())
+        {
+            if (a.HideInReadOnly)
+            {
+                continue;
+            }
+
+            if (!String.IsNullOrEmpty(a.Valore))
+            {
+
+                string label1 = "";
+                string tx = "";
+
+                if (a.Tipo == TipologiaAttributoEnum.Importo)
+                {
+                    string txImporto = "0.00";
+
+                    if (!String.IsNullOrEmpty(a.Valore))
+                    {
+                        txImporto = a.Valore;
+                    }
+                    txImporto = Convert.ToDouble(txImporto).ToString("N2");
+                    tx = txImporto;
+                }
+                else if (a.Tipo == TipologiaAttributoEnum.Data)
+                {
+                    if (a.Valore.Length >= 10)
+                    {
+                        tx = a.Valore.Substring(0, 10);
+                    }
+                    else
+                    {
+                        tx = a.Valore;
+                    }
+                }
+                else if (a.Tipo == TipologiaAttributoEnum.Radio)
+                {
+                    var gruppo = a.Gruppo;
+                    bool giaElaborato = gruppi.Count(w => w.Equals(gruppo)) > 0;
+                    if (!giaElaborato)
+                    {
+                        gruppi.Add(gruppo);
+                        var el = attrs.Where(w => w.Tipo == TipologiaAttributoEnum.Radio && w.Gruppo.Equals(gruppo) && w.Checked).FirstOrDefault();
+                        if (el != null)
+                        {
+                            tx = el.Title;
+                        }
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+                else if (a.Tipo == TipologiaAttributoEnum.SelectEstesa &&
+                    !String.IsNullOrEmpty(a.TagSINTESI1) &&
+                    a.Title != a.Label)
+                {
+                    //tx = CommonHelper.ToTitleCase(a.Title);
+                    tx = a.Title;
+                }
+                else if (a.Tipo == TipologiaAttributoEnum.SelectMultiSelezione && a.Title != a.Label)
+                {
+                    tx = CommonHelper.ToTitleCase(a.Title);
+                }
+                else if (a.Tipo == TipologiaAttributoEnum.SelectMultiSelezioneBlank && a.Title != a.Label)
+                {
+                    tx = CommonHelper.ToTitleCase(a.Title);
+                }
+                else
+                {
+                    tx = a.Valore;
+                    if (tx.Contains("_NotDisplayed_"))
+                    {
+                        int pos = tx.IndexOf("_NotDisplayed_");
+                        tx = tx.Substring(pos);
+                        tx = tx.Replace("_NotDisplayed_", "");
+                        string _myCod = a.Valore.Substring(0, 3);
+                        if (!String.IsNullOrEmpty(_myCod))
+                        {
+                            tx = String.Format("{0} ({1})", tx, _myCod);
+                        }
+                    }
+                }
+
+                label1 = a.Label;
+
+                <div class="row push-10-t">
+                    <div class="col-sm-4 col-md-3 col-xl-2">
+                        <span>@label1</span>
+                    </div>
+                    <div class="col-sm-8">
+                        @{
+
+                            if (a.Tipo == TipologiaAttributoEnum.Check)
+                            {
+                                if (a.SelectListItems != null && a.SelectListItems.Any())
+                                {
+                                    int count = 0;
+                                    foreach (var s in a.SelectListItems)
+                                    {
+                                        count++;
+                                        <div class="rai-checkbox">
+                                            <input type="checkbox"
+                                                   @(s.Selected ? "checked=\"checked\"" : "")
+                                                   @(a.Required ? "required=\"required\"" : "")
+                                                   value="@(s.Value)"
+                                                   disabled>
+                                            <label>@s.Text</label>
+                                        </div>
+                                    }
+                                }
+                            }
+                            else if (a.Tipo == TipologiaAttributoEnum.SelectMultiSelezioneLibera || a.Tipo == TipologiaAttributoEnum.SelectMultiSelezione || a.Tipo == TipologiaAttributoEnum.SelectMultiSelezioneBlank)
+                            {
+                                if (tx.Contains(","))
+                                {
+                                    foreach (var t in tx.Split(',').ToList())
+                                    {
+                                        <span>@t</span>
+                                        <br />
+                                    }
+                                }
+                                else
+                                {
+                                    <span>@tx</span>
+                                }
+                            }
+                            else if (tx.Contains("\r\n"))
+                            {
+                                tx = tx.Replace("\r\n", "|");
+                                foreach (var t in tx.Split('|').ToList())
+                                {
+                                    <span>@t</span>
+                                }
+                            }
+                            else
+                            {
+                                <span>@tx</span>
+                            }
+                        }
+                    </div>
+                </div>
+            }
+            else if (a.InLine != null && a.InLine.Any())
+            {
+                <div class="row push-10-t">
+                    @Html.Partial("~/Views/Dematerializzazione/subpartial/_viewCustomDataForLoop_Tab3.cshtml", a.InLine)
+                </div>
+            }
+        }
+    }
+}

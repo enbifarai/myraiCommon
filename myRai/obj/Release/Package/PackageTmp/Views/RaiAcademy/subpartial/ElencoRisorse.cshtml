@@ -1,0 +1,159 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonModel.RaiAcademy;
+@using MVCProject.Custom_Helpers;
+
+@model Materiali
+@{
+    var urlIlias = myRai.Business.CommonManager.GetParametro<string>(myRai.Business.EnumParametriSistema.AcademyUrlIlias);
+}
+
+<div class="row">
+    <div class="col-sm-12">
+        <h2>Materiali e Documenti</h2>
+        <div id="risorse" class="academy-tab-body " role="tabpanel">
+            @if ( Model.Risorse.Count == 0 )
+            {
+                <label class="academy-tab-body">Non ci sono materiali disponibili</label>
+            }
+            else
+            {
+                <br />
+
+
+                string tabIndex = "0";
+
+                <div role="grid">
+
+                    @foreach ( var ris in Model.Risorse )
+                    {
+                        string iconLink = "";
+                        if ( ris.Completato )
+                        {
+                            iconLink = "fa fa-check object-complete";
+                        }
+                        else
+                        {
+                            iconLink = "icon-link text-primary ";
+                            if ( ris.Tipo.StartsWith( "doc" ) || ris.Tipo.StartsWith( "file" ) )
+                            {
+                                iconLink = "icon-cloud-download text-primary ";
+                            }
+                        }
+
+                        <div class="row academy-tab-body panel-primary table-row-primary" role="row" tabindex="@tabIndex" onfocus="onFocusRow(this)" aria-label="@ris.Nome">
+                            <div class="col-lg-9 hidden-xs">
+                                <label class="icons @iconLink push-10-t" style="font-weight: 600; font-size:20px;">&nbsp;</label>
+                                <label class="" style="color: #777777; font-size:16px;">@ris.Nome</label>
+                            </div>
+                            <div class="col-xs-2 visible-xs">
+                                <label class="icons @iconLink push-10-t" style="font-weight: 600; font-size:20px;">&nbsp;</label>
+                            </div>
+                            <div class="col-xs-10 visible-xs">
+                                <label class="" style="color: #777777; font-size:16px;">@ris.Nome</label>
+                            </div>
+                            <div class="hidden-xs col-lg-3">
+                                @if ( Model.Iscritto == IscrittoEnum.Iscritto || ( Model.Iscritto == IscrittoEnum.NonIscritto && Model.TipoOfferta != StatoCorsoTipoOffertaEnum.SuRichiesta ) )
+                                {
+                                    <a class="btn btn-md btn-primary btn-academy-resource cursor-pointer" style="font-weight: 600;" onclick="openResource(event, @Model.IdCorso, '@ris.Nome','@ris.Url');" href="@ris.Url" target="_blank">Vai al link</a>
+                                }
+                                else if ( Model.Iscritto == IscrittoEnum.RichiestaInAttesa )
+                                {
+                                    <a class="btn btn-md btn-primary btn-academy-resource disable" style="font-weight: 600;">Richiesta effettuata</a>
+                                }
+                                else
+                                {
+                                    <a role="link" tabindex="0" class="btn btn-md btn-primary btn-academy-resource push-20-t academy-auth-required" data-rich-id="@Model.IdCorso" data-rich-idEdiz="0" href="javascript:Iscriviti(@Model.IdCorso)">Richiedi autorizzazione</a>
+                                }
+                            </div>
+                            <div class="visible-xs col-xs-12 text-right">
+                                @if ( Model.Iscritto == IscrittoEnum.Iscritto || ( Model.Iscritto == IscrittoEnum.NonIscritto && Model.TipoOfferta != StatoCorsoTipoOffertaEnum.SuRichiesta ) )
+                                {
+                                    <a class="btn btn-md btn-primary btn-academy-resource cursor-pointer" style="font-weight: 600; " onclick="openResource(event, @Model.IdCorso, '@ris.Nome','@ris.Url');" href="@ris.Url" target="_blank">Vai al link</a>
+                                }
+                                else if ( Model.Iscritto == IscrittoEnum.RichiestaInAttesa )
+                                {
+                                    <a class="btn btn-md btn-primary btn-academy-resource disable" style="font-weight: 600;">Richiesta effettuata</a>
+                                }
+                                else
+                                {
+                                    <a role="link" tabindex="0" class="btn btn-md btn-primary btn-academy-resource academy-auth-required" data-rich-id="@Model.IdCorso" data-rich-idEdiz="0" href="javascript:Iscriviti(@Model.IdCorso)">Richiedi autorizzazione</a>
+                                }
+                            </div>
+                        </div>
+
+                        tabIndex = "-1";
+                    }
+                </div>
+
+                @*
+
+
+
+                    <table class="js-table-sections table table-responsive academy-corso-info">
+                        <thead>
+                        </thead>
+                        <tbody>
+                            @foreach (var ris in Model.Risorse)
+                            {
+                                if (ris.Tipo == "url")
+                                {
+                                <tr class="academy-tab-body panel-primary table-row-primary">
+                                    <td class="col-lg-10">
+                                        <label class="text-primary icons icon-link" style="font-weight: 600;"></label>
+                                        <label class="text-bold" style="color: #777777;">@ris.Nome</label>
+                                    </td>
+                                    <td class="col-lg-2">
+                                        @if (Model.Iscritto)
+                                        {
+                                        <a class="text-primary" style="font-weight: 600;" href="@ris.Url" target="_blank">Vai al link</a>
+                                        }
+                                        else
+                                        {
+                                        <a role="link" tabindex="0" class="btn btn-md btn-primary push-20-t academy-auth-required" data-rich-id="@Model.IdCorso" data-rich-idEdiz="0"  href="javascript:Iscriviti(@Model.IdCorso)">Richiedi autorizzazione</a>
+                                        }
+                                    </td>
+                                </tr>
+                                }
+                                else if (ris.Tipo == "doc")
+                                {
+                                <tr class="academy-tab-body panel-primary table-row-primary">
+                                    <td class="col-lg-9">
+                                        <label class="text-primary icons icon-cloud-download" style="font-weight: 600;"></label>
+                                        <label class="text-bold" style="color: #777777;">@ris.Nome</label>
+                                    </td>
+                                    <td class="col-lg-3">
+                                        @if (Model.Iscritto)
+                                        {
+                                        <a class="text-primary" style="font-weight: 600;" href="@ris.Url" target="_blank">Vedi il documento</a>
+                                        }
+                                        else
+                                        {
+                                        <a role="link" tabindex="0" class="btn btn-md btn-primary academy-auth-required" href="javascript:Iscriviti(@Model.IdCorso)">Richiedi autorizzazione</a>
+                                        }
+                                    </td>
+                                </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>*@
+            }
+        </div>
+    </div>
+</div>
+
+
+@if (Model.Risorse.Any(x => x.Url.StartsWith(urlIlias)))
+{
+    <script>
+    function LoadIliasLogin() {
+        debugger
+        if ($('#iliasLogger').attr('src') == 'about:blank') {
+            $('#iliasLogger').attr('src', '@urlIlias');
+        }
+    }
+    LoadIliasLogin();
+    </script>
+}

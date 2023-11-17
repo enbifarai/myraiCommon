@@ -1,0 +1,202 @@
+﻿@using myRaiCommonModel
+@model List<StudioModel>
+@{
+    var idpersona = ViewBag.idPersona;
+    var serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
+
+}
+<!--Sezione Titoli di Studio-->
+<br />
+<div class="block block-transparent block-content-table">
+    <div class="block-header block-content-mini">
+        <label class="block-title">TITOLI DI STUDIO</label>
+        <div class="block-options">
+            <button class="btn btn-sm rai-btn-small" onclick="renderModalInserimentoDatiApprendistaTitoliDiStudio('@idpersona')">Nuovo</button>
+        </div>
+    </div>
+    <div class="block-content block-content-mini">
+
+        <div class="row">
+            <div class="col-sm-12">
+
+                <table class="table rai-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 25%;">Data</th>
+                            <th style="width: 30%;">Titolo di studio</th>
+                            <th style="width: 25%;"> &nbsp;</th>
+                            <th style="width: 5%;"> &nbsp;</th>
+                            <th style="width: 25%;"> &nbsp;</th>
+
+                        </tr>
+                    </thead>
+                    <tbody id="sezioneTitoliDiStudio">
+
+                        @if (Model.Count() == 0)
+                        {
+                            <tr>
+                                <td class="text-center no-border" colspan="100"><span class="rai-font-md-neutral">Non ci sono dati da visualizzare</span></td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td>@item.DataFineStr</td>
+                                    <td>@item.DesTipoTitolo - @item.CodTitolo</td>
+                                    <td class="rai-table-td-toggle"></td>
+                                    <td class="rai-table-td-toggle"></td>
+                                    <td class="text-right">
+                                        @*  <button id="modifica" class="btn btn-action-icon modifica" onclick="javascript: return modificaTitolodiStudio(@serializer.Serialize(item)) "><i class="fa fa-pencil"></i></button>*@
+                                        <div class="btn-action-icon-container">
+                                            <button id="modifica" class="btn btn-action-icon modifica" onclick="javascript: return modificaTitolo(@item.idTitoloStudioLocal) "><i class="fa fa-pencil"></i></button>
+                                            <button id="eliminazione" class="btn btn-action-icon eliminazione" onclick="eliminaTitoloDiStudio(@item.idTitoloStudioLocal)"><i class="fa fa-trash-o"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+
+
+
+
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<!--Sezione Esperienze Lavorative-->
+<div class="block block-transparent block-content-table" id="sezione_EsperienzeLavorative">
+
+    @Html.Action("GetSezioneEsperienzeLavorative", "PianoFormativo", new { id = @idpersona })
+
+</div>
+<script type="text/javascript">
+    @foreach (var d in Model)
+    {
+        @:titoliDiStudio.push(@Html.Raw(serializer.Serialize(d)));
+    }
+    reloadTableTitoliDiStudio();
+    function renderModalInserimentoDatiApprendistaTitoliDiStudio() {
+
+        removeIdTitoloDiStudioSelected();
+        RaiOpenAsyncModal("modal-titoliDiStudio", "/PianoFormativo/ModalInserimentoTitoloDiStudio", { idPersona: idpersona }, null, "POST", false)
+    }
+
+    function removeIdTitoloDiStudioSelected() {
+        idTitoloStudioSelected = null;
+    }
+
+    function modificaTitolo(idTitoloLocal) {
+        const titoloStudio = titoliDiStudio.find(function (obj) {
+            return obj.idTitoloStudioLocal == idTitoloLocal
+        });
+        idTitoloStudioSelected = idTitoloLocal;
+        RaiOpenAsyncModal("modal-titoliDiStudio", "/PianoFormativo/ModalModificaTitoloDiStudio", titoloStudio, null, "POST", false)
+    }
+    function eliminaTitoloDiStudio(idTitoloStudioSelected) {
+        const indexToRemove = titoliDiStudio.findIndex(function (el) { return el.idTitoloStudioLocal == idTitoloStudioSelected });
+        titoliDiStudio.splice(indexToRemove, 1);
+        for (var i = indexToRemove;i<titoliDiStudio.length; i++)
+        {
+            titoliDiStudio[i].idTitoloStudioLocal = i;
+ }
+        reloadTableTitoliDiStudio();
+    }
+    function saveDatiTitoliDiStudio(id) {
+        var $form = $('form#form-studio');
+        if (!$form.valid()) { return }
+        var titoloDiStudio = {};
+        if (idTitoloStudioSelected != null) {
+            //creo un nuovo titolo di studio con idlocal = idloacalselected
+            titoloDiStudio = {
+                idTitoloStudioLocal: idTitoloStudioSelected,
+                CodTitolo: $("#CodTitolo").val(),
+                CodTitoloOld: $("#CodTitoloOld").val(),
+                DesTitolo: $("#CodTitolo option:selected").text(),
+                CodTipoTitolo: $("#CodTipoTitolo").val(),
+                DesTipoTitolo: $("#CodTipoTitolo option:selected").text(),
+                CorsoLaurea: $("#CorsoLaurea").val(),
+                DataInizioStr: $("#DataInizioStr").val(),
+                DataFineStr: $("#DataFineStr").val(),
+                IdPersona: idpersona,
+                Cod_TipoPunteggio: $("#Cod_TipoPunteggio").val(),
+                Voto: $("#Voto").val(),
+                Lode: $("#Lode").val(),
+                Scala: $("#Cod_TipoPunteggio").val(),
+                Riconoscimento: $("#Riconoscimento").val(),
+                CodIstituto: $("#CodIstituto").val(),
+                DescrizioneIstituto: $("#CodIstituto").text(),
+                Istituto: $("#Istituto").val(),
+                CodCitta: $("#CodCitta").val(),
+                DesCitta: $("#CodCitta").text(),
+                Nota: $("#Nota").val()
+            }
+            //elimino il vecchio titolo di studio da titolidistudio(array)
+            const indexToRemove = titoliDiStudio.findIndex(function (el) { return el.idTitoloStudioLocal == idTitoloStudioSelected });
+            titoliDiStudio.splice(indexToRemove, 1, titoloDiStudio);
+
+
+        } else {
+            titoloDiStudio = {
+                idTitoloStudioLocal: titoliDiStudio.length,
+                CodTitolo: $("#CodTitolo").val(),
+                CodTitoloOld: $("#CodTitoloOld").val(),
+                DesTitolo: $("#CodTitolo option:selected").text(),
+                CodTipoTitolo: $("#CodTipoTitolo").val(),
+                DesTipoTitolo: $("#CodTipoTitolo option:selected").text(),
+                CorsoLaurea: $("#CorsoLaurea").val(),
+                DataInizioStr: $("#DataInizioStr").val(),
+                DataFineStr: $("#DataFineStr").val(),
+                IdPersona: idpersona,
+                Cod_TipoPunteggio: $("#Cod_TipoPunteggio").val(),
+                Voto: $("#Voto").val(),
+                Lode: $("#Lode").val(),
+                Scala: $("#Cod_TipoPunteggio").val(),
+                Riconoscimento: $("#Riconoscimento").val(),
+                CodIstituto: $("#CodIstituto").val(),
+                DescrizioneIstituto: $("#CodIstituto").text(),
+                Istituto: $("#Istituto").val(),
+                CodCitta: $("#CodCitta").val(),
+                DesCitta: $("#CodCitta").text(),
+                Nota: $("#Nota").val()
+            };
+            titoliDiStudio.push(titoloDiStudio);
+
+        }
+        reloadTableTitoliDiStudio();
+        $('#modal-titoliDiStudio').modal('toggle');
+    }
+
+</script>
+@section afterjs{
+    <script type="text/javascript">
+
+    $(function () {
+        LoadSezioneEsperienzeLavorative();
+
+       reloadTableTitoliDiStudio();
+    });
+
+        function LoadSezioneEsperienzeLavorative() {
+
+        $.ajax({
+            url: '@Url.Action("GetSezioneEsperienzeLavorative", "PianoFormativo")',
+            type: "GET",
+            data: { id: idpersona},
+            success: function (data) {
+
+                $('#sezione_EsperienzeLavorative').html(data);
+            }
+        });
+    }
+
+    </script>
+}

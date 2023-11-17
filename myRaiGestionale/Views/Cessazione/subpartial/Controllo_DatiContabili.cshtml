@@ -1,0 +1,178 @@
+﻿@using myRaiCommonModel.Gestionale
+@using myRaiCommonManager.Cessazione
+@using myRaiHelper
+@model CessazioneModel
+
+@{
+    var ultimoAgg = myRaiHelper.HrisHelper.GetParametro<string>(myRaiHelper.HrisParam.IncentiviEsecuzioneFNL930);
+    var tipologieList = CessazioneManager.GetTipologiaUscita();
+    bool isAdmin = Model.AbilFunctions.Contains("ADM");
+}
+
+<div class="block block-content-table">
+    <div class="block-header">
+        <label class="block-title">Dati richiesta</label>
+    </div>
+    <div class="block-content">
+        <div class="form-group">
+            <div class="row push-5">
+                @if (Model.Pratica.DTA_RICHIESTA.HasValue)
+                {
+                    <div class="col-sm-6">
+                        @Html.LabelFor(m => m.Pratica.DTA_RICHIESTA, "Data inserimento", new { @class = "rai-caption" })
+                        <div class="input-group">
+                            @Html.TextBoxFor(m => m.Pratica.DTA_RICHIESTA, new { @class = "js-datetimepicker form-control form-control-value", placeholder = "Data Cessazione", data_format = "DD/MM/YYYY", @readonly = "readonly" })
+                            <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                        </div>
+                    </div>
+                }
+                <div class="col-sm-6">
+                    @Html.LabelFor(m => m.Pratica.NOT_TIP_ACCERT, "Tipologia accertata", new { @class = "rai-caption" })
+                    @Html.RaiSelectFor(m => m.Pratica.NOT_TIP_ACCERT, tipologieList, readOnly: true)
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="block block-content-table">
+    <div class="block-header">
+        <label class="block-title">
+            Dati contabili
+        </label>
+        @if (Model.Pratica.DTA_AGG_CONT.HasValue)
+        {
+            <em class="rai-font-md-neutral">Ultimo aggiornamento @Model.Pratica.DTA_AGG_CONT.Value.ToString("dd/MM/yyyy HH:mm")</em>
+        }
+        else
+        {
+            <em class="rai-font-md-neutral">Ultimo aggiornamento @ultimoAgg</em>
+        }
+        <div class="block-options">
+            @if (isAdmin && new int[] { (int)IncStato.RichiestaInserita, (int)IncStato.RichiestaAccettata }.Contains(Model.Stato.ID_STATO))
+            {
+                //Se cambia questo controllo, è da aggiornare anche quello in fondo alla pagina
+                <button class="btn rai-btn-small" onclick="IncReloadContData(@Model.Pratica.ID_DIPENDENTE)" title="Aggiorna dati contabili">Aggiorna dati contabili</button>
+            }
+        </div>
+    </div>
+    <div class="block-content">
+        <div class="form-group">
+            <div class="row">
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(model => model.Pratica.DATA_CESSAZIONE, "Data Cessazione", new { @class = "rai-caption" })
+                    <div class="input-group">
+                        @Html.TextBoxFor(m => m.Pratica.DATA_CESSAZIONE, new { @class = "js-datetimepicker form-control form-control-value", style = "width: 100%", placeholder = "Data Cessazione", data_format = "DD/MM/YYYY", @readonly = "readonly" })
+                        <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                    </div>
+                </div>
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(model => model.Pratica.DATA_PAGAMENTO, "Data Pagamento", new { @class = "rai-caption" })
+                    @Html.RaiSelectFor(m => m.Pratica.DATA_PAGAMENTO, myRaiCommonManager.Cessazione.CessazioneManager.GetDatePagamenti(Model.Pratica.DATA_CESSAZIONE.Value), readOnly: true)
+                </div>
+            </div>
+            <div class="row" data-tipologia="1">
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(model => model.Pratica.UNA_TANTUM_LORDA, "Importo Una Tantum", new { @class = "rai-caption" })
+                    <div class="input-group">
+                        @Html.TextBoxFor(m => m.Pratica.UNA_TANTUM_LORDA, new { @class = "form-control form-control-value", style = "width: 100%", data_type = "currency", @readonly = "readonly" })
+                        <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                    </div>
+                </div>
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(model => model.Pratica.INCENTIVO_LORDO, "Importo Incentivo Lordo", new { @class = "rai-caption" })
+                    <div class="input-group">
+                        @Html.TextBoxFor(m => m.Pratica.INCENTIVO_LORDO, new { @class = "form-control form-control-value", style = "width: 100%", data_type = "currency", @readonly = "readonly" })
+                        <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="row" data-tipologia="1">
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(m => m.Pratica.DATA_TFR, "TFR Al", new { @class = "rai-caption" })
+                    <div class="input-group">
+                        @Html.TextBoxFor(m => m.Pratica.DATA_TFR, new { @class = "js-datetimepicker form-control form-control-value", style = "width: 100%", placeholder = "Data Cessazione", data_format = "DD/MM/YYYY", @readonly = "readonly" })
+                        <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                    </div>
+                </div>
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(m => m.Pratica.TFR_LORDO_INPS_IP, "TFR Lordo INPS", new { @class = "rai-caption" })
+                    <div class="input-group">
+                        @Html.TextBoxFor(m => m.Pratica.TFR_LORDO_INPS_IP, new { @class = "form-control form-control-value", style = "width: 100%", data_type = "currency", @readonly = "readonly" })
+                        <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                    </div>
+                </div>
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(m => m.Pratica.TFR_LORDO_AZ_IP, "TFR Lordo Azienda", new { @class = "rai-caption" })
+                    <div class="input-group">
+                        @Html.TextBoxFor(m => m.Pratica.TFR_LORDO_AZ_IP, new { @class = "form-control form-control-value", style = "width: 100%", data_type = "currency", @readonly = "readonly" })
+                        <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                    </div>
+                </div>
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(m => m.Pratica.TFR_NETTO, "TFR Netto", new { @class = "rai-caption" })
+                    <div class="input-group">
+                        @Html.TextBoxFor(m => m.Pratica.TFR_NETTO, new { @class = "form-control form-control-value", style = "width: 100%", data_type = "currency", @readonly = "readonly" })
+                        <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                    </div>
+                </div>
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(m => m.Pratica.ALIQ_TFR, "Aliquota TFR", new { @class = "rai-caption" })
+                    <div class="input-group">
+                        @Html.TextBoxFor(m => m.Pratica.ALIQ_TFR, new { @class = "form-control form-control-value", style = "width: 100%", data_type = "currency", @readonly = "readonly" })
+                        <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="row" data-tipologia="1">
+                <div class="col-sm-12">
+                    <label class="rai-caption">Mensilità incentivo</label>
+                </div>
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(m => m.Pratica.NUM_MENS_PRINC_DEC, "principali", new { @class = "text-italic" })
+                    <div class="input-group">
+                        @Html.TextBoxFor(m => m.Pratica.NUM_MENS_PRINC_DEC, new { @class = "form-control", @readonly = "readonly" })
+                        <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                    </div>
+                </div>
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(m => m.Pratica.NUM_MENS_AGG_DEC, "aggiuntive", new { @class = "text-italic" })
+                    <div class="input-group">
+                        @Html.TextBoxFor(m => m.Pratica.NUM_MENS_AGG_DEC, new { @class = "form-control", @readonly = "readonly" })
+                        <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="row" data-tipologia="1">
+                <div class="col-sm-6 push-10">
+                    @if (Model.Pratica.SINTESI1.COD_QUALIFICA == "A01")
+                    {
+                        @Html.LabelFor(model => model.Pratica.EX_FISSA, "Preavviso", new { @class = "rai-caption" })
+                    }
+                    else
+                    {
+                        @Html.LabelFor(model => model.Pratica.EX_FISSA, "Accordo 13.03.2018", new { @class = "rai-caption" })
+
+                    }
+                    <div class="input-group">
+                        @Html.TextBoxFor(model => model.Pratica.EX_FISSA, new { @class = "form-control form-control-value", style = "width: 100%", data_type = "currency", @readonly = "readonly" })
+                        <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+    function formatAllCurrency() {
+        var list = $('input[data-type="currency"]');
+        for (var i = 0; i < list.length; i++) {
+            formatCurrency($(list[i]));
+        }
+    }
+    formatAllCurrency();
+    InitDatePicker();
+</script>

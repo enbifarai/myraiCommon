@@ -1,0 +1,273 @@
+﻿@using myRaiHelper
+@using myRaiGestionale.Controllers
+@using myRaiData.Incentivi
+
+@{
+    var listaStati = new List<SelectListItem>()
+{
+new SelectListItem(){Value="SW", Text="Smart working"},
+new SelectListItem(){Value="SW_P", Text="Proposta accordo lavoro agile"},
+new SelectListItem(){Value="UPDATE_SW", Text="Aggiornamento giorni"},
+new SelectListItem(){Value="FRAGILI", Text="Lavoratori fragili"}
+};
+
+    var listaTipoAccordo = new List<SelectListItem>()
+{
+new SelectListItem(){Value="Unilaterale", Text="Unilaterale"},
+new SelectListItem(){Value="Consensuale", Text="Consensuale"}
+};
+
+    IncentiviEntities db = new IncentiviEntities();
+    var query = db.XR_HRIS_TEMPLATE.Where(x => x.COD_TIPO.ToUpper() == "MailSWFragili" && x.ID_GESTIONE == null && x.ID_TIPOLOGIA == null);
+    query = query.Where(x => x.VALID_DTA_INI < DateTime.Now && (x.VALID_DTA_END == null || x.VALID_DTA_END > DateTime.Now));
+    var ipotesi = query.OrderBy(w => w.NME_TEMPLATE).Select(x => new { x.NME_TEMPLATE, x.DES_TEMPLATE, x.MAIL_OGGETTO });
+}
+
+@using (Html.BeginModal("Importazione dati"))
+{
+    using (Html.BeginPanel(PanelType.NoHeader, "Definizione dati", false))
+    {
+        string formId = "import-form";
+
+        using (Html.BeginForm("CaricaDati", "StatiRapporto", null, FormMethod.Post, new { @id = formId }))
+        {
+            <div class="form-group">
+                <div class="row push-10">
+                    <div class="col-sm-12">
+                        <label class="rai-caption">Tipologia</label>
+                        @Html.RaiSelect("importType", listaStati, attributes: new { name = "importType" }, hideSearch: true, onSelectchange: "checkImportType()")
+                    </div>
+                </div>
+                <div class="row push-10">
+                    <div class="col-sm-12">
+                        <div class="alert alert-info" data-sw-import="SW">
+                            <span>Nel file dovrà essere presente un foglio denominato 'Foglio1', con queste colonne:</span>
+                            <ul>
+                                <li>PMatricola</li>
+                                <li>Nominativo <em>(opzionale)</em></li>
+                                <li>Direzione (servizio contabile) <em>(opzionale)</em></li>
+                                <li>Data inizio periodo SW</li>
+                                <li>Data fine periodo SW</li>
+                                <li>
+                                    Operazione
+                                    <ul>
+                                        <li>P - proroga/rientro in presenza</li>
+                                        <li>N - Nuova collocazione</li>
+                                        <li>R - ricollocazione</li>
+                                    </ul>
+                                </li>
+                                <li>Numero giorni</li>
+                                <li>Numero giorni aggiuntivi <em>(non indicare se non presenti)</em></li>
+                            </ul>
+                            <a class="text-italic" href="/StatiRapporto/ScaricaTemplate?importType=SW" target="_blank">Scarica template</a>
+                        </div>
+                        <div class="alert alert-info" data-sw-import="SW_P" style="display:none">
+                            <span>Nel file dovrà essere presente un foglio denominato 'Foglio1', con queste colonne:</span>
+                            <ul>
+                                <li>PMatricola</li>
+                                <li>Nominativo <em>(opzionale)</em></li>
+                                <li>Direzione (servizio contabile) <em>(opzionale)</em></li>
+                                <li>Data inizio periodo SW</li>
+                                <li>Data fine periodo SW</li>
+                                <li>Numero giorni</li>
+                                <li>Numero giorni aggiuntivi <em>(non indicare se non presenti)</em></li>
+                                <li>Data scadenza proposta</li>
+                                <li>Data decorrenza proposta (se non indicata la proposta sarà immediatamente attiva</li>
+                            </ul>
+                            <a class="text-italic" href="/StatiRapporto/ScaricaTemplate?importType=SW_P" target="_blank">Scarica template</a>
+                        </div>
+                        <div class="alert alert-info" data-sw-import="UPDATE_SW" style="display:none">
+                            <span>Nel file dovrà essere presente un foglio denominato 'Foglio1', con queste colonne:</span>
+                            <ul>
+                                <li>PMatricola</li>
+                                <li>Nominativo <em>(opzionale)</em></li>
+                                <li>Direzione (servizio contabile) <em>(opzionale)</em></li>
+                                <li>Data inizio periodo SW</li>
+                                <li>Data fine periodo SW</li>
+                                <li>Numero giorni</li>
+                                <li>Numero giorni aggiuntivi <em>(non indicare se non presenti)</em></li>
+                            </ul>
+                            <a class="text-italic" href="/StatiRapporto/ScaricaTemplate?importType=UPDATE_SW" target="_blank">Scarica template</a>
+                        </div>
+                        <div class="alert alert-info" data-sw-import="FRAGILI" style="display:none">
+                            <span>Nel file dovrà essere presente un foglio denominato 'Foglio1', con queste colonne:</span>
+                            <ul>
+                                <li>PMatricola</li>
+                                <li>Nominativo <em>(opzionale)</em></li>
+                                <li>Direzione (servizio contabile) <em>(opzionale)</em></li>
+                                <li>Data inizio periodo SW</li>
+                                <li>Data fine periodo SW</li>
+                                <li>
+                                    Casistica
+                                    @*<ul>
+                                            <li>I-1 - Collocazione in regime di smart working unilaterale - lavoratori fragili che non ricadono negli accordi collettivi</li>
+                                            <li>I-2 - Incremento delle giornate “da remoto” per i lavoratori fragili che ricadono negli accordi collettivi</li>
+                                            <li>I-2A - Collocazione continuativa in prestazione “da remoto” per i lavoratori fragili che ricadono negli accordi collettivi ad esito della sorveglianza sanitaria eccezionale</li>
+                                            <li>I-3A - Collocazione in regime di smart working unilaterale per i lavoratori fragili che non ricadono negli accordi collettivi ad esito della sorveglianza sanitaria eccezionale - indicazione giorni SW</li>
+                                            <li>I-3B - Collocazione in regime di smart working unilaterale per i lavoratori fragili che non ricadono negli accordi collettivi ad esito della sorveglianza sanitaria eccezionale - tutto remoto</li>
+                                        </ul>*@
+                                    <ul>
+                                        @foreach (var item in ipotesi)
+                                        {
+                                            string des = !String.IsNullOrWhiteSpace(item.MAIL_OGGETTO) ? item.MAIL_OGGETTO : item.DES_TEMPLATE;
+
+                                            <li><a href="#" title="Visualizza bozza" onclick="SWVisualizzaBozza('@item.NME_TEMPLATE')">@item.NME_TEMPLATE</a> - @des</li>
+                                        }
+
+                                        @*<li><a href="#" title="Visualizza bozza" onclick="SWVisualizzaBozza('I-1')">I-1</a> - Comunicazione unilaterale di SMART WORKING per i lavoratori fragili fuori dagli accordi collettivi (operai, tecnici ed altre figure di produzione), giornalisti tutti– FINO AL 30 GIUGNO 2022</li>
+                                        <li><a href="#" title="Visualizza bozza" onclick="SWVisualizzaBozza('I-2')">I-2</a> - Comunicazione sull’incremento delle giornate “da remoto” per i lavoratori fragili che ricadono nella disciplina collettiva (QIO e dirigenti) – No giornalisti</li>
+                                        <li><a href="#" title="Visualizza bozza" onclick="SWVisualizzaBozza('I-2A')">I-2A</a> - Comunicazione sull’incremento delle giornate “da remoto” per i lavoratori fragili che ricadono nella disciplina collettiva (QIO e dirigenti), che abbiano compilato il modulo ed abbiano successivamente attivato la sorveglianza sanitaria eccezionale con giudizio del medico competente che dispone la collocazione continuativa “da remoto”- No giornalisti – Anche dopo 30 giugno</li>
+                                        <li><a href="#" title="Visualizza bozza" onclick="SWVisualizzaBozza('I-2B-A')">I-2B-A</a> - Comunicazione sull’incremento delle giornate “da remoto” per i lavoratori fragili che ricadono nella disciplina collettiva (QIO e dirigenti), che non abbiano compilato il modulo e che abbiano attivato la sorveglianza sanitaria eccezionale con giudizio del medico competente che dispone il lavoro “da remoto” con alternanza - No giornalisti - Anche dopo il 30 giugno 2022 - Opzione a) alternanza fino al 30 giugno</li>
+                                        <li><a href="#" title="Visualizza bozza" onclick="SWVisualizzaBozza('I-2B-B')">I-2B-B</a> - Comunicazione sull’incremento delle giornate “da remoto” per i lavoratori fragili che ricadono nella disciplina collettiva (QIO e dirigenti), che non abbiano compilato il modulo e che abbiano attivato la sorveglianza sanitaria eccezionale con giudizio del medico competente che dispone il lavoro “da remoto” con alternanza - No giornalisti - Anche dopo il 30 giugno 2022 - Opzione b) alternanza fino al 31 luglio con visita effettuata a giugno</li>
+                                        <li><a href="#" title="Visualizza bozza" onclick="SWVisualizzaBozza('I-2B-C')">I-2B-C</a> - Comunicazione sull’incremento delle giornate “da remoto” per i lavoratori fragili che ricadono nella disciplina collettiva (QIO e dirigenti), che non abbiano compilato il modulo e che abbiano attivato la sorveglianza sanitaria eccezionale con giudizio del medico competente che dispone il lavoro “da remoto” con alternanza - No giornalisti - Anche dopo il 30 giugno 2022 - Opzione c) alternanza fino al 31 luglio con visita effettuata a luglio</li>
+                                        <li><a href="#" title="Visualizza bozza" onclick="SWVisualizzaBozza('I-2C')">I-2C</a> - Comunicazione sull’incremento delle giornate “da remoto” per i lavoratori fragili che ricadono nella disciplina collettiva (QIO e dirigenti), che non abbiano compilato il modulo e che abbiano attivato la sorveglianza sanitaria eccezionale con del giudizio del medico competente che dispone il lavoro “da remoto” in via continuativa - No giornalisti - Anche dopo il 30 giugno 2022</li>
+                                        <li><a href="#" title="Visualizza bozza" onclick="SWVisualizzaBozza('I-3-A')">I-3-A</a> - Comunicazione unilaterale di smart working per i lavoratori fragili in base al giudizio del medico competente (giornalisti tutti, operai ed altre figure di produzione) - fino al 30 giugno 2022 - SW con alternanza</li>
+                                        <li><a href="#" title="Visualizza bozza" onclick="SWVisualizzaBozza('I-3-B')">I-3-B</a> - Comunicazione unilaterale di smart working per i lavoratori fragili in base al giudizio del medico competente (giornalisti tutti, operai ed altre figure di produzione) - fino al 30 giugno 2022 - SW continuativo</li>
+                                        <li><a href="#" title="Visualizza bozza" onclick="SWVisualizzaBozza('I-4-A')">I-4-A</a> - Comunicazione unilaterale di smart working per i lavoratori fragili in base al giudizio del medico competente (giornalisti delle qualifiche escluse, operai ed altre figure di produzione) – dal 1° luglio 2022 - SW con alternanza</li>
+                                        <li><a href="#" title="Visualizza bozza" onclick="SWVisualizzaBozza('I-4-B')">I-4-B</a> - Comunicazione unilaterale di smart working per i lavoratori fragili in base al giudizio del medico competente (giornalisti delle qualifiche escluse, operai ed altre figure di produzione) – dal 1° luglio 2022 - SW continuativo</li>
+                                        <li><a href="#" title="Visualizza bozza" onclick="SWVisualizzaBozza('I-5-A')">I-5-A</a> - Comunicazione unilaterale di smart working per i lavoratori fragili in base al giudizio del medico competente (giornalisti delle qualifiche escluse, operai ed altre figure di produzione) – dal 1° luglio 2022 - SW con alternanza</li>
+                                        <li><a href="#" title="Visualizza bozza" onclick="SWVisualizzaBozza('I-5-B')">I-5-B</a> - Comunicazione unilaterale di smart working per i lavoratori fragili in base al giudizio del medico competente (giornalisti delle qualifiche escluse, operai ed altre figure di produzione) – dal 1° luglio 2022 - SW continuativo</li>*@
+                                    </ul>
+                                </li>
+                                <li>Numero giorni</li>
+                                <li>Numero giorni aggiuntivi <em>(non indicare se non presenti)</em></li>
+                                <li>Data visita medica <em>(non indicare se non presente)</em></li>
+                            </ul>
+                            <a class="text-italic" href="/StatiRapporto/ScaricaTemplate?importType=FRAGILI" target="_blank">Scarica template</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="row push-10" data-sw-import="SW">
+                    <div class="col-sm-12">
+                        <label class="rai-caption">Tipo accordo</label>
+                        @Html.RaiSelect("importAccordo", listaTipoAccordo, attributes: new { name = "importAccordo" }, hideSearch: true)
+                    </div>
+                </div>
+                <div class="row push-10" data-sw-import="SW">
+                    <div class="col-sm-12">
+                        <div class="rai-checkbox">
+                            <input type="checkbox" id="importClic" checked />
+                            <label for="importClic">Notifica ClicLavoro</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row push-10">
+                    <div class="col-sm-12">
+                        <label class="rai-caption">File da importare</label>
+                        @Html.RaiUploader("importFile", UploaderAccept.Custom, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    </div>
+                </div>
+                <div class="row push-20-t">
+                    <div class="col-sm-12">
+                        <div class="rai-btn-fill">
+                            <input type="submit" class="btn rai-btn-secondary" value="Carica dati" onclick="ImportSubmit()" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="row push-10-t">
+            <div class="col-sm-12">
+                <div style="">
+                    <div id="import-data">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="rai-btn-fill">
+                    <button class="btn rai-btn-primary" style="display:none;">Importa</button>
+                </div>
+            </div>
+        </div>
+
+    }
+}
+
+
+<script>
+    function checkImportType() {
+        let tipoAccordo = $('#importType').val();
+        $('[data-sw-import]').hide();
+        $('[data-sw-import="' + tipoAccordo + '"]').show();
+    }
+
+    function ImportSubmit() {
+        event.preventDefault();
+
+        $('#import-data').html('');
+        $('#import-data').addClass('rai-loader');
+
+        var obj = $("#importFile")[0].files[0];
+        var tipo = $('#importType').val();
+        var accordo = $('#importAccordo').val();
+        var notificaClic = $('#importClic:checked').length > 0;
+
+        var formData = new FormData();
+        formData.append('importFile', obj);
+        formData.append('importType', tipo);
+        formData.append('importClic', notificaClic);
+        formData.append('importAccordo', accordo);
+
+        $.ajax({
+            url: "/StatiRapporto/CaricaDati",
+            type: "POST",
+            cache: false,
+            dataType: 'json',
+            contentType: false,
+            processData: false,
+            data: formData,
+            success: function (data) {
+                let htmlString = '<table class="table rai-table rai-table-center">';
+                htmlString += '<thead><tr>';
+                htmlString += '<th style="width:1%;white-space:nowrap;">Matricola</th>';
+                htmlString += '<th style="width:1%;white-space:nowrap;">Data inizio</th>';
+                htmlString += '<th style="width:1%;white-space:nowrap;">Data fine</th>';
+                htmlString += '<th>Messaggio</th>';
+                htmlString += '</tr></thead><tbody>';
+                for (var i = 0; i < data.length; i++) {
+                    let elem = data[i];
+                    if (elem.IdEvento != 0) {
+                        htmlString += '<tr>';
+                        htmlString += '<td>' + elem.Matricola + '</td>';
+                        htmlString += '<td>' + moment(elem.DataInizio).format('DD/MM/YYYY') + '</td>';
+                        htmlString += '<td>' + moment(elem.DataFine).format('DD/MM/YYYY') + '</td>';
+                        htmlString += '<td>' + elem.DescrizioneEvento + '</td>';
+                        htmlString += '</tr>';
+                    } else {
+                        htmlString += '<tr><td colspan="4">' + elem.DescrizioneEvento + '</td></tr>';
+                    }
+                }
+                htmlString += '</tbody></table>';
+                $('#import-data').html(htmlString);
+                $('#import-data').removeClass('rai-loader');
+            }
+        });
+
+
+    }
+
+    function SWVisualizzaBozza(ipotesi) {
+        event.preventDefault();
+        $.ajax({
+            url: "/StatiRapporto/GetBozza",
+            type: "POST",
+            cache: false,
+            dataType: 'json',
+            data: { ipotesi: ipotesi },
+            success: function (data) {
+                if (data.esito) {
+                    $('#modal-testo-ipotesi').modal('show');
+                    $('#oggetto-ipotesi').html(data.oggetto);
+                    $('#testo-ipotesi').html(data.testo);
+                    $('#testo-ipotesi').scrollTop(0);
+                } else {
+                    swal("Ipotesi non trovata", "", "error");
+                }
+            }
+        });
+    }
+</script>

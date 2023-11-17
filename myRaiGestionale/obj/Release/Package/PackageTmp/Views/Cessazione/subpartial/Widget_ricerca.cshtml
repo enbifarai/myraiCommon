@@ -1,0 +1,82 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiHelper
+
+<section class="panel ">
+    <header class="panel-heading">
+        <h2 id="lblRightBox" class="panel-title">Ricerca</h2>
+        <div class="panel-actions">
+            <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" aria-labelledby="lblRightBox" aria-expanded="true"></a>
+        </div>
+    </header>
+
+    <div class="panel-body">
+        <div class="form-group">
+            <div class="row">
+                <div class="col-xl-6 col-sm-12 push-10">
+                    <label class="rai-caption">Matricola</label>
+                    <input class="form-control" id="txtMatricola" type="text" placeholder="Matricola" onkeydown="LookForKeyDown()" />
+                </div>
+                <div class="col-xl-6 col-sm-12 push-10">
+                    <label class="rai-caption">Nominativo</label>
+                    <input class="form-control" id="txtNominativo" type="text" placeholder="Nominativo" onkeydown="LookForKeyDown()" />
+                </div>
+                @if (AuthHelper.EnabledTo(CommonHelper.GetCurrentUserMatricola(), CessazioneHelper.INCENTIVI_HRGA_FUNC))
+                {
+                    <div class="col-xl-6 col-sm-12 push-10">
+                        <label class="rai-caption">Tipologia</label>
+                        @Html.DropDownList("cmbTipologia", new SelectList(CessazioneController.getTipologie(), "Value", "Text", null), "Tipologia pratica", new { @class = "form-control", onkeydown = "LookForKeyDown()" })
+                    </div>
+                    <div class="col-xl-6 col-sm-12 push-10">
+                        <label class="rai-caption">Stato pratica</label>
+                        <select id="cmbStato" class="form-control" onkeydown="LookForKeyDown()" onchange="IncGestGroup(this)">
+                            <option value="">Stato pratica</option>
+                            @foreach (var item in CessazioneController.GetStatiTipologia())
+                            {
+                                <optgroup label="@item.Name">
+                                    @foreach (var subItem in item.ListItems)
+                                    {
+                                        <option value="@subItem.Value">@subItem.Text</option>
+                                    }
+                                </optgroup>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-xl-6 col-sm-12 push-10">
+                        <label class="rai-caption">In carico</label>
+                        @Html.DropDownList("cmbInCarico", new SelectList(CessazioneController.getInCaricoList(), "Value", "Text", null), "Elaborazione", new { @class = "form-control", onkeydown = "LookForKeyDown()" })
+                    </div>
+                }
+                <div class="col-xl-6 col-sm-12 push-10">
+                    <label class="rai-caption">Data cessazione</label>
+                    @Html.DropDownList("cmbCessazione", new SelectList(CessazioneController.getDataCessazione().OrderBy(x => x.Value), "Value", "Text", null), "Cessazione", new { @class = "form-control", onkeydown = "LookForKeyDown()" })
+                </div>
+                <div class="col-xl-6 col-sm-12 push-10">
+                    <label class="rai-caption">Sede</label>
+                    @Html.DropDownList("cmbSede", new SelectList(CessazioneController.getSedi(), "Value", "Text", null), "Sede", new { @class = "form-control", onkeydown = "LookForKeyDown()" })
+                </div>
+                <div class="col-xl-6 col-sm-12 push-10">
+                    <label class="rai-caption">Gestione manuale</label>
+                    @Html.DropDownList("cmbCausa", new SelectList(CessazioneController.getCause(), "Value", "Text", null), "Gestione manuale", new { @class = "form-control", onkeydown = "LookForKeyDown()" })
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="rai-btn-fill">
+                    <button id="btnPulisciRicerca" class="btn rai-btn-secondary" title="Azzera" value="Azzera" onclick="PulisciFiltri()">Azzera</button>
+                    <button id="btnCercaIncentivati" class="btn rai-btn-primary" title="Cerca" value="Cerca" onclick="CercaIncentivato()">Cerca</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</section>
+
+<script>
+    function IncGestGroup(combo) {
+        var desGroup = $(combo).find('option:selected').parent().attr('label');
+        var selVal = $("#cmbTipologia option:contains('" + desGroup + "')").attr('value');
+        $('#cmbTipologia').val(selVal);
+    }
+</script>

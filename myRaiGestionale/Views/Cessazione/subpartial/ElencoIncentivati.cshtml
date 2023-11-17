@@ -1,0 +1,93 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel.Gestionale
+@model CessazioneList
+@{Layout = null;}
+
+
+
+
+<div class="row bg-neutrals-xl-10" id="SummaryFiltri" style="display:none;">
+    <div class="col-md-12">
+        <h5 class="text-italic"><span id="textSummary"></span><span id="textSummaryBold" class="text-bold"></span>. <a class="cursor-pointer" onclick="javascript:PulisciFiltri()">Vedi tutte</a></h5>
+    </div>
+</div>
+
+@if (Model != null && Model.Count() > 0)
+{
+    int idPersona = CommonHelper.GetCurrentIdPersona();
+    int inCarico = Model.Count(x => x.InCarico != null && x.InCarico.ID_PERSONA == idPersona);
+    int other = Model.Count() - inCarico;
+
+    //bool isAnpal = Model.All(x => x.IsAnpal);
+    bool isExtra = !String.IsNullOrWhiteSpace(Model.IncExtra);
+
+    if (isExtra)
+    {
+        Model.Parent = "btab-extra";
+        <div id="btab-extra">
+            @Html.Partial("subpartial/ElencoIncentivati_table", Model)
+        </div>
+    }
+    else
+    {
+        <div class="block" id="praticheBlock" style="margin-bottom:0px;">
+            <ul class="nav nav-tabs nav-tabs-alt nav-justified" data-toggle="tabs" role="tablist">
+                @if (inCarico > 0)
+                {
+                    <li class="active" role="presentation">
+                        <a href="#btab-incarico" class="rai-badge-anchor interactive-primary-color" id="hrefIncarico" tabindex="0" role="tab" aria-selected="true" aria-controls="btab-incarico">
+                            In carico a te
+                            <div class="rai-badge-tab">
+                                <span id="badge-tot-ic">@inCarico</span>
+                            </div>
+                        </a>
+                    </li>
+                }
+                @if (other > 0 || inCarico == 0)
+                {
+                    <li class="@(inCarico == 0 ? "active" : "")" role="presentation">
+                        <a href="#btab-pratiche" id="hrefpratiche" class="rai-badge-anchor interactive-primary-color" tabindex="@(inCarico > 0 ? "-1" : "0")" role="tab" aria-selected="false" aria-controls="btab-pratiche">
+                            @(inCarico == 0 ? "Tutte le pratiche" : "Altre pratiche")
+                            <div class="rai-badge-tab">
+                                <span id="badge-tot-pr">@other</span>
+                            </div>
+                        </a>
+                    </li>
+                }
+            </ul>
+
+            <div class="block-content tab-content" style="padding:5px 0px 0px 0px">
+                @if (inCarico > 0)
+                {
+                    var incarico = new CessazioneList() { Parent = "btab-incarico" };
+                    incarico.AddRange(Model.Where(x => x.InCarico != null && x.InCarico.ID_PERSONA == idPersona));
+
+                    <div class="tab-pane active" id="btab-incarico" role="tabpanel">
+                        @*<table class="js-table-sections table table-hover" id="elencoInCarico" style="margin-top: -16px" role="grid">*@
+                        @Html.Partial("subpartial/ElencoIncentivati_table", incarico)
+                        @*</table>*@
+                    </div>
+                }
+                @if (other > 0 || inCarico == 0)
+                {
+                    var nonIncarico = new CessazioneList() { Parent = "btab-pratiche" };
+                    nonIncarico.AddRange(Model.Where(x => x.InCarico == null || x.InCarico.ID_PERSONA != idPersona));
+
+                    <div class="tab-pane @(inCarico == 0 ? "active" : "")" id="btab-pratiche" role="tabpanel">
+                        @*<table class="js-table-sections table table-hover" id="elencoIncentivi" style="margin-top: -16px" role="grid">*@
+                        @Html.Partial("subpartial/ElencoIncentivati_table", nonIncarico)
+                        @*</table>*@
+                    </div>
+                }
+            </div>
+        </div>
+    }
+}
+else
+{
+    <div class="row">
+        <div class="col-md-12">
+            <h4 class="text-center">Nessuna pratica trovata</h4>
+        </div>
+    </div>
+}

@@ -1,0 +1,121 @@
+﻿@using myRaiData;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+@using MyRaiServiceInterface.it.rai.servizi.digigappws;
+
+@model EccezioneApprovatoreVM
+
+@if (!Model.RichiedeVisto)
+{
+    if (Model.Eccezione.IdStato == (int)EnumStatiRichiesta.InApprovazione ||
+         Model.Eccezione.IdStato == (int)EnumStatiRichiesta.Approvata)
+    {
+        <button role="link" aria-label="Rifiuta richiesta" tabindex="-1" @*style="border: solid 1px #eaeaea;"*@ @*btn btn-lg btn-default*@
+                class="pad6 @Model.Eccezione.ndoc button-rifiuta  btn-action-icon remoteclick btn-rif-@Model.Eccezione.IdEccezioneRichiesta"
+                type="submit">
+            <i class="glyphicon glyphicon-remove feedback-error-color"></i>
+        </button>
+    }
+
+    if (Model.Eccezione.IdStato == (int)EnumStatiRichiesta.InApprovazione)
+    {
+        <button role="link" aria-label="Approva richiesta" tabindex="-1" @*style="border: solid 1px #eaeaea;"*@ @*btn btn-lg btn-default*@
+                class="pad6 @Model.Eccezione.ndoc button-approva  btn-action-icon remoteclick btn-app-@Model.Eccezione.IdEccezioneRichiesta"
+                type="submit">
+            <i class="fa fa-fw fa-check feedback-success-color"></i>
+        </button>
+    }
+
+    bool abilitato = false;
+    string matricolaUtente = myRai.Business.CommonManager.GetCurrentUserMatricola( );
+    string uffAbilitati = myRai.Business.CommonManager.GetParametro<string>( EnumParametriSistema.UfficiAbilitatiSmistamento );
+
+    // [CodiceUfficio|sede;sede;sede],[CodiceUfficio|sede;sede;sede],...,[CodiceUfficio|sede;sede;sede]
+
+    if ( !String.IsNullOrEmpty( uffAbilitati ) )
+    {
+        List<string> items = new List<string>( );
+        items = uffAbilitati.Split( ',' ).ToList( );
+
+        if (items != null && items.Any())
+        {
+            // lista di [CodiceUfficio|sede;sede;sede]
+            foreach(var u in items)
+            {
+                string str1Uff = u.Split( '|' ).FirstOrDefault( );
+                string str2Sedi = u.Split( '|' ).LastOrDefault( );
+
+                bool fase1ok = false;
+                bool fase2ok = false;
+
+                using ( digiGappEntities db = new digiGappEntities( ) )
+                {
+                    fase1ok = db.MyRai_UffProduzioni_Approvatori.Where( w => w.MatricolaApprovatore.Equals( matricolaUtente ) &&
+         w.CodUfficio.Equals( str1Uff ) ).Count( ) > 0;
+
+                    // se l'utente fa parte di quell'ufficio controlla
+                    // se la richiesta fa parte delle sedi abilitate
+                    if ( fase1ok )
+                    {
+                        if (str2Sedi == "*")
+                        {
+                            abilitato = true;
+                        }
+                        else
+                        {
+                            List<string> sedi = new List<string>( );
+                            sedi = str2Sedi.Split( ';' ).ToList( );
+
+                            string codiceSedeGappRichiesta = Model.Eccezione.sedeGapp;
+                            fase2ok = sedi.Contains( codiceSedeGappRichiesta );
+                        }
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+
+                if ( abilitato ||
+                (fase1ok && fase2ok))
+                {
+                    abilitato = true;
+                    break;
+                }
+            }
+        }
+    }
+
+
+    if ( abilitato &&
+Model.Eccezione.IdStato == ( int ) EnumStatiRichiesta.InApprovazione &&
+!String.IsNullOrEmpty( Model.Eccezione.IdApprovatoreSelezionato ) &&
+Model.Eccezione.IdApprovatoreSelezionato.StartsWith( "UFF" ) )
+    {
+        <button class="pad6 @Model.Eccezione.ndoc btn button-smista btn-xs btn-default button-ragg-appr btn-smista-@Model.Eccezione.IdEccezioneRichiesta"
+                    type="submit" role="link" tabindex="-1" aria-label="Smista richiesta ad altro approvatore"
+                style="height: 32px;">
+                Smista
+        </button>
+    }
+}
+else
+{
+    if (Model.Eccezione.DataVistoPositivo == null && Model.Eccezione.DataVistoNegativo == null)
+    {
+        <button role="link" aria-label="Rifiuta richiesta" tabindex="-1" @*style="border: solid 1px #eaeaea;"*@ @*btn btn-lg btn-default*@
+                class="pad6 @Model.Eccezione.ndoc button-rifiuta  btn-action-icon remoteclick btn-rif-@Model.Eccezione.IdEccezioneRichiesta"
+                data-richiedevisto="1"
+                type="submit">
+            <i class="glyphicon glyphicon-remove feedback-error-color"></i>
+        </button>
+        <button role="link" aria-label="Approva richiesta" tabindex="-1" @*style="border: solid 1px #eaeaea;"*@ @*btn btn-lg btn-default*@
+                class="pad6 @Model.Eccezione.ndoc button-approva  btn-action-icon remoteclick btn-app-@Model.Eccezione.IdEccezioneRichiesta"
+                data-richiedevisto="1"
+                type="submit">
+            <i class="fa fa-fw fa-check feedback-success-color"></i>
+        </button>
+    }
+}

@@ -1,0 +1,169 @@
+﻿@using myRaiCommonModel
+@using myRaiCommonManager
+@model AnagNoDipRicerca
+
+@{
+    var formId = "form-nodip-ricerca";
+
+    var db = new myRaiData.Incentivi.IncentiviEntities();
+    var listTip = db.XR_NDI_TB_TIPO_RAPPORTO.ToList();
+    List<SelectListItem> tipiRapp = new List<SelectListItem>();
+    tipiRapp.Add(new SelectListItem() { Value = "", Text = "Seleziona un valore" });
+    tipiRapp.AddRange(listTip.OrderBy(x => x.ORDINE).Select(x => new SelectListItem()
+    {
+        Value = x.COD_TIPOLOGIA,
+        Text = x.DES_TIPOLOGIA
+    }));
+
+    var serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
+    var rawArray = serializer.Serialize(tipiRapp.ToArray());
+}
+
+<div class="panel">
+    <div class="panel-heading">
+        <label class="panel-title">Ricerca</label>
+    </div>
+    <div class="panel-body">
+        @using (Ajax.BeginForm("Elenco_Anagrafiche", "AnagNoDip", new AjaxOptions
+        {
+            InsertionMode = InsertionMode.Replace,
+            HttpMethod = "POST",
+            OnBegin = "$('#wdgt-list').addClass('rai-loader');",
+            UpdateTargetId = "wdgt-list",
+            OnSuccess = "$('#wdgt-list').removeClass('rai-loader');InitTooltip();AnagNoDipUpdateFilterInfo();"
+        }, new { id = formId, @class = "", role = "search" }))
+        {
+            @Html.HiddenFor(m => m.HasFilter, new { @class = formId + " form-control-bool" })
+
+        <div class="form-group">
+            <div class="row">
+                <div class="col-sm-12"><label class="as-block-title border-b-1px-neutrals-20 full-width">Rapporti</label></div>
+            </div>
+            <div class="row">
+                @*<div class="col-xs-12 push-10">
+            @Html.LabelFor(model => model.AnnoRapporto, "Anno rapporti", new { @class = "rai-caption" })
+            <div class="input-group">
+                <div class="input-group-addon">
+                    <i class="fa fa-calendar" onclick="$('#AnnoRapporto').datepicker('show')"></i>
+                </div>
+                @Html.TextBoxFor(m => m.AnnoRapporto, new { @class = formId + " form-control form-control-value js-datetimepicker ", data_format = "YYYY", style = "width: 100%", placeholder = "Anno rapporti", autocomplete="off" })
+            </div>
+        </div>*@
+                <div class="col-xs-12 push-10">
+                    @Html.LabelFor(model => model.AnnoRiferimento, "Anno riferimento", new { @class = "rai-caption" })
+                    <div class="input-group">
+                        <div class="input-group-addon">
+                            <i class="fa fa-calendar" onclick="$('#AnnoRiferimento').datepicker('show')"></i>
+                        </div>
+                        @Html.TextBoxFor(m => m.AnnoRiferimento, new { @class = formId + " form-control form-control-value js-datetimepicker ", data_format = "YYYY", style = "width: 100%", placeholder = "Anno riferimento", autocomplete = "off" })
+                    </div>
+                </div>
+                <div class="col-xs-12 push-10">
+                    @Html.LabelFor(model => model.TipoRapporto, "Tipo rapporto", new { @class = "rai-caption" })
+                    @Html.RaiSelectFor(m => m.TipoRapporto, tipiRapp, "Seleziona un tipo di rapporto", attributes: new { @class = formId + " form-control form-control-value", size = tipiRapp.Count().ToString() })
+                </div>
+                <div class="col-xs-12 push-10">
+                    @Html.LabelFor(model => model.MatrCollegata, "Matricola dipendente collegata", new { @class = "rai-caption" })
+                    @Html.TextBoxFor(m => m.MatrCollegata, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Inserisci la matricola" })
+                </div>
+            </div>
+            <div class="row push-10-t">
+                <div class="col-sm-12"><label class="as-block-title border-b-1px-neutrals-20 full-width">Anagrafica</label></div>
+            </div>
+            <div class="row">
+                <div class="col-xs-12 push-10">
+                    @Html.LabelFor(model => model.Matricola, "Matricola", new { @class = "rai-caption" })
+                    @Html.TextBoxFor(m => m.Matricola, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Inserisci la matricola" })
+                </div>
+                <div class="col-xs-12 push-10">
+                    @Html.LabelFor(model => model.Cognome, "Cognome", new { @class = "rai-caption" })
+                    @Html.TextBoxFor(m => m.Cognome, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Cognome", onchange = "" })
+                </div>
+                <div class="col-xs-12 push-10">
+                    @Html.LabelFor(model => model.Nome, "Nome", new { @class = "rai-caption" })
+                    @Html.TextBoxFor(m => m.Nome, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Nome", onchange = "" })
+                </div>
+                <div class="col-xs-12 push-10">
+                    @Html.LabelFor(model => model.CodiceFiscale, "Codice fiscale", new { @class = "rai-caption" })
+                    @Html.TextBoxFor(m => m.CodiceFiscale, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Codice fiscale", onchange = "" })
+                </div>
+            </div>
+
+
+            <div class="row form-button">
+                <div class="col-sm-12">
+                    <div class="rai-btn-fill">
+                        <input type="reset" id="btnAzzera" class="btn rai-btn-secondary" title="Azzera" value="Azzera" onclick="RaiSearchFormClear('@(formId)',true)" />
+                        <input type="submit" id="btnCerca" class="btn btn-primary" title="Cerca" value="Cerca" onclick="RaiSearchFormCheckHasFilter('@formId');" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        }
+    </div>
+</div>
+
+<script>
+    function AnagNoDipUpdateFilterInfo() {
+        if ($('#form-nodip-ricerca #HasFilter').val() == 'true') {
+            $('#nodip-filter-info-cont').show();
+            $('#nodip-filter-info').text('');
+
+            let tipologie = @Html.Raw(rawArray);
+
+            let filterAry = new Array();
+            let filterInfo = ''
+
+            let matricola = $('#form-nodip-ricerca #Matricola').val();
+            let cognome = $('#form-nodip-ricerca #Cognome').val();
+            let nome = $('#form-nodip-ricerca #Nome').val();
+            let cf = $('#form-nodip-ricerca #CodiceFiscale').val();
+            let annoRapporto = '';// $('#form-nodip-ricerca #AnnoRapporto').val();
+            let matrColl = $('#form-nodip-ricerca #MatrCollegata').val();
+            let tipoRapporto = $('#form-nodip-ricerca #TipoRapporto').val();
+            let annoRiferimento = $('#form-nodip-ricerca #AnnoRiferimento').val();
+
+            if (matricola != '')
+                filterAry.push("matricola " + matricola);
+            if (cognome != '')
+                filterAry.push("cognome che inzia con '" + cognome + "'");
+            if (nome != '')
+                filterAry.push("nome che inzia con '" + nome + "'");
+            if (cf != '')
+                filterAry.push("codice fiscale che inzia con '" + cf + "'");
+            if (annoRapporto != '')
+                filterAry.push("rapporti nell'anno " + annoRapporto + "");
+            if (matrColl != '')
+                filterAry.push("matricola dipendente collegata '" + matrColl + "'");
+            if (tipoRapporto != '') {
+                let desTipo = tipologie.find(function (obj) {
+                    return obj.Value == tipoRapporto;
+                });
+                filterAry.push("tipologia rapporto '" + desTipo.Text + "'");
+            }
+            if (annoRiferimento != '')
+                filterAry.push("rapporti riferiti all'anno " + annoRiferimento + "");
+
+            filterInfo ="con "+filterAry[0];
+            if (filterAry.length > 1) {
+                for (var i = 1; i <= filterAry.length-2; i++) {
+                    filterInfo += ", " + filterAry[i];
+                }
+                filterInfo += ' e ' + filterAry[filterAry.length - 1];
+            }
+
+            $('#nodip-filter-info').text(filterInfo);
+
+            let count = $('[data-tbody-anag]').length;
+            if (count == 1)
+                $('#nodip-filter-numb').text("1 risultato");
+            else
+                $('#nodip-filter-numb').text(count+" risultati");
+        } else {
+            $('#nodip-filter-info-cont').hide();
+            $('#nodip-filter-info').text('');
+        }
+    }
+</script>
+
+

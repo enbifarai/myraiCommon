@@ -1,0 +1,141 @@
+﻿@model myRaiCommonModel.Gestionale.IncarichiTreeModel
+
+<table class="rai-table table" id="table-inc">
+
+    <thead>
+        <tr>
+            <th></th>
+
+            <th></th>
+            <th></th>
+
+            <th></th>
+        </tr>
+    </thead>
+
+    @foreach (var t in Model.AlberoItems.Where(x => x.FirstShowing == true).OrderBy(x => x.num_ordina))
+    {
+        @RenderItem(t, 1)
+    }
+</table>
+
+
+
+
+<script>
+    $(".open-mission").on("click", function (evt) {
+        evt.stopPropagation();
+        var idsez = $(this).attr("data-idsez");
+        var testo = $(this).text();
+        if (testo.toLowerCase().indexOf("vedi") >= 0) {
+            $("#miss-" + idsez).show();
+            $(this).text("Chiudi Mission");
+        }
+        else {
+            $("#miss-" + idsez).hide();
+            $(this).text("Vedi Mission");
+        }
+
+    });
+    $("#label-inc").text("Riepilogo incarichi@(!String.IsNullOrEmpty(Model.Dettaglio.DescSezione) ? " - " + Model.Dettaglio.DescSezione : "")");
+    var h = $(window).height();
+    $("#div-inc").height((h - 180).toString() + "px");
+</script>
+
+
+@helper RenderItem(myRaiCommonModel.Gestionale.TAlberoSezioneModel t, int level)
+{
+    int rgb = 248 - (level * 6);
+    if (level > 6)
+    {
+        return;
+    }
+    level++;
+    List<myRaiCommonModel.Gestionale.IncaricoResponsabile> tempIncarichi = null;
+    if (t.descrizione_lunga.Trim().ToUpper().Contains("TELEGIORNALE") 
+        || t.descrizione_lunga.Trim().ToUpper().Contains("TESTATA GIORNALISTICA REGIONALE")
+        || t.descrizione_lunga.Trim().ToUpper().Contains("RAI PARLAMENTO")
+        || t.descrizione_lunga.Trim().ToUpper().Contains("RAI NEWS")
+        || t.descrizione_lunga.Trim().ToUpper().Contains("TECHE"))
+    {
+        tempIncarichi = new List<myRaiCommonModel.Gestionale.IncaricoResponsabile>();
+        tempIncarichi.AddRange(t.Incarichi.Where(w => w.Incarico != null && w.Incarico.ToLower().Trim() == "vice direttore").ToList());
+        t.Incarichi.RemoveAll(w => w.Incarico != null && w.Incarico.ToLower().Trim() == "vice direttore");
+    }
+
+    t.HasChild = Model.AlberoItems.Any(x => x.subordinato_a == t.id);
+
+    <tbody class="js-table-sections-header">
+        @Html.Partial("_trincExt", t)
+    </tbody>
+
+    if (tempIncarichi != null && tempIncarichi.Any())
+    {
+        <tbody>
+            <tr>
+                <td colspan="6" style="padding:0px">
+                    <table style="background-color:rgb(@rgb,@rgb,@rgb)" class="rai-table table table-inc-nested ">
+                        @{
+                            myRaiCommonModel.Gestionale.TAlberoSezioneModel _t = new myRaiCommonModel.Gestionale.TAlberoSezioneModel()
+                            {
+                                area = t.area,
+                                attivita = t.attivita,
+                                codice_visibile = t.codice_visibile,
+                                data_convalida = t.data_convalida,
+                                data_fine_contabile = t.data_fine_contabile,
+                                data_fine_validita = t.data_fine_validita,
+                                data_formalizza = t.data_formalizza,
+                                data_inizio_contabile = t.data_inizio_contabile,
+                                data_inizio_validita = t.data_inizio_validita,
+                                descrizione_breve = t.descrizione_breve,
+                                descrizione_lunga = "",
+                                FirstShowing = false,
+                                HasChild = false,
+                                id = -1,
+                                Incarichi = tempIncarichi,
+                                indirizzo = t.indirizzo,
+                                mission = t.mission,
+                                num_ordina = t.num_ordina,
+                                pubblicato = t.pubblicato,
+                                sede_contabile = t.sede_contabile,
+                                servizio = t.servizio,
+                                subordinato_a = -1,
+                                tel_internazionale = t.tel_internazionale,
+                                tipologia = t.tipologia,
+                                tipo_schema = t.tipo_schema
+                            };
+                            @RenderItem(_t, level)
+
+                            if (t.HasChild)
+                            {
+                                foreach (var t2 in Model.AlberoItems.Where(x => x.subordinato_a == t.id).OrderBy(x => x.num_ordina))
+                                {
+                                    @RenderItem(t2, level)
+                                }
+                            }
+                        }
+                    </table>
+                </td>
+            </tr>
+        </tbody>
+    }
+    else if (t.HasChild)
+    {
+        <tbody>
+            <tr>
+                <td colspan="6" style="padding:0px">
+                    <table style="background-color:rgb(@rgb,@rgb,@rgb)" class="rai-table table table-inc-nested ">
+                        @foreach (var t2 in Model.AlberoItems.Where(x => x.subordinato_a == t.id).OrderBy(x => x.num_ordina))
+                        {
+                            @RenderItem(t2, level)
+                        }
+                    </table>
+                </td>
+            </tr>
+        </tbody>
+    }
+    else
+    {
+        <tbody></tbody>
+    }
+}

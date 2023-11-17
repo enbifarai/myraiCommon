@@ -1,0 +1,415 @@
+﻿@model myRaiCommonModel.MatCalendarioTracciatiModel
+<style>
+    .popover {
+        width: 300px;
+    }
+
+    pie {
+        margin: 6px;
+    }
+</style>
+@{ 
+    DateTime InizioPeriodo;
+    DateTime FinePeriodo;
+    String CodiceEccezione;
+    string Nominativo;
+}
+@if (Model.IsFromDem)
+{
+    InizioPeriodo = Model.InizioPeriodoDEM.Value;
+    FinePeriodo = Model.FinePeriodoDEM.Value;
+    CodiceEccezione = Model.EccezioneFromDEM;
+    Nominativo = Model.NominativoFromDEM;
+    <input type="hidden" id="id-documentoDEM" value="@Model.IDdocumentoDEM" />
+}
+else
+{
+    InizioPeriodo = Model.Richiesta.INIZIO_GIUSTIFICATIVO ?? Model.Richiesta.DATA_INIZIO_MATERNITA.Value;
+    FinePeriodo = Model.Richiesta.FINE_GIUSTIFICATIVO ?? Model.Richiesta.DATA_FINE_MATERNITA.Value;
+    CodiceEccezione = Model.Richiesta.ECCEZIONE;
+    Nominativo = Model.Richiesta.NOMINATIVO;
+    <input type="hidden" id="id-richiesta" value="@Model.Richiesta.ID" />
+}
+
+
+<input type="hidden" id="control-string" />
+
+
+
+@*<div class="row">
+        <div class="col-sm-8">
+            <span class="rai-font-md-neutral-bold">Seleziona uno o più giorni, consecutivi o separati. Nel caso di giorni con permessi potrai ripianificarli successivamente nelle tue presenze.</span>
+        </div>
+        <div class="col-sm-4">
+            <span class="rai-font-md-bold">Giorni pianificati</span>
+            <div style="float:right">
+                <span id="giorni-pianificati">0</span>
+                /<span id="numero-giorni-totali">@(Model.Richiesta.NUMERO_GIORNI_GIUSTIFICATIVO)</span>
+            </div>
+
+            <div class="rai progress progress-xs m-2 light" style="margin-bottom:0px">
+                <div id="pbar" class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="6" aria- valuemin="0" aria-valuemax="100" style="width:
+        0%;">
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>*@
+<div class="row">
+
+    <div class="col-sm-12">
+        @{
+            //var pian = Model.Richiesta.XR_MAT_PIANIFICAZIONI.OrderByDescending(x => x.DATA_INSERIMENTO).FirstOrDefault();
+            bool breaker = false;
+            List<myRaiData.Incentivi.XR_MAT_TASK_IN_CORSO> ListaTracciati = new List<myRaiData.Incentivi.XR_MAT_TASK_IN_CORSO>();
+            if (!Model.IsFromDem)
+            {
+                ListaTracciati = Model.Richiesta.XR_MAT_TASK_IN_CORSO.Where(x => x.XR_MAT_ELENCO_TASK.TIPO == "TRACCIATO").ToList();
+            }
+        }
+        <table id="table-pianificazione" style="width:100%;table-layout:fixed;margin-top:5px">
+            <tr>
+                <td style="width:120px;height: 32px;background-color: #eee;"></td>
+                <td class="rai-font-md-bold" style="height: 32px;background-color: #eee;text-align: center;padding-right: 120px;" colspan="31">@Model.DataInizialeCalendario.Year</td>
+            </tr>
+            <tr>
+                <td style="width:120px"></td>
+                @for (int i = 1; i <= 31; i++)
+                {
+                    <td style="padding-top:10px" class="rai-font-sm-neutral cell-num-pianificazione">@i</td>
+                }
+            </tr>
+
+
+            @for (int indice = 0; indice <= 10; indice++)
+            {
+                var currentDate = Model.DataInizialeCalendario.AddMonths(indice);
+                int i = currentDate.Month;
+                int y = currentDate.Year;
+
+                
+                var tracciato = ListaTracciati.Where(x => x.MESE == i && x.ANNO == y && x.NOTE != null).FirstOrDefault();
+                DateTime[] Destremi = myRaiCommonManager.MaternitaCongediManager.GetDateEstremiTracciato(tracciato);
+
+                if (currentDate > Model.DataFinaleCalendario)
+                {
+                    break;
+                }
+                if (currentDate.Year > Model.DataInizialeCalendario.Year && breaker == false)
+                {
+                    breaker = true;
+                    <tr style="height:20px"></tr>
+                    <tr>
+                        <td style="width:120px;height: 32px;background-color: #eee;"></td>
+                        <td class="rai-font-md-bold" style="height: 32px;background-color: #eee;text-align: center;padding-right: 120px;" colspan="31">@currentDate.Year</td>
+                    </tr>
+                    <tr style="height:20px"></tr>
+                }
+                int MaxDays = DateTime.DaysInMonth(y, i);
+                <tr>
+                    <td class="rai-font-md-bold" style="padding-top:8px;padding-bottom:8px">
+
+                        @(new DateTime(y, i, 1).ToString("MMMM").Substring(0, 1).ToUpper() + new DateTime(y, i, 1).ToString("MMMM").Substring(1))
+
+
+                    </td>
+                    @for (int g = 1; g <= 31; g++)
+                    {
+                        bool passato = false;
+                        if (g == 4 && i == 1)
+                        {
+
+                        }
+                        if (g == 19 && i == 4)
+                        {
+
+                        }
+
+                        if (g <= MaxDays)
+                        {
+                            DateTime D = new DateTime(y, i, g);
+                            string Errore = null;
+                            string TDclass = "";
+                            string DataInviato = "";
+                            string DataSospeso = "";
+                            if (!Model.IsFromDem)
+                            {
+                                if (tracciato != null)
+                                {
+                                    if (Destremi != null && Destremi.Length == 2 && Destremi[0] <= D && Destremi[1] >= D)
+                                    {
+                                        if (tracciato.TERMINATA == true)
+                                        {
+                                            TDclass = "pie-inv";
+                                            DataInviato = tracciato.DATA_ULTIMO_TENTATIVO != null ? tracciato.DATA_ULTIMO_TENTATIVO.Value.ToString("dd/MM/yyyy") : "";
+                                        }
+                                        else if (tracciato.BLOCCATA_DATETIME != null)
+                                        {
+                                            TDclass = "pie-sos";
+                                            DataSospeso = tracciato.BLOCCATA_DATETIME.Value.ToString("dd/MM/yyyy");
+                                        }
+                                        else if (!String.IsNullOrWhiteSpace(tracciato.ERRORE_BATCH)) { TDclass = "pie-err"; }
+                                        else { TDclass = "pie-att"; }
+                                    }
+                                    else
+                                    {
+                                        TDclass = "hide";
+                                    }
+                                }
+                                else
+                                {
+                                    TDclass = "pie-att";
+                                }
+                            }
+                            else //is from dem
+                            {
+                                var PianoFerieBatchRow = Model.ListaPianoFerieBatch.Where(x => x.data_eccezione == D).FirstOrDefault();
+                                if (PianoFerieBatchRow == null)
+                                {
+                                    TDclass = "pie-att";
+                                }
+                                else if (!String.IsNullOrWhiteSpace(PianoFerieBatchRow.error))
+                                {
+                                    TDclass = "pie-err";
+                                    Errore = PianoFerieBatchRow.error;
+                                }
+                                else
+                                {
+                                    if (PianoFerieBatchRow.data_ultimo_tentativo != null)
+                                    {
+                                        DataInviato = PianoFerieBatchRow.data_ultimo_tentativo.Value.ToString("dd/MM/yyyy");
+                                    }
+
+                                    TDclass = "pie-inv";
+                                }
+
+                            }
+
+                            passato = D < DateTime.Now;
+
+                            String DataTeoricaPF = D.ToString("dd-MM-yyyy");
+                            string InizDay = D.ToString("dddd").Substring(0, 2).ToUpper();
+                            myRaiData.Incentivi.XR_MAT_GIORNI_CONGEDO daySaved = null;
+
+
+                            if (D >= InizioPeriodo && D <= FinePeriodo)
+                            {
+
+                                var dayPF = Model.pf.dipendente.ferie.giornate.Where(x => x.dataTeorica == DataTeoricaPF).FirstOrDefault();
+                                string EccezioneShow = null;
+                                if (dayPF != null && dayPF.raw.Contains(CodiceEccezione))
+                                {
+                                    EccezioneShow = CodiceEccezione;
+                                    if (Model.IsFromDem)
+                                    {
+                                        TDclass = "pie-inv";
+                                    }
+
+                                }
+
+
+                                if (dayPF.tipoGiornata == "A" || dayPF.tipoGiornata == "B")
+                                {
+                                    <td id="td-@(D.ToString("ddMMyyyy"))" data-dayofweek="@InizDay" data-date="@D.ToString("dd/MM/yyyy")"
+                                        style="height:20px" class="@(passato ? "no-pian" : "") no-select rai-font-md-bold cell-pianificazionelight">
+                                        @if (EccezioneShow != null)
+                                        {
+                                            <pie id="id-@(D.ToString("ddMMyyyy"))" data-inviato="@DataInviato" data-sospeso="@DataSospeso"
+                                                 data-fromdem="@Model.IsFromDem" data-errore="@Errore"
+                                                 data-raw="@(dayPF!=null?dayPF.raw:"")"
+                                                 data-trigger="focus" data-placement="top" onclick="ShowPopoverTracciati(this)" class=" @(TDclass)-full" style="font-size:7px;cursor:pointer;"></pie>
+                                        }
+
+
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td id="td-@(D.ToString("ddMMyyyy"))" data-date="@D.ToString("dd/MM/yyyy")" data-dayofweek="@InizDay"
+                                        style="height:20px" class="@(passato ? "no-pian" : "") no-select rai-font-md-bold cell-pianificazione">
+                                        @if (EccezioneShow != null)
+                                        {
+                                            <pie id="id-@(D.ToString("ddMMyyyy"))" data-inviato="@DataInviato" data-sospeso="@DataSospeso"
+                                                  data-fromdem="@Model.IsFromDem" data-errore="@Errore"
+                                                  data-raw="@(dayPF!=null?dayPF.raw:"")"
+                                                 data-trigger="focus" data-placement="top" onclick="ShowPopoverTracciati(this)" class="  @(TDclass)-full" style="font-size:7px;cursor:pointer;"></pie>
+                                        }
+                                        else
+                                        {
+                                            <pie id="id-@(D.ToString("ddMMyyyy"))" data-inviato="@DataInviato" data-sospeso="@DataSospeso"
+                                                  data-fromdem="@Model.IsFromDem" data-errore="@Errore"
+                                                  data-raw="@(dayPF!=null?dayPF.raw:"")"
+                                                 data-trigger="focus" data-placement="top" onclick="ShowPopoverTracciati(this)" class="  @(TDclass)-empty" style="font-size:7px;cursor:pointer;"></pie>
+                                        }
+                                    </td>
+                                }
+
+                            }
+                            else
+                            {
+                                <td data-date="@D.ToString("dd/MM/yyyy")" style="height:20px" class="no-pian rai-font-md-bold cell-pianificazione"></td>
+                            }
+                        }
+
+
+                    }
+                </tr>
+
+            }
+
+
+
+
+
+
+
+
+        </table>
+
+        @*@if (Model.isFromApprovazione)
+            {
+                <div class="rai-btn-fill" style="margin-top : 26px">
+                    <button data-dismiss="modal" class="btn rai-btn-secondary" type="button" onclick="">Chiudi visualizzazione</button>
+                    <button id="button-pian" type="button" class="btn rai-btn-primary" onclick="PresaVisionePianificazione(@pian.ID)">Prendi visione</button>
+                </div>
+            }
+            else
+
+            {
+                <div class="rai-btn-fill" style="margin-top : 26px">
+                    <button data-dismiss="modal" class="btn rai-btn-secondary" type="button" onclick="">Annulla pianificazione</button>
+                    <button id="button-pian" type="button" class="btn rai-btn-primary disable" onclick="ConfermaPianificazione()">Conferma pianificazione</button>
+                </div>
+            }*@
+
+
+    </div>
+</div>
+
+<div id="scelta-fruizione" style="display:none;position:absolute;top: 0;width: 400px;border: solid 1px #ddd;border-radius: 2px;background-color: #fff;box-shadow: 2 2 black;box-shadow: 0 0 6px 6px #eee;padding-left: 10px;padding-right: 10px;padding-bottom: 10px;">
+    <label class="rai-font-md-bold" style="margin-top: 10px;opacity: 0.6;">SCEGLI LA FRUIZIONE</label>
+    <label onclick="AnnullaPianificazione()" class="rai-font-md-bold" style="cursor:pointer;margin-top: 10px;margin-right: 9px;float:right;">X</label>
+    <div style="width:100%;height: 1px;background-color:#ddd;margin-top: 8px;margin-bottom:8px;"></div>
+    <p id="perm-sel" class="rai-font-sm-neutral" style="color: #EE9600;margin-top: 16px;margin-bottom: 10px;">Hai selezionato dei giorni con permessi. Potrai ripianificarli successivamente.</p>
+    <select id="tipogiornata" class="form-control" style="height: 50px;">
+        <option value="I">Intera giornata</option>
+        <option value="M">Mezza giornata</option>
+        <option value="Q">Un quarto di giornata</option>
+    </select>
+    <a class="btn btn-sm rai-btn-small full-width" onclick="SalvaPianificazione()" style="margin-top: 19px;padding-top: 12px;padding-bottom: 12px;">
+        Salva
+    </a>
+
+</div>
+
+<script>
+    @{
+        string per = InizioPeriodo.ToString("dd/MM/yyyy") + " - " + FinePeriodo.ToString("dd/MM/yyyy");
+    }
+    $("#tit-ct").text("Dettagli richiesta - @Nominativo @per");
+
+    $(".ecc-exist").popover({
+        content: function () {
+            return CreaPopover($(this).attr("data-ecc"), $(this).attr("data-desc"), $(this).attr("data-giorno"), $(this).attr("data-fruizione"));
+        }
+    });
+
+    function closePop(id) {
+        $("#" + id).popover("hide");
+    }
+    function ShowPopoverTracciati(element) {
+     
+        var isdem = $(element).attr("data-fromdem") == "True";
+        var ismat = !isdem;
+        $(".popover").hide();
+        var popContent = document.createElement('div');
+        var id = "\"" +  $(element).attr("id") + "\""
+        popContent.innerHTML = "<div><span style='float:right;cursor:pointer' onclick='closePop("+id+")' class='fa fa-times'></span></div>";
+
+        if ($(element).hasClass("pie-inv-full")) {
+            if (ismat) {
+                popContent.innerHTML += "<b>Amministrazione</b><br/>Elaborato";
+                if ($(element).attr("data-inviato") != "") {
+                    popContent.innerHTML += " in data " + $(element).attr("data-inviato");
+                }
+            }
+            if (isdem) {
+                popContent.innerHTML += "<b>Sistema presenze</b><br/>Eccezione <b>inserita</b>";
+            }
+        }
+        if ($(element).hasClass("pie-inv-empty")) {
+            if (ismat) {
+                popContent.innerHTML += "<b>Amministrazione</b><br/>Elaborato";
+                if ($(element).attr("data-inviato") != "") {
+                    popContent.innerHTML += " in data " + $(element).attr("data-inviato");
+                }
+                popContent.innerHTML += "<br/><br/>";
+            }
+            popContent.innerHTML += "<b>Sistema presenze</b><br/>Eccezione <b> non inserita</b>";
+        }
+        if ($(element).hasClass("pie-sos-full")) {
+            if (ismat) {
+                popContent.innerHTML += "<b>Amministrazione</b><br/>Sospeso";
+                if ($(element).attr("data-sospeso") != "") {
+                    popContent.innerHTML += " in data " + $(element).attr("data-sospeso");
+                }
+                popContent.innerHTML += "<br/><br/>";
+            }
+            
+            popContent.innerHTML += "<b>Sistema presenze</b><br/>Eccezione <b>inserita</b> ";
+        }
+        if ($(element).hasClass("pie-sos-empty")) {
+            if (ismat) {
+                popContent.innerHTML += "<b>Amministrazione</b><br/>Sospeso";
+                if ($(element).attr("data-sospeso") != "") {
+                    popContent.innerHTML += " in data " + $(element).attr("data-sospeso");
+                }
+                popContent.innerHTML += "<br/><br/>";
+            }
+           
+            popContent.innerHTML += "<b>Sistema presenze</b><br/>Eccezione <b> non inserita</b>";
+        }
+        if ($(element).hasClass("pie-att-full")) {
+            if (ismat) popContent.innerHTML += "<b>Amministrazione</b><br/>In attesa di lavorazione<br/><br/>";
+            popContent.innerHTML += "<b>Sistema presenze</b><br/>Eccezione <b>inserita</b>";
+        }
+        if ($(element).hasClass("pie-att-empty")) {
+            if (ismat) popContent.innerHTML += "<b>Amministrazione</b><br/>In attesa di lavorazione<br/><br/>";
+            popContent.innerHTML += "<b>Sistema presenze</b><br/>Eccezione <b>non inserita</b> ";
+        }
+
+        if ($(element).hasClass("pie-err-empty")) {
+            if (isdem) {
+                popContent.innerHTML += "<b>Sistema presenze</b><br/>Errore, Eccezione <b>non inserita</b> <br/>"
+                    + $(element).attr("data-errore");
+            }
+        }
+        if ($(element).hasClass("pie-err-full")) {
+            if (isdem) {
+                popContent.innerHTML += "<b>Sistema presenze</b><br/>Errore, Eccezione <b> inserita</b> <br/>"
+                    + $(element).attr("data-errore");
+            }
+        }
+        //$("pie").popover("hide");
+        $(element).popover({
+            trigger: 'manual',
+            container: 'body',
+            html: true,
+            trigger: 'focus',
+            content: $(popContent).html()
+        });
+        $(element).popover('show')
+    }
+
+
+    function CreaPopover(ecc, desc, giorno, fruizione) {
+        var r = "<span class='rai-font-md-bold'>" + desc + " (" + ecc + ")</span><div style='width:100%;height:2px;background-color:#ddd;margin-top:12px;margin-bottom:8px'></div><div class='row' style='margin-bottom:20px;margin-top:20px'><div class='col-sm-4 rai-font-sm-neutral no-padding'><span>Giorno</span></div><div class='col-sm-8 rai-font-sm-neutral-bold  no-padding'><span>" + giorno + "</span></div></div><div class='row' style='margin-bottom:20px'><div class='col-sm-4 rai-font-sm-neutral no-padding'><span>Fruizione</span></div><div class='col-sm-8 rai-font-sm-neutral-bold no-padding'><span>" + fruizione + "</span></div></div>";
+        return r;
+    }
+
+
+
+
+</script>

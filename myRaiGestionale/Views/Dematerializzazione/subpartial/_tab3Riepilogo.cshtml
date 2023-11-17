@@ -1,0 +1,214 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiCommonModel
+@using myRaiHelper
+@using myRaiData.Incentivi
+
+@model RiepilogoVM
+
+<div class="rai-table-info">
+    <div class="row push-10-t">
+        <div class="col-sm-4 col-md-3 col-xl-2">
+            <span>Data richiesta</span>
+        </div>
+        <div class="col-sm-8">
+            <span id="span-datarichiesta">@Model.Documento.Documento.DataCreazione.ToString("dd/MM/yyyy")</span>
+        </div>
+    </div>
+    <div class="row push-10-t">
+        <div class="col-sm-4 col-md-3 col-xl-2">
+            <span>Tipo di documento</span>
+        </div>
+        <div class="col-sm-8">
+            <span id="span-tiporichiesta">@Model.Documento.Documento.XR_DEM_TIPOLOGIE_DOCUMENTALI.Descrizione</span>
+        </div>
+    </div>
+    @{
+        if (!String.IsNullOrEmpty(Model.NominativoUtenteDestinatario))
+        {
+            <div class="row push-10-t">
+                <div class="col-sm-4 col-md-3 col-xl-2">
+                    <span>Dipendente</span>
+                </div>
+                <div class="col-sm-8">
+                    <span id="span-dipendente">@Model.NominativoUtenteDestinatario</span>
+                </div>
+            </div>
+        }
+    }
+    <div class="row push-10-t">
+        <div class="col-sm-4 col-md-3 col-xl-2">
+            <span>Titolo documento</span>
+        </div>
+        <div class="col-sm-8">
+            <span id="span-documento">@Model.Documento.Documento.Descrizione</span>
+        </div>
+    </div>
+    @{
+        var documentoPrincipale = Model.Documento.Allegati.Where(w => w.IsPrincipal).FirstOrDefault();
+        if (documentoPrincipale != null)
+        {
+            <div class="row push-10-t">
+                <div class="col-sm-4 col-md-3 col-xl-2">
+                    <span>Documento </span>
+                </div>
+                <div class="col-sm-8">
+                    <span id="span-allegato-container" class="">
+                        <a href="#" onclick="Dematerializzazione_VisualizzaDocumentoTemporaneo('@documentoPrincipale.Id')" class="rai-font-md text-primary" id="span-allegato"><i class="fa fa-download"> </i> @documentoPrincipale.NomeFile</a>
+                        @*<a href="@(Url.Action( "ScaricaPDF" , "Dematerializzazione" ))?idDoc=@documentoPrincipale.Id" class="rai-font-md text-primary" id="span-allegato"><i class="fa fa-download"> </i> @documentoPrincipale.NomeFile</a>*@
+                    </span>
+                </div>
+            </div>
+        }
+    }
+
+    @{
+        var documentiAAllegati = Model.Documento.Allegati.Where(w => !w.IsPrincipal && w.TipoFile == 2).ToList();
+        if (documentiAAllegati != null && documentiAAllegati.Any())
+        {
+            int riga = 0;
+            foreach (var a in documentiAAllegati.OrderBy(w => w.Id).ToList())
+            {
+                riga++;
+                <div class="row push-10-t">
+                    @{
+                        if (riga == 1)
+                        {
+                            <div class="col-sm-4 col-md-3 col-xl-2">
+                                <span>Allegati</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="col-sm-4 col-md-3 col-xl-2">
+                                <span></span>
+                            </div>
+
+                        }
+                    }
+                    <div class="col-sm-8">
+                        <span id="span-allegato-container" class="rai-font-md text-primary">
+                            <a href="@(Url.Action( "ScaricaPDFASupporto" , "Dematerializzazione" ))?idAllegato=@a.Id" class="rai-font-md text-primary" id="span-allegato"><i class="fa fa-download"> </i> @a.NomeFile</a>
+                        </span>
+                    </div>
+                </div>
+            }
+        }
+    }
+
+    @{
+        if (Model.NominativoUtenteVistatore != null && Model.NominativoUtenteVistatore.Any())
+        {
+            <div class="row push-10-t">
+                <div class="col-sm-4 col-md-3 col-xl-2">
+                    <span>Vistatore</span>
+                </div>
+                <div class="col-sm-8 col-md-9 col-xl-10">
+                    @{
+                        foreach (var v in Model.NominativoUtenteVistatore)
+                        {
+                            <span id="span-visionatore">@v</span>
+                            <br />
+                        }
+                    }
+                </div>
+            </div>
+        }
+    }
+
+    @{
+        if (!String.IsNullOrEmpty(Model.NominativoUtenteIncaricatoFirma))
+        {
+            <div class="row push-10-t">
+                <div class="col-sm-4 col-md-3 col-xl-2">
+                    <span>Incaricato della firma</span>
+                </div>
+                <div class="col-sm-8">
+                    <span id="span-incaricato">@Model.NominativoUtenteIncaricatoFirma</span>
+                </div>
+            </div>
+        }
+    }
+
+    @{
+        if (!String.IsNullOrEmpty(Model.Documento.Documento.Note))
+        {
+            <div class="row push-10-t">
+                <div class="col-sm-4 col-md-3 col-xl-2">
+                    <span>Nota per gli approvatori</span>
+                </div>
+                <div class="col-sm-8">
+                    <span id="span-nota">@Model.Documento.Documento.Note</span>
+                </div>
+            </div>
+        }
+
+        if (Model.Note != null &&
+            Model.Note.Any() &&
+            Model.Note.Count(w => w.TipoNota == (int)XR_DEM_TIPI_NOTE_ENUM.NOTAOPERATORE) > 0)
+        {
+            <div class="row push-10-t">
+                <div class="col-sm-4 col-md-3 col-xl-2">
+                    <span>Nota per gli approvatori</span>
+                </div>
+                <div class="col-sm-8">
+                    @{
+                        int conta = 0;
+                        foreach (var n in Model.Note.Where(w => w.TipoNota == (int)XR_DEM_TIPI_NOTE_ENUM.NOTAOPERATORE).ToList())
+                        {
+                            conta++;
+                            if (conta > 1)
+                            {
+                                <br />
+                            }
+                            <span id="span-nota">@n.Testo</span>
+                        }
+                    }
+                </div>
+            </div>
+        }
+    }
+
+
+    @{
+        if (Model.Attributi != null && Model.Attributi.Any())
+        {
+            @Html.Partial("~/Views/Dematerializzazione/subpartial/_viewCustomData_Tab3.cshtml", Model.Attributi)
+        }
+    }
+
+    @{
+        var documentiASupporto = Model.Documento.Allegati.Where(w => !w.IsPrincipal && w.TipoFile == 1).ToList();
+        if (documentiASupporto != null && documentiASupporto.Any())
+        {
+            int riga = 0;
+            foreach (var a in documentiASupporto.OrderBy(w => w.Id).ToList())
+            {
+                riga++;
+                <div class="row push-10-t">
+                    @{
+                        if (riga == 1)
+                        {
+                            <div class="col-sm-4 col-md-3 col-xl-2">
+                                <span>Documenti a supporto</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="col-sm-4 col-md-3 col-xl-2">
+                                <span></span>
+                            </div>
+
+                        }
+                    }
+                    <div class="col-sm-8">
+                        <span id="span-allegato-container" class="rai-font-md text-primary">
+                            <a href="@(Url.Action( "ScaricaPDFASupporto" , "Dematerializzazione" ))?idAllegato=@a.Id" class="rai-font-md text-primary" id="span-allegato"><i class="fa fa-download"> </i> @a.NomeFile</a>
+                        </span>
+                    </div>
+                </div>
+            }
+        }
+    }
+
+
+</div>

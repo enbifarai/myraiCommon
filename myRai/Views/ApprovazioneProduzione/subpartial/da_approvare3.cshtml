@@ -1,0 +1,884 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+@using myRai.DataControllers;
+
+@model ModelDash
+
+<div id="blockRich" style="display:none;">
+    <div class="block-content" style="padding:0px;">
+        <div class="block" id="my-block">
+            <ul class="nav nav-tabs nav-tabs-alt" data-toggle="tabs" id="ul-da-app" role="tablist">
+                @if ( Model.elencoProfilieSedi != null )
+                {
+                    int TotUrgenti = Model.elencoProfilieSedi.elencoSediEccezioni.SelectMany( x => x.eccezionidaValidare.Where( item => item.IsUrgent == true ) ).Count( );
+                    int TotS = Model.elencoProfilieSedi.elencoSediEccezioni.SelectMany( x => x.eccezionidaValidare.Where( item => item.IsOverdue == true ) ).Count( );
+                    bool firstTab = true;
+                    foreach ( var ragg in Model.elencoProfilieSedi.RaggruppamentiEccezioni )
+                    {
+                        <li class="text-center" role="presentation" @if ( ragg.IdRaggruppamento == 0 ) { @: class="active"
+                            }>
+                            <a role="tab" tabindex="@(firstTab?"0":"-1")" aria-selected="@(ragg.IdRaggruppamento==0?"true":"false")" aria-controls="tab-@ragg.IdRaggruppamento" href="#tab-@ragg.IdRaggruppamento">
+                                @ragg.Descrizione.ToUpper( )
+                                @if ( ragg.IdRaggruppamento == 1 && TotUrgenti > 0 )
+                                {
+                                    <span id="badge-tot-u" style="background-color: #f3b760" class="badge">@TotUrgenti</span>
+                                }
+                                @if ( ragg.IdRaggruppamento == 2 && TotS > 0 )
+                                {
+                                    <span id="badge-tot-s" style="background-color: #ec394a" class="badge bg-primary">@TotS</span>
+                                }
+                            </a>
+                        </li>
+                        firstTab = false;
+                    }
+                }
+            </ul>
+
+            <div id="appr" class="block-content tab-content">
+                @if ( Model.elencoProfilieSedi == null )
+                {
+                    <span class="my-card-loading-block" style="width: 28%; height: 18px;"></span>
+                    <span class="my-card-loading-block" style="width: 10%; height: 8px;"></span>
+                }
+
+                @if ( Model.elencoProfilieSedi != null )
+                {
+                    //per ogni tab (tutto/urgenti/scadute/altro)
+                    foreach ( var ragg in Model.elencoProfilieSedi.RaggruppamentiEccezioni )
+                    {
+                        <div role="tabpanel" class="tab-pane tab-filtro @(ragg.IdRaggruppamento == 0 ? "active" : "")" id="tab-@ragg.IdRaggruppamento">
+                            <div class="divall" style="width: 100%; text-align: right; display: none;margin-bottom:4px;padding-bottom:8px">
+                                <button class="button-approva-tutti btn btn-lg btn-default" style="padding:5px" type="submit"><small style="font-size:70%;font-weight:bold">APPROVA SELEZIONATI</small></button>
+
+                                <button class="button-rifiuta-tutti btn btn-lg btn-default" style="padding:5px" type="submit"> <small style="font-size:70%;font-weight:bold;">RIFIUTA SELEZIONATI</small></button>
+
+                            </div>
+                            <div id="approv">
+                                @if (
+                                    ( Request.QueryString["nome"] != "" && !Request.QueryString["nome"].ToUpper( ).Equals( "UNDEFINED" ) ) ||
+                                    ( Request.QueryString["titolo"] != "" && !Request.QueryString["titolo"].ToUpper( ).Equals( "UNDEFINED" ) ) ||
+                                    ( Request.QueryString["sede"] != "" && !Request.QueryString["sede"].ToUpper( ).Equals( "UNDEFINED" ) ) ||
+                                    ( Request.QueryString["eccezione"] != "" && !Request.QueryString["eccezione"].ToUpper( ).Equals( "UNDEFINED" ) ) ||
+                                    ( Request.QueryString["livelloDip"] != "" && !Request.QueryString["livelloDip"].ToUpper( ).Equals( "UNDEFINED" ) ) ||
+                                    Request.QueryString["stato"] != "" ||
+                                    Request.QueryString["data_da"] != "" || Request.QueryString["data_a"] != "" )
+                                {
+                                    <div class="block">
+                                        <div class="row">
+                                            <div class="col-sm-9">
+                                                Hai Cercato:
+                                                @if ( Request.QueryString["nome"] != "" && !Request.QueryString["nome"].ToUpper( ).Equals( "UNDEFINED" ) )
+                                                {<b>@Request.QueryString["nome"], </b>}
+                                                @if ( Request.QueryString["sede"] != "" && !Request.QueryString["sede"].ToUpper( ).Equals( "UNDEFINED" ) )
+                                                {<b>@Request.QueryString["sede"], </b>}
+                                                @if ( Request.QueryString["titolo"] != "" && !Request.QueryString["titolo"].ToUpper( ).Equals( "UNDEFINED" ) )
+                                                {<b>@Request.QueryString["titolo"], </b>}
+                                                @if ( Request.QueryString["stato"] != "" )
+                                                {<b>@Request.QueryString["stato"], </b>}
+                                                @if ( Request.QueryString["eccezione"] != "" && !Request.QueryString["eccezione"].ToUpper( ).Equals( "UNDEFINED" ) )
+                                                {<b>@Request.QueryString["eccezione"], </b>}
+                                                @if ( Request.QueryString["data_da"] != "" && Request.QueryString["data_a"] == "" )
+                                                {<b>@Request.QueryString["data_da"] - @DateTime.Now.ToShortDateString( ), </b>}
+                                                @if ( Request.QueryString["data_da"] != "" && Request.QueryString["data_a"] != "" )
+                                                {<b>@Request.QueryString["data_da"] - @Request.QueryString["data_a"], </b>}
+                                                @if ( Request.QueryString["livelloDip"] != "" && !Request.QueryString["livelloDip"].ToUpper( ).Equals( "UNDEFINED" ) )
+                                                {<b>dipendenti di livello @Request.QueryString["livelloDip"]</b>}
+                                            </div>
+                                            <div class="col-sm-3">
+                                                <a href="#" onclick="$(':text').val('');$(':input,select option').removeAttr('checked').removeAttr('selected');$('#btnFilter').attr('disabled', 'disabled');" data-reset="/ApprovazioneProduzione/GetRichiesteAttProduzione" data-parentdiv="daapprovare" data-resetelements="my-block,my-block2,my-block3,my-block4">TORNA ALL'ELENCO</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                                <table id="tabapp" class="js-table-sections table table-hover" role="grid">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 5%;"></th>
+                                            <th style="width: 5%;"></th>
+                                            <th style="width: 20%;"></th>
+                                            <th style="width: 25%;"></th>
+                                            <th style="width: 25%;"></th>
+                                            <th style="width: 20%;"></th>
+                                        </tr>
+                                    </thead>
+
+                                    @if ( Model.elencoProfilieSedi != null &&
+                                          Model.elencoProfilieSedi.elencoSediEccezioni.Count > 0 &&
+                                        ( ragg.IdRaggruppamento == 0 ||
+                                            ( ragg.IdRaggruppamento == 1 && Model.elencoProfilieSedi.elencoSediEccezioni.Any( x => x.eccezionidaValidare.Any( w => w.IsUrgent ) ) ) ||
+                                            ( ragg.IdRaggruppamento == 2 && Model.elencoProfilieSedi.elencoSediEccezioni.Any( x => x.eccezionidaValidare.Any( w => w.IsOverdue ) ) ) ||
+                                            ( ragg.IdRaggruppamento == 3 && Model.elencoProfilieSedi.elencoSediEccezioni.Any( x => x.eccezionidaValidare.Any( w => !w.IsUrgent && !w.IsOverdue ) ) )
+                                            ) )
+                                    {
+                                        int sediVisualizzate = 0;
+                                        //per ogni sede nel tab
+                                        foreach ( daApprovareModel.sedegappAbilitata SedeAbil in Model.elencoProfilieSedi.elencoSediEccezioni.Where( f => f.Accesso_in_scrittura ) )
+                                        {
+                                            if ( ragg.IdRaggruppamento == 0 && SedeAbil.eccezionidaValidare.Count( ) == 0 )
+                                            {
+                                                continue;
+                                            }
+                                            if ( ragg.IdRaggruppamento == 1 && SedeAbil.eccezionidaValidare.Where( x => x.IsUrgent == true ).Count( ) == 0 )
+                                            {
+                                                continue;
+                                            }
+                                            if ( ragg.IdRaggruppamento == 2 && SedeAbil.eccezionidaValidare.Where( x => x.IsOverdue == true ).Count( ) == 0 )
+                                            {
+                                                continue;
+                                            }
+                                            if ( ragg.IdRaggruppamento == 3 && SedeAbil.eccezionidaValidare.Where( x => x.IsUrgent == false && x.IsOverdue == false ).Count( ) == 0 )
+                                            {
+                                                continue;
+                                            }
+                                            sediVisualizzate++;
+
+                                            //intestazione sede + totale richieste
+                                            <tbody class="@(Model.elencoProfilieSedi.elencoSediEccezioni.Count == 1 ? "js-table-sections-header open" : "js-table-sections-header")">
+                                                <tr role="row" tabindex="@(sediVisualizzate==1?"0":"-1")" aria-label="Per la sede @SedeAbil.Codice_sede_gapp, hai @SedeAbil.eccezionidaValidare.Count() richieste da validare" aria-expanded="false">
+                                                    <td class="text-center">
+                                                        <i class="fa fa-angle-right"></i>
+                                                    </td>
+                                                    <td colspan="3" style="font-size:14px;">
+                                                        <span class="text-gray-darker"
+                                                              data-rep-desc="@SedeAbil.RepartoDescrizione"
+                                                              data-rep-cod="@SedeAbil.RepartoCodice">
+                                                            <b>@SedeAbil.Codice_sede_gapp.ToUpper( ) </b>- @CommonHelper.ToTitleCase( SedeAbil.Descrittiva_sede_gapp )
+                                                        </span>
+
+                                                        @if ( SedeAbil.RepartoCodice != "00" )
+                                                        {
+                                                            <br />
+                                                            <em style="font-size:80%">@SedeAbil.RepartoDescrizione</em>
+                                                        }
+                                                    </td>
+
+                                                    <td colspan="2" class="text-right">
+                                                        @{
+                                                            int r = 0;
+                                                            if ( ragg.IdRaggruppamento == 0 )
+                                                            {
+                                                                r = SedeAbil.eccezionidaValidare.Count( );
+                                                            }
+                                                            else
+                                                            {
+                                                                r = SedeAbil.eccezionidaValidare
+                                                                .Where( d => ragg.IdRaggruppamento == 0 ||
+                                                                     ( ragg.IdRaggruppamento == 1 && d.IsUrgent == true ) ||
+                                                                     ( ragg.IdRaggruppamento == 2 && d.IsOverdue == true ) ||
+                                                                     ( ragg.IdRaggruppamento == 3 && d.IsOverdue == false && d.IsUrgent == false )
+                                                                    ).Count( );
+                                                            }
+                                                        }
+                                                        <span class="text-primary totale-rich" style="font-size: 12px;font-weight: bold;">
+                                                            @r.ToString( ) richiest@(r == 1 ? "a" : "e")
+                                                        </span>
+                                                    </td>
+
+                                                </tr>
+                                            </tbody>
+
+                                            <tbody class="tbodydata">
+
+                                                <tr>
+                                                    <td colspan="" style="padding-top: 0px;padding-bottom: 0px;">
+                                                        <label class="css-input css-checkbox css-checkbox-rounded css-checkbox-sm css-checkbox-info">
+                                                            <input class="seltutti" type="checkbox" onchange="SelTutti(this,'@SedeAbil.Codice_sede_gapp')">
+                                                            <span></span>
+                                                        </label>
+                                                    </td>
+                                                    <td colspan="6" style="padding-top: 0px; padding-bottom: 0px;"><span style="font-size: 85%; font-weight:bold ;vertical-align: middle;margin-top: 8px;display: block;">SELEZIONA TUTTI</span></td>
+                                                </tr>
+                                                @*stampa row eccezioni*@
+                                                @foreach ( MyRaiServiceInterface.it.rai.servizi.digigappws.Eccezione eccezione in SedeAbil.eccezionidaValidare
+                                                    .Where( d => ragg.IdRaggruppamento == 0 ||
+                                                         ( ragg.IdRaggruppamento == 1 && d.IsUrgent == true ) ||
+                                                         ( ragg.IdRaggruppamento == 2 && d.IsOverdue == true ) ||
+                                                         ( ragg.IdRaggruppamento == 3 && d.IsOverdue == false && d.IsUrgent == false )
+                                                       ).Take( Model.elencoProfilieSedi.MaxRowsVisualizzabili ) )
+                                                {
+
+                                                    EccezioneApprovatoreVM vm = new EccezioneApprovatoreVM( )
+                                                    {
+                                                        Eccezione = eccezione ,
+                                                        Visualizzato = false ,
+                                                        attivitaCeiton = CeitonHelper.GetAttivitaCeiton( eccezione.IdRichiestaPadre )
+                                                    };
+
+                                                    var myList = UtenteDataController.GetPOHdays( eccezione.matricola );
+
+                                                    if ( myList != null && myList.Any( ) )
+                                                    {
+                                                        foreach ( var itm in myList )
+                                                        {
+                                                            if ( itm.Date <= eccezione.DataRichiesta.Date &&
+                                                                itm.Date.Month.Equals( eccezione.DataRichiesta.Month ) )
+                                                            {
+                                                                vm.POH++;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    if ( Model.elencoProfilieSedi.EccVisualizzate != null )
+                                                    {
+                                                        var myItem = Model.elencoProfilieSedi.EccVisualizzate.Where( i => i.Matricola.Equals( eccezione.matricola ) && i.Data.Equals( eccezione.dataCompleta ) ).FirstOrDefault( );
+
+                                                        if ( myItem != null )
+                                                        {
+                                                            vm.Visualizzato = myItem.Visualizzato;
+                                                        }
+                                                    }
+                                                    @Html.Partial( "~/Views/ApprovazioneProduzione/subpartial/_TRdaapprovare2.cshtml" , vm )
+                                                }
+
+                                                <tr>
+                                                    <td class="text-center"></td>
+                                                    <td class="font-w600 text-success"></td>
+                                                    <td></td>
+
+                                                    <td colspan="2" class="text"></td>
+                                                    <td></td>
+                                                </tr>
+
+                                            </tbody>
+                                        }
+                                        if ( sediVisualizzate == 0 )
+                                        {
+                                            <tbody>
+                                                @Html.Partial( "_nodati" )
+                                            </tbody>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tbody>
+                                            @Html.Partial( "_nodati" )
+                                        </tbody>
+                                    }
+                                </table>
+                            </div>
+
+                            @if ( Model.elencoProfilieSedi != null && Model.elencoProfilieSedi.FrecciaVisibile )
+                            {
+                                <div class="block-content block-content-full text-center">
+                                    <a href="/Responsabile/totaledaapprovare"><i class="si si-arrow-right fa-2x text-info"></i></a>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+<div id="blockDayRound" class="block" style="display:none;">
+    <div class="block-content" style="padding:0px;">
+        <div class="block" id="my-block2">
+            <ul class="nav nav-tabs nav-tabs-alt" data-toggle="tabs" id="ul-da-app" role="tablist">
+                @if ( Model.elencoProfilieSedi != null )
+                {
+                    int TotUrgenti = Model.elencoProfilieSedi.elencoSediEccezioni.SelectMany( x => x.eccezionidaValidare.Where( item => item.IsUrgent == true ) ).Count( );
+                    int TotS = Model.elencoProfilieSedi.elencoSediEccezioni.SelectMany( x => x.eccezionidaValidare.Where( item => item.IsOverdue == true ) ).Count( );
+                    bool firstTab = true;
+                    foreach ( var ragg in Model.elencoProfilieSedi.RaggruppamentiEccezioni )
+                    {
+                        <li class="text-center" role="presentation" @if ( ragg.IdRaggruppamento == 0 ) { @: class="active"
+                            }>
+                            <a role="tab" tabindex="@(firstTab?"0":"-1")" aria-selected="@(ragg.IdRaggruppamento == 0 ? "true" : "false")" aria-controls="tab2-@ragg.IdRaggruppamento" href="#tab2-@ragg.IdRaggruppamento">
+                                @ragg.Descrizione.ToUpper( )
+                                @if ( ragg.IdRaggruppamento == 1 && TotUrgenti > 0 )
+                                {
+                                    <span id="badge-tot-u" style="background-color: #f3b760" class="badge">@TotUrgenti</span>
+                                }
+                                @if ( ragg.IdRaggruppamento == 2 && TotS > 0 )
+                                {
+                                    <span id="badge-tot-s" style="background-color: #ec394a" class="badge bg-primary">@TotS</span>
+                                }
+                            </a>
+                        </li>
+                        firstTab = false;
+                    }
+                }
+            </ul>
+
+            <div id="appr" class="block-content tab-content">
+                @if ( Model.elencoProfilieSedi == null )
+                {
+                    <span class="my-card-loading-block" style="width: 28%; height: 18px;"></span>
+                    <span class="my-card-loading-block" style="width: 10%; height: 8px;"></span>
+                }
+
+                @if ( Model.elencoProfilieSedi != null )
+                {
+                    //per ogni tab (tutto/urgenti/scadute/altro)
+                    foreach ( var ragg in Model.elencoProfilieSedi.RaggruppamentiEccezioni )
+                    {
+                        <div role="tabpanel" class="tab-pane tab-filtro @(ragg.IdRaggruppamento == 0 ? "active" : "")" id="tab2-@ragg.IdRaggruppamento">
+                            <div id="approv">
+                                @if (
+                                    ( Request.QueryString["nome"] != "" && !Request.QueryString["nome"].ToUpper( ).Equals( "UNDEFINED" ) ) ||
+                                    ( Request.QueryString["titolo"] != "" && !Request.QueryString["titolo"].ToUpper( ).Equals( "UNDEFINED" ) ) ||
+                                    ( Request.QueryString["sede"] != "" && !Request.QueryString["sede"].ToUpper( ).Equals( "UNDEFINED" ) ) ||
+                                    ( Request.QueryString["eccezione"] != "" && !Request.QueryString["eccezione"].ToUpper( ).Equals( "UNDEFINED" ) ) ||
+                                    ( Request.QueryString["livelloDip"] != "" && !Request.QueryString["livelloDip"].ToUpper( ).Equals( "UNDEFINED" ) ) ||
+                                    Request.QueryString["stato"] != "" ||
+                                    Request.QueryString["data_da"] != "" || Request.QueryString["data_a"] != "" )
+                                {
+                                    <div class="block">
+                                        <div class="row">
+                                            <div class="col-sm-9">
+                                                Hai Cercato:
+                                                @if ( Request.QueryString["nome"] != "" && !Request.QueryString["nome"].ToUpper( ).Equals( "UNDEFINED" ) )
+                                                {<b>@Request.QueryString["nome"], </b>}
+                                                @if ( Request.QueryString["sede"] != "" && !Request.QueryString["sede"].ToUpper( ).Equals( "UNDEFINED" ) )
+                                                {<b>@Request.QueryString["sede"], </b>}
+                                                @if ( Request.QueryString["titolo"] != "" && !Request.QueryString["titolo"].ToUpper( ).Equals( "UNDEFINED" ) )
+                                                {<b>@Request.QueryString["titolo"], </b>}
+                                                @if ( Request.QueryString["stato"] != "" )
+                                                {<b>@Request.QueryString["stato"], </b>}
+                                                @if ( Request.QueryString["eccezione"] != "" && !Request.QueryString["eccezione"].ToUpper( ).Equals( "UNDEFINED" ) )
+                                                {<b>@Request.QueryString["eccezione"], </b>}
+                                                @if ( Request.QueryString["data_da"] != "" && Request.QueryString["data_a"] == "" )
+                                                {<b>@Request.QueryString["data_da"] - @DateTime.Now.ToShortDateString( ), </b>}
+                                                @if ( Request.QueryString["data_da"] != "" && Request.QueryString["data_a"] != "" )
+                                                {<b>@Request.QueryString["data_da"] - @Request.QueryString["data_a"], </b>}
+                                                @if ( Request.QueryString["livelloDip"] != "" && !Request.QueryString["livelloDip"].ToUpper( ).Equals( "UNDEFINED" ) )
+                                                {<b>dipendenti di livello @Request.QueryString["livelloDip"]</b>}
+                                            </div>
+                                            <div class="col-sm-3">
+                                                <a href="#" onclick="$(':text').val('');$(':input,select option').removeAttr('checked').removeAttr('selected');$('#btnFilter').attr('disabled', 'disabled');" data-reset="/ApprovazioneProduzione/GetRichiesteAttProduzione" data-parentdiv="daapprovare" data-resetelements="my-block,my-block2,my-block3,my-block4">TORNA ALL'ELENCO</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                                <table id="tabapp" class="js-table-sections table " role="grid">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 5%;"></th>
+                                            <th style="width: 5%;"></th>
+                                            <th style="width: 20%;"></th>
+                                            <th style="width: 25%;"></th>
+                                            <th style="width: 25%;"></th>
+                                            <th style="width: 20%;"></th>
+                                        </tr>
+                                    </thead>
+
+                                    @if ( Model.elencoProfilieSedi != null && Model.elencoProfilieSedi.elencoSediEccezioni.Count > 0
+                            && ( ragg.IdRaggruppamento == 0 || Model.elencoProfilieSedi.elencoSediEccezioni.Any( x => x.eccezionidaValidare.Any( z => z.IdRaggruppamento == ragg.IdRaggruppamento ) ) ) )
+                                    {
+                                        int sediVisualizzate = 0;
+                                        //per ogni sede nel tab
+                                        foreach ( daApprovareModel.sedegappAbilitata SedeAbil in Model.elencoProfilieSedi.elencoSediEccezioni.Where( f => f.Accesso_in_scrittura ) )
+                                        {
+                                            if ( ragg.IdRaggruppamento == 0 && SedeAbil.eccezionidaValidare.Count( ) == 0 )
+                                            {
+                                                continue;
+                                            }
+                                            if ( ragg.IdRaggruppamento == 1 && SedeAbil.eccezionidaValidare.Where( x => x.IsUrgent == true ).Count( ) == 0 )
+                                            {
+                                                continue;
+                                            }
+                                            if ( ragg.IdRaggruppamento == 2 && SedeAbil.eccezionidaValidare.Where( x => x.IsOverdue == true ).Count( ) == 0 )
+                                            {
+                                                continue;
+                                            }
+                                            if ( ragg.IdRaggruppamento == 3 && SedeAbil.eccezionidaValidare.Where( x => x.IsUrgent == false && x.IsOverdue == false ).Count( ) == 0 )
+                                            {
+                                                continue;
+                                            }
+                                            sediVisualizzate++;
+
+                                            //intestazione sede + totale richieste
+                                            <tbody class="@(Model.elencoProfilieSedi.elencoSediEccezioni.Count == 1 ? "js-table-sections-header open" : "js-table-sections-header")">
+                                                <tr role="row" tabindex="@(sediVisualizzate == 1 ? "0" : "-1")" aria-label="Per la sede @SedeAbil.Codice_sede_gapp, hai @SedeAbil.eccezionidaValidare.Count() richieste da validare" aria-expanded="false">
+                                                    <td @*onclick="$(this).closest('tbody').toggleClass('open')"*@ class="text-center">
+                                                        <i class="fa fa-angle-right"></i>
+                                                    </td>
+                                                    <td colspan="4" style="font-size:14px;" @*onclick="$(this).closest('tbody').toggleClass('open')"*@>
+                                                        <span class="text-gray-darker"
+                                                              data-rep-desc="@SedeAbil.RepartoDescrizione"
+                                                              data-rep-cod="@SedeAbil.RepartoCodice">
+                                                            <b>@SedeAbil.Codice_sede_gapp.ToUpper( ) </b>- @CommonHelper.ToTitleCase( SedeAbil.Descrittiva_sede_gapp )
+                                                        </span>
+                                                        @if ( SedeAbil.RepartoCodice != "00" )
+                                                        {
+                                                            <br />
+                                                            <em style="font-size:80%">@SedeAbil.RepartoDescrizione</em>
+                                                        }
+                                                    </td>
+
+                                                    <td colspan="2" class="text-right">
+                                                        @{
+                                                            int r = 0;
+                                                            if ( ragg.IdRaggruppamento == 0 )
+                                                            {
+                                                                r = SedeAbil.eccezionidaValidare.Count( );
+                                                            }
+                                                            else
+                                                            {
+                                                                r = SedeAbil.eccezionidaValidare
+                                                                .Where( d => ragg.IdRaggruppamento == 0 ||
+                                                                     ( ragg.IdRaggruppamento == 1 && d.IsUrgent == true ) ||
+                                                                     ( ragg.IdRaggruppamento == 2 && d.IsOverdue == true ) ||
+                                                                     ( ragg.IdRaggruppamento == 3 && d.IsOverdue == false && d.IsUrgent == false )
+                                                                    ).Count( );
+                                                            }
+                                                        }
+                                                        <span class="text-primary totale-rich" style="font-size: 12px; font-weight: bold;">
+                                                            @r.ToString( ) richiest@(r == 1 ? "a" : "e")
+                                                        </span>
+                                                    </td>
+
+                                                </tr>
+                                            </tbody>
+
+                                            <tbody class="tbodydata">
+                                                <tr>
+                                                    <td colspan="6">
+                                                        <table id="tabappData" class="js-table-sections table " role="grid">
+                                                            @{
+                                                                var raggPerData = SedeAbil.eccezionidaValidare.Where( d => ragg.IdRaggruppamento == 0 ||
+                                                                     ( ragg.IdRaggruppamento == 1 && d.IsUrgent == true ) ||
+                                                                     ( ragg.IdRaggruppamento == 2 && d.IsOverdue == true ) ||
+                                                                     ( ragg.IdRaggruppamento == 3 && d.IsOverdue == false && d.IsUrgent == false )
+                                                                   ).GroupBy( x => new { x.DataRichiesta , x.CodiceTurno } );
+
+                                                                foreach ( var itemData in raggPerData )
+                                                                {
+                                                                    <tbody class="js-table-sections-header">
+                                                                        <tr role="row" tabindex="0" aria-label="Per la data di @itemData.Key.DataRichiesta.ToString("d MMMM yyyy"), hai @itemData.Count() richieste da validare" aria-expanded="false" onfocus="onFocusRow(this)">
+                                                                            <td class="text-center" style="width:5%;">
+                                                                                <i class="fa fa-angle-right"></i>
+                                                                            </td>
+                                                                            <td colspan="3" style="font-size:14px;">
+                                                                                <span class="text-gray-darker">@itemData.Key.DataRichiesta.ToString( "d MMMM yyyy" )@(!String.IsNullOrWhiteSpace( itemData.Key.CodiceTurno ) ? " - " + itemData.Key.CodiceTurno : "")</span>
+                                                                            </td>
+
+                                                                            <td colspan="2" class="text-right td-num-ragg-appr">
+                                                                                <span class="text-primary totale-rich" style="font-size: 12px; font-weight: bold;">@itemData.Count( ) richiest@(@itemData.Count( ) == 1 ? "a" : "e")</span>
+                                                                            </td>
+
+                                                                            <td colspan="2" class="text-right td-button-ragg-appr">
+                                                                                <button class="pad6 button-approva-turno btn btn-xs btn-default button-ragg-appr" type="submit" role="link" tabindex="-1" aria-label="Approva tutte le richieste per il turno @(itemData.Key.CodiceTurno) del @(itemData.Key.DataRichiesta.ToString("d MMMM yyyy"))">
+                                                                                    Approva tutti
+                                                                                </button>
+                                                                                <button class="pad6 btn button-rifiuta-turno btn-xs btn-default button-ragg-appr" type="submit" role="link" tabindex="-1" aria-label="Approva tutte le richieste per il turno @(itemData.Key.CodiceTurno) del @(itemData.Key.DataRichiesta.ToString("d MMMM yyyy"))">
+                                                                                    Rifiuta tutti
+                                                                                </button>
+                                                                            </td>
+                                                                        </tr>
+                                                                    </tbody>
+
+                                                                    <tbody class="tbodydata body-stripes">
+                                                                        @{
+                                                                            var raggMatr = itemData.GroupBy( x => x.matricola );
+
+                                                                            foreach ( var itemMatr in raggMatr )
+                                                                            {
+                                                                                <tr role="row" onfocus="onFocusRow(this)">
+                                                                                    <td colspan="7">
+                                                                                        <div class="row">
+                                                                                            <div class="col-sm-4">
+                                                                                                <div class="widget-profile-info">
+                                                                                                    <div class="profile-picture">
+                                                                                                        <img style="width: 45px; height: 45px;"
+                                                                                                             src="@CommonHelper.GetUrlFoto(itemMatr.Key)" />
+                                                                                                    </div>
+                                                                                                    <a class="text-primary matricola-nome" href="javascript:ShowPopupBoss('@("0"+itemMatr.Key)','@itemData.Key.DataRichiesta.ToString("dd/MM/yyyy")','@itemMatr.First().dipendente.nome.Trim().ToUpper() @itemMatr.First().dipendente.cognome.Trim().ToUpper()','1')">
+                                                                                                        @CommonHelper.ToTitleCase( itemMatr.First( ).dipendente.nome ) @CommonHelper.ToTitleCase( itemMatr.First( ).dipendente.cognome )
+                                                                                                    </a>
+                                                                                                    @{
+                                                                                                        var eccVis = Model.elencoProfilieSedi.EccVisualizzate.Where( i => i.Matricola.Equals( itemMatr.Key ) && i.Data.Equals( itemData.Key.DataRichiesta ) ).FirstOrDefault( );
+                                                                                                        if ( eccVis != null && eccVis.Visualizzato )
+                                                                                                        {
+                                                                                                            <div title="VISUALIZZATO" style="background-color: #eeeeee;">
+                                                                                                                <span style="font-weight: 500;font-size: 9px;color:#000000;">VISUALIZZATO</span>
+                                                                                                            </div>
+                                                                                                        }
+                                                                                                    }
+                                                                                                </div>
+                                                                                                <div>
+                                                                                                    <button class="pad6 button-approva-matricola btn btn-xs btn-default button-ragg-appr" type="submit" aria-label="Approva tutte le richieste di @(itemMatr.First().dipendente.nome) @(itemMatr.First().dipendente.cognome)">
+                                                                                                        Approva tutti
+                                                                                                    </button>
+                                                                                                    <button class="pad6 btn button-rifiuta-matricola btn-xs btn-default button-ragg-appr" type="submit" aria-label="Approva tutte le richieste di @(itemMatr.First().dipendente.nome) @(itemMatr.First().dipendente.cognome)">
+                                                                                                        Rifiuta tutti
+                                                                                                    </button>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            <div class="col-sm-8">
+                                                                                                <table class="js-table-sections table table-hover">
+                                                                                                    @foreach ( var item in itemMatr )
+                                                                                                    {
+                                                                                                        EccezioneApprovatoreVM vm = new EccezioneApprovatoreVM( )
+                                                                                                        {
+                                                                                                            Eccezione = item ,
+                                                                                                            Visualizzato = false ,
+                                                                                                            attivitaCeiton = CeitonHelper.GetAttivitaCeiton( item.IdRichiestaPadre )
+                                                                                                        };
+
+                                                                                                        if ( Model.elencoProfilieSedi.EccVisualizzate != null )
+                                                                                                        {
+                                                                                                            var myItem = Model.elencoProfilieSedi.EccVisualizzate.Where( i => i.Matricola.Equals( item.matricola ) && i.Data.Equals( item.dataCompleta ) ).FirstOrDefault( );
+
+                                                                                                            if ( myItem != null )
+                                                                                                            {
+                                                                                                                vm.Visualizzato = myItem.Visualizzato;
+                                                                                                            }
+                                                                                                        }
+
+                                                                                                        @Html.Partial( "~/Views/ApprovazioneProduzione/subpartial/_TRdaapprovare3.cshtml" , vm )
+                                                                                                    }
+                                                                                                </table>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </td>
+                                                                                </tr>
+                                                                            }
+                                                                        }
+                                                                    </tbody>
+                                                                }
+                                                            }
+                                                        </table>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        }
+                                        if ( sediVisualizzate == 0 )
+                                        {
+                                            <tbody>
+                                                @Html.Partial( "_nodati" )
+                                            </tbody>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tbody>
+                                            @Html.Partial( "_nodati" )
+                                        </tbody>
+                                    }
+                                </table>
+                            </div>
+
+                            @if ( Model.elencoProfilieSedi != null && Model.elencoProfilieSedi.FrecciaVisibile )
+                            {
+                                <div class="block-content block-content-full text-center">
+                                    <a href="/Responsabile/totaledaapprovare"><i class="si si-arrow-right fa-2x text-info"></i></a>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="blockDay" class="block" style="display:none;">
+    <div class="block-content" style="padding:0px;">
+        <div class="block" id="my-block3">
+            <ul class="nav nav-tabs nav-tabs-alt" data-toggle="tabs" id="ul-da-app" role="tablist">
+                @if ( Model.elencoProfilieSedi != null )
+                {
+                    int TotUrgenti = Model.elencoProfilieSedi.elencoSediEccezioni.SelectMany( x => x.eccezionidaValidare.Where( item => item.IsUrgent == true ) ).Count( );
+                    int TotS = Model.elencoProfilieSedi.elencoSediEccezioni.SelectMany( x => x.eccezionidaValidare.Where( item => item.IsOverdue == true ) ).Count( );
+                    bool firstTab = true;
+                    foreach ( var ragg in Model.elencoProfilieSedi.RaggruppamentiEccezioni )
+                    {
+                        <li class="text-center" role="presentation" @if ( ragg.IdRaggruppamento == 0 ) { @: class="active"
+                            }>
+                            <a role="tab" tabindex="@(firstTab?"0":"-1")" aria-selected="@(ragg.IdRaggruppamento == 0 ? "true" : "false")" aria-controls="tab2-@ragg.IdRaggruppamento" href="#tab2-@ragg.IdRaggruppamento">
+                                @ragg.Descrizione.ToUpper( )
+                                @if ( ragg.IdRaggruppamento == 1 && TotUrgenti > 0 )
+                                {
+                                    <span id="badge-tot-u" style="background-color: #f3b760" class="badge">@TotUrgenti</span>
+                                }
+                                @if ( ragg.IdRaggruppamento == 2 && TotS > 0 )
+                                {
+                                    <span id="badge-tot-s" style="background-color: #ec394a" class="badge bg-primary">@TotS</span>
+                                }
+                            </a>
+                        </li>
+                        firstTab = false;
+                    }
+                }
+            </ul>
+
+            <div id="appr" class="block-content tab-content">
+
+                @if ( Model.elencoProfilieSedi == null )
+                {
+                    <span class="my-card-loading-block" style="width: 28%; height: 18px;"></span>
+                    <span class="my-card-loading-block" style="width: 10%; height: 8px;"></span>
+                }
+
+                @if ( Model.elencoProfilieSedi != null )
+                {
+                    //per ogni tab (tutto/urgenti/scadute/altro)
+                    foreach ( var ragg in Model.elencoProfilieSedi.RaggruppamentiEccezioni )
+                    {
+                        <div role="tabpanel" class="tab-pane tab-filtro @(ragg.IdRaggruppamento == 0 ? "active" : "")" id="tab2-@ragg.IdRaggruppamento">
+                            <div id="approv">
+                                @if (
+                                    ( Request.QueryString["nome"] != "" && !Request.QueryString["nome"].ToUpper( ).Equals( "UNDEFINED" ) ) ||
+                                    ( Request.QueryString["titolo"] != "" && !Request.QueryString["titolo"].ToUpper( ).Equals( "UNDEFINED" ) ) ||
+                                    ( Request.QueryString["sede"] != "" && !Request.QueryString["sede"].ToUpper( ).Equals( "UNDEFINED" ) ) ||
+                                    ( Request.QueryString["eccezione"] != "" && !Request.QueryString["eccezione"].ToUpper( ).Equals( "UNDEFINED" ) ) ||
+                                    ( Request.QueryString["livelloDip"] != "" && !Request.QueryString["livelloDip"].ToUpper( ).Equals( "UNDEFINED" ) ) ||
+                                    Request.QueryString["stato"] != "" ||
+                                    Request.QueryString["data_da"] != "" || Request.QueryString["data_a"] != "" )
+                                {
+                                    <div class="block">
+                                        <div class="row">
+                                            <div class="col-sm-9">
+                                                Hai Cercato:
+                                                @if ( Request.QueryString["nome"] != "" && !Request.QueryString["nome"].ToUpper( ).Equals( "UNDEFINED" ) )
+                                                {<b>@Request.QueryString["nome"], </b>}
+                                                @if ( Request.QueryString["sede"] != "" && !Request.QueryString["sede"].ToUpper( ).Equals( "UNDEFINED" ) )
+                                                {<b>@Request.QueryString["sede"], </b>}
+                                                @if ( Request.QueryString["titolo"] != "" && !Request.QueryString["titolo"].ToUpper( ).Equals( "UNDEFINED" ) )
+                                                {<b>@Request.QueryString["titolo"], </b>}
+                                                @if ( Request.QueryString["stato"] != "" )
+                                                {<b>@Request.QueryString["stato"], </b>}
+                                                @if ( Request.QueryString["eccezione"] != "" && !Request.QueryString["eccezione"].ToUpper( ).Equals( "UNDEFINED" ) )
+                                                {<b>@Request.QueryString["eccezione"], </b>}
+                                                @if ( Request.QueryString["data_da"] != "" && Request.QueryString["data_a"] == "" )
+                                                {<b>@Request.QueryString["data_da"] - @DateTime.Now.ToShortDateString( ), </b>}
+                                                @if ( Request.QueryString["data_da"] != "" && Request.QueryString["data_a"] != "" )
+                                                {<b>@Request.QueryString["data_da"] - @Request.QueryString["data_a"], </b>}
+                                                @if ( Request.QueryString["livelloDip"] != "" && !Request.QueryString["livelloDip"].ToUpper( ).Equals( "UNDEFINED" ) )
+                                                {<b>dipendenti di livello @Request.QueryString["livelloDip"]</b>}
+                                            </div>
+                                            <div class="col-sm-3">
+                                                <a href="#" onclick="$(':text').val('');$(':input,select option').removeAttr('checked').removeAttr('selected');$('#btnFilter').attr('disabled', 'disabled');" data-reset="/ApprovazioneProduzione/GetRichiesteAttProduzione" data-parentdiv="daapprovare" data-resetelements="my-block,my-block2,my-block3,my-block4">TORNA ALL'ELENCO</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                                <table id="tabapp" class="js-table-sections table " role="grid">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 5%;"></th>
+                                            <th style="width: 5%;"></th>
+                                            <th style="width: 20%;"></th>
+                                            <th style="width: 25%;"></th>
+                                            <th style="width: 25%;"></th>
+                                            <th style="width: 20%;"></th>
+                                        </tr>
+                                    </thead>
+
+                                    @if ( Model.elencoProfilieSedi != null && Model.elencoProfilieSedi.elencoSediEccezioni.Count > 0
+                            && ( ragg.IdRaggruppamento == 0 || Model.elencoProfilieSedi.elencoSediEccezioni.Any( x => x.eccezionidaValidare.Any( z => z.IdRaggruppamento == ragg.IdRaggruppamento ) ) ) )
+                                    {
+                                        int sediVisualizzate = 0;
+                                        //per ogni sede nel tab
+                                        foreach ( daApprovareModel.sedegappAbilitata SedeAbil in Model.elencoProfilieSedi.elencoSediEccezioni.Where( f => f.Accesso_in_scrittura ) )
+                                        {
+                                            if ( ragg.IdRaggruppamento == 0 && SedeAbil.eccezionidaValidare.Count( ) == 0 )
+                                            {
+                                                continue;
+                                            }
+                                            if ( ragg.IdRaggruppamento == 1 && SedeAbil.eccezionidaValidare.Where( x => x.IsUrgent == true ).Count( ) == 0 )
+                                            {
+                                                continue;
+                                            }
+                                            if ( ragg.IdRaggruppamento == 2 && SedeAbil.eccezionidaValidare.Where( x => x.IsOverdue == true ).Count( ) == 0 )
+                                            {
+                                                continue;
+                                            }
+                                            if ( ragg.IdRaggruppamento == 3 && SedeAbil.eccezionidaValidare.Where( x => x.IsUrgent == false && x.IsOverdue == false ).Count( ) == 0 )
+                                            {
+                                                continue;
+                                            }
+                                            sediVisualizzate++;
+
+                                            //intestazione sede + totale richieste
+                                            <tbody class="@(Model.elencoProfilieSedi.elencoSediEccezioni.Count == 1 ? "js-table-sections-header open" : "js-table-sections-header")">
+                                                <tr role="row" tabindex="@(sediVisualizzate == 1 ? "0" : "-1")" aria-label="Per la sede @SedeAbil.Codice_sede_gapp, hai @SedeAbil.eccezionidaValidare.Count() richieste da validare" aria-expanded="false">
+                                                    <td @*onclick="$(this).closest('tbody').toggleClass('open')"*@ class="text-center">
+                                                        <i class="fa fa-angle-right"></i>
+                                                    </td>
+                                                    <td colspan="3" style="font-size:14px;" @*onclick="$(this).closest('tbody').toggleClass('open')"*@>
+                                                        <span class="text-gray-darker"
+                                                              data-rep-desc="@SedeAbil.RepartoDescrizione"
+                                                              data-rep-cod="@SedeAbil.RepartoCodice">
+                                                            <b>@SedeAbil.Codice_sede_gapp.ToUpper( ) </b>- @CommonHelper.ToTitleCase( SedeAbil.Descrittiva_sede_gapp )
+                                                        </span>
+                                                        @if ( SedeAbil.RepartoCodice != "00" )
+                                                        {
+                                                            <br />
+                                                            <em style="font-size:80%">@SedeAbil.RepartoDescrizione</em>
+                                                        }
+                                                    </td>
+
+                                                    <td colspan="2" class="text-right">
+                                                        @{
+                                                            int r = 0;
+                                                            if ( ragg.IdRaggruppamento == 0 )
+                                                            {
+                                                                r = SedeAbil.eccezionidaValidare.Count( );
+                                                            }
+                                                            else
+                                                            {
+                                                                r = SedeAbil.eccezionidaValidare
+                                                                .Where( d => ragg.IdRaggruppamento == 0 ||
+                                                                     ( ragg.IdRaggruppamento == 1 && d.IsUrgent == true ) ||
+                                                                     ( ragg.IdRaggruppamento == 2 && d.IsOverdue == true ) ||
+                                                                     ( ragg.IdRaggruppamento == 3 && d.IsOverdue == false && d.IsUrgent == false )
+                                                                    ).Count( );
+                                                            }
+                                                        }
+                                                        <span class="text-primary totale-rich" style="font-size: 12px; font-weight: bold;">
+                                                            @r.ToString( ) richiest@(r == 1 ? "a" : "e")
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+
+                                            <tbody class="tbodydata">
+                                                <tr>
+                                                    <td colspan="6">
+                                                        <table id="tabappData" class="js-table-sections table " role="grid">
+                                                            @{
+                                                                var raggPerData = SedeAbil.eccezionidaValidare.Where( d => ragg.IdRaggruppamento == 0 ||
+                                                                     ( ragg.IdRaggruppamento == 1 && d.IsUrgent == true ) ||
+                                                                     ( ragg.IdRaggruppamento == 2 && d.IsOverdue == true ) ||
+                                                                     ( ragg.IdRaggruppamento == 3 && d.IsOverdue == false && d.IsUrgent == false )
+                                                                   ).GroupBy( x => x.DataRichiesta );
+
+                                                                foreach ( var itemData in raggPerData )
+                                                                {
+                                                                    <tbody class="js-table-sections-header">
+                                                                        <tr role="row" tabindex="0" aria-label="Per la data di @itemData.Key.ToString("d MMMM yyyy"), hai @itemData.Count() richieste da validare" aria-expanded="false" onfocus="onFocusRow(this)">
+                                                                            <td class="text-center" style="width:5%;">
+                                                                                <i class="fa fa-angle-right"></i>
+                                                                            </td>
+                                                                            <td colspan="3" style="font-size:14px;">
+                                                                                <span class="text-gray-darker">@itemData.Key.ToString( "d MMMM yyyy" )</span>
+                                                                            </td>
+
+                                                                            <td colspan="2" class="text-right td-num-ragg-appr">
+                                                                                <span class="text-primary totale-rich" style="font-size: 12px; font-weight: bold;">@itemData.Count( ) richiest@(@itemData.Count( ) == 1 ? "a" : "e")</span>
+                                                                            </td>
+
+                                                                            <td colspan="2" class="text-right td-button-ragg-appr">
+                                                                                <button class="pad6 button-approva-turno btn btn-xs btn-default button-ragg-appr" type="submit" role="link" tabindex="-1" aria-label="Approva tutte le richieste per il giorno @(itemData.Key.ToString("d MMMM yyyy"))">
+                                                                                    Approva tutti
+                                                                                </button>
+                                                                                <button class="pad6 btn button-rifiuta-turno btn-xs btn-default button-ragg-appr" type="submit" role="link" tabindex="-1" aria-label="Approva tutte le richieste per il giorno @(itemData.Key.ToString("d MMMM yyyy"))">
+                                                                                    Rifiuta tutti
+                                                                                </button>
+                                                                            </td>
+
+                                                                        </tr>
+                                                                    </tbody>
+
+                                                                    <tbody class="tbodydata body-stripes">
+
+                                                                        @{
+                                                                            var raggMatr = itemData.GroupBy( x => x.matricola );
+
+                                                                            foreach ( var itemMatr in raggMatr )
+                                                                            {
+                                                                                <tr role="row" onfocus="onFocusRow(this)">
+                                                                                    <td colspan="6">
+                                                                                        <div class="row">
+                                                                                            <div class="col-sm-4">
+                                                                                                <div class="widget-profile-info">
+                                                                                                    <div class="profile-picture">
+                                                                                                        <img style="width: 45px; height: 45px;"
+                                                                                                             src="@CommonHelper.GetUrlFoto(itemMatr.Key)" />
+                                                                                                    </div>
+                                                                                                    <a class="text-primary matricola-nome" href="javascript:ShowPopupBoss('@("0"+itemMatr.Key)','@itemData.Key.ToString("dd/MM/yyyy")','@itemMatr.First().dipendente.nome.Trim().ToUpper() @itemMatr.First().dipendente.cognome.Trim().ToUpper()','1')">
+                                                                                                        @CommonHelper.ToTitleCase( itemMatr.First( ).dipendente.nome ) @CommonHelper.ToTitleCase( itemMatr.First( ).dipendente.cognome )
+                                                                                                    </a>
+                                                                                                    @{
+                                                                                                        var eccVis = Model.elencoProfilieSedi.EccVisualizzate.Where( i => i.Matricola.Equals( itemMatr.Key ) && i.Data.Equals( itemData.Key ) ).FirstOrDefault( );
+                                                                                                        if ( eccVis != null && eccVis.Visualizzato )
+                                                                                                        {
+                                                                                                            <div title="VISUALIZZATO" style="background-color: #eeeeee;">
+                                                                                                                <span style="font-weight: 500;font-size: 9px;color:#000000;">VISUALIZZATO</span>
+                                                                                                            </div>
+                                                                                                        }
+                                                                                                    }
+                                                                                                </div>
+                                                                                                <div>
+                                                                                                    <button class="pad6 button-approva-matricola btn btn-xs btn-default button-ragg-appr" type="submit" aria-label="Approva tutte le richieste di @(itemMatr.First().dipendente.nome) @(itemMatr.First().dipendente.cognome)">
+                                                                                                        Approva tutti
+                                                                                                    </button>
+                                                                                                    <button class="pad6 btn button-rifiuta-matricola btn-xs btn-default button-ragg-appr" type="submit" aria-label="Approva tutte le richieste di @(itemMatr.First().dipendente.nome) @(itemMatr.First().dipendente.cognome)">
+                                                                                                        Rifiuta tutti
+                                                                                                    </button>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            <div class="col-sm-8">
+                                                                                                <table class="js-table-sections table table-hover">
+                                                                                                    @foreach ( var item in itemMatr )
+                                                                                                    {
+                                                                                                        EccezioneApprovatoreVM vm = new EccezioneApprovatoreVM( )
+                                                                                                        {
+                                                                                                            Eccezione = item ,
+                                                                                                            Visualizzato = false ,
+                                                                                                            attivitaCeiton = CeitonHelper.GetAttivitaCeiton( item.IdRichiestaPadre )
+                                                                                                        };
+
+                                                                                                        if ( Model.elencoProfilieSedi.EccVisualizzate != null )
+                                                                                                        {
+                                                                                                            var myItem = Model.elencoProfilieSedi.EccVisualizzate.Where( i => i.Matricola.Equals( item.matricola ) && i.Data.Equals( item.dataCompleta ) ).FirstOrDefault( );
+
+                                                                                                            if ( myItem != null )
+                                                                                                            {
+                                                                                                                vm.Visualizzato = myItem.Visualizzato;
+                                                                                                            }
+                                                                                                        }
+
+                                                                                                        @Html.Partial( "~/Views/ApprovazioneProduzione/subpartial/_TRdaapprovare3.cshtml" , vm )
+                                                                                                    }
+                                                                                                </table>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </td>
+                                                                                </tr>
+                                                                            }
+                                                                        }
+                                                                    </tbody>
+                                                                }
+                                                            }
+                                                        </table>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        }
+                                        if ( sediVisualizzate == 0 )
+                                        {
+                                            <tbody>
+                                                @Html.Partial( "_nodati" )
+                                            </tbody>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tbody>
+                                            @Html.Partial( "_nodati" )
+                                        </tbody>
+                                    }
+                                </table>
+                            </div>
+
+                            @if ( Model.elencoProfilieSedi != null && Model.elencoProfilieSedi.FrecciaVisibile )
+                            {
+                                <div class="block-content block-content-full text-center">
+                                    <a href="/Responsabile/totaledaapprovare"><i class="si si-arrow-right fa-2x text-info"></i></a>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+

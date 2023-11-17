@@ -1,0 +1,106 @@
+﻿@model List<myRai.Controllers.CeitonGraph>
+
+
+<section class="panel">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+        </div>
+        <h2 class="panel-title">Richieste per ora</h2>
+    </header>
+    <div class="panel-body">
+        <div id="wait-req-hour" class="text-center" style="display:none;">
+            <i class="fa fa-refresh fa-spin" style="font-size: 22px; color: #ebebeb;"></i>
+        </div>
+        <div id="content-req-hour">
+            <div class="row">
+                <div class="col-sm-9 text-center">
+                    <div class="input-group mb-md">
+                        <span class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                        <input class="js-datetimepicker form-control" data-format="DD/MM/YYYY" data-locale="it" type="text" id="dataCheck" name="dataCheck" value="@(Model.First().Date.ToString("dd/MM/yyyy"))" placeholder="">
+                    </div>
+                </div>
+                <div class="col-sm-3">
+                    <button class="btn btn-action-icon " onclick="UpdateChartHour()"><i class="fa fa-refresh"></i></button>
+                </div>
+            </div>
+            <div class="row push-10 push-10-t">
+                <div class="col-sm-2">
+                    <div class="rule rule-a"></div>
+                </div>
+                <div class="col-sm-4">
+                    <label>Numero richieste</label>
+                </div>
+
+                <div class="col-sm-2">
+                    <div class="rule rule-b"></div>
+                </div>
+                <div class="col-sm-4">
+                    <label>Numero errori</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12 text-center">
+                    <div id="chart-req-hour" style="width:100%;margin-bottom:10px;" class="ct-chart ct-perfect-fourth ct-golden-section">
+                        @*...CHART*@
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<script type="text/javascript">
+    InitDatePicker();
+
+    var labelsGG = [];
+    var serieReqGG = [];
+    var serieErroriGG = [];
+    var labelSerieGG = [];
+    @{
+        foreach (var day in Model)
+        {
+            <text>labelsGG.push('@(day.Label)');
+    serieReqGG.push(@(day.RichiesteTOT));
+    serieErroriGG.push(@(day.RichiesteErrori));
+    labelSerieGG.push('Orario: @(day.Label)<br>Richieste: @(day.RichiesteTOT.ToString())<br>Errori: @(day.RichiesteErrori.ToString())')</text>
+        }
+    }
+
+    var chart2 = new Chartist.Line('#chart-req-hour', {
+        labels: labelsGG,
+        series: [{ name: 'Richieste', data: serieReqGG }, { name: 'Errori', data: serieErroriGG }]
+    }, {
+        fullWidth: true,
+        chartPadding: { right: 10 }
+    }
+        );
+
+
+    var $chartHour = $('#chart-req-hour');
+
+    var $toolTipHour = $chartHour
+				.append('<div class="tooltip tooltip-hour" style="z-index:99;"></div>')
+				.find('.tooltip-hour')
+				.hide();
+
+    $chartHour.on('mouseenter', '.ct-point', function () {
+            var $point = $(this),
+                value = $point.attr('ct:value'),
+                seriesName = $point.parent().attr('ct:series-name');
+
+            var index = $point.parent().find('.ct-point').index($point);
+
+            $toolTipHour.html(labelSerieGG[index]).show();
+        });
+
+    $chartHour.on('mouseleave', '.ct-point', function () {
+        $toolTipHour.hide();
+        });
+
+    $chartHour.on('mousemove', function (event) {
+        $toolTipHour.css({
+            left: (event.offsetX || event.originalEvent.layerX) - $toolTipHour.width() / 2 - 10,
+            top: (event.offsetY || event.originalEvent.layerY) - $toolTipHour.height() - 40
+            });
+        });
+</script>

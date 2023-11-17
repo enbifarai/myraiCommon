@@ -1,0 +1,609 @@
+﻿@using System.Web.Optimization
+@using myRaiHelper
+<!DOCTYPE html>
+<html class="fixed sidebar-left-xs" lang="it">
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+    <title>@ViewBag.Title</title>
+
+    <meta name="description" content="myRai">
+    <meta name="author" content="">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="shortcut icon" href="~/assets/img/favicons/favicon.png">
+    <link rel="icon" type="image/png" href="~/assets/img/favicons/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="~/assets/img/favicons/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="~/assets/img/favicons/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/png" href="~/assets/img/favicons/favicon-160x160.png" sizes="160x160">
+    <link rel="icon" type="image/png" href="~/assets/img/favicons/favicon-192x192.png" sizes="192x192">
+    <link rel="apple-touch-icon" sizes="57x57" href="~/assets/img/favicons/apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="~/assets/img/favicons/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="~/assets/img/favicons/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="~/assets/img/favicons/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="~/assets/img/favicons/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="~/assets/img/favicons/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="~/assets/img/favicons/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="~/assets/img/favicons/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="~/assets/img/favicons/apple-touch-icon-180x180.png">
+
+    <!-- Fine Icone -->
+    <!-- Fogli di stile -->
+    <!-- Web fonts -->
+
+    @Styles.Render( "~/assets/css/stylesPorto" )  @*<-------------- BUNDLE CSS*@
+    @Html.TryAction( "RenderCSS" )
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
+
+    @{
+        string[] testoPrivacy = myRaiHelper.CommonHelper.GetParametri<string>( myRaiHelper.EnumParametriSistema.TestoPrivacyGenerale );
+        string tema = myRaiHelper.CommonHelper.GetTema( ( myRaiHelper.CommonHelper.GetCurrentUserMatricola( ) ) );
+
+        if ( tema != "" )
+        {
+            string s = "/assets/stylesheets/skins/" + tema + ".css";
+            <link href="@s" rel="stylesheet">
+            string s2 = "/assets/stylesheets/skins/" + tema + "V2.css";
+            <link href="@s2" rel="stylesheet">
+        }
+        else
+        {
+            string s = "/assets/stylesheets/skins/green.css";
+            <link href="@s" rel="stylesheet">
+            string s2 = "/assets/stylesheets/skins/greenV2.css";
+            <link href="@s2" rel="stylesheet">
+        }
+    }
+
+    @RenderSection( "aftercss" , false )
+
+    @if (!System.Diagnostics.Debugger.IsAttached && myRaiHelper.CommonHelper.IsProduzione( ) )
+    {
+        <script src="https://d16ahjtmf9d1au.cloudfront.net/inject.bundle.js" async data-id="ToyboxSnippet" data-token="wVzcEMove57N"></script>
+    }
+</head>
+
+@{
+    string StaiInProd = "";
+    try
+    {
+        StaiInProd = System.Diagnostics.Debugger.IsAttached && System.Configuration.ConfigurationManager.ConnectionStrings["digiGappEntities2"].ConnectionString.ToLower( ).Contains( "zto" ) ? "background-color:red" : "";
+    }
+    catch
+    {
+
+    }
+}
+<body style="@StaiInProd" class="rai-prevent-modal-open">
+    <div id="page-loaderR"><span class="loaderR"><span class="loader-innerR">S</span></span></div>
+    <section class="body">
+        @Html.Partial("../Shared/header2", new myRaiCommonModel.NotifichePopupModel(myRaiHelper.CommonHelper.GetCurrentUserMatricola()))
+        <div class="inner-wrapper">
+            @Html.Partial("../Shared/sidebar", myRaiHelper.UtenteHelper.getSidebarModel())
+
+            @RenderBody()
+
+        </div>
+
+        <aside id="sidebar-right" class="sidebar-right">
+            <div class="nano has-scrollbar">
+                <div class="nano-content" tabindex="0" style="right: -17px;">
+                </div>
+            </div>
+            <div class="nano-pane" style="opacity: 1; visibility: visible;">
+                <div class="nano-slider" style="height: 583px; transform: translate(0px, 0px);"></div>
+            </div>
+        </aside>
+    </section>
+
+    @if (myRaiHelper.CommonHelper.GetCurrentUsername() != User.Identity.Name)
+    {
+        <div class="row">
+            <div class="col-sm-12 bottom-matr">
+                PER RAGIONI TECNICHE STAI SIMULANDO LA MATRICOLA @myRaiHelper.CommonHelper.GetCurrentUsername()
+            </div>
+        </div>
+    }
+    <div class="modal right fade" id="modal-help" role="dialog" aria-hidden="true" style="display: none;"></div>
+
+    <div class="modal right fade" id="external-url" role="dialog" aria-hidden="true" style="display: none;">
+
+        <div class="modal-dialog modal-dialog-popin">
+
+            <div class="modal-content height100">
+
+                <div class="block block-themed block-transparent remove-margin-b">
+                    <div class="block-header bg-cdf" style="height: 58px;">
+
+                        <h4 id="title-url" class="lead"
+                            style="float: left; margin: -3px 0 0 0px; font-size: 2.1rem; color: #fff;"></h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+
+                    </div>
+                    <div id="exturl" style="padding-left: 4px;">
+                        <iframe id="iframe-external" width="100%" height="100%" style="width: 100%; height: 100%; border: none"></iframe>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <div class="modal fade right" id="modal-privacy-general" data-backdrop="static" data-keyboard="false" tabindex="-1" role="dialog" aria-hidden="true"
+         style="width: 600px; display: none;">
+
+        <div class="modal-dialog modal-dialog-popin">
+
+            <div class="modal-content height100">
+
+                <div class="block block-themed block-transparent remove-margin-b">
+                    <div class="block-header bg-primary header_fixed" style="height: 58px;">
+
+                        <h4 class="lead" style="float: left; margin: -3px 0 0 0px; font-size: 2.1rem; color: #fff;">
+                            @testoPrivacy[0]
+                        </h4>
+                    </div>
+                    <div class="tab-content text_scroll " id="tab_content_policy">
+                    </div>
+
+                </div>
+
+                <div class="row " style="padding: 40px;">
+                    <label class='css-input css-checkbox css-checkbox-rounded css-checkbox-sm css-checkbox-info' style="font-size: 13px;"><input class='seltutti' type='checkbox' id='checkPolicy' onclick='selPolicy()'>   <span></span> Ho preso visione </label>
+                </div>
+                <div class="text-center">
+                    @{
+                        <button id="accept_privacy-general" class="btn btn-lg btn-primary" disabled type="button" onclick="PrendiVisone();">Salva</button>
+                        <input type="hidden" name="id_visione" id="id_visione" />
+                    }
+                </div>
+                <br>
+                <br>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="modal right fade" id="dettaglio-eccezione-modal" role="dialog" aria-hidden="true" style="display: none;">
+        <input type="hidden" id="idecc" />
+        <input type="hidden" id="idecc-presel" />
+
+
+        <div class="modal-dialog modal-dialog-popin">
+
+            <div class="modal-content height100">
+
+                <div class="block block-themed block-transparent remove-margin-b">
+                    <div class="block-header bg-cdf" style="height: 58px;position: fixed;width: 100%;z-index: 2000;">
+                        <ul class="block-options visible-xs">
+                            <li>
+                                <button data-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+                            </li>
+                        </ul>
+                        <h4 id="ecc-codice" class="lead"
+                            style="float: left; margin: -3px 0 0 0px; font-size: 2.1rem; color: #fff;">
+                            Eccezione
+                        </h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+
+                    </div>
+                    <div id="eccezione-cont" style="padding-left: 40px;padding-top:25px">
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+
+    @Html.RenderModal("rai-search-select", myRaiHelper.ModalPosition.Right, myRaiHelper.ModalSize.Half)
+
+    @Html.RenderModal("global-anag-dip", myRaiHelper.ModalPosition.Right, myRaiHelper.ModalSize.Half)
+
+    @Html.RenderModal("dettaglio-richiesta", size: myRaiHelper.ModalSize.Full)
+    @Html.RenderModal("viewerDoc", size: myRaiHelper.ModalSize.Half)
+    @{
+        RaiAttribute rAttr = new RaiAttribute("class", "DocDem");
+
+        RaiAttributes listRattr = new RaiAttributes();
+        listRattr.Add(rAttr);
+    }
+
+    @Html.RenderModal("inserimentoDocDem", size: myRaiHelper.ModalSize.Full, modalContentAttributes: listRattr)
+    @Html.RenderModal("modificaRichiestaDematerializzazione", size: myRaiHelper.ModalSize.Full, modalContentAttributes: listRattr)
+    @Html.RenderModal("viewer-temp-allegati", size: myRaiHelper.ModalSize.Half, modalContentAttributes: listRattr)
+    <!-- Modal -->
+    <div class="modal right fade" id="modal-ricerca-dipendente" tabindex="-1" role="dialog" aria-labelledby="myModalLabel2">
+        <div class="modal-dialog modal-dialog-popin" role="document">
+            <div class="modal-content">
+                <div data-modal-wrapper="">
+                    <div class="block block-transparent no-margin-bottom">
+                        <div class="block-header">
+                            <label class="modal-title">Cerca dipendente</label>
+                            <div class="block-options">
+                                <button data-dismiss="modal" class="btn btn-action-icon"><i class="glyphicon glyphicon-remove"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="block-content" id="modal-ricerca-dipendente-body" style="min-height:93%;" data-isdirty="false">
+
+                        </div>
+                    </div>
+                </div>
+            </div><!-- modal-content -->
+        </div><!-- modal-dialog -->
+    </div><!-- modal -->
+
+    <style>
+        #modal-privacy-general .tabs-left .nav-tabs > li a, #modal-privacy .tabs-left .nav-tabs > li a:hover {
+            border-bottom: 1px solid #eee !important;
+            border-top: 1px solid #eee !important;
+        }
+
+        #modal-privacy-general .nav-tabs {
+            border-bottom: 1px solid #eee !important;
+            border-right: 1px solid #eee !important;
+        }
+
+        #modal-privacy-general .tabs-left .nav-tabs > li {
+            margin-right: -2px;
+        }
+
+        #modal-privacy-general .tabs-left .tab-content {
+            border-radius: 0;
+        }
+
+        #modal-privacy-general .block.block-transparent {
+            overflow: hidden;
+        }
+
+        #modal-privacy-general .tab-content {
+            padding: 40px;
+        }
+
+        .header_fixed {
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            width: 100%;
+        }
+
+        .text_scroll {
+            padding: 16px;
+            margin-top: 60px;
+        }
+    </style>
+
+
+</body>
+
+@Scripts.Render("~/assets/javascriptPorto")
+<script src="@Url.Content("~/assets/js/plugins/jquery-form/jquery.form.js")"></script>
+<script src="@Url.Content("~/assets/js/jquery.unobtrusive-ajax.js")"></script>
+<script src="@Url.Content("~/assets/js/plugins/flot/jquery.flot.js")"></script>
+<script src="@Url.Content("~/assets/js/plugins/flot/jquery.flot.pie.js")"></script>
+<script src="@Url.Content("~/assets/js/plugins/flot/jquery.flot.resize.js")"></script>
+<script src="@Url.Content("~/assets/js/plugins/flot/jquery.flot.stack.js")"></script>
+<script src="@Url.Content("~/assets/js/plugins/table-scroll/table-scroll.min.js")"></script>
+<script src="@Url.Content("~/assets/vendor/liquid-meter/liquid.meter.js")"></script>
+<script src="@Url.Content("~/assets/vendor/gauge/gauge.min.js")"></script>
+<script src="@Url.Content("~/assets/vendor/snap.svg/snap.svg.js")"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
+@Html.TryAction("RenderScript")
+
+<script>
+    $.ajaxSetup({
+        cache: false
+    });
+</script>
+@RenderSection("afterjs", false)
+
+
+<script src="/home/getjs"></script>@* <-------  Validazione Parametri Generici*@
+
+@{ var policy = myRaiHelper.CommonHelper.GetPolicy();
+    <script>
+
+        var testo=unEntity('@policy.Testo');
+        if (testo != "") {
+            $('#modal-privacy-general').modal('show');
+            $('#modal-privacy-general').modal({ backdrop: 'static', keyboard: false })
+            $('#tab_content_policy').append(testo);
+            $("#id_visione").val(@policy.Id_RaiPlacePolicy);
+        }
+        function unEntity(str) {
+            return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+        }
+        function selPolicy()
+        {
+            if ($("#checkPolicy")[0].checked) {
+                $("#accept_privacy-general")[0].disabled = false;
+            } else {
+                $("#accept_privacy-general")[0].disabled = true;
+            }
+        }
+        function PrendiVisone()
+        {
+            $.ajax({
+                type: 'GET',
+                url: "/ajax/PrendiVisione",
+                dataType: "json",
+                data: { IdPolicy: $("#id_visione").val() },
+                cache: false,
+                success: function (data) {
+
+                    if (data.result == "OK") {
+                        $('#modal-privacy-general').modal('hide');
+                    }
+                    else {
+                        swal(
+                           'Errore',
+                           data.result,
+                           'error'
+                         );
+                    }
+                },
+                error: function (a, b, c) { }
+            });
+        }
+    </script>
+}
+
+<script language="javascript">
+    $(document).ready(function () {
+        Handlers();
+        $("aside")
+       .find("a[href='" + location.pathname + "']").addClass("nav-active")
+       .closest("li.nav-parent").addClass("nav-expanded").parent().closest("li.nav-parent").addClass("nav-expanded");
+
+
+
+        $(document).ajaxStop(function () {
+            // attiva introjs tour su scrivania demo
+            // ajaxCallsCompleted();
+        });
+
+        if ($.UIRai.isVisibleJunosMenu()) { $.UIRai.removeJunosMenu(); }
+
+        $("a[data-refreshurl],button[data-refreshurl]").click();
+        console.log('done');
+        UIRai.initHelpers('notify');
+        UIRai.initHelpers('strumenti-table');
+        UIRai.initHelpers('datetimepicker');
+        UIRai.initHelpers('select2');
+        //Stampa chiamata funzione JS da tabella SceltaPercorso
+
+            //wizard bootstrap
+            $('#rootwizard').bootstrapWizard({
+                onTabShow: function (tab, navigation, index) {
+                    var $total = navigation.find('li').length;
+                    var $current = index + 1;
+                    var $percent = ($current / $total) * 100;
+                    $('#rootwizard').find('.bar').css({ width: $percent + '%' });
+                }
+            });
+            $('#rootwizard .finish').click(function () {
+                //alert('Finished!, Starting over!');
+                $('#rootwizard').find("a[href*='tab1']").trigger('click');
+            });
+            //fineee
+
+            //***********fine***********
+
+        });
+
+
+        function exitfromJunos() {
+            window.location.assign("/dana-na/auth/logout.cgi");
+        }
+        var DataUltimaConvalida = '@Session["DatePerEvidenze"]';
+
+        /*
+        * Translated default messages for the jQuery validation plugin.
+        * Locale: IT (Italian; Italiano)
+        */
+        $.extend($.validator.messages, {
+            required: "Campo obbligatorio",
+            remote: "Controlla questo campo",
+            email: "Inserisci un indirizzo email valido",
+            url: "Inserisci un indirizzo web valido",
+            date: "Inserisci una data valida",
+            dateISO: "Inserisci una data valida (ISO)",
+            number: "Inserisci un numero valido",
+            digits: "Inserisci solo numeri",
+            creditcard: "Inserisci un numero di carta di credito valido",
+            equalTo: "Il valore non corrisponde",
+            extension: "Inserisci un valore con un&apos;estensione valida",
+            maxlength: $.validator.format("Non inserire pi&ugrave; di {0} caratteri"),
+            minlength: $.validator.format("Inserisci almeno {0} caratteri"),
+            rangelength: $.validator.format("Inserisci un valore compreso tra {0} e {1} caratteri"),
+            range: $.validator.format("Inserisci un valore compreso tra {0} e {1}"),
+            max: $.validator.format("Inserisci un valore minore o uguale a {0}"),
+            min: $.validator.format("Inserisci un valore maggiore o uguale a {0}"),
+            nifES: "Inserisci un NIF valido",
+            nieES: "Inserisci un NIE valido",
+            cifES: "Inserisci un CIF valido",
+            currency: "Inserisci una valuta valida"
+    });
+
+    $('#moduloDetassazione').on('hidden.bs.modal', function () {
+        $("#DetassazioneContainerDiv").html('<div id="wait-detassazione" style="margin-top:50px;margin-left:55px"><i class="fa fa-refresh fa-spin" style="font-size: 22px; color: #aaa;margin-right:8px"></i> &nbsp;ATTENDERE... </div>');
+        $("#DetassazioneContainerDiv").load("/Scrivania/GetBoxDetassazione");
+    });
+
+    $('#modal-dettaglio-richiesta').on('hidden.bs.modal', function () {
+        $('#modal-dettaglio-richiesta-internal').html('');
+    });
+
+    $('#modal-modificaRichiestaDematerializzazione').on('hidden.bs.modal', function () {
+        $.ajax({
+            url: "/Dematerializzazione/AnnullaPresoInModifica",
+            type: "POST",
+            data: {},
+            contentType: "application/json; charset=utf-8",
+            dataType: 'html',
+            success: function (data) {
+            },
+            error: function (xhr, status) {
+            },
+            complete: function () {
+            }
+        });
+    });
+
+    $('#modal-inserimentoDocDem').on('hide.bs.modal', function () {
+        var modificato = $('#modal-inserimentoDocDem-internal').data('isDirty');
+        var isDirty = modificato == 'true';
+
+        var matricolaDestinatario = "";
+        matricolaDestinatario = $('#selMatricolaDestinatario').val();
+
+        if (matricolaDestinatario != "" &&
+            matricolaDestinatario != null &&
+            typeof matricolaDestinatario != "undefined") {
+            $('#MatricolaDestinatario').val(matricolaDestinatario);
+        }
+        
+        var formData = new FormData();
+
+        $('#import-data').html('');
+        $('#import-data').addClass('rai-loader');
+
+        var val = $('#tipologiaDocumentale').val();
+        val = $.trim(val);
+        val = val.toUpperCase();
+
+        var val2 = $('#tipodoc').val();
+        val2 = $.trim(val2);
+        val2 = val2.toUpperCase();
+
+        var idDoc = $('#btns-fase3-next').data('idDoc');
+        if (typeof (idDoc) == "undefined" || idDoc == null || idDoc == "") {
+            idDoc = 0;
+        }
+
+        var tipoWKF = $('#div-tipologiaDocumentale').data('tipo');
+
+        var incaricato = "";
+        var approvatore = "";
+        var approvatoreVisibile = $('#ApprovatoreVisibile').val();
+        var firmaVisibile = $('#FirmaVisibile').val();
+
+        if (approvatoreVisibile.toUpperCase() === "TRUE") {
+            approvatore = $('#selApprovatore').val();
+        }
+
+        if (firmaVisibile.toUpperCase() === "TRUE") {
+            incaricato = $('#incaricatoFirma').val();
+        }
+
+        var note = $('#Note').val();
+        var IdPersona = $('#IdPersona').val();
+        var Matricola = $('#Matricola').val();
+        var MatricolaDestinatario = $('#MatricolaDestinatario').val();
+        var IdPersonaDestinatario = $('#IdPersonaDestinatario').val();
+
+        formData.append('TipologiaDocumentale', val);
+        formData.append('TipologiaDocumento', val2);
+        formData.append('TipologiaWKF', tipoWKF);
+        formData.append('IncaricatoFirma', incaricato);
+        formData.append('MatricolaApprovatore', approvatore);
+        formData.append('Note', note);
+        formData.append('IdDocumento', idDoc);
+        formData.append('IdPersona', IdPersona);
+        formData.append('Matricola', Matricola);
+        formData.append('MatricolaDestinatario', MatricolaDestinatario);
+        formData.append('IdPersonaDestinatario', IdPersonaDestinatario);
+
+        var tempAll = '';
+
+        $('tr[id^="riga-allegato-"]').each(function () {
+            var id = $(this).data('id');
+            if (tempAll == '') {
+                tempAll = id;
+            }
+            else {
+                tempAll = tempAll + "," + id;
+            }
+        });
+
+        formData.append('Allegati', tempAll);
+        debugger;
+        // recupero dati nella view custom
+        var attrs = Dematerializzazione_GetCustomData();
+        formData.append('CustomAttrs', attrs);
+
+        if (isDirty) {
+            swal({
+                title: 'Vuoi salvare una bozza del documento?',
+                type: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sì',
+                cancelButtonText: 'No',
+                reverseButtons: true,
+                customClass: 'rai rai-confirm-cancel'
+            }).then(function () {
+
+                var request = new XMLHttpRequest();
+                request.onreadystatechange = function () {
+                    if (request.readyState == 4 && request.status == 200) {
+                        var data = $.parseJSON(request.responseText);
+                        if (data.success) {
+                            swal({
+                                title: 'Bozza salvata correttamente',
+                                type: 'success',
+                                showConfirmButton: true,
+                                confirmButtonText: 'Ok',
+                                customClass: 'rai'
+                            });
+
+                            var interfaccia = window.location.href;
+
+                            // se matricolaDestinatario è valorizzato allora è stata valorizzata la select di 
+                            // selezione utente destinatario, quindi siamo nella interfaccia InPartenza
+                            if (interfaccia.includes("InPartenza")) {
+                                Dematerializzazione_ReloadTabelleInPartenza(false);
+                            }
+                            else {
+                                RaiUpdateWidget('DematerializzazioneMieiDocumenti', '/Anagrafica/Load_DematerializzazioneMieiDocumenti', 'html', { m: Matricola }, false, HideLoading('DematerializzazioneMieiDocumenti'));
+                            }
+                        }
+                        else {
+                            OnFailure(data);
+                        }
+                    }
+                };
+
+                request.open('post', "/Dematerializzazione/SalvaComeBozza");
+                request.timeout = 45000;
+                request.send(formData);
+            });
+        }
+        else {
+            var interfaccia = window.location.href;
+
+            // se matricolaDestinatario è valorizzato allora è stata valorizzata la select di 
+            // selezione utente destinatario, quindi siamo nella interfaccia InPartenza
+            if (interfaccia.includes("InPartenza")) {
+                Dematerializzazione_ReloadTabelleInPartenza(false);
+            }
+            else {
+                RaiUpdateWidget('DematerializzazioneMieiDocumenti', '/Anagrafica/Load_DematerializzazioneMieiDocumenti', 'html', { m: Matricola }, false, HideLoading('DematerializzazioneMieiDocumenti'));
+            }
+        }
+    });
+
+    $('#modal-inserimentoDocDem').on('shown.bs.modal', function () {
+        $('#modal-inserimentoDocDem-internal').data('isDirty', 'false');
+    });
+</script>
+</html>

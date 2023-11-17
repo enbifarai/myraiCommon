@@ -1,0 +1,395 @@
+﻿@using myRaiHelper
+@using myRaiGestionale.Controllers
+@using myRaiCommonModel.Gestionale
+@model CessazioneModel
+
+
+<div class="rai-table-info">
+    <div class="row push-10">
+        <div class="col-sm-12">
+            <span>Motivo richiesta approfondimenti</span>
+        </div>
+        <div class="col-sm-12">
+            <label>@Model.Pratica.NOT_RICH_TESS_CONTR</label>
+        </div>
+    </div>
+    <div class="row push-10">
+        <div class="col-sm-12">
+            <span>Allegati pratica</span>
+        </div>
+        <div class="col-sm-12">
+            @if (Model.Allegati != null && Model.Allegati.Any())
+            {
+                foreach (var all in Model.Allegati)
+                {
+                    if (!all.IsExternal)
+                    {
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <a href="@Url.Action("GetDoc", "Cessazione", new { idDoc = all.ID_ALLEGATO })" title="@all.DES_ALLEGATO"><i class="fa fa-download"></i>&nbsp; @all.COD_TITLE</a>
+                        </div>
+                    </div>
+                    }
+                    else
+                    {
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <a href="@all.ExternalAction" title="@all.DES_ALLEGATO"><i class="fa fa-download"></i>&nbsp; @all.COD_TITLE</a>
+                            </div>
+                        </div>
+                    }
+                }
+            }
+            else
+            {
+                <span>-</span>
+            }
+        </div>
+    </div>
+</div>
+@{
+    var allTessContr = Model.DictAllegati[(int)IncStato.FileTessContr];
+}
+@using (Html.BeginForm("CaricamentoTessereContributive", "Cessazione", FormMethod.Post, new { id = "form-tess-contr" }))
+{
+    @Html.HiddenFor(x => x.Pratica.ID_DIPENDENTE)
+    using (Html.BeginBlock(BlockType.ContentTable, "Dati tessere contributive"))
+    {
+        if (Model.NotHasTessereContr || !Model.Pratica.DTA_ARR_TESS_CONTR.HasValue)
+        {
+            <div class="row push-10-t push-10">
+                <div class="col-sm-12">
+                    <div class="rai-checkbox">
+                        @if (Model.Pratica.DTA_ARR_TESS_CONTR.HasValue)
+                        {
+                            @Html.CheckBoxFor(m => m.NotHasTessereContr, new { id = "tess-has", disabled = "disabled" })
+                        }
+                        else
+                        {
+                            @Html.CheckBoxFor(m => m.NotHasTessereContr, new { id = "tess-has", onclick = "IncCheckTessHas()" })
+                        }
+                        <label for="tess-has">Documentazione completa</label>
+                    </div>
+                </div>
+            </div>
+        }
+        if (!Model.NotHasTessereContr || !Model.Pratica.DTA_ARR_TESS_CONTR.HasValue)
+        {
+            <div id="div-tess-contr" class="form-group">
+                @*<div class="row push-10">
+                        <div class="col-sm-12">
+                            @if (Model.Pratica.DTA_ARR_TESS_CONTR.HasValue)
+                            {
+                                @Html.LabelFor(x => x.Pratica.INFO_TESS_CONTR, "Anni riferimento", new { @class = "rai-caption" })
+                                <div class="input-group">
+                                    @Html.TextBoxFor(x => x.Pratica.INFO_TESS_CONTR, new { @class = "form-control", @readonly = "readonly" })
+                                    <div class="input-group-addon">
+                                        <i class="fa fa-lock"></i>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                @Html.LabelFor(x => x.Pratica.INFO_TESS_CONTR, "Anni riferimento", new { @class = "rai-caption" })
+                                <label class="rai-font-sm-neutral text-italic">Inserisci gli anni di riferimento separati da virgola</label>
+                                @Html.TextBoxFor(x => x.Pratica.INFO_TESS_CONTR, new { @class = "form-control", pattern = @"^[0-9]{4}(,[0-9]{4})+?$", required = "required" })
+                                @Html.ValidationMessageFor(m => m.Pratica.INFO_TESS_CONTR)
+                            }
+                        </div>
+                    </div>*@
+            </div>
+            if (!Model.Pratica.DTA_ARR_TESS_CONTR.HasValue || (allTessContr != null && allTessContr.Any()))
+            {
+                <div id="wdgt-allegati@((int)IncStato.FileTessContr)" class="bg-neutrals-xl-10" style="margin-left:-15px; margin-right:-15px; padding:10px 25px;@(Model.Pratica.DTA_ARR_TESS_CONTR.HasValue ? " margin-bottom:-15px;" : ""))">
+                    @if (allTessContr != null)
+                    {
+                        @Html.Partial("subpartial/widget_allegati", allTessContr)
+                    }
+                </div>
+            }
+        }
+    }
+
+    var allegatiMat = Model.DictAllegati[(int)IncStato.FileMat];
+
+    using (Html.BeginBlock(BlockType.ContentTable, "Dati dichiarazione maternità"))
+    {
+        if (Model.NotHasMaternita || !Model.Pratica.DTA_ARR_TESS_CONTR.HasValue)
+        {
+            <div class="row push-10-t push-10">
+                <div class="col-sm-12">
+                    <div class="rai-checkbox">
+                        @if (Model.Pratica.DTA_ARR_TESS_CONTR.HasValue)
+                        {
+                            @Html.CheckBoxFor(m => m.NotHasMaternita, new { id = "mat-has", disabled = "disabled" })
+                        }
+                        else
+                        {
+                            @Html.CheckBoxFor(m => m.NotHasMaternita, new { id = "mat-has", onclick = "IncCheckMatHas()" })
+                        }
+                        <label for="mat-has">Documentazione completa</label>
+                    </div>
+                </div>
+            </div>
+        }
+        if (!Model.NotHasMaternita || !Model.Pratica.DTA_ARR_TESS_CONTR.HasValue)
+        {
+            <div id="div-mat" class="form-group">
+                <div id="richDoneMat" style="@(!Model.Pratica.DTA_RICH_MATCON.HasValue ? "display:none;" : "")">
+                    <div class="row">
+                        <div class="col-sm-6 push-10">
+                            @Html.LabelFor(m => m.Pratica.DTA_RICH_MATCON, "Data richiesta approfondimenti al dipendente", new { @class = "text-italic" })
+                            <div class="input-group">
+                                @Html.TextBoxFor(m => m.Pratica.DTA_RICH_MATCON, new { @class = "form-control", @readonly = "readonly" })
+                                <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 push-10">
+                            @Html.LabelFor(m => m.Pratica.DTA_ARR_MATCON, "Data ricezione", new { @class = "text-italic" })
+                            <div class="input-group">
+                                @Html.TextBoxFor(m => m.Pratica.DTA_ARR_MATCON, new { @class = "form-control", @readonly = "readonly" })
+                                <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                    @if (!String.IsNullOrWhiteSpace(Model.Pratica.NOT_MATCON))
+                    {
+                        var obj = Newtonsoft.Json.JsonConvert.DeserializeObject<IncModuloMaternita>(Model.Pratica.NOT_MATCON);
+                        <div class="row push-5">
+                            <div class="col-sm-12">
+                                <a data-toggle="collapse" data-target="#infoMatCon" aria-expanded="false" class="collapsed">Visualizza dati dipendente <span class="fa fa-chevron-down"></span></a>
+                            </div>
+                        </div>
+                        <div class="collapse" id="infoMatCon" aria-expanded="false">
+                            <div class="rai-table-info">
+                                <div class="row push-5">
+                                    <div class="col-sm-12">
+                                        <label>Tipologia assenza</label>
+                                    </div>
+                                    <div class="col-sm-12">
+                                        @if (obj.TipoAssenza.Contains("AstensioneObbligatoria"))
+                                        {
+                                            <label for="rbObbl">Astensione obbligatoria</label><br />
+                                        }
+                                        @if (obj.TipoAssenza.Contains("AstensioneFacoltativa"))
+                                        {
+                                            <label for="rbObbl">Astensione facoltativa</label><br />
+                                        }
+                                        @if (obj.TipoAssenza.Contains("AspettativaMalattia"))
+                                        {
+                                            <label for="rbObbl">Astensione per malattia del bambino di età inferiore ai tre anni</label><br />
+                                        }
+                                    </div>
+                                </div>
+                                @if (obj.Figli != null && obj.Figli.Any())
+                                {
+                                    <div class="row push-5">
+                                        <div class="col-sm-12">
+                                            <table class="table rai-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="padding-left:0px;">Figlio</th>
+                                                        <th>Nascita</th>
+                                                        <th>Anno periodi assenza</th>
+                                                    </tr>
+                                                </thead>
+                                                @foreach (var item in obj.Figli)
+                                                {
+                                                    <tr>
+                                                        <td style="padding-left:0px;">@item.Nominativo</td>
+                                                        <td>@item.NascitaData.Value.ToString("dd/MM/yyyy")</td>
+                                                        <td>@String.Join(",", item.Anni)</td>
+                                                    </tr>
+                                                }
+                                            </table>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+                @if (!Model.Pratica.DTA_RICH_MATCON.HasValue)
+                {
+                    <div id="richMat">
+                        <div class="row">
+                            <div class="col-sm-12 push-10-t">
+                                <div class="rai-checkbox">
+                                    <input type="checkbox" id="cbRichMat" data-toggle="collapse" data-target="#div-notRichMat" aria-expanded="false" />
+                                    <label for="cbRichMat">Richiedi approfondimenti al dipendente</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="div-notRichMat" class="collapse @(Model.Pratica.DTA_RICH_MATCON.HasValue ? "in" : "")">
+                            <div class="row">
+                                @*<div class="col-sm-12 push-10">
+                                        <label class="rai-caption">Motivo<font color="#d2322d">*</font></label>
+                                        <textarea class="form-control" rows="5" id="notaRichMat"></textarea>
+                                    </div>*@
+                                <div class="col-sm-12 push-10">
+                                    <div class="rai-btn-fill">
+                                        <button class="btn rai-btn-small" onclick="IncTessContr(false, 'mat')">Richiedi</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                @*<div class="row push-10">
+                        <div class="col-sm-12">
+                            @if (Model.Pratica.DTA_ARR_TESS_CONTR.HasValue)
+                            {
+                                @Html.LabelFor(x => x.Pratica.INFO_MATCON, "Anni riferimento", new { @class = "rai-caption" })
+                                <div class="input-group">
+                                    @Html.TextBoxFor(x => x.Pratica.INFO_MATCON, new { @class = "form-control", @readonly = "readonly" })
+                                    <div class="input-group-addon">
+                                        <i class="fa fa-lock"></i>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                @Html.LabelFor(x => x.Pratica.INFO_MATCON, "Anni riferimento", new { @class = "rai-caption" })
+                                <label class="rai-font-sm-neutral text-italic">Inserisci gli anni di riferimento separati da virgola</label>
+                                @Html.TextBoxFor(x => x.Pratica.INFO_MATCON, new { @class = "form-control", pattern = @"^[0-9]{4}(,[0-9]{4})+?$", required = "required" })
+                                @Html.ValidationMessageFor(m => m.Pratica.INFO_MATCON)
+                            }
+                        </div>
+                    </div>*@
+            </div>
+            if (!Model.Pratica.DTA_ARR_TESS_CONTR.HasValue || (allegatiMat != null && allegatiMat.Any()))
+            {
+                <div id="wdgt-allegati@((int)IncStato.FileMat)" class="bg-neutrals-xl-10" style="margin-left:-15px; margin-right:-15px; padding:10px 25px;@(Model.Pratica.DTA_ARR_TESS_CONTR.HasValue ? " margin-bottom:-15px;" : ""))">
+                    @if (allegatiMat != null)
+                    {
+                        @Html.Partial("subpartial/widget_allegati", allegatiMat)
+                    }
+                </div>
+            }
+        }
+    }
+
+
+    var allegatiCambioQual = Model.DictAllegati[(int)IncStato.FileCambioQual];
+    using (Html.BeginBlock(BlockType.ContentTable, "Dati cambio qualifica"))
+    {
+        if (Model.NotHasCambioQualifica || !Model.Pratica.DTA_ARR_TESS_CONTR.HasValue)
+        {
+            <div class="row push-10-t push-10">
+                <div class="col-sm-12">
+                    <div class="rai-checkbox">
+                        @if (Model.Pratica.DTA_ARR_TESS_CONTR.HasValue)
+                        {
+                            @Html.CheckBoxFor(m => m.NotHasCambioQualifica, new { id = "qual-has", disabled = "disabled" })
+                        }
+                        else
+                        {
+                            @Html.CheckBoxFor(m => m.NotHasCambioQualifica, new { id = "qual-has", onclick = "IncCheckQualHas()" })
+                        }
+                        <label for="qual-has">Documentazione completa</label>
+                    </div>
+                </div>
+            </div>
+        }
+        if (!Model.NotHasCambioQualifica || !Model.Pratica.DTA_ARR_TESS_CONTR.HasValue)
+        {
+            if (!Model.Pratica.DTA_ARR_TESS_CONTR.HasValue || (allegatiCambioQual != null && allegatiCambioQual.Any()))
+            {
+                <div id="wdgt-allegati@((int)IncStato.FileCambioQual)" class="bg-neutrals-xl-10" style="margin-left:-15px; margin-right:-15px; padding:10px 25px;@(Model.Pratica.DTA_ARR_TESS_CONTR.HasValue ? " margin-bottom:-15px;" : ""))">
+                    @if (allegatiCambioQual != null)
+                    {
+                        @Html.Partial("subpartial/widget_allegati", allegatiCambioQual)
+                    }
+                </div>
+            }
+        }
+    }
+
+
+    if (!Model.Pratica.DTA_ARR_TESS_CONTR.HasValue)
+    {
+        <div class="row push-20-t">
+            <div class="col-sm-12 rai-btn-fill">
+                <button class="btn rai-btn-secondary " onclick="IncTessContr(false)">Salva in bozza</button>
+                <button class="btn rai-btn-primary " onclick="IncTessContr(true)">Conferma documentazione</button>
+            </div>
+        </div>
+    }
+}
+
+
+<script>
+    function IncCheckTessHas() {
+        if ($('#tess-has').prop('checked')) {
+            $('#div-tess-contr').addClass('disable');
+            $('#Pratica_INFO_TESS_CONTR').prop('disabled', true);
+            $('#wdgt-allegati@((int)IncStato.FileTessContr)').addClass('disable');
+            $('#Pratica_INFO_TESS_CONTR').val('');
+        }
+        else {
+            $('#div-tess-contr').removeClass('disable');
+            $('#Pratica_INFO_TESS_CONTR').prop('disabled', false);
+            $('#wdgt-allegati@((int)IncStato.FileTessContr)').removeClass('disable');
+        }
+    }
+    IncCheckTessHas();
+
+    function IncCheckMatHas() {
+        if ($('#mat-has').prop('checked')) {
+            $('#div-mat').addClass('disable');
+            $('#Pratica_INFO_MATCON').prop('disabled', true);
+            $('#wdgt-allegati@((int)IncStato.FileMat)').addClass('disable');
+            $('#Pratica_INFO_MATCON').val('');
+        }
+        else {
+            $('#div-mat').removeClass('disable');
+            $('#Pratica_INFO_MATCON').prop('disabled', false);
+            $('#wdgt-allegati@((int)IncStato.FileMat)').removeClass('disable');
+        }
+    }
+    IncCheckMatHas();
+
+    function IncCheckQualHas() {
+        if ($('#qual-has').prop('checked')) {
+            $('#div-qual').addClass('disable');
+            $('#wdgt-allegati@((int)IncStato.FileCambioQual)').addClass('disable');
+        }
+        else {
+            $('#div-qual').removeClass('disable');
+            $('#wdgt-allegati@((int)IncStato.FileCambioQual)').removeClass('disable');
+        }
+    }
+    IncCheckQualHas();
+</script>
+
+@if (!Model.Pratica.DTA_ARR_TESS_CONTR.HasValue)
+{
+    <script>
+        function IncObserveFiles() {
+            const config = { attributes: false, childList: true, subtree: true };
+            $('#tess-has').prop('disabled', $('#wdgt-allegati@((int)IncStato.FileTessContr) [data-allegato]').length > 0?true:false);
+            let tessContrObs = new MutationObserver(function () {
+                debugger
+                $('#tess-has').prop('disabled', $('#wdgt-allegati@((int)IncStato.FileTessContr) [data-allegato]').length > 0?true:false);
+            });
+            tessContrObs.observe($('#wdgt-allegati@((int)IncStato.FileTessContr)')[0], config);
+
+            $('#mat-has').prop('disabled', $('#wdgt-allegati@((int)IncStato.FileMat) [data-allegato]').length > 0);
+            let matObs = new MutationObserver(function () {
+                debugger
+                $('#mat-has').prop('disabled', $('#wdgt-allegati@((int)IncStato.FileMat) [data-allegato]').length > 0);
+            });
+            matObs.observe($('#wdgt-allegati@((int)IncStato.FileMat)')[0], config);
+
+            $('#qual-has').prop('disabled', $('#wdgt-allegati@((int)IncStato.FileCambioQual) [data-allegato]').length > 0);
+            let qualObs = new MutationObserver(function () {
+                debugger
+                $('#qual-has').prop('disabled', $('#wdgt-allegati@((int)IncStato.FileCambioQual) [data-allegato]').length > 0);
+            });
+            qualObs.observe($('#wdgt-allegati@((int)IncStato.FileCambioQual)')[0], config);
+        }
+        IncObserveFiles();
+
+
+    </script>
+}

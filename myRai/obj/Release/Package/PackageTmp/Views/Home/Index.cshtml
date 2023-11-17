@@ -1,0 +1,116 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@model myRaiCommonModel.ModelDash
+
+<!-- Icone -->
+@{
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+}
+
+<section role="main" class="content-body">
+    <!-- start: page -->
+    <!-- Main Container -->
+    <main id="main-container">
+        <div class="content">
+            <div class="row">
+                <div class="col-sm-8">
+                    @{bool GappChiuso = false;}
+                    @if (!myRaiHelper.UtenteHelper.GappChiuso())
+                    {
+                        @Html.Partial("../Tabelle/subpartial/inevidenza")
+                        if (myRaiHelper.UtenteHelper.GetQuadratura() == Quadratura.Giornaliera)
+                        {
+                            @Html.Partial("../Tabelle/subpartial/poh", new POHmodel())
+                        }
+                        @Html.Partial("../Tabelle/subpartial/lemierichieste")
+                    }
+                    else
+                    {
+                        @Html.Partial("_cics_chiuso")
+                        GappChiuso = true;
+                    }
+                </div>
+                <div class="col-sm-4">
+                    @if (!myRaiHelper.UtenteHelper.GappChiuso())
+                    {
+                        @Html.RenderWidget(WidgetType.Normal, "Richieste", "icons icon-flag", "Da qui puoi fare le tue richieste", action:
+                            new ActionTemplate()
+                            {
+                                Href = "JavaScript:ShowPopupIniziale('"+(CommonHelper.GetParametro<string>(EnumParametriSistema.MessaggioAssenteIngiustificato))+"')",
+                                Text = "Fai una richiesta"
+                            })
+                        @Html.RenderPanel(myRaiHelper.PanelType.Panel, "Timbrature", "~/views/scrivania/subpartial/timbrature.cshtml", Model.dettaglioGiornata)
+
+
+                        if (myRaiHelper.UtenteHelper.GetQuadratura() == Quadratura.Settimanale)
+                        {
+                            <div id="dettagliosettimanale">
+                                @Html.Action("refreshDettSettWidget", "home")
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </main>
+    <!-- end: page -->
+</section>
+
+
+@Html.Partial("../Richieste/_nuovarichiesta", Model.Raggruppamenti)
+
+@Html.Partial("../Richieste/richiestapermesso")
+@Html.Partial("../Richieste/_motivoRifiuto")
+@Html.Partial("../Richieste/_validarifiutatutti")
+@Html.Partial("../Richieste/richiestamaggiorazione")
+
+@Html.Partial("../Richieste/_popupInizialePreSelezione")
+
+<div class="modal fade" id="giornata-modal" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+</div>
+<div class="modal fade" id="richiesta-modal" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+</div>
+<!-- FINE Partial view per modali -->
+
+<div id="pg-visible-xs" class="visible-xs"></div>
+<div id="pg-visible-sm" class="visible-sm"></div>
+<div id="pg-visible-md" class="visible-md"></div>
+<div id="pg-visible-lg" class="visible-lg"></div>
+
+<div class="modal fade right" id="doc-modal" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-popin modal-lg">
+        <div class="block-header bg-cdf" style="height: 0px; padding:0px;">
+            <ul class="block-options visible-xs">
+                <li>
+                    <button data-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+                </li>
+            </ul>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+
+        </div>
+        <div class="modal-content" id="pdfcontent" style="text-align :center">
+            <iframe style="width:100%;margin:8px;border:none" id="docframe"></iframe>
+        </div>
+
+    </div>
+
+</div>
+@section afterjs
+{
+    <script>
+        $(document).ready(function () {
+            popupponeScrollData();
+        });
+    </script>
+
+    <script type="text/javascript">
+        $(function () {
+            var popContent = document.getElementById('timbraturecontent');
+
+            $(popContent).find(".timbratura-row>div")
+                .find("div:eq(2)").addClass("rai-font-sm-neutral").addClass("no-padding").removeClass("font-w500").css("font-size", "");
+
+            $(popContent).find(".timbratura-row>div>div").css({ "padding-top": "0px", "margin-top": "0px" })
+        });
+    </script>
+}

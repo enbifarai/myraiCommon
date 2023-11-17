@@ -1,0 +1,190 @@
+﻿
+@model myRaiCommonModel.Gestionale.IncarichiTreeModel
+@{
+    string tema = myRaiHelper.CommonHelper.GetTema((myRaiHelper.CommonHelper.GetCurrentUserMatricola()));
+}
+<style>
+    div[control-export-menu] hr {
+        margin: 10px 0 10px 0;
+    }
+
+    path {
+        fill: none !important;
+    }
+
+    div[data-item] > svg {
+        width: 0px;
+    }
+
+    #organigramma {
+        font-family: "Open Sans", sans-serif;
+    }
+</style>
+
+<section class="panel ">
+    <header class="panel-heading">
+        <h2 id="lblLeftBox" class="panel-title">Dettaglio</h2>
+        <div class="panel-actions rai-panel-actions">
+            <button class="btn btn-action-icon" title="Modifica sezione" alt="Modifica sezione" onclick="GestisciSezione(@Model.Dettaglio.IdSezione)"><div class="fa fa-pencil"></div></button>
+            @if (String.IsNullOrWhiteSpace(Model.Dettaglio.ChiusaIl))
+            {
+                <button class="btn btn-action-icon" title="Chiudi sezione" alt="Chiudi sezione" onclick="GestisciSezione(@Model.Dettaglio.IdSezione,'C')"><div class="fa fa-minus-square"></div></button>
+            }
+            <button class="btn btn-action-icon" title="Elimina sezione" alt="Elimina sezione" onclick="GestisciSezione(@Model.Dettaglio.IdSezione,'D')"><div class="fa fa-trash"></div></button>
+
+            <button class="btn btn-action-icon" title="Ordina sezioni" alt="Ordina sezioni" onclick="MoveSezione(@Model.Dettaglio.IdSezione)"><div class="fa fa-retweet"></div></button>
+
+            @if (Model.Dettaglio.LineaStaff != "S")
+            {
+                <button class="btn btn-action-icon" title="Aggiungi sezione" alt="Aggiungi sezione" onclick="AddSezione(@Model.Dettaglio.IdSezione)"><div class="fa fa-plus"></div></button>
+            }
+            <a href="#" class="panel-action  panel-action-toggle visible-xs" data-panel-toggle="" aria-labelledby="lblLeftBox" aria-expanded="true"></a>
+        </div>
+    </header>
+
+    <div class="panel-body ">
+        @if (!String.IsNullOrWhiteSpace(Model.Dettaglio.Mission))
+        {
+            <div class="row">
+                <div class="col-sm-12">
+                    @Html.Raw(Model.Dettaglio.Mission);
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="block block-content-table block-transparent">
+                <div class="block-header">
+                    <label class="block-title">
+                        @if (!String.IsNullOrWhiteSpace(Model.Dettaglio.CodiceSezione))
+                        {
+                            <text>@Model.Dettaglio.CodiceSezione - </texT>
+                        }
+
+                        @if (!String.IsNullOrWhiteSpace(Model.Dettaglio.DescSezione))
+                        {
+                            <text>@Model.Dettaglio.DescSezione  </text>
+                        }
+                    </label>
+                </div>
+                <div class="block-content">
+                    <div class="rai-table-info">
+                        @if (Model.IncarichiSezione.Any())
+                        {
+                            foreach (var inc in Model.IncarichiSezione)
+                            {
+                                if (inc.flag_resp == "1")
+                                {
+                                    <div class="row">
+                                        <div class="col-sm-3">
+                                            <label>@(Model.IncarichiAll.Where(x => x.COD_INCARICO == inc.cod_incarico).Select(x => x.DES_INCARICO).FirstOrDefault())</label>
+                                        </div>
+                                        <div class="col-sm-9">
+                                            <label> @inc.nominativo</label>
+                                        </div>
+                                    </div>
+                                }
+
+                            }
+                        }
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <label>Valida dal :</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <label> @Model.Dettaglio.ValidaDal</label>
+                            </div>
+                        </div>
+                        @if (!String.IsNullOrWhiteSpace(Model.Dettaglio.ChiusaIl))
+                        {
+                            <div class="row">
+                                <div class="col-sm-3">
+                                    <label>Chiusa il :</label>
+                                </div>
+                                <div class="col-sm-9">
+                                    <label> @Model.Dettaglio.ChiusaIl</label>
+                                </div>
+                            </div>
+                        }
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <label>Sede:</label>
+                            </div>
+                            <div class="col-sm-9">
+                                @*<label> @Model.Dettaglio.Sede.Substring(12)</label>*@
+                                <label> @Model.Dettaglio.Sede</label>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <label>Servizio:</label>
+                            </div>
+                            <div class="col-sm-9">
+                                @if (!String.IsNullOrWhiteSpace(Model.Dettaglio.Servizio) && Model.Dettaglio.Servizio.Length > 1)
+                                {
+                                    @*<label> @Model.Dettaglio.Servizio.Substring(10)</label>*@
+                                    <label> @Model.Dettaglio.Servizio</label>
+                                }
+                                else
+                                {
+                                    <label>-</label>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        }
+
+
+
+    </div>
+
+    <div class="panel-footer">
+        <div class="row">
+            <div class="col-sm-12">
+                @if (Model.Dettaglio.Dipendenti != null && Model.Dettaglio.Dipendenti.Any())
+                {
+                    <a href="#" class="btn btn-sm rai-btn-small" onclick="ShowDipendenti('@Model.Dettaglio.Sede', '@Model.Dettaglio.CodiceSezione')">Dipendenti (@Model.Dettaglio.Dipendenti.Count)</a>
+                }
+
+                @if (Model.Dettaglio.LivelloNodo > 1)
+                {
+                    if (Model.Dettaglio.LivelloNodo == 2 && Model.Dettaglio.DescSezione == "Rai")
+                    {
+                        <a id="tutti-inc" class="btn btn-sm rai-btn-small" onclick="ShowIncarichiAll('@Model.Dettaglio.IdSezione')">Tutti gli incarichi</a>
+
+                        <a id="exp-inc" class="btn btn-sm rai-btn-small" onclick="exportInc(@Model.Dettaglio.IdSezione)">Esporta in Excel</a>
+                    }
+
+
+                    <input type="hidden" id="numero-incarichi" value="@(Model.IncarichiSezione!=null?Model.IncarichiSezione.Count:0)" />
+                    if (Model.IncarichiSezione != null && Model.IncarichiSezione.Any())
+                    {
+                        <a id="sh-inc" href="#" class="btn btn-sm rai-btn-small" onclick="ShowIncarichi('@Model.Dettaglio.IdSezione')">Incarichi (@Model.IncarichiSezione.Count)</a>
+                    }
+                    else
+                    {
+                        <a id="new-inc" href="#" class="btn btn-sm rai-btn-small" onclick="ShowNuovoIncarico('@Model.Dettaglio.IdSezione')">Aggiungi incarico</a>
+                    }
+
+                    if (Model.DBorigine == "I" && Model.Dettaglio.CodiceSezione != null && Model.Dettaglio.CodiceSezione.Trim().Length == 2)
+                    {
+                        <a id="btn-move" href="#" class="btn btn-sm rai-btn-small" onclick="spostaStruttura(@Model.Dettaglio.IdSezione, '@Model.Dettaglio.DescSezione')">Sposta Direzione</a>
+                    }
+                    if (Model.Dettaglio.IdSezione == 2)
+                    {
+
+                    }
+                    else
+                    {
+                        <a href="#" onclick="showAlbero(@Model.Dettaglio.IdSezione, '@(tema)');" id="org" class="btn btn-sm rai-btn-small">Visualizza Struttura</a>
+
+                    }
+
+                }
+            </div>
+        </div>
+    </div>
+</section>

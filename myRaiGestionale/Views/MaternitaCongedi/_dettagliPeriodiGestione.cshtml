@@ -1,0 +1,104 @@
+﻿@model myRaiCommonModel.DettaglioGestionePeriodiModel
+@{ 
+    int counter = -1;
+}
+<section class="rai panel">
+    <header class="panel-heading">
+
+        <h2 id="titolo-per" class="panel-title">@Model.Richiesta.NOMINATIVO (@Model.Richiesta.MATRICOLA)</h2>
+
+    </header>
+
+    <div class="panel-body">
+        <form id="gest-form" action="/maternitacongedi/saveperiods" method="post">
+
+
+            <table id="table-periodi" class="rai-table  table maternita rai-table-vcenter rai-table-high-row rai-table-panel">
+
+                <thead>
+                    <tr>
+                        <th>
+                            Data
+                        </th>
+                        <th>
+                            Eccezione
+                        </th>
+                        <th>
+                            CF figlio/a
+                        </th>
+                        <th>
+                            Inizio periodo
+                        </th>
+                        <th>
+                            Fine periodo
+                        </th>
+                        <th>
+                            Protocollo INPS
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Periodi)
+                    {
+                        counter++;
+                        <tr data-progr="@counter" data-id="@item.id">
+                            <td>
+                                <input name="model[@counter].id" value="@item.id" type="hidden" />
+
+                                <span id="data-@counter" class="">@item.Data.ToString("dd/MM/yyyy")</span>
+                            </td>
+                            <td>
+                                <span id="ecc-@counter" class="">@item.Eccezione</span>
+                            </td>
+                            <td>
+                                <input name="model[@counter].cf" id="cf-@counter" class="cf-bam form-control" value="@item.CF" />
+                            </td>
+                            <td>
+                                <input name="model[@counter].p1" id="p1-@counter" class="per-da form-control js-datetimepicker" value="@item.PeriodoInizio" style="width:110px" data-locale="it" data-format="DD/MM/YYYY" />
+                            </td>
+                            <td>
+                                <input name="model[@counter].p2" id="p2-@counter" class="per-a form-control js-datetimepicker" value="@item.PeriodoFine" style="width:110px" data-locale="it" data-format="DD/MM/YYYY" />
+                            </td>
+                            <td>
+                                <input name="model[@counter].inps" id="inps-@counter" class="form-control" value="@item.INPS" />
+                            </td>
+                        </tr>
+                    }
+                    <tr>
+                        <td colspan="6">
+                            <div class="rai-btn-fill">
+                                <button type="button" onclick="ConfermaChiusuraPer()" class="btn rai-btn-secondary">Chiudi</button>
+                                <button type="button" id="salva-per" onclick="SalvaPeriodi(@Model.Richiesta.ID)" class="btn rai-btn-primary">Salva</button>
+
+
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </form>
+    </div>
+</section>
+<script>
+    InitDatePicker();
+    function CheckCF(cfins) {
+        var cf = cfins.toUpperCase();
+        var cfReg = /^[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]$/;
+        if (!cfReg.test(cf)) {
+            return false;
+        }
+
+        var set1 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        var set2 = "ABCDEFGHIJABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        var setpari = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        var setdisp = "BAKPLCQDREVOSFTGUHMINJWZYX";
+        var s = 0;
+        for (i = 1; i <= 13; i += 2)
+            s += setpari.indexOf(set2.charAt(set1.indexOf(cf.charAt(i))));
+        for (i = 0; i <= 14; i += 2)
+            s += setdisp.indexOf(set2.charAt(set1.indexOf(cf.charAt(i))));
+        if (s % 26 != cf.charCodeAt(15) - 'A'.charCodeAt(0))
+            return false;
+        return true;
+    }
+</script>

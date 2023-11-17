@@ -1,0 +1,177 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiHelper
+@using myRaiCommonModel.Gestionale
+@model myRaiCommonModel.Gestionale.Pratica
+
+<style>
+    .tooltip-ral {
+        opacity: 1;
+        /*width: 150px;*/
+        /*box-shadow: 3px 3px 10px grey;*/
+        font-size: 14px;
+        font-weight: bold;
+        font-style: normal;
+        font-stretch: normal;
+        line-height: normal;
+        letter-spacing: normal;
+        text-align: center;
+        /*color: #fff !important;*/
+        /*background-color: #000 !important;*/
+        border-radius: 5px;
+    }
+
+        .tooltip-ral::after {
+            /*border-top-color: #000 !important;*/
+        }
+</style>
+
+
+@using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Dati retributivi"))
+{
+
+    <div class="rai-table-info">
+        <div class="row">
+            <div class="col-sm-7 col-xs-6">
+                <label class="">RAL Attuale</label>
+            </div>
+            <div class="col-sm-5 col-xs-6 text-right">
+                <label>@(String.Format("{0:N2} €", Model.Dipendente.RAL_ATTUALE))</label>
+            </div>
+        </div>
+        @{
+            var rifDate = DateTime.Today.AddMonths(-12);
+        }
+        <div class="row">
+            <div class="col-sm-7 col-xs-6">
+                <label class="">Parte variabile</label>
+            </div>
+            <div class="col-sm-5 col-xs-6 text-right">
+                <label>
+                    @(String.Format("{0:N2} €", Model.Dipendente.XR_PRV_DIPENDENTI_VAR.Where(x => x.ID_VAR_TIPO == (int)VariabileTipoEnum.Maggiorazioni && ((x.ANNO == rifDate.Year && x.MESE >= rifDate.Month) || (x.ANNO == DateTime.Today.Year))).Sum(x => x.IMPORTO)))
+                </label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-7 col-xs-6">
+                <label class="">Reperibilità</label>
+            </div>
+            <div class="col-sm-5 col-xs-6 text-right">
+                <label>@(String.Format("{0:N2} €", Model.Dipendente.XR_PRV_DIPENDENTI_VAR.Where(x => x.ID_VAR_TIPO == (int)VariabileTipoEnum.Reperibilita && ((x.ANNO == rifDate.Year && x.MESE >= rifDate.Month) || (x.ANNO == DateTime.Today.Year))).Sum(x => x.IMPORTO)))</label>
+            </div>
+        </div>
+    </div>
+    <br />
+    <div class="row pus-10-t">
+        <div class="col-sm-12">
+            @if (Model.Dipendente.XR_PRV_DIPENDENTI_RAL != null && Model.Dipendente.XR_PRV_DIPENDENTI_RAL.Count() > 0)
+            {
+                <div id="chart-reddito" style="width:100%;height:200px;" class="rai-chart ct-chart ct-perfect-fourth ct-golden-section">
+                    @*...CHART*@
+                </div>
+            }
+        </div>
+    </div>
+}
+
+
+<style>
+    .ct-series-a .ct-point {
+        /*stroke: blue !important;*/
+        display: none;
+    }
+
+    .ct-series-b .ct-line {
+        display: none;
+    }
+
+    .ct-series-b .ct-point {
+        stroke-width: 12px !important;
+    }
+</style>
+
+
+<script type="text/javascript">
+    var labels = [];
+    var serieRal = [];
+    var serieProvv = [];
+    var labelSerieProvv = [];
+
+    @if (Model.Dipendente.XR_PRV_DIPENDENTI_RAL != null && Model.Dipendente.XR_PRV_DIPENDENTI_RAL.Count() > 0)
+    {
+        foreach (var ral in Model.Dipendente.XR_PRV_DIPENDENTI_RAL.OrderByDescending(x => x.DT_RAL).Take(10).OrderBy(x => x.DT_RAL))
+        {
+            <text>
+            labels.push(@(ral.DT_RAL.ToString("yyyy")));
+            serieRal.push(@(Convert.ToInt32(ral.IMPORTO)));
+            </text>
+            var provv = Model.Dipendente.XR_PRV_DIPENDENTI_PROV.Where(x => x.ID_PROV != (int)ProvvedimentiEnum.Gratifica && x.DT_PROV.Year == ral.DT_RAL.Year);
+            if (provv!=null && provv.Any())
+            {
+                var label = "";
+                foreach(var p in provv)
+                {
+                    if (label != "") { label += "<br>"; }
+                    label += p.XR_PRV_PROV.DESCRIZIONE + " - " ;
+                    if (p.ID_PROV==(int)ProvvedimentiEnum.AumentoLivello && !String.IsNullOrWhiteSpace(p.DESC_CATEGORIA))
+                    {
+                        label += p.DESC_CATEGORIA + " - ";
+                    }
+                    label += p.IMPORTO.ToString("N2") + " €";
+                }
+
+                <text>
+                serieProvv.push( @(Convert.ToInt32(ral.IMPORTO)));
+                labelSerieProvv.push('@Html.Raw(label)');
+                </text>
+            }
+            else
+            {
+                <text>
+                serieProvv.push( null);
+                </text>
+            }
+        }
+    }
+
+    var chart2 = new Chartist.Line('#chart-reddito', {
+        labels: labels,
+        series: [{ name: 'Ral', data: serieRal }, { name: 'Provvedimenti', data: serieProvv }]
+    }, {
+        fullWidth: true,
+        chartPadding: { right: 10 },
+        lineSmooth: Chartist.Interpolation.cardinal({ fillHoles: false })
+    }
+        );
+
+
+    var $chart = $('#chart-reddito');
+
+    var $toolTip = $chart
+				.append('<div class="tooltip tooltip-ral"></div>')
+				.find('.tooltip')
+				.hide();
+
+    $chart.on('mouseenter', '.ct-point', function () {
+            var $point = $(this),
+                value = $point.attr('ct:value'),
+                seriesName = $point.parent().attr('ct:series-name');
+
+            var index = $point.parent().find('.ct-point').index($point);
+
+            $toolTip.html(labelSerieProvv[index]).show();
+        });
+
+    $chart.on('mouseleave', '.ct-point', function () {
+            $toolTip.hide();
+        });
+
+    $chart.on('mousemove', function (event) {
+            $toolTip.css({
+                left: (event.offsetX || event.originalEvent.layerX) - $toolTip.width() / 2-10,
+                top: (event.offsetY || event.originalEvent.layerY) - $toolTip.height() - 40
+            });
+        });
+
+</script>
+
+

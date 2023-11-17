@@ -1,0 +1,85 @@
+﻿@using myRaiData.Incentivi
+@using myRaiHelper
+@using myRaiGestionale.Controllers
+@model List<myRaiData.Incentivi.XR_INC_DIPENDENTI>
+
+@{
+    bool firstc = true;
+
+    var listSindacati = Model.Select(x => x.ID_SIGLASIND).Distinct();
+
+    string sede = Model.First().SEDE;
+    string sedeId = sede.Replace(" ", "_").Replace("-", "_");
+}
+
+<table class="rai js-table-sections table rai-table rai-table-panel rai-table-vcenter" style="margin-top:0 !important;" role="grid">
+    @{
+        foreach (var sind in listSindacati)
+        {
+            int indexSind = 0;
+            string sindacato = "Sindacato da decidere";
+            if (sind.HasValue)
+            {
+                indexSind = sind.Value;
+                sindacato = Model.First(X => X.ID_SIGLASIND == sind).XR_INC_SIGLESINDACALI.SINDACATO;
+            }
+            var listaDip = Model.Where(x => x.ID_SIGLASIND == sind);
+
+            @*<thead style="">
+                    <tr>
+                        <td style="width:2%"></td>
+                        <td style="width:10%"></td>
+                        <td style="width:61%"></td>
+                        <td style="width:10%"></td>
+                        <td class="rai-table-td-toggle"></td>
+                    </tr>
+                </thead>*@
+            <tbody class="rai js-table-sections-header">
+                <tr>
+                    <td>
+                        <label class="rai-font-md">@sindacato</label>
+                    </td>
+                    <td class="rai-table-td-toggle">
+                        <span class="rai-notification">@listaDip.Count().ToString()</span>
+                    </td>
+                    <td class="rai-table-td-toggle">
+                        <i class="fa fa-chevron-down"></i>
+                    </td>
+                </tr>
+            </tbody>
+            <tbody class="tbodydata">
+                <tr>
+                    <td colspan="3">
+                        <table class="table rai-table rai-table-vcenter">
+                            @foreach (var item in listaDip)
+                            {
+                                <tr>
+                                    <td class="rai-table-td-toggle">
+                                        <div class="rai-day-card">
+                                            <div class="rai-day-number">@item.DATA_APPUNTAMENTO.Value.ToString("dd")</div>
+                                            <div class="rai-day-name">@item.DATA_APPUNTAMENTO.Value.ToString("MMM").ToUpper()</div>
+                                        </div>
+                                    </td>
+                                    <td class="">
+                                        <div class="rai-block-info">
+                                            <span class="rai-caption">@(item.XR_INC_SIGLESINDACALI != null ? item.XR_INC_SIGLESINDACALI.SINDACATO : "Sindacato da decidere")</span><br />
+                                            <span class="rai-font-md "><a href="#" class="interactive-primary-color" onclick="ShowIncentivato(@item.ID_DIPENDENTE)">@item.SINTESI1.Nominativo()</a></span><br />
+                                            <span class="rai-font-sm">Orario: @item.DATA_APPUNTAMENTO.Value.ToString("HH:mm")</span>
+                                            @if (item.XR_INC_OPERSTATI.Any(x => x.ID_STATO == (int)IncStato.InCarico && x.ID_PERSONA != CommonHelper.GetCurrentIdPersona()))
+                                            {
+                                                <br /><span class="rai-font-sm-neutral">In carico a @item.XR_INC_OPERSTATI.Single(x => x.ID_STATO == (int)IncStato.InCarico).SINTESI1.Nominativo()</span>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td class="text-right rai-table-td-action">
+                                        <a class="btn btn-action-icon" style="" href="@Url.Action("CreaVerbaleDoc", new { idDip = item.ID_DIPENDENTE })" title="Scarica il verbale"><i class="fa fa-file"></i></a>
+                                    </td>
+                                </tr>
+                            }
+                        </table>
+                    </td>
+                </tr>
+            </tbody>
+        }
+    }
+</table>

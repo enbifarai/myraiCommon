@@ -1,0 +1,115 @@
+﻿@model List<myRaiCommonModel.ImmatricolazioniVM>
+@using myRaiHelper
+
+@{
+
+
+    if (Model == null || Model.Count() == 0)
+    {
+        <tr>
+            @Html.Partial("~/Views/Shared/_NoDati.cshtml");
+        </tr>
+    }
+    else
+    {
+        string firstClass = "open"; ;
+        foreach (var anno in Model.GroupBy(x => x.DataCreazione.Year))
+        {
+            <tbody class="rai-table-collapsable-header @firstClass">
+                <tr class="bg-neutrals-xl-10">
+                    <td colspan="5" style="padding:12px 18px"><label class="rai-font-lg">Anno @anno.Key</label></td>
+                    <td class="text-right" style="padding:12px 18px;">
+                        <label class="rai-notification">@anno.Count()</label>
+                        <i class="fa fa-chevron-down"></i>
+                    </td>
+                </tr>
+            </tbody>
+
+            <tbody>
+                @foreach (var item in anno)
+                {
+                    @Html.Hidden(item.IdPersona.ToString(), new { id = "idPersona" });
+                    <tr style="cursor: pointer;">
+                        <td style="width:1%;" class="ws-nowrap text-center">
+                            <span class="rai-font-md-bold">@item.Matricola</span>
+                        </td>
+                        <td>
+                            <span class="rai-font-md">@item.Cognome.TitleCase() @item.Nome.TitleCase() @item.SecondoCognome.TitleCase() </span>
+                        </td>
+                        <td>
+                            <span class="rai-font-md">
+                                @item.DataCreazione.ToShortDateString()
+                            </span>
+                        </td>
+                        <td>
+                            <span class="rai-font-md">
+                                @item.DataInizio.ToShortDateString()
+                            </span>
+                        </td>
+                        <td>
+
+                            @if (item.TipoOperazione == "A")
+                            {
+                                <span class="rai-label">
+                                    Annullata
+                                </span>
+                            }
+                            else
+                            {
+                                <span></span>
+                            }
+
+                        </td>
+                        <td style="width:1%" class="ws-nowrap text-right">
+                            @if (!item.IsForPianoFormativo)
+                            {
+                                if (item.TipoOperazione != "A")
+                                {
+                                    <button id="modifica" class="btn btn-action-icon modifica" @(item.InServizio == 1 ? "disabled" : "") onclick="modificaImm(@item.IdEvento)"><i class="fa fa-pencil"></i></button>
+                                    if (item.esistePianoFormativo || item.InServizio == 1)
+                                    {
+                                        <button id="eliminazione" class="btn btn-action-icon eliminazione" disabled onclick="eliminaImmatricolazione(@item.IdEvento)"> <i class="fa fa-trash-o"></i></button>
+                                    }
+                                    else
+                                    {
+                                        <button id="eliminazione" class="btn btn-action-icon eliminazione" onclick="eliminaImmatricolazione(@item.IdEvento)"> <i class="fa fa-trash-o"></i></button>
+                                    }
+                                    <button id="dettaglio-imm" class="btn btn-sm rai-btn-small dettaglio" onclick="mostraDettaglioImmatricolazione(@item.IdEvento, @item.IdPersona)">Visualizza</button>
+
+                                }
+                                else
+                                {
+                                    if (item.esistePianoFormativo)
+                                    {
+                                        <button id="eliminazione" class="btn btn-action-icon eliminazione" disabled onclick="eliminaImmatricolazione(@item.IdEvento)"> <i class="fa fa-trash-o"></i></button>
+                                    }
+                                    else
+                                    {
+                                        <button id="eliminazione" class="btn btn-action-icon eliminazione" onclick="eliminaImmatricolazione(@item.IdEvento)"> <i class="fa fa-trash-o"></i></button>
+                                    }
+                                    <button id="dettaglio-imm" class="btn btn-sm rai-btn-small dettaglio" onclick="mostraDettaglioImmatricolazione(@item.IdEvento, @item.IdPersona)">Visualizza</button>
+
+                                }
+
+
+                            }
+                            else
+                            {
+                                <button id="pianificazioneAttivita" class="btn btn-sm rai-btn-small pianificazione" onclick="pianificaAttivitaPianoFormativo(' @item.IdPersona')">Pianifica</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            firstClass = "";
+        }
+    }
+
+}
+
+<script>
+    @* function pianificaAttivitaPianoFormativo(idPersona) {
+            RaiOPNavGoToNext("pianificazioneAttivita", "newPianoFormativo", "Nuovo Piano Formativo", '@Url.Action("PianificaNuovoPianoFormativo","PianoFormativo")', { id: idPersona });
+        }*@
+</script>
+

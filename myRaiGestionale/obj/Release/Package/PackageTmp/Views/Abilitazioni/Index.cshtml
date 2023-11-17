@@ -1,0 +1,90 @@
+﻿@using myRaiHelper
+@{
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    ViewBag.Title = "HRIS - Abilitazioni";
+
+}
+
+<section role="main" class="content-body">
+    <main id="main-container">
+        <div class="content">
+            @using (Html.BeginOnePageNav("nav-abil", "Abilitazioni"))
+            {
+                <div class="row">
+                    <div class="col-md-8">
+                        <div id="box-profili">
+
+                        </div>
+                        <div id="box-funzioni">
+
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        @{
+                            ActionTemplate actionNewProfilo = new ActionTemplate()
+                            {
+                                OnClick = "AbilProfiloDett(0, 'Nuovo profilo');",
+                                Text = "Aggiungi"
+                            };
+                            ActionTemplate actionNewFunc = new ActionTemplate()
+                            {
+                                OnClick = "AbilFuncDett(0, 'Nuova funzione');",
+                                Text = "Aggiungi"
+                            };
+                        }
+                        @Html.RenderWidget(myRaiHelper.WidgetType.Normal, "Aggiungi profilo", "fa fa-plus", "Crea un nuovo profilo", action: actionNewProfilo)
+                        @Html.RenderWidget(myRaiHelper.WidgetType.Normal, "Aggiungi funzione", "fa fa-plus", "Crea una nuova funzione", action: actionNewFunc)
+                    </div>
+                </div>
+            }
+        </div>
+    </main>
+    <!-- end: page -->
+</section>
+
+@section afterjs{
+    <script>
+        RaiUpdateWidget("box-profili", "/Abilitazioni/ElencoProfili", "html", null);
+        RaiUpdateWidget("box-funzioni", "/Abilitazioni/ElencoFunzioni", "html", null);
+    </script>
+
+    <script>
+        function AbilSubfuncDett(idFunz, idSubFunz, desSubFunz) {
+            if (idFunz == 0) {
+                idFunz = $('#ID_FUNZIONE').val();
+            }
+            RaiOPNavGoToNext('nav-abil', 'nav-abil-subfunc', desSubFunz, '/Abilitazioni/Modal_Sottofunzione', { idFunz: idFunz, idSubFunz: idSubFunz }, 'POST');
+        }
+
+        function AbilFuncDett(idFunz, descr) {
+            RaiOPNavGoToNext('nav-abil', 'nav-abil-funz', descr, '/Abilitazioni/Modal_Funzione', { id: idFunz }, 'POST');
+        }
+
+        function AbilAbilPers(idAbil, idSubfunz, idProfilo, matricola) {
+            $('#modal-ricerca-dipendente').modal('hide');
+            RaiOPNavGoToNext('nav-abil', 'nav-abil-dett', matricola, '/Abilitazioni/Modal_AbilPers', { idAbil: idAbil, idSubFunz: idSubfunz, idProfilo, matricola: matricola }, 'POST');
+        }
+
+        function AbilProfiloDett(idProfilo, descr) {
+            RaiOPNavGoToNext('nav-abil', 'nav-abil-profilo', descr, '/Abilitazioni/Modal_Profilo', { id: idProfilo }, 'POST');
+        }
+        
+        function AbilRemoveAbil(idAbil, idSubFunc, idProfilo) {
+            var profile = $('tr[data-abil="' + idAbil + '"] td:first').html();
+            var testo = "Sei sicuro di voler rimuovere questa abilitazione?<br>" + profile;
+
+            RaiDeleteRecord(testo, '/Abilitazioni/Delete_Abilitazione', { idAbil: idAbil }, 'Abilitazione rimossa con successo', function () {
+                if (idSubFunc != null) {
+                    var idFunz = $('#ID_FUNZIONE').val();
+                    var desSubFunz = 'Sottofunzione ' + $('#COD_SUBFUNZIONE').val() + ' - ' + $('#DES_SUBFUNZIONE').val();
+
+                    AbilSubfuncDett(idFunz, idSubFunc, desSubFunz);
+                } else if (idProfilo != null) {
+                    var desProfilo = 'Profilo ' + $('#COD_PROFILO').val() + ' - ' + $('#DES_PROFILO').val();
+                    AbilProfiloDett(idProfilo, desProfilo);
+                }
+            }, 'POST', true);
+        }
+    </script>
+}
+

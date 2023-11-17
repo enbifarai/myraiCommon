@@ -1,0 +1,986 @@
+﻿@using MVCProject.Custom_Helpers
+@using myRaiHelper
+@using myRaiCommonModel.Gestionale
+@using myRaiCommonManager
+@using myRaiGestionale.Controllers
+@model MboScheda
+
+@{
+    var obQuant = Model.Obiettivi.Where(x => x.Tipo == "quantitativo");
+    var obQual = Model.Obiettivi.Where(x => x.Tipo == "qualitativo");
+
+    int countQual = obQual != null ? obQual.Count() : 0;
+    int countQuant = obQuant != null ? obQuant.Count() : 0;
+
+    int countOb = Model.Obiettivi.Count();
+    int minOb = 2;
+    int maxOb = 5;
+
+    var minValOb = 1;
+    var maxValOb = 99;
+    var stepOb = 1;
+
+    decimal sumPesi = Model.Obiettivi.Sum(x => x.PesoSpecifico);
+
+    var currentState = Model.OperStato;
+
+    bool showButton = true;
+}
+
+@helper DrawSection(MboIncaricoNode node)
+{
+
+    <tbody class="js-table-sections-header">
+        <tr>
+            <td>
+                <label class="rai-font-md">@node.CodSezione - @node.DesSezione</label>
+            </td>
+            <td class="text-right">
+                @if (node.Persone.Any())
+                {
+                    <span>@node.Persone.Count() risorse</span>
+                }
+            </td>
+            <td class="rai-table-td-toggle">
+                <i class="fa fa-chevron-down"></i>
+            </td>
+        </tr>
+    </tbody>
+    <tbody>
+        @foreach (var sub in node.Persone)
+        {
+            <tr>
+                <td colspan="3">
+                    @Html.ProfileWidget(sub.Matricola, sub.Nominativo, null, sub.DesStruttura)
+                </td>
+            </tr>
+        }
+
+        @foreach (var subNode in node.Children)
+        {
+            <tr>
+                <td colspan="3" class="no-padding">
+                    <table class="table rai-table rai-table-vcenter js-table-sections rai-table-panel">
+                        @DrawSection(subNode)
+                    </table>
+                </td>
+            </tr>
+        }
+    </tbody>
+}
+
+@using (Html.BeginModal("Dettaglio scheda"))
+{
+    <input type="hidden" value="@Model.Id" id="idScheda" />
+    <input type="hidden" value="7" id="idTipologia" />
+    using (Html.BeginOnePageNav("bc-scheda", Model.PersValutato.Nominativo))
+    {
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="panel">
+                    <div class="panel-heading">
+                        <span class="panel-title">Dettaglio scheda</span>
+                    </div>
+                    <div class="panel-body" style="@(!showButton?"padding-bottom:0px;":"")">
+                        @Html.Partial("../Anagrafica/Header_DatiDipendente", Model.Anagrafica)
+
+                        <div class="block block-content-table">
+                            <div class="block-header">
+                                <div class="block-title">Dati scheda</div>
+                            </div>
+                            <div class="block-content">
+                                <form id="form-scheda" class="form-group">
+                                    @Html.HiddenFor(m => m.Id)
+                                    <div class="row">
+                                        <div class="col-sm-12 push-10">
+                                            @Html.LabelFor(m => m.IdPersonaResp, "Responsabile", new { @class = "rai-caption" })
+                                            @Html.RaiSelectFor(m => m.IdPersonaResp, new List<SelectListItem>())
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-12 push-10">
+                                            @Html.LabelFor(m => m.IdPersonaSecRiporto, "Secondo riporto", new { @class = "rai-caption" })
+                                            @Html.RaiSelectFor(m => m.IdPersonaSecRiporto, new List<SelectListItem>())
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-12 push-10">
+                                            @Html.LabelFor(m => m.ImportoTeorico, "Importo", new { @class = "rai-caption" })
+                                            @Html.TextBoxFor(m => m.ImportoTeorico, new { @class = "form-control", data_type = "currency", pattern = "^\\d{1,3}(.\\d{3})*(\\,\\d+)?$", placeholder = "0,00" })
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-12 push-10">
+                                            @Html.RaiCheckBoxLabelFor(m=>m.IsChief, "Visualizza schede compilate dal Dirigente", "")
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-12 push-10 text-right">
+                                            <button class="btn rai-btn-small" onclick="MboConfermaTuning()">Salva dati</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        @*@if (Model.Incarichi != null)
+        {
+            <div class="block block-content-table">
+                <div class="block-header">
+                    <label class="block-title">Incarichi</label>
+                </div>
+                <div class="block-content" id="block-incarichi">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <table class="table rai-table rai-table-vcenter js-table-sections rai-table-panel">
+                                @foreach (var item in Model.Incarichi)
+                                {
+                                    @DrawSection(item)
+                                }
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }*@
+
+                        @if (Model.Note.Count > 0)
+                        {
+                            <div class="rai block block-transparent block-content-table" style="@(Model.Note.Count()>0?"margin-left:-15px;margin-right:-15px;":"")">
+                                <div class="block-header block-content-mini" style="@(Model.Note.Count()>0?"border:none;padding-left:15px;padding-right:15px;":"")">
+                                    <label class="block-title">Note</label>
+                                </div>
+                                <div class="block-content block-content-mini bg-neutrals-xl-10" style="padding-left:15px;padding-right:15px;">
+                                    @foreach (var item in Model.Note)
+                                    {
+                                        string nominativo = item.Autore.Nominativo;
+                                        if (item.Autore.Matricola == CommonHelper.GetCurrentUserMatricola())
+                                        {
+                                            nominativo = "Tu";
+                                        }
+
+                                        <div class="row push-10-t push-10">
+                                            <div class="col-sm-12">
+                                                <div class="rai panel">
+                                                    <div class="panel-body">
+                                                        <div class="row">
+                                                            <div class="col-sm-12">
+                                                                @Html.ProfileWidget(item.Autore.Matricola, nominativo, null, String.Format("{0:dd/MM/yyyy} alle {0:HH:mm}", item.DataInserimento))
+                                                            </div>
+                                                        </div>
+                                                        @if (item.Stato != null)
+                                                        {
+                                                            <div class="row">
+                                                                <div class="col-sm-12">
+                                                                    <div class="border-left-80" style="margin-left:46px; margin-top:5px; padding:5px 10px;line-height:18px;">
+                                                                        <span class="rai-font-sm-bold">@item.Stato.NOMINATIVO</span><br />
+                                                                        <span class="rai-font-sm-neutral">@item.Stato.XR_MBO_STATI.DES_DESCRIZIONE</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                        <div class="row">
+                                                            <div class="col-sm-12">
+                                                                <p class="rai-font-md push-10-t" style="margin-left:46px;">@item.Testo</p>
+                                                            </div>
+                                                        </div>
+                                                        @if (item.IdPersonaDest.HasValue)
+                                                        {
+                                                            <div class="row">
+                                                                <div class="col-sm-12 text-right">
+                                                                    <span class="rai-font-sm-neutral"><i class="fa fa-user"></i> Visibile solo a @(item.Destinatario.Matricola == CommonHelper.GetCurrentUserMatricola() ? "te" : item.Destinatario.Nominativo)</span>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        @if (Model.Allegati != null && Model.Allegati.Any())
+                        {
+                            <div class="block block-content-table rai">
+                                <div class="block-header">
+                                    <label class="block-title">Allegati</label>
+                                </div>
+                                <div class="block-content">
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <table class="table rai-table rai-table-bordered rai-table-vcenter">
+                                                @foreach (var item in Model.Allegati)
+                                                {
+                                                    <tr>
+                                                        <td>
+                                                            <span class="rai-font-md-bold">@item.COD_TITLE</span>
+                                                            @if (!String.IsNullOrWhiteSpace(item.DES_ALLEGATO))
+                                                            {
+                                                                <br />
+                                                                <span class="rai-font-sm">@item.DES_ALLEGATO</span>
+                                                            }
+                                                        </td>
+                                                        <td class="text-right">
+                                                            <a href="@Url.Action("GetDoc","Mbo", new { idDoc=item.ID_ALLEGATO })" target="_blank" class="btn rai-btn-small">Vedi</a>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="row" id="alertPerc" style="@(Model.Obiettivi.Count()>0 && (Model.Obiettivi.Count()<minOb || sumPesi != 100)?"":"display:none")">
+                            <div class="col-sm-12">
+                                <div class="alert alert-danger">
+                                    @*<h4 style="margin:0px;"><b>Attenzione</b></h4><br/>*@
+                                    <div id="divAlertOb" style="@(Model.Obiettivi.Count()<minOb?"":"display:none")">
+                                        <span><b>Obiettivi insufficienti</b></span><br />
+                                        <span>Devono essere indicati almeno @minOb obiettivi</span>
+                                    </div>
+                                    <div id="divAlertPerc" style="@(Model.Obiettivi.Count() >= minOb && sumPesi != 100?"":"display:none")">
+                                        <span><b>Totale pesi</b></span><br />
+                                        <span>La somma dei pesi specifici deve raggiungere quota 100.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @switch (currentState.ID_STATO)
+                        {
+                            case (int)MboState.DaAvviare:
+                                break;
+                            case (int)MboState.DaCompilare:
+                            case (int)MboState.ObiettiviSottopostiAlDir:
+                            case (int)MboState.ProntiPerInvioRuo:
+                                <div id="elencoObiettivi" class="rai block block-transparent block-content-table remove-margin-bottom" style="@(countOb>0?"margin-left:-15px;margin-right:-15px;":"")">
+                                    <div class="block-header block-content-mini" style="@(countOb>0?"border:none;padding-left:15px;padding-right:15px;":"")">
+                                        <label class="block-title">Elenco obiettivi</label>
+                                        @if (currentState.ID_STATO == (int)MboState.DaCompilare)
+                                        {
+                                            <span class="rai-font-sm-neutral text-italic">(Minimo @minOb)</span>
+                                        }
+                                            <div class="block-options">
+                                                @if (Model.Obiettivi != null && Model.Obiettivi.Any())
+                                                {
+                                                    <a class="btn rai-btn-small" href="@Url.Action("GetSchedaPDF", "Mbo", new { idScheda = Model.Id })"><i class="fa fa-external-link"></i>  Esporta in PDF</a>
+                                                }
+                                                @if (currentState.ID_STATO == (int)MboState.DaCompilare)
+                                                {
+                                                    <button class="btn btn-action-icon  @(countOb >= maxOb ? "disable" : "")" onclick="MboDettaglioObiettivo(@Model.Id, '', 0)"><i class="fa fa-plus"></i></button>
+                                                    @*<div style="display:none;">
+                                                        <button class="btn btn-action-icon" id="alertSchedaBtn" onclick="MboInviaReminder(@Model.Id)" style="@(Model.IdPersonaResp==0?"display:none;":"")"><i class="fa fa-bell"></i></button>
+                                                    </div>*@
+                                                }
+                                            </div>
+                                    </div>
+                                    @if (countOb > 0)
+                                    {
+                                        <div class="block-content block-content-mini bg-neutrals-xl-10" style="padding-left:15px;padding-right:15px;">
+                                            @foreach (var item in Model.Obiettivi)
+                                            {
+                                                <div class="row push-10-t push-10 ">
+                                                    <div class="col-sm-12">
+                                                        <div class="panel">
+                                                            <div class="panel-body">
+                                                                <div class="row push-5">
+                                                                    <div class="col-sm-4">
+                                                                        <span class="rai-font-md-bold">Obiettivo @item.Tipo</span>
+                                                                    </div>
+                                                                    <div class="col-sm-8 text-right">
+                                                                        <div>
+                                                                            <div style="display:inline-block;width:32px;height:32px;padding-top: 11px;vertical-align:middle;text-align: right;padding-right: 5px;cursor: pointer;" class="interactive-primary-color fa fa-minus" onclick="MboObMinus(@item.Id)"></div>
+                                                                            <input style="display:inline-block;width:150px;margin-top:2px" @((currentState.ID_STATO == (int)MboState.DaCompilare) ? "" : "disabled=\"disabled\"") type="range" min="@minValOb" max="@maxValOb" step="@stepOb" value="@item.PesoSpecifico.ToString("0")" data-ob-id="@item.Id" aria-labelledby="ob-label-@item.Id" oninput="MboUpdatePerc(this)" onchange="MboUpdatePerc(this)" />
+                                                                            <div style="display:inline-block;width:32px;height:32px;padding-top: 11px;vertical-align:middle;text-align: left;padding-left: 5px;cursor: pointer;" class="interactive-primary-color fa fa-plus" onclick="MboObPlus(@item.Id)"></div>
+                                                                            <label class="rai-label rai-label-interactive" style="min-width:5em" id="ob-label-@item.Id">@item.PesoSpecifico.ToString("0")%</label>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row push-5">
+                                                                    <div class="col-sm-12">
+                                                                        <span class="rai-font-sm-neutral-bold">Descrizione</span>
+                                                                    </div>
+                                                                    <div class="col-sm-12">
+                                                                        <span class="rai-font-md">@item.Descrizione</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row push-5">
+                                                                    <div class="col-sm-12">
+                                                                        <span class="rai-font-sm-neutral-bold">Risultato atteso</span>
+                                                                    </div>
+                                                                    <div class="col-sm-12">
+                                                                        <span class="rai-font-md">@item.RisultatoAtteso</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row push-5">
+                                                                    <div class="col-sm-12">
+                                                                        <span class="rai-font-sm-neutral-bold">Strategico per direzione</span>
+                                                                    </div>
+                                                                    <div class="col-sm-12">
+                                                                        @if (String.IsNullOrWhiteSpace(item.StrategicoDirezione))
+                                                                        {
+                                                                            <span class="rai-font-md">-</span>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <span class="rai-font-md">@item.StrategicoDirezione</span>
+                                                                        }
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row">
+                                                                    @if (currentState.ID_STATO == (int)MboState.DaCompilare)
+                                                                    {
+                                                                        <div class="col-sm-12 text-right">
+                                                                            <button class="btn rai-btn-small" onclick="MboDettaglioObiettivo(@Model.Id, '@item.Tipo', @item.Id)">Modifica</button>
+                                                                            <button class="btn btn-action-icon" onclick="MboEliminaObiettivo(@item.Id, @Model.Id)"><i class="fa fa-trash"></i></button>
+                                                                        </div>
+                                                                    }
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="block-content block-content-mini">
+                                            <div class="row">
+                                                <div class="col-sm-12 text-center"><span class="rai-font-md-neutral">Non ci sono dati da visualizzare</span></div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                                <div class="block block-content-table push-20-t">
+                                    <div class="block-header" style="border:none;">
+                                        <label class="block-title">Allegati</label>
+                                    </div>
+                                    <div class="block-content">
+                                        <div id="wdgt-allegati" class="bg-neutrals-xl-10" style="margin-left:-15px; margin-right:-15px; padding:10px 25px; margin-bottom:20px">
+
+                                        </div>
+                                        <script>
+                                            RaiUpdateWidget('wdgt-allegati', '/Mbo/Widget_allegati', 'html', { idScheda: $('#idScheda').val(), idTipologia: $('#idTipologia').val(), addNew: true });
+                                        </script>
+                                    </div>
+                                </div>
+
+
+                                if (currentState.ID_STATO == (int)MboState.DaCompilare)
+                                {
+                                    <div class="row push-20-t">
+                                        <div class="col-sm-12">
+                                            <div class="rai-btn-fill">
+                                                <button class="btn rai-btn-secondary disable" id="btnSaveObPerc" onclick="MboSaveObPerc(true)">Salva modifiche</button>
+                                                <button class="btn rai-btn-primary @(countOb < minOb || sumPesi != 100 ? "disable" : "") " id="btnConfermaAssegn" onclick="MboConfermaAssegnazione(@Model.Id)">Conferma assegnazione</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                                break;
+                            case (int)MboState.ObiettiviSottopostiRuo:
+                            case (int)MboState.Convalidati:
+                                <div class="rai block block-transparent block-content-table remove-margin-bottom" style="@(countOb>0?"margin-left:-15px;margin-right:-15px;":"")">
+                                    <div class="block-header block-content-mini" style="@(countOb>0?"border:none;padding-left:15px;padding-right:15px;":"")">
+                                        <label class="block-title">Elenco obiettivi</label>
+                                        <div class="block-options">
+                                            <a class="btn rai-btn-small" href="@Url.Action("GetSchedaPDF","Mbo",new {idScheda=Model.Id})"><i class="fa fa-external-link"></i>  Esporta in PDF</a>
+                                        </div>
+                                    </div>
+                                    <div class="block-content block-content-mini bg-neutrals-xl-10" style="padding-left:15px;padding-right:15px;">
+                                        @foreach (var item in Model.Obiettivi)
+                                        {
+                                            <div class="row push-10-t push-10 ">
+                                                <div class="col-sm-12">
+                                                    <div class="panel">
+                                                        <div class="panel-body">
+                                                            <div class="row push-5">
+                                                                <div class="col-sm-6">
+                                                                    <span class="rai-font-md-bold">Obiettivo @item.Tipo</span>
+                                                                </div>
+                                                                <div class="col-sm-6 text-right">
+                                                                    <input style="display:inline-block;width:150px;margin-top:2px" disabled="disabled" type="range" min="0" max="100" step="5" value="@item.PesoSpecifico.ToString("0")" data-ob-id="@item.Id" aria-labelledby="ob-label-@item.Id" />
+                                                                    <label class="rai-label rai-label-interactive" style="min-width:5em" id="ob-label-@item.Id">@item.PesoSpecifico.ToString("0")%</label>
+                                                                </div>
+                                                            </div>
+                                                            <div class="row push-5">
+                                                                <div class="col-sm-12">
+                                                                    <span class="rai-font-sm-neutral-bold">Descrizione</span>
+                                                                </div>
+                                                                <div class="col-sm-12">
+                                                                    <span class="rai-font-md">@item.Descrizione</span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="row push-5">
+                                                                <div class="col-sm-12">
+                                                                    <span class="rai-font-sm-neutral-bold">Risultato atteso</span>
+                                                                </div>
+                                                                <div class="col-sm-12">
+                                                                    <span class="rai-font-md">@item.RisultatoAtteso</span>
+                                                                </div>
+                                                            </div>
+                                                            @if (!String.IsNullOrWhiteSpace(item.StrategicoDirezione))
+                                                            {
+                                                                <div class="row">
+                                                                    <div class="col-sm-12 push-5">
+                                                                        <span class="rai-font-sm-neutral-bold">Strategico per direzione</span>
+                                                                    </div>
+                                                                    <div class="col-sm-12">
+                                                                        <span class="rai-font-md">@item.StrategicoDirezione</span>
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                                if (currentState.ID_STATO == (int)MboState.ObiettiviSottopostiRuo)
+                                {
+                                    <div class="row push-20-t">
+                                        <div class="col-sm-12">
+                                            <div class="rai-btn-fill">
+                                                <button class="btn btn-action-icon btn-action-icon-text feedback-error-color" onclick="MboCheckRuo(@Model.Id, false)"><i class="fa fa-times"></i> Rifiuta</button>
+                                                <button class="btn btn-action-icon btn-action-icon-text feedback-success-color" onclick="MboCheckRuo(@Model.Id, true)"><i class="fa fa-check"></i> Convalida</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                                else if (currentState.ID_STATO == (int)MboState.Convalidati)
+                                {
+                                    <div class="row push-20-t">
+                                        <div class="col-sm-12">
+                                            <div class="rai-btn-fill">
+                                                <button class="btn rai-btn-small" onclick="MboCheckRuo(@Model.Id, false)">Rimuovi convalida</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    }
+}
+
+<script id="ScriptScheda">
+    $("input[data-type='currency']").on({
+        keyup: function () {
+            formatCurrency($(this));
+        },
+        blur: function () {
+            formatCurrency($(this), "blur");
+        },
+    });
+    function formatAllInput() {
+        var list = $("input[data-type='currency']");
+        for (var i = 0; i < list.length; i++) {
+            formatCurrency($(list[i]));
+        }
+    }
+    formatAllInput();
+
+    $('#IdPersonaResp').parent().addClass('rai-loader');
+    RaiSelectExtLoadAsyncData('IdPersonaResp', '/Mbo/GetIncarichiResponsabili', { idPers: @Model.IdPersonaValutato }, true, function () {
+        var idResp = @Model.IdPersonaResp;
+        RaiSelectOption(idResp, $('#IdPersonaResp').parent().attr('id'), false);
+        $('#IdPersonaResp').parent().removeClass('rai-loader');
+        $('#IdPersonaResp').parent().attr('data-rai-select-onchange','MboRespOnChange()')
+    });
+
+    $('#IdPersonaSecRiporto').parent().addClass('rai-loader');
+    RaiSelectExtLoadAsyncData('IdPersonaSecRiporto', '/Mbo/GetIncarichiResponsabili', { idPers: @Model.IdPersonaValutato }, true, function () {
+        var idSecRip = @Model.IdPersonaSecRiporto.GetValueOrDefault();
+        RaiSelectOption(idSecRip, $('#IdPersonaSecRiporto').parent().attr('id'), false);
+        $('#IdPersonaSecRiporto').parent().removeClass('rai-loader');
+    });
+
+    function MboRespOnChange() {
+        var idResp = $('#IdPersonaResp').val();
+        var idSecRiporto = 0;
+        $('#IdPersonaSecRiporto').parent().addClass('rai-loader');
+        $.ajax({
+            async: "true",
+            url: "/Mbo/GetSecondoRiporto",
+            type: "POST",
+            dataType: "json",
+            data: { idPers: idResp },
+            cache: false,
+            success: function (data) {
+                idSecRiporto = data;
+            },
+            error: function (a, b, c) {
+                swal({
+                    title: "Ops...",
+                    text: "Si è verificato un errore imprevisto\n" + c,
+                    type: 'error',
+                    customClass: 'rai'
+                })
+            },
+            complete: function () {
+                RaiSelectOption(idSecRiporto, $('#IdPersonaSecRiporto').parent().attr('id'), false);
+                $('#IdPersonaSecRiporto').parent().removeClass('rai-loader');
+            }
+        });
+    }
+
+    function MboObMinus(idOb) {
+        var valOb = parseInt($('[data-ob-id="' + idOb + '"]').val());
+        if (valOb > @minValOb) {
+            valOb = valOb - @stepOb;
+            $('[data-ob-id="' + idOb + '"]').val(valOb);
+            MboUpdatePerc($('[data-ob-id="' + idOb + '"]'));
+            MboCheckPerc($('[data-ob-id="' + idOb + '"]'));
+        }
+    }
+    function MboObPlus(idOb) {
+        var valOb = parseInt($('[data-ob-id="' + idOb + '"]').val());
+        if (valOb < @maxValOb) {
+            valOb = valOb + @stepOb;
+            $('[data-ob-id="' + idOb + '"]').val(valOb);
+            MboUpdatePerc($('[data-ob-id="' + idOb + '"]'));
+        }
+    }
+
+    function MboConfermaAssegnazione(idScheda) {
+        event.preventDefault();
+
+        swal({
+            title: 'Sei sicuro?',
+            text: "Vuoi confermare l'assegnazione degli obiettivi?",
+            type: 'question',
+            customClass: 'rai',
+            showCancelButton: true,
+            confirmButtonText: 'Conferma',
+            cancelButtonText: 'Annulla',
+            reverseButtons: true
+        }).then(function () {
+            MboSaveObPerc(false);
+
+            $.ajax({
+                url: "/Mbo/Scheda_ConfermaAssegnazione",
+                type: "POST",
+                cache: false,
+                dataType: 'html',
+                data: { idScheda: idScheda },
+                success: function (data) {
+                    switch (data) {
+                        case "OK":
+                            var hasRiporto = $('#_hasRiporto').val();
+                            var textMessage = "La scheda è pronta per essere sottoposta a RUO";
+                            if (hasRiporto == 'true') {
+                                textMessage = "La scheda è stata sottoposta al Direttore";
+                            }
+
+                            swal({
+                                title: "Salvataggio effettuato",
+                                text: textMessage,
+                                type: 'success',
+                                customClass: 'rai'
+                            });
+                            $('#modal-mbo-half').modal('hide');
+                            $('#btnCerca').click();
+
+                            break;
+                        default:
+                            swal({
+                                title: "Oops...",
+                                text: data,
+                                type: 'error',
+                                customClass: 'rai'
+                            });
+                    }
+                },
+                error: function (a, b, c) {
+                    swal({
+                        title: "Oops...",
+                        text: c,
+                        type: 'error',
+                        customClass: 'rai'
+                    });
+                }
+            });
+        });
+    }
+
+    function MboDettaglioObiettivo(idScheda, tipo, idOb) {
+        var title = "Dettaglio obiettivo " + tipo;
+        if (idOb == 0) {
+            title = "Nuovo obiettivo " + tipo;
+        }
+
+        RaiOPNavGoToNext("bc-scheda", "bc-scheda-obb", title, '/Mbo/Dettaglio_Obiettivo', { idScheda: idScheda, tipo: tipo, idOb: idOb }, "POST");
+    }
+
+    function MboUpdatePerc(input) {
+        var label = $(input).attr('aria-labelledby');
+        $('#' + label).text($(input).val() + "%");
+        MboCheckPerc();
+    }
+
+    function MboCheckPerc(input) {
+        //var label = $(input).attr('aria-labelledby');
+        //$('#' + label).text($(input).val() + "%");
+
+        var sumPerc = 0;
+        var list = $('[data-ob-id]');
+        for (var i = 0; i < list.length; i++) {
+            sumPerc += parseInt($(list[i]).val());
+        }
+
+        var showAlertPerc = false;
+        var showAlertNumOb = false;
+
+        if (list.length >=@minOb) {
+            showAlertNumOb = false;
+
+            if (sumPerc != 100) {
+                showAlertPerc = true;
+            } else {
+                showAlertPerc = false;
+            }
+
+        } else {
+            showAlertNumOb = true;
+        }
+
+        if (showAlertPerc || showAlertNumOb) {
+            $('#alertPerc').show();
+            $('#btnConfermaAssegn').addClass('disable');
+
+            if (showAlertPerc)
+                $('#divAlertPerc').show();
+            else
+                $('#divAlertPerc').hide();
+
+            if (showAlertNumOb)
+                $('#divAlertOb').show();
+            else
+                $('#divAlertOb').hide();
+
+            if (showAlertPerc && showAlertNumOb)
+                $('#hrAlert').show();
+            else
+                $('#hrAlert').hide();
+        } else {
+            $('#alertPerc').hide();
+            $('#btnConfermaAssegn').removeClass('disable');
+        }
+
+        $('#btnSaveObPerc').removeClass('disable');
+    }
+
+    function MboSaveObPerc(async) {
+        var idOb = new Array();
+        var valueOb = new Array();
+
+        var list = $('[data-ob-id]');
+        for (var i = 0; i < list.length; i++) {
+            idOb.push($(list[i]).attr('data-ob-id'));
+            valueOb.push($(list[i]).val());
+        }
+
+        $.ajax({
+            async: async,
+            url: "/Mbo/Save_ObiettiviPerc",
+            type: "POST",
+            cache: false,
+            contentType: 'application/json',
+            data: JSON.stringify({ ids: idOb, values: valueOb }),
+            success: function (data) {
+                switch (data) {
+                    case "OK":
+                        if (async != false) {
+                            swal({
+                                title: "Salvataggio effettuato",
+                                text: "Gli obiettivi sono stati aggiornati correttamente",
+                                type: 'success',
+                                customClass: 'rai'
+                            });
+                            $('#btnSaveObPerc').addClass('disable');
+                        }
+                        break;
+                    default:
+                        swal({
+                            title: 'Oops...',
+                            text: data,
+                            type: 'error',
+                            customClass: 'rai'
+                        });
+                }
+            }
+        });
+    }
+
+    function MboConfermaTuning() {
+        event.preventDefault();
+
+        var form = $('#form-scheda');
+        var validator = $(form).validate();
+
+        if (!$(form).valid()) {
+            validator.focusInvalid();
+            return false;
+        }
+
+        swal({
+            title: 'Sei sicuro?',
+            text: 'Vuoi confermare i dati?',
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'OK',
+            cancelButtonText: 'Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+            var formData = new FormData($('#form-scheda')[0]);
+
+            $.ajax({
+                url: '/Mbo/Save_Tuning',
+                type: 'POST',
+                cache: false,
+                dataType: 'html',
+                contentType: false,
+                processData: false,
+                data: formData,
+                success: function (data) {
+                    switch (data) {
+                        case "OK":
+                            swal({
+                                title: 'Salvataggio effettuato con successo',
+                                type: "success",
+                                customClass: 'rai'
+                            });
+                            //$('#modal-mbo-half').modal('hide');
+                            //$('#btnCerca').click();
+                            if ($('#IdPersonaResp').val() == 0) {
+                                $('#alertSchedaBtn').hide();
+                            } else {
+                                $('#alertSchedaBtn').show();
+                            }
+
+                            $('#btnCerca').click();
+                            break;
+                        default:
+                            swal({
+                                title: "Ops...",
+                                text: data,
+                                type: 'error',
+                                customClass: 'rai'
+                            })
+                    }
+                },
+                error: function (a, b, c) {
+                    swal({
+                        title: "Ops...",
+                        text: "Si è verificato un errore imprevisto\n" + c,
+                        type: 'error',
+                        customClass: 'rai'
+                    })
+                }
+            });
+        });
+    }
+
+    function MboCheckRuo(idScheda, approva) {
+        var text = "";
+        if (approva) {
+            text = "Vuoi convalidare la scheda?";
+        } else {
+            text = "Vuoi rimandare la scheda al dirigente?";
+        }
+
+        if (approva) {
+            swal({
+                title: 'Sei sicuro?',
+                text: "Vuoi convalidare la scheda?",
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sì!',
+                cancelButtonText: 'Annulla',
+                reverseButtons: 'true',
+                customClass: 'rai'
+            }).then(function () {
+                InternalMboCheckRuo(idScheda, approva, '');
+            });
+        } else {
+            swal({
+                title: 'Sei sicuro?',
+                text: "Inserisci una motivazione per rimandare la scheda al direttore",
+                input: 'textarea',
+                showCancelButton: true,
+                confirmButtonText: 'Conferma',
+                cancelButtonText: 'Annulla',
+                reverseButtons: 'true',
+                customClass: 'rai',
+                preConfirm: function (value) {
+                    return new Promise(function (resolve, reject) {
+                        if (value == "") {
+                            reject("Inserisci il testo della nota")
+                        }
+                        else {
+                            resolve()
+                        }
+                    });
+                }
+            }).then(function (result) {
+                var nota = result;
+                InternalMboCheckRuo(idScheda, approva, nota);
+            });
+        }
+    }
+    function InternalMboCheckRuo(idScheda, approva, nota) {
+        $.ajax({
+            url: "/Mbo/Save_Convalida",
+            type: "POST",
+            cache: false,
+            dataType: 'html',
+            data: { idScheda: idScheda, parere: approva, nota: nota },
+            success: function (data) {
+                switch (data) {
+                    case "OK":
+                        var alertMsg = '';
+                        if (approva) {
+                            alertMsg = "La scheda è stata convalidata";
+                        } else {
+                            alertMsg = "La scheda è stata rimandata al dirigente";
+                        }
+                        swal({ title: "OK", text: alertMsg, type: 'success', customClass: 'rai' });
+
+                        $('#modal-mbo-half').modal('hide');
+                        $('#btnCerca').click();
+
+                        break;
+                    default:
+                        swal({ title: "Oops...", text: data, type: 'error', customClass: 'rai' });
+                }
+            }
+        });
+    }
+
+    function MboEliminaObiettivo(idOb, idScheda) {
+        event.preventDefault();
+
+        swal({
+            title: 'Sei sicuro?',
+            text: "Vuoi eliminare l'obiettivo?",
+            type: 'question',
+            customClass: 'rai',
+            showCancelButton: true,
+            confirmButtonText: 'Conferma',
+            cancelButtonText: 'Annulla',
+            reverseButtons: true
+        }).then(function () {
+            //var idOb = $('#form-obiettivo #Id').val()
+            if (idOb > 0) {
+                $.ajax({
+                    url: "/Mbo/Elimina_Obiettivo",
+                    type: "POST",
+                    cache: false,
+                    dataType: 'html',
+                    data: { idOb: idOb },
+                    success: function (data) {
+                        switch (data) {
+                            case "OK":
+                                swal({
+                                    title: "Salvataggio effettuato",
+                                    text: "L'obiettivo è stato creato correttamente",
+                                    type: 'success',
+                                    customClass: 'rai'
+                                });
+
+                                debugger
+                                //var idScheda = $('#form-obiettivo #IdScheda').val();
+                                //MboOpenModalScheda(idScheda);
+                                RaiUpdateWidget("elencoObiettivi", "@Url.Action("Modal_Scheda","Mbo")", "replaceId", { idScheda: idScheda, loadIncarichi: false }, false, function () { MboCheckPerc(); }, null, "POST");
+                                RaiOPGotoMain("bc-scheda");
+                                break;
+                            default:
+                                swal({
+                                    title: "Ops...",
+                                    text: data,
+                                    type: 'error',
+                                    customClass: 'rai'
+                                });
+                        }
+                    },
+                    error: function (a, b, c) {
+                        swal({
+                            title: "Oops...",
+                            text: c,
+                            type: 'error',
+                            customClass: 'rai'
+                        });
+                    }
+                });
+            } else {
+                //RaiUpdateWidget("elencoObiettivi", "@Url.Action("Modal_Scheda","Mbo")", "html", { idScheda: idScheda }, null, null, null, "POST");
+                RaiOPGotoMain("bc-scheda");
+            }
+        });
+    }
+
+    function MboInviaReminder(idScheda) {
+        event.preventDefault();
+
+        var responsabile = $('#IdPersonaResp').text();
+
+        swal({
+            title: 'Sei sicuro?',
+            text: "Vuoi inviare un reminder a " + responsabile + "?",
+            type: 'question',
+            customClass: 'rai',
+            showCancelButton: true,
+            confirmButtonText: 'Conferma',
+            cancelButtonText: 'Annulla',
+            reverseButtons: true
+        }).then(function () {
+            $.ajax({
+                    url: "/Mbo/InviaReminderScheda",
+                    type: "POST",
+                    cache: false,
+                    dataType: 'html',
+                    data: { idScheda: idScheda},
+                    success: function (data) {
+                        switch (data) {
+                            case "OK":
+                                swal({
+                                    title: "Invio effettuato",
+                                    //text: "L'obiettivo è stato creato correttamente",
+                                    type: 'success',
+                                    customClass: 'rai'
+                                });
+                                break;
+                            default:
+                                swal({
+                                    title: "Ops...",
+                                    text: data,
+                                    type: 'error',
+                                    customClass: 'rai'
+                                });
+                        }
+                    },
+                    error: function (a, b, c) {
+                        swal({
+                            title: "Oops...",
+                            text: c,
+                            type: 'error',
+                            customClass: 'rai'
+                        });
+                    }
+                });
+        });
+    }
+</script>

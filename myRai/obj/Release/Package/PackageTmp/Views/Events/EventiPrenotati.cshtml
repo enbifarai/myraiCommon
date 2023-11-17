@@ -1,0 +1,107 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model EventiPrenotatiVM
+
+@{
+    ViewBag.Title = "Eventi prenotati";
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+}
+
+
+<section role="main" class="content-body">
+    <main id="main-container">
+        <div class="content">
+            <section class="panel" id="panel-eventi-3">
+                <header class="panel-heading">
+                    @*<div class="panel-actions">
+                            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+                        </div>*@
+                    <h2 class="panel-title">Eventi prenotati</h2>
+                </header>
+                <div id="eventi-3" class="panel-body no-padding">
+                    <div class="row push-10-t">
+                        <div class="col-sm-12 text-right">
+                            <button class="btn rai-btn-small disable" id="MultiExport" onclick="MultiExport()">Esporta selezionati</button>
+                        </div>
+                    </div>
+                    <table class="table table-hover table-responsive rai-table rai-table-vcenter" id="table-eventi-4">
+                        <thead>
+                            <tr>
+                                <th>&nbsp;</th>
+                                <th>Data Evento</th>
+                                <th>Evento</th>
+                                <th>Posti Prenotati</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                foreach (var item in Model.Eventi)
+                                {
+                                    <tr class="tr-ric editMode">
+                                        <td>
+                                            <div class="rai-checkbox">
+                                                <input data-export-event="@item.Id" type="checkbox" class="@(item.TotalePostiPrenotati.GetValueOrDefault()>0?"":"disable")" onchange="ToggleMultiExport()" />
+                                                <label for="">&nbsp;</label>
+                                            </div>
+                                        </td>
+                                        <td class="rai-font-md-neutral">@item.DataEvento.ToString("dd/MM/yyyy")</td>
+                                        <td>
+                                            <span class="rai-font-md-bold">@item.Titolo</span>
+                                            <div class="rai-font-sm">luogo: @item.Luogo</div>
+                                        </td>
+                                        <td class="rai-font-md">
+                                            @item.TotalePostiPrenotati.GetValueOrDefault()
+                                        </td>
+                                        <td class="text-right">
+                                            @{
+                                                string action = Url.Action("EsportaEventiPrenotati", "Events") + "?idEvento=" + item.Id;
+                                            }
+                                            <a id="" class="btn rai-btn-small" style="margin-right: 10px;" href="@(action)">Esporta</a>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+</section>
+
+
+<script type="text/javascript">
+    function esportaPrenotati(id) {
+        $.ajax({
+            url: '/Events/EsportaEventiPrenotati',
+            type: "POST",
+            data: { idEvento: id },
+            dataType: "json",
+            complete: function () { },
+            success: function (data) {
+            }
+        });
+    }
+
+    function ToggleMultiExport() {
+        var hasChecked = $('[data-export-event]:checked').length > 0;
+        if (hasChecked) {
+            $('#MultiExport').removeClass('disable');
+        }
+        else {
+            $('#MultiExport').addClass('disable');
+        }
+    }
+
+    function MultiExport() {
+        var ids = [];
+        $('[data-export-event]:checked').each(function (index) {
+            ids.push($(this).attr("data-export-event"));
+        });
+
+        window.location = "/Events/EsportaEventi?ids=" + ids.join(',');
+    }
+</script>

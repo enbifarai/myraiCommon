@@ -1,0 +1,171 @@
+﻿@model myRai.Models.DispositiviModel
+
+<section class="rai panel" id="persdisp">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" tabindex="0" aria-label="I miei dispositivi" aria-expanded="true"></a>
+        </div>
+
+        <h2 class="panel-title">I miei dispositivi</h2>
+    </header>
+
+    <div class="block panel-body no-padding" style="overflow-x:hidden">
+
+        <table class="js-table-sections table table-hover" role="grid" id="lemierichieste" aria-label="Richieste in approvazione">
+            
+            <thead>
+                <tr>
+                    <th style="padding:16px">MODELLO</th>
+                    <th style="padding:16px">SISTEMA OP.</th>
+                    <th style="padding:16px">ULTIMO ACCESSO</th>
+                    <th style="padding:16px;text-align:center">ACCESSO RAIPERME</th>
+                    
+                    <th style="padding:16px;text-align:center">NOTIFICHE</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                @if (Model.Dispositivi != null && Model.Dispositivi.Any())
+                {
+                    foreach (var dispositivo in Model.Dispositivi)
+                    {
+                        <tr>
+                            <td style="vertical-align:middle">
+                                <span class="font-w600" style="font-weight: bold;vertical-align:middle"> @dispositivo.device_manufacturer @dispositivo.device_model</span>
+                            </td>
+                            <td style="vertical-align:middle">
+                                <span class="font-w600" style="font-weight: bold;vertical-align:middle"> @dispositivo.device_platform @dispositivo.device_version</span>
+                            </td>
+                            <td style="vertical-align:middle">
+                                <span class="font-w600" style="font-weight: bold;vertical-align:middle"> @dispositivo.last_access.ToString("dd/MM/yyyy HH.mm")</span>
+                            </td>
+
+                            <td style="vertical-align:middle;text-align:center">
+                                <div class="checkbox-custom checkbox-default" style="display:inline">
+                                    <input type="checkbox" 
+                                           @if (dispositivo.abilitato)
+                                           {
+                                               @:checked="checked"
+                                           }
+                                           
+                                               data-id="@dispositivo.id" data-name=" @dispositivo.device_manufacturer @dispositivo.device_model"
+                                               onclick="ChangeAbil(this)"
+                                           />
+                                    <label class="ifi-caption"></label>
+                                </div>
+
+                                <span class="font-w600" >@(!dispositivo.abilitato?"DIS":"")ABILITATO</span>
+                            </td>
+                            
+                            <td>
+                                
+
+                                <a href="#" onclick="SendPush(@dispositivo.id)" id="btnNotifica" class="btn btn-sm rai-btn-small full-width @(String.IsNullOrWhiteSpace(dispositivo.token) ? "disable" : "")" title="TEST NOTIFICA"
+                                   value="Test notifica">INVIA TEST</a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    @Html.Partial("~/Views/Shared/_NoDati.cshtml")
+                }
+
+
+            </tbody>
+        </table>
+    </div>
+</section>
+<script>
+    function ChangeAbil(cb) {
+        var abil = $(cb).prop("checked");
+        var name = $(cb).attr("data-name");
+        if (abil == false) {
+            var message = "Confermi di disabilitare <b>" + name + "</b> dall'accesso a RaiPerMe?";
+
+            swal({
+                title: "Conferma",
+                html: message,
+                type: 'question',
+                showCloseButton: false,
+                showCancelButton: true,
+                confirmButtonText: ' OK'
+            }).then(function (res) {
+                DisableDisp(cb);
+            },
+                function (dismiss) {
+                    $(cb).prop("checked", true);
+                }
+            );
+        }
+        else {
+            EnableDisp(cb);
+        }
+    }
+    function EnableDisp(cb) {
+        var id = $(cb).attr("data-id");
+
+        $.ajax({
+            url: '/dispositivi/enable',
+            type: 'POST',
+            cache: false,
+            data: { id: id },
+            dataType: "json",
+            success: function (data) {
+
+                if (data.result == "OK") {
+                    $(cb).closest("td").find("span").text("ABILITATO")
+                }
+                else {
+                    swal("Errore", data.result, "error")
+                }
+            }
+        });
+    }
+    function DisableDisp(cb) {
+        var id = $(cb).attr("data-id");
+
+        $.ajax({
+            url: '/dispositivi/disable',
+            type: 'POST',
+            cache: false,
+            data: { id: id },
+            dataType: "json",
+            success: function (data) {
+       
+                if (data.result == "OK") {
+                    $(cb).closest("td").find("span").text("DISABILITATO")
+                }
+                else {
+                    swal("Errore", data.result, "error")
+                }
+            }
+        });
+    }
+    function SendPush(id) {
+        $.ajax({
+            url: '/dispositivi/sendpush',
+            type: 'POST',
+            cache: false,
+            data: { id:id },
+            dataType: "json",
+            success: function (data) {
+                debugger
+                if (data.result == "OK") {
+                    var p = JSON.parse(data.pushresult);
+                    if (p.success == 1) {
+                        swal('OK', 'Invio eseguito', 'info');
+                    }
+                    else {
+                        swal("Errore", "Non è stato possibile inviare la notifica", "error");
+                    }
+                    
+                }
+                else {
+                    swal("Errore", data.result, "error")
+                }
+            }
+        });
+    }
+</script>

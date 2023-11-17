@@ -1,0 +1,113 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+
+@model  MPGGruppo
+@{
+    var title = Model.Codice + " - " + String.Join("/", Model.Stanze.Select(x => x.PrenStanza.NoteStanza).Distinct());
+
+    var listSeedeCont = Model.AvailableDip.Select(x => x.SedeContabile).Distinct().OrderBy(x=>x.codice).Select(x=>new SelectListItem() { Value = x.codice + " - " + x.descrizione, Text = x.codice + " - " + x.descrizione }).ToList();
+    var listDir = Model.AvailableDip.Where(x=>x.Servizio!=null).Select(x => x.Servizio).Distinct().OrderBy(x => x.Codice).Select(x => new SelectListItem() { Value = x.Codice + " - " + x.DescrLunga, Text = x.Codice + " - " + x.DescrLunga }).ToList(); ;
+}
+
+@using (Html.BeginModal(title))
+{
+    using (Html.BeginPanel(PanelType.NoHeader, "Associa giornalisti", false))
+    {
+        <div class="form-group">
+            <div class="row push-10">
+                <div class="col-sm-6">
+                    <label class="rai-caption">Matricola</label>
+                    <input type="text" class="form-control full-width" placeholder="Cerca per matricola" data-search="new-dip" data-search-multi="on" data-search-attr="matr"  onkeyup="RaiClickOnKeyUp('SearchNewDip')"/>
+                </div>
+                <div class="col-sm-6">
+                    <label class="rai-caption">Nominativo</label>
+                    <input type="text" class="form-control full-width" placeholder="Cerca per nominativo" data-search="new-dip" data-search-multi="on" data-search-attr="name"  onkeyup="RaiClickOnKeyUp('SearchNewDip')"/>
+                </div>
+            </div>
+            <div class="row push-10">
+                <div class="col-sm-6">
+                    <label class="rai-caption">Sede contabile</label>
+                    <input type="text" class="form-control full-width" placeholder="Cerca per sede contabile" data-search="new-dip" data-search-multi="on" data-search-attr="sedecont"  onkeyup="RaiClickOnKeyUp('SearchNewDip')"/>
+                </div>
+                <div class="col-sm-6">
+                    <label class="rai-caption">Direzione</label>
+                    <input type="text" class="form-control full-width" placeholder="Cerca per direzione" data-search="new-dip" data-search-multi="on" data-search-attr="dir"  onkeyup="RaiClickOnKeyUp('SearchNewDip')"/>
+                </div>
+            </div>
+            <div class="row push-10">
+                <div class="col-sm-12">
+                    <div class="rai-btn-fill">
+                        <button class="btn rai-btn-secondary" onclick="AzzeraFiltri('dip-filter', 'new-dip', 'btn-assoc-sel');">Azzera filtri</button>
+                        <button class="btn rai-btn-primary" id="SearchNewDip" onclick="ApplicaFiltri('dip-filter', 'new-dip', 'btn-assoc-sel');">Cerca</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-12">
+                <table class="table rai-table rai-table-vcenter">
+                    <tr>
+                        <td style="border-bottom:1px solid #ddd;">
+                            <div class="rai-checkbox">
+                                <input type="checkbox" data-check-group-all="dip-filter" onclick="ToggleAllDip('dip-filter', 'new-dip', 'btn-assoc-sel');" />
+                                <label>&nbsp;Seleziona tutti</label>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <div class="row">
+            @if (Model.AvailableDip != null && Model.AvailableDip.Count() > 0)
+            {
+                <div class="col-sm-12">
+                    <div style="overflow:hidden;overflow-y:auto;max-height:500px;padding-right:5px;" id="cont-new-dip">
+                        <table class="table rai-table rai-table-vcenter" id="new-dip">
+                            <tbody>
+                                @foreach (var dip in Model.AvailableDip.Where(x => !Model.PrenDip.Any(y => y.Dip.Matricola == x.Dip.Matricola) && x.PrenDip == null).OrderBy(x => x.Dip.Matricola))
+                                {
+                                    string sedeCont = dip.SedeContabile.codice + " - " + dip.SedeContabile.descrizione;
+                                    string servizio = dip.Servizio.Codice + " - " + dip.Servizio.DescrLunga;
+
+                                    <tr data-search="new-dip" data-search-name="@dip.Dip.Nominativo" data-search-matr="@dip.Dip.Matricola" data-search-sedecont="@sedeCont" data-search-dir="@servizio" data-search-prendip="@(dip.PrenDip!=null?"off":"on")" style="@(dip.PrenDip!=null?"display:none;":"")" aria-hidden="@(dip.PrenDip!=null?"true":"false")">
+                                        <td class="rai-table-td-action">
+                                            <div class="rai-checkbox">
+                                                <input data-matr="@dip.Dip.Matricola" type="checkbox" data-check-group="dip-filter" onclick="ToggleSingleDip('dip-filter', 'new-dip', 'btn-assoc-sel');" />
+                                                <label>&nbsp;</label>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <b>@dip.Dip.Matricola</b> - @dip.Dip.Nominativo.TitleCase()<br />
+                                            <span class="rai-font-sm">@sedeCont</span><br />
+                                            <span class="rai-font-sm-neutral">@servizio</span>
+                                        </td>
+                                        <td>
+                                            @if (dip.Intervista != null)
+                                            {
+                                                <span class="rai-label rai-label-interactive">Intervistato il @dip.Intervista.DataInterv.Value.ToString("dd/MM/yyyy")</span>
+                                            }
+                                            else if (dip.Prenotazione != null)
+                                            {
+                                                <span class="rai-label rai-label-interactive">Prenotazione effettuata</span>
+                                            }
+                                            else if (dip.PrenDip != null)
+                                            {
+                                                <span class="rai-label">Già assegnato</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="row push-10-t">
+            <div class="col-sm-12 text-right">
+                <button class="btn rai-btn-small" disabled id="btn-assoc-sel" onclick="AssociaSelezionati('@Model.Codice')">Associa i selezionati</button>
+            </div>
+        </div>
+    }
+}

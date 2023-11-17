@@ -1,0 +1,114 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model List<DocDipendente>
+
+<section class="panel" id="panel-docdipendente">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+            <a href="#" class="panel-action panel-action-refresh" id="button-refresh-doc" type="button" data-toggle="block-option" data-action="refresh_toggle"
+               data-refreshurlllll="/notifiche/refreshMieNotifiche" data-parentdiv="panel-docdipendente"
+               data-refreshelements="docdipendente" data-refresh-partial
+               data-action-mode="demo">
+            </a>
+        </div>
+        <h2 class="panel-title">I miei documenti</h2>
+    </header>
+    <div id="docdipendente" class="block panel-body no-padding">
+        <ul class="nav nav-tabs nav-tabs-alt  nav-justified" "=" " data-toggle="tabs">
+            <li class="tabbianco active">
+                <a data-toggle="tabs" id="a1" href="#tab1">ASSOCIATI</a>
+            </li>
+            <li class="tabbianco">
+                <a data-toggle="tabs" id="a2" href="#tab2">NON ASSOCIATI</a>
+            </li>
+        </ul>
+        <div class="block-content tab-content">
+            <div class="tab-pane active" id="tab1">
+                <table class="js-table-sections table table-hover" id="table-docs">
+                    <thead>
+                    <th class="fixed-20"></th>
+                    <th>Tipologia</th>
+                    <th>Descrizione</th>
+                    <th>File</th>
+                    <th>Data</th>
+                    <th>Azioni</th>
+                    </thead>
+                    @foreach ( var item in Model.Where( x => x.docDB.MyRai_Associazione_Richiesta_Doc.Count > 0 ) )
+                    {
+                        <tbody id="@item.id" class="js-table-sections-header">
+                            <tr id="tr@(item.id)">
+                                <td class="fixed-20"><i class="fa fa-angle-right"></i></td>
+                                <td>@item.tipologia</td>
+                                <td>
+                                    @item.descrizione
+                                </td>
+                                <td>
+                                    <a href="javascript:ShowDoc(@item.id)">@item.nomefile</a>
+                                </td>
+                                <td>
+                                    @item.datainserito.ToString( "dd/MM/yyyy" )
+                                </td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                        <tbody class="tbodydata" id="tbody-@item.id">
+                            @foreach ( var eccezioniCollegate in item.docDB.MyRai_Associazione_Richiesta_Doc )
+                            {
+                                var ec = eccezioniCollegate.MyRai_Richieste.MyRai_Eccezioni_Richieste.FirstOrDefault( );
+                                if ( ec != null )
+                                {
+                                    <tr>
+                                        <td> </td>
+                                        <td colspan="5">
+                                            Documento associato a richiesta
+                                            <span class="text-primary" style="cursor:pointer"
+                                                  onclick="showPopoverNotification(this, @ec.id_eccezioni_richieste)"
+                                                  data-placement="top" data-html="true"
+                                                  data-content="Attendere" data-toggle="popover">
+                                                <b>@ec.cod_eccezione</b> del <b>@ec.data_eccezione.ToString( "dd/MM/yyyy" )</b>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    }
+                </table>
+            </div>
+            <div class="tab-pane" id="tab2">
+                <table class="js-table-sections table table-hover" id="table-docs">
+                    <thead>
+                    <th class="fixed-20"></th>
+                    <th>Tipologia</th>
+                    <th>Descrizione</th>
+                    <th>File</th>
+                    <th>Data</th>
+                    <th>Azioni</th>
+                    </thead>
+                    @foreach ( var item in Model.Where( x => x.docDB.MyRai_Associazione_Richiesta_Doc.Count == 0 ) )
+                    {
+                        <tr id="tr@(item.id)">
+                            <td class="fixed-20"></td>
+                            <td>@item.tipologia</td>
+                            <td>
+                                @item.descrizione
+                            </td>
+                            <td>
+                                <a href="javascript:ShowDoc(@item.id)">@item.nomefile</a>
+                            </td>
+                            <td>
+                                @item.datainserito.ToString( "dd/MM/yyyy" )
+                            </td>
+                            <td>
+                                <i class="icons icon-trash h4" style="cursor:pointer" onclick="DelDoc(@item.id)" />
+                            </td>
+                        </tr>
+                    }
+                </table>
+            </div>
+        </div>
+    </div>
+</section>

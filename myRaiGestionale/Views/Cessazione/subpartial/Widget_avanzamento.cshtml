@@ -1,0 +1,139 @@
+﻿@using myRaiData.Incentivi
+@using myRaiCommonModel.Gestionale
+@using myRaiHelper
+@model IEnumerable<CessazioneModel>
+
+@{
+    var db = new IncentiviEntities();
+    //int inCarico = Model.Count(x => x.InCarico != null);
+    //int concluse = Model.Count(x => x.Stato.ID_STATO == (int)IncStato.Conclusa);
+    //int nonInCarico = Model.Count(x => x.InCarico == null && x.Stato.ID_STATO != (int)IncStato.Conclusa);
+}
+
+@using (Html.BeginPanel(PanelType.PanelNoPadding, "Avanzamento", true, new List<ActionTemplate>() { new ActionTemplate() { OnClick = "AggiornaAvanzamento()", Icon = "fa fa-refresh" } },
+                        panelAttributes: new RaiAttributes() { new RaiAttribute("class", "panel-collapsed") }))
+{
+    <table class="table rai-table rai-table-vcenter rai-table-panel rai-table-collapsable">
+        @foreach (var groupCess in Model.GroupBy(x => x.Tipologia.DES_TIPOLOGIA))
+        {
+            int tipologia = groupCess.First().Tipologia.ID_TIPOLOGIA;
+            int inCarico = groupCess.Count(x => x.InCarico != null);
+            int concluse = groupCess.Count(x => x.Stato.ID_STATO == (int)IncStato.Conclusa);
+            int nonInCarico = groupCess.Count(x => x.InCarico == null && x.Stato.ID_STATO != (int)IncStato.Conclusa);
+            int annullate = groupCess.Count(x => x.Stato.ID_STATO == (int)IncStato.RichiestaAnnullata);
+
+            <tbody class="rai-table-collapsable-header">
+                <tr>
+                    <td>
+                        <span class="rai-font-lg">@groupCess.Key</span>
+                    </td>
+                    <td class="rai-table-td-toggle">
+                        <i class="fa fa-chevron-down"></i>
+                    </td>
+                </tr>
+            </tbody>
+            <tbody>
+                <tr>
+                    <td colspan="2" class="no-padding">
+                        <div>
+                            <table class="table rai-table rai-table-panel rai-table-vcenter rai-table-filter rai-table-bordered">
+                                <tr onclick="FiltroAvanzamento(this, '', '', @tipologia)" data-filter>
+                                    <td>
+                                        <label class="interactive-primary-color cursor-pointer">Pratiche totali</label>
+                                    </td>
+                                    <td class="rai-table-td-action text-right">
+                                        <label class="rai-label">@groupCess.Count()</label>
+                                    </td>
+                                </tr>
+                                @if (inCarico > 0)
+                                {
+                                    <tr data-filter onclick="FiltroAvanzamento(this, '', '1', @tipologia)">
+                                        <td>
+                                            <label class="interactive-primary-color cursor-pointer">Pratiche in carico</label>
+                                        </td>
+                                        <td class="rai-table-td-action text-right">
+                                            <label class="rai-label">@inCarico</label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2" class="no-padding">
+                                            <table class="table rai-table rai-table-panel rai-table-vcenter rai-table-bordered">
+                                                @foreach (var item in groupCess.Where(x => x.InCarico != null).OrderBy(x => x.Ordine.ORDINE).GroupBy(x => x.Stato.ID_STATO))
+                                                {
+                                                    <tr data-filter onclick="FiltroAvanzamento(this, @item.Key,1, @tipologia)">
+                                                        <td>
+                                                            <label class="interactive-primary-color cursor-pointer">@item.First().Stato.DESCRIZIONE</label>
+                                                        </td>
+                                                        <td class="rai-table-td-action text-right">
+                                                            <label class="rai-label">@item.Count()</label>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </table>
+                                        </td>
+                                    </tr>
+                                }
+
+                                @if (nonInCarico > 0)
+                                {
+                                    <tr data-filter onclick="FiltroAvanzamento(this, '', '0', @tipologia)">
+                                        <td>
+                                            <label class="interactive-primary-color cursor-pointer">Pratiche non in carico</label>
+                                        </td>
+                                        <td class="rai-table-td-action text-right">
+                                            <label class="rai-label">@nonInCarico</label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2" class="no-padding">
+                                            <table class="table rai-table rai-table-panel rai-table-vcenter rai-table-bordered">
+                                                @foreach (var item in groupCess.Where(x => x.InCarico == null && x.Stato.ID_STATO != (int)IncStato.Conclusa && x.Stato.ID_STATO != (int)IncStato.RichiestaAnnullata).OrderBy(x => x.Ordine.ORDINE).GroupBy(x => x.Stato.ID_STATO))
+                                                {
+                                                    <tr data-filter onclick="FiltroAvanzamento(this, @item.Key, 0, @tipologia)">
+                                                        <td>
+                                                            <label class="interactive-primary-color cursor-pointer">@item.First().Stato.DESCRIZIONE</label>
+                                                        </td>
+                                                        <td class="rai-table-td-action text-right">
+                                                            <label class="rai-label">@item.Count()</label>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </table>
+                                        </td>
+                                    </tr>
+                                }
+
+                                @if (concluse > 0)
+                                {
+                                    <tr data-filter onclick="FiltroAvanzamento(this, '@((int)IncStato.Conclusa)', '',@tipologia)">
+                                        <td>
+                                            <label class="interactive-primary-color cursor-pointer">Pratiche concluse</label>
+                                        </td>
+                                        <td class="rai-table-td-action text-right">
+                                            <label class="rai-label">@concluse</label>
+                                        </td>
+                                    </tr>
+                                }
+
+                                @if (annullate > 0)
+                                {
+                                    <tr data-filter onclick="FiltroAvanzamento(this, '@((int)IncStato.RichiestaAnnullata)', '',@tipologia)">
+                                        <td>
+                                            <label class="interactive-primary-color cursor-pointer">Pratiche annullate</label>
+                                        </td>
+                                        <td class="rai-table-td-action text-right">
+                                            <label class="rai-label">@annullate</label>
+                                        </td>
+                                    </tr>
+                                }
+                            </table>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        }
+    </table>
+}
+
+
+

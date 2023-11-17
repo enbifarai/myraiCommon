@@ -1,0 +1,303 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+@model AnagraficaPresenze
+
+@{
+    int year = Model.Anno;
+}
+
+<style>
+    .ct-label-center {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+    }
+
+    .ct-label-rounded {
+        border-radius: 4px;
+        background-color: #F6F8F8;
+    }
+
+    .rai-chart-legend-square{
+        width: 36px;
+        height: 36px;
+        border-radius: 4px;
+    }
+
+    .ct-bar-wider {
+        stroke-width: 3em;
+    }
+
+    @@media only screen and (max-width: 1800px) {
+        .ct-bar-wider {
+            stroke-width: 2em;
+        }
+    }
+
+    @@media only screen and (max-width: 767px) {
+        .ct-bar-wider {
+            stroke-width: 10px;
+        }
+
+        .ct-label-center.ct-horizontal {
+            transform: rotate(-45deg);
+            margin-left: -10px;
+        }
+    }
+
+    .tdCalWid {
+        padding-left: 3px !important;
+        padding-right: 3px !important;
+    }
+</style>
+
+<div class="row push-20">
+    <div class="col-sm-12">
+        <div class="rai-nav-fill">
+            <div class="rai-nav-fill-item">
+                <a href="#" onclick="AnnoPrecedente()" aria-label="Vai all'anno precedente"><i class="icons icon-arrow-left-circle text-bold"></i></a>
+            </div>
+            <div class="rai-nav-fill-item-label">
+                @year
+            </div>
+            <div class="rai-nav-fill-item">
+                @if (year < DateTime.Today.Year)
+                {
+                    <a href="#" onclick="AnnoSuccessivo()" aria-label="Vai all'anno successivo"><i class="icons icon-arrow-right-circle text-bold"></i></a>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row push-10">
+    <div class="col-sm-12">
+        <div id="chart-assenze" style="width:100%;height:300px;" class="rai-chart">
+            @*...CHART*@
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-sm-12">
+        <table class="table table-hover rai-table-vcenter js-table-sections">
+            <tbody class="js-table-sections-header">
+                <tr>
+                    <td>
+                        <div class="rai-chart-legend rai-chart-legend-square bar ct-series-a "></div>
+                    </td>
+                    <td style="width:50%">
+                        Giorni Lavorabili
+                    </td>
+                    <td style="width:50%" class="text-right">
+                        @Model.Giornate.Where(x => x.sintesi_giornata == "GG lavorabili").Count() GG
+                    </td>
+                    <td>
+                        <i class="fa fa-chevron-down"></i>
+                    </td>
+                </tr>
+            </tbody>
+            <tbody></tbody>
+            @foreach (var grpEcc in Model.Eccezioni.GroupBy(x => x.desc_cod_eccez_padre.ToLower()).OrderBy(x => x.Key))
+            {
+                <tbody class="js-table-sections-header">
+                    <tr>
+                        <td>
+                            @if (grpEcc.First().cod_eccez_padre == "TFE")
+                            {
+                                <div class="rai-chart-legend rai-chart-legend-square bar ct-series-b"></div>
+                            }
+                            else
+                            {
+                                <div class="rai-chart-legend rai-chart-legend-square"></div>
+                            }
+                        </td>
+                        <td style="width:50%">@grpEcc.First().desc_cod_eccez_padre</td>
+                        <td style="width:50%" class="text-right">
+                            @{
+                                bool isFirst = true;
+                            }
+                            @foreach (var subGroup in grpEcc.GroupBy(x=>x.unita_misura))
+                            {
+                                var qtaNum = subGroup.Sum(x => x.quantita_numero);
+                                var qtaOre = subGroup.Sum(x => x.quantita_ore);
+                                if (!isFirst)
+                                {
+                                    <span>/</span>
+                                }
+                                <span>@(qtaNum>0?qtaNum:qtaOre) @subGroup.Key</span>
+                                isFirst = false;
+                            }
+                        </td>
+                        <td class="rai-table-td-toggle"><i class="fa fa-chevron-down"></i></td>
+                    </tr>
+                </tbody>
+                <tbody>
+                    <tr>
+                        <td colspan="4" class="no-padding">
+                            <table class="table table-striped rai-table-info">
+                                @foreach (var item in grpEcc.GroupBy(x => x.desc_eccezione).OrderBy(x => x.Key))
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="rai-chart-legend rai-chart-legend-square"></div>
+                                        </td>
+                                        <td style="width:50%">
+                                            @item.First().cod_eccezione - @item.First().desc_eccezione
+                                        </td>
+                                        <td style="width:50%" class="text-right">
+                                            @{
+                                                var tmp = item.Sum(x => x.quantita_numero);
+                                                if (tmp == 0)
+                                                {
+                                                    tmp = item.Sum(x => x.quantita_ore);
+                                                }
+                                            }
+
+                                            <span>@tmp  @item.First().unita_misura</span>
+                                        </td>
+                                        <td class="rai-table-td-toggle"><i class="fa"></i></td>
+                                    </tr>
+                                }
+                            </table>
+                        </td>
+                    </tr>
+                </tbody>
+            }
+        </table>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-sm-12">
+        <div class="table-responsive">
+            <table class="table rai-table rai-table-vcenter table-bordered pf-td-ext" id="pf-table">
+                <thead>
+                    <tr>
+                        <th></th>
+                        @for (int i = 1; i <= 31; i++)
+                        {
+                            <th class="tdCalWid" style="text-align:center">@i</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int i = 1; i <= 12; i++)
+                    {
+                        DateTime date = new DateTime(year, i, 1);
+
+                        <tr>
+                            <td><span class="rai-font-md-bold">@date.ToString("MMM").ToUpper()</span></td>
+                            @for (int j = 0; j < 31; j++)
+                            {
+                                string cod_ecc = "";
+                                var items = Model.Eccezioni.Where(w => w.cod_mese.Equals(date.Month) && w.num_giorno.Equals(date.Day)).ToList();
+
+                                bool isWeekend = false;
+                                bool hasEcc = false;
+
+                                if (items != null && items.Any())
+                                {
+                                    isWeekend = (items.Count(w => w.tipo_giorno.Equals("F") || w.tipo_giorno.Equals("S")) > 0);
+
+                                    var item = items.Where(w => w.cod_eccezione.StartsWith("FE") ||
+                                    w.cod_eccezione.StartsWith("PF") ||
+                                    w.cod_eccezione.StartsWith("PR") ||
+                                    w.cod_eccezione.StartsWith("PX")).FirstOrDefault();
+
+                                    if (item != null)
+                                    {
+                                        cod_ecc = item.cod_eccezione;
+                                        hasEcc = true;
+                                    }
+                                }
+
+                                <td class="tdCalWid  @(date.Month!=i || isWeekend?"tdDayGrayCal":"tdDay")">
+                                    @if (hasEcc)
+                                    {
+                                        <span class="" data-toggle="tooltip" data-html="true" data-ecc="@String.Join("<br/>", Model.Eccezioni.Where(x=>x.cod_mese == date.Month && x.num_giorno == date.Day).Select(x=>x.cod_eccezione))">
+                                            <pie class="pie-cal-anno pie-@cod_ecc"></pie>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="" data-toggle="tooltip" data-html="true" data-ecc="@String.Join("<br/>", Model.Eccezioni.Where(x=>x.cod_mese == date.Month && x.num_giorno == date.Day).Select(x=>x.cod_eccezione))">
+                                            <pie class="pie-cal-trasparent"></pie>
+                                        </span>
+                                    }
+                                </td>
+                                if (date.Month == i)
+                                {
+                                    date = date.AddDays(1);
+                                }
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+@{
+    var tmpGG = Model.Giornate.GroupBy(x => x.cod_mese).OrderBy(x => x.Key);
+    var tmpEcc = Model.Eccezioni.GroupBy(x => x.cod_mese);
+    List<int> listAss1 = new List<int>();
+    foreach (var item in tmpGG)
+    {
+        var m = tmpEcc.FirstOrDefault(x => x.Key == item.Key);
+        if (m == null)
+        {
+            listAss1.Add(0);
+        }
+        else
+        {
+            listAss1.Add(m.Count(x => x.cod_eccez_padre == "TFE"));
+        }
+    }
+}
+
+
+<script>
+    function AnnoPrecedente() {
+        event.preventDefault();
+        RaiUpdateWidget('presenze', '/Anagrafica/Load_DatiPresenze', 'html', { m: '@Model.Matricola', anno:@(year-1) });
+    }
+    function AnnoSuccessivo() {
+        event.preventDefault();
+        RaiUpdateWidget('presenze', '/Anagrafica/Load_DatiPresenze', 'html', { m: '@Model.Matricola', anno:@(year+1) });
+    }
+
+
+    var labels = ['@Html.Raw(String.Join("','", tmpGG.Select(x=>new DateTime(DateTime.Today.Year,x.Key,1).ToString("MMM").ToUpper())))'];
+    var serieGGLav = [@String.Join(",", tmpGG.Select(x=>x.Count(y=>y.sintesi_giornata=="GG lavorabili")))];
+    var serieAss1 = [@String.Join(",", listAss1)];
+    var serieAss2 = [];
+
+    var chart2 = new Chartist.Bar('#chart-assenze', {
+        labels: labels,
+        series: [{ name: 'Giorni lavorati', data: serieGGLav},
+                {name:"Assenze 1", data:serieAss1}]
+        }, {
+        stackBars: true,
+        stackMode: 'overlap',
+        showGridBackground:false,
+        axisX:{
+            showGrid:true
+        },
+        axisY:{
+            onlyInteger:true,
+            low:0,
+            high:30,
+            showGrid:true,
+            scaleMinSpace: 36
+        },
+        fullWidth: true,
+        chartPadding: { left:0, right: 0 },
+        classNames:{
+            label: 'rai-font-md-neutral-bold-80 ct-label-center',
+            vertical:'ct-vertical ',
+            bar: 'ct-bar ct-bar-wider'
+        }
+        });
+</script>

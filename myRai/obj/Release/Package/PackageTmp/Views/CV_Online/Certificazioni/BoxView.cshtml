@@ -1,0 +1,472 @@
+﻿@model myRaiCommonModel.cvModels.cvModel
+@using myRaiHelper;
+@using System.Text.RegularExpressions
+@{
+    int count_attestati, count_pubblicazioni, count_brevetti, count_albi, count_premi;
+    string hide_attestati, hide_pubblicazioni, hide_brevetti, hide_albi, hide_premi;
+    string aria_attestati, aria_pubblicazioni, aria_brevetti, aria_albi, aria_premi;
+    int tbixAttestati, tbixPubblicazioni, tbixBrevetti, tbixAlbi, tbixPremi;
+    var lista = Model.certificazioni;
+    var tbIX = -1;
+    var counterEl = 0;
+    string not_primo_elemento;
+
+    var lista_attestati = lista.Where(x => x._tipo == "1").OrderByDescending(y => y._annoFin).ThenByDescending(y => y._meseFin);
+    count_attestati = lista_attestati.Count();
+    if (count_attestati == 0)
+    {
+        aria_attestati = "";
+        tbixAttestati = -1;
+    }
+    else
+    {
+        aria_attestati = "Sono presenti " + count_attestati.ToString() + " attestati";
+        tbixAttestati = 0;
+    }
+    var lista_pubblicazioni = lista.Where(x => x._tipo == "2").OrderByDescending(y => y.AnnoPubblicazione).ThenByDescending(y => y.MesePubblicazione).ThenByDescending(y => y.GiornoPubblicazione);
+    count_pubblicazioni = lista_pubblicazioni.Count();
+    if (count_pubblicazioni == 0)
+    {
+        aria_pubblicazioni = "";
+        tbixPubblicazioni = -1;
+    }
+    else
+    {
+        aria_pubblicazioni = "Sono presenti " + count_pubblicazioni + " pubblicazioni";
+        tbixPubblicazioni = 0;
+    }
+    var lista_brevetti = lista.Where(x => x._tipo == "3").OrderByDescending(y => y._dataBrevetto);
+    count_brevetti = lista_brevetti.Count();
+    if (count_brevetti == 0)
+    {
+        aria_brevetti = "";
+        tbixBrevetti = -1;
+    }
+    else
+    {
+        aria_brevetti = "Sono presenti " + count_brevetti.ToString() + " brevetti";
+        tbixBrevetti = 0;
+    }
+    var lista_albi = lista.Where(x => x._tipo == "4").OrderByDescending(y => y._dataAlboProf);
+    count_albi = lista_albi.Count();
+    if (count_albi == 0)
+    {
+        aria_albi = "";
+        tbixAlbi = -1;
+    }
+    else
+    {
+        aria_albi = "Sono presenti " + count_albi + " albi";
+        tbixAlbi = 0;
+    }
+    var lista_premi = lista.Where(x => x._tipo == "5").OrderByDescending(y => y._annoFin).ThenByDescending(y => y._meseFin);
+    count_premi = lista_premi.Count();
+    if (count_premi == 0)
+    {
+        aria_premi = "";
+        tbixPremi = -1;
+    }
+    else
+    {
+        aria_premi = "Sono presenti " + count_premi + " premi";
+        tbixPremi = 0;
+    }
+    hide_albi = (count_albi == 0) ? "hide" : "";
+    hide_attestati = (count_attestati == 0) ? "hide" : "";
+    hide_brevetti = (count_brevetti == 0) ? "hide" : "";
+    hide_pubblicazioni = (count_pubblicazioni == 0) ? "hide" : "";
+    hide_premi = (count_premi == 0) ? "hide" : "";
+}
+
+<section class="panel">
+    <header class="panel-heading bg-primary">
+        <h2 class="panel-title text-white">
+            <span tabindex="0">Certificazioni, Pubblicazioni, Premi</span>
+            <span tabindex="0" id="popCertificazioni" data-popover-content="#myPopover" class="push-5-l" data-toggle="popover" data-html="true" data-container="body" data-placement="right" title="" data-content="Inserisci, selezionando la sezione di interesse: Attestati (es.linguistico,abilitazione alle professioni,informatico,praticante giornalista, ecc.), Brevetti, Pubblicazioni (sia carta stampata che digitale), Albi profesionali (relativa all'iscrizione)." data-original-title="&nbsp;" data-trigger="focus" aria-label="Informazioni sezione">
+                <i id="" class="fa fa-info-circle"></i>
+            </span>
+        </h2>
+
+        <div class="panel-actions rai-panel-actions">
+            <button class="btn-action-icon" data-toggle="modal" data-target="#modalCertificazioniInserimento" onclick="InizializzaTuttoDopoAjax(); $( '#flagAttestato' ).prop( 'checked', true );" aria-label="Aggiungi certificazione"><span class="fa fa-plus"></span></button> @*onclick="click_default_certificazione()"*@
+        </div>
+
+
+    </header>
+
+    <div class="panel-body">
+        <!-- -->
+        <div class="rai panel-group removebottom" id="accexperiences">
+            <div class="rai panel rai panel-accordion">
+                <!-- pull-b-5  -->
+                <div class="panel-heading">
+
+                    <h4 class="panel-title">
+                        <a class="accordion-toggle collapsed  " data-toggle="collapse" data-parent="#accordion" href="#cert1" aria-expanded="false" aria-label="Attestati" onclick="testClick(this);">
+                            Attestati/Certificazioni
+                        </a>
+                    </h4>
+                    <div class="panel-actions @hide_attestati">
+
+                        <span style="" class="badge" tabindex="@tbixAttestati" aria-label="@aria_attestati">@count_attestati</span>
+                    </div>
+
+                </div>
+                <div id="cert1" class="accordion-body collapse" aria-expanded="false" style="height: 0px;">
+                    <div class="panel-body panel-body-nopadding-xs">
+                        @if (count_attestati == 0)
+                        {
+                            @Html.Partial("~/Views/CV_Online/partials/_no_elements.cshtml");
+
+                        }
+                        <table id="attestati-table" class="js-table-sections table table-hover rai-table rai-table-vcenter rai-table rai-table-vcenter" role="grid">
+                            <tbody class="">
+                                @{
+                                    counterEl = 0;
+                                    not_primo_elemento = "";
+                                    foreach (var elem in lista_attestati)
+                                    {
+                                        counterEl++;
+                                        tbIX = counterEl == 1 ? 0 : -1;
+
+                                        <tr role="row" tabindex="@tbIX" onfocus="onFocusRowShowCtrl(this);">
+                                            <td class="text-left">
+                                                <p class="text-bold">@elem._nomeCertifica</p>
+                                                <p>@elem._urlCertifica</p>
+                                                <p class="text-italic">Anno conseguimento: @elem._annoFin</p>
+                                            </td>
+                                            <td class="@not_primo_elemento text-right" role="toolbar">
+                                                <div class="btn-action-icon-container">
+                                                    <a class="btn-action-icon" role="link" aria-label="Cancella attestato @elem._nomeCertifica" onclick="ConfermaCancellazione_Certificazione('@elem._matricola', '@elem._prog')"><i class="fa fa-trash"></i></a>
+                                                    <a class="btn-action-icon" role="link" aria-label="Modifica attestato @elem._nomeCertifica"  onclick="ModificaCertificazione(@myRaiHelper.CommonHelper.TransformDates(Json.Encode(elem)))"><i class="fa fa-pencil"></i></a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        
+                                    }
+                                }
+                            </tbody>
+                        </table>
+
+                        @Html.Partial("limitaTR", new myRaiCommonModel.limitaTRmodel("attestati-table", "box-Certificazioni", 3, lista_attestati.Count()))
+
+                    </div>
+                </div>
+            </div>
+            <div class="rai panel rai panel-accordion">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a class="accordion-toggle collapsed  " data-toggle="collapse" data-parent="#accordion" href="#cert2" aria-expanded="false" aria-label="Brevetti">Brevetti</a>
+                    </h4>
+                    <div class="panel-actions @hide_brevetti">
+                        <span style="" class="badge" tabindex="@tbixBrevetti" aria-label="@aria_brevetti">
+                            @count_brevetti
+                        </span>
+                    </div>
+                </div>
+                <div id="cert2" class="accordion-body collapse" aria-expanded="false">
+                    <div class="panel-body panel-body-nopadding-xs">
+                        @if (count_brevetti == 0)
+                        {
+                            @Html.Partial("~/Views/CV_Online/partials/_no_elements.cshtml");
+                        }
+
+                        <table class="js-table-sections table table-hover rai-table rai-table-vcenter" id="brevetti-table">
+                            <tbody class="">
+                                @{
+                                    tbIX = 0;
+                                    counterEl = 0;
+                                    not_primo_elemento = "";
+                                    foreach (var elem in lista_brevetti)
+                                    {
+                                        counterEl++;
+                                        tbIX = counterEl == 1 ? 0 : -1;
+                                        string anno_conseguimento;
+                                        string[] anno_tmp = { };
+
+                                        if ((elem._dataBrevetto != "") && (elem._dataBrevetto != null))
+                                        {
+                                            anno_tmp = elem._dataBrevetto.Split('/');
+                                        }
+                                        if ((anno_tmp != null) && (anno_tmp.Count() > 2))
+                                        {
+                                            anno_conseguimento = anno_tmp[2];
+                                        }
+                                        else
+                                        {
+                                            anno_conseguimento = " - ";
+                                        }
+                                        <tr tabindex="@tbIX" onfocus="onFocusRowShowCtrl(this);" role="row">
+                                            <td class="text-left">
+                                                <p class="text-bold">@elem._tipoBrevetto</p><p>@elem._noteBrevetto</p><p class="text-italic">Anno conseguimento: @anno_conseguimento</p>
+                                            </td>
+                                            <td class="text-right" role="toolbar">
+                                                <div class="btn-action-icon-container">
+                                                    <a class="btn-action-icon" aria-label="Elimina brevetto @elem._tipoBrevetto" role="link" onclick="ConfermaCancellazione_Certificazione('@elem._matricola', '@elem._prog')"><i class="fa fa-trash"></i></a>
+                                                    <a class="btn-action-icon" aria-label="Modifica brevetto @elem._tipoBrevetto" role="link"  onclick="ModificaCertificazione(@myRaiHelper.CommonHelper.TransformDates(Json.Encode(elem)))"><i class="fa fa-pencil"></i></a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                        @Html.Partial("limitaTR", new myRaiCommonModel.limitaTRmodel("brevetti-table", "box-Certificazioni", 3, lista_brevetti.Count()))
+
+                    </div>
+                </div>
+            </div>
+            <div class="rai panel rai panel-accordion ">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a class="accordion-toggle collapsed  " data-toggle="collapse" data-parent="#accordion" href="#cert3" aria-expanded="false" aria-label="Pubblicazioni">
+                            Pubblicazioni
+                        </a>
+                    </h4>
+
+                    <div class="panel-actions @hide_pubblicazioni">
+                        <span style="" class="badge" tabindex="@tbixPubblicazioni" aria-label="@aria_pubblicazioni">
+                            @count_pubblicazioni
+                        </span>
+                    </div>
+
+                </div>
+                <div id="cert3" class="accordion-body collapse" aria-expanded="false">
+                    <div class="panel-body panel-body-nopadding-xs">
+                        @if (count_pubblicazioni == 0)
+                        {
+                            @Html.Partial("~/Views/CV_Online/partials/_no_elements.cshtml");
+                        }
+                        <table class="js-table-sections table table-hover rai-table rai-table-vcenter" id="pubb-table">
+                            <tbody class="">
+                                @{
+                                    counterEl = 0;
+                                    tbIX = 0;
+                                    not_primo_elemento = "";
+                                    foreach (var elem in lista_pubblicazioni)
+                                    {
+                                        counterEl++;
+                                        tbIX = counterEl == 1 ? 0 : -1;
+                                        string anno_conseguimento;
+                                        string[] anno_tmp = { };
+
+                                        if ((elem._dataPubblica != "") && (elem._dataPubblica != null))
+                                        {
+                                            anno_tmp = elem._dataPubblica.Split('/');
+                                        }
+
+                                        if ((anno_tmp != null) && (anno_tmp.Count() > 2))
+                                        {
+                                            anno_conseguimento = anno_tmp[2];
+                                        }
+                                        else
+                                        {
+                                            anno_conseguimento = " - ";
+                                        }
+                                        <tr tabindex="@tbIX" role="row" onfocus="onFocusRowShowCtrl(this);">
+                                            <td class="text-left" style="width:80%">
+                                                <p class="text-bold">@elem._titoloPubblica</p><p>@elem._notePubblica</p><p class="text-italic">
+                                                    @*Anno conseguimento: @anno_conseguimento*@
+                                                    @if (elem.GiornoPubblicazione != null)
+                                                    {
+                                                        @:Data Pubblicazione: @elem.GiornoPubblicazione/@elem.MesePubblicazione/@elem.AnnoPubblicazione
+                                                    }
+                                                    else if (!String.IsNullOrWhiteSpace(elem.MesePubblicazione))
+                                                    {
+                                                        @:Data Pubblicazione: @(CommonHelper.ToTitleCase(new DateTime((int)elem.AnnoPubblicazione, Convert.ToInt32(elem.MesePubblicazione), 1).ToString("MMMM"))) @elem.AnnoPubblicazione
+                                                    }
+                                                    else if (elem.AnnoPubblicazione != null)
+                                                    {
+                                                        @:Data Pubblicazione: @elem.AnnoPubblicazione
+                                                    }
+                                                </p>
+                                            </td>
+                                            <td class="text-right" role="toolbar">
+                                                <div class="btn-action-icon-container">
+                                                    <a class="btn-action-icon" aria-label="Elimina pubblicazione @elem._titoloPubblica" role="link" onclick="ConfermaCancellazione_Certificazione('@elem._matricola', '@elem._prog')"><i class="fa fa-trash"></i></a>
+                                                    <a class="btn-action-icon" aria-label="Modifica pubblicazione @elem._titoloPubblica" role="link"  onclick="ModificaCertificazione(@myRaiHelper.CommonHelper.TransformDates(Json.Encode(elem)))"><i class="fa fa-pencil"></i></a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                        @Html.Partial("limitaTR", new myRaiCommonModel.limitaTRmodel("pubb-table", "box-Certificazioni", 3, lista_pubblicazioni.Count()))
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="rai panel rai panel-accordion">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a class="accordion-toggle collapsed  " data-toggle="collapse" data-parent="#accordion" href="#cert4" aria-expanded="false" aria-label="Albi professionali">
+                            Albi Professionali
+                        </a>
+                    </h4>
+                    <div class="panel-actions @hide_albi">
+                        <span style="" class="badge" tabindex="@tbixAlbi" aria-label="@aria_albi">
+                            @count_albi
+                        </span>
+                    </div>
+                </div>
+                <div id="cert4" class="accordion-body collapse" aria-expanded="false">
+                    <div class="panel-body panel-body-nopadding-xs">
+                        @if (count_albi == 0)
+                        {
+                            @Html.Partial("~/Views/CV_Online/partials/_no_elements.cshtml");
+                        }
+                        <table class="js-table-sections table table-hover rai-table rai-table-vcenter" id="albo-table">
+                            <tbody class="">
+                                @{
+                                    tbIX = 0;
+                                    counterEl = 0;
+                                    not_primo_elemento = "";
+                                    foreach (var elem in lista_albi)
+                                    {
+                                        counterEl++;
+                                        tbIX = counterEl == 1 ? 0 : -1;
+                                        string anno_conseguimento;
+                                        string[] anno_tmp = { };
+                                        //var anno_tmp = ((elem._dataAlboProf != "") && (elem._dataAlboProf != null)) ? elem._dataAlboProf.Split('/') : [("","")];
+                                        if ((elem._dataAlboProf != "") && (elem._dataAlboProf != null))
+                                        {
+                                            anno_tmp = elem._dataAlboProf.Split('/');
+                                        }
+                                        if ((anno_tmp != null) && (anno_tmp.Count() > 2))
+                                        {
+                                            anno_conseguimento = anno_tmp[2];
+                                        }
+                                        else
+                                        {
+                                            anno_conseguimento = " - ";
+                                        }
+                                        <tr role="row" onfocus="onFocusRowShowCtrl(this);" tabindex="@tbIX">
+                                            <td class="text-left" style="width:80%">
+                                                <p class="text-bold">@elem._descAlboProf</p><p>@elem._noteAlboProf</p><p class="text-italic">Anno conseguimento: @anno_conseguimento</p>
+                                            </td>
+                                            <td class="text-right" role="toolbar">
+                                                <div class="btn-action-icon-container">
+                                                    <a class="btn-action-icon" aria-label="Elimina albo @elem._descAlboProf" role="link" onclick="ConfermaCancellazione_Certificazione('@elem._matricola', '@elem._prog')"><i class="fa fa-trash"></i></a>
+                                                    <a class="btn-action-icon" aria-label="Modifica albo @elem._descAlboProf" role="link"  onclick="ModificaCertificazione(@myRaiHelper.CommonHelper.TransformDates(Json.Encode(elem)))"><i class="fa fa-pencil"></i></a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                        @Html.Partial("limitaTR", new myRaiCommonModel.limitaTRmodel("albo-table", "box-Certificazioni", 3, lista_albi.Count()))
+
+                    </div>
+                </div>
+            </div>
+            <div class="rai panel rai panel-accordion">
+                <!-- pull-b-5  -->
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a class="accordion-toggle collapsed  " data-toggle="collapse" data-parent="#accordion" href="#cert5" aria-expanded="false" aria-label="Premi" onclick="testClick(this);">
+                            <!-- padding-25 -->
+                            Premi
+                        </a>
+                    </h4>
+
+                    <div class="panel-actions @hide_premi">
+
+                        <span style="" class="badge" tabindex="@tbixPremi" aria-label="@aria_premi">@count_premi</span>
+                    </div>
+
+
+                </div>
+                <div id="cert5" class="accordion-body collapse" aria-expanded="false" style="height: 0px;">
+                    <div class="panel-body panel-body-nopadding-xs">
+                        @if (count_premi == 0)
+                        {
+                            @Html.Partial("~/Views/CV_Online/partials/_no_elements.cshtml");
+
+                        }
+                        <table id="premi-table" class="js-table-sections table table-hover rai-table rai-table-vcenter" role="grid">
+                            <tbody class="">
+                                @{
+                                    counterEl = 0;
+                                    not_primo_elemento = "";
+                                    foreach (var elem in lista_premi)
+                                    {
+                                        counterEl++;
+                                        tbIX = counterEl == 1 ? 0 : -1;
+
+                                        string anno_conseguimento;
+                                        string[] anno_tmp = { };
+
+                                        if ((elem._dataBrevetto != "") && (elem._dataBrevetto != null))
+                                        {
+                                            anno_tmp = elem._dataBrevetto.Split('/');
+                                        }
+                                        if ((anno_tmp != null) && (anno_tmp.Count() > 2))
+                                        {
+                                            anno_conseguimento = anno_tmp[2];
+                                        }
+                                        else
+                                        {
+                                            anno_conseguimento = " - ";
+                                        }
+
+                                        <tr role="row" tabindex="@tbIX" onfocus="onFocusRowShowCtrl(this);">
+                                            <td class="text-left" style="width:80%">
+                                                <p class="text-bold">@elem._nomeCertifica</p><p>@elem._urlCertifica</p><p class="text-italic">Anno conseguimento: @anno_conseguimento</p>
+                                            </td>
+                                            <td class="text-right" role="toolbar">
+                                                <div class="btn-action-icon-container">
+                                                    <a class="btn-action-icon" role="link" aria-label="Elimina premio @elem._nomeCertifica" onclick="ConfermaCancellazione_Certificazione('@elem._matricola', '@elem._prog')"><i class="fa fa-trash"></i></a>
+                                                    <a class="btn-action-icon" role="link" aria-label="Modifica premio @elem._nomeCertifica"  onclick="ModificaCertificazione(@myRaiHelper.CommonHelper.TransformDates(Json.Encode(elem)))"><i class="fa fa-pencil"></i></a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        
+                                    }
+                                }
+                            </tbody>
+                        </table>
+
+                        @Html.Partial("limitaTR", new myRaiCommonModel.limitaTRmodel("premi-table", "box-Certificazioni", 3, lista_premi.Count()))
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</section>
+
+@* FREAK - MODALE PER INSERIMENTO CERTIFICAZIONI *@
+@Html.Partial("Certificazioni/partials/_modalInserimento", new myRaiCommonModel.cvModels.cvModel.Certificazioni(CommonHelper.GetCurrentUserMatricola()) { _tipo = "1" })
+@* ******************************************************* *@
+
+@*@* FREAK - DIV per Modale di Modifica *@
+
+<div class="rai modal right fade " id="frkModificaCertificazioni" role="dialog" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-popin">
+        <div class="rai modal-content">
+            <div id="frkModificaCertificazioni-internal" data-modal-wrapper=""></div>
+        </div>
+    </div>
+</div>
+
+<script>fixBarCV("form-insertcertificazioni");</script>
+<script>
+    $( '[data-toggle="popover"]' ).popover( {
+        template: '<div class="popover"><div class="arrow"></div><div><span style="float:left; width:100%; display:inline;" class="popover-title"></span><span class="customPopOverCloser" style="float:right; width:5%; margin-top: -30px; margin-left: -3px; dispay:inline; cursor:pointer;">x</span></div><div class="clearfix"></div><div class="popover-content"></div></div>',
+        html: true
+    } );
+
+
+    function testClick(tab) {
+        var obj = tab;
+
+    }
+</script>

@@ -1,0 +1,123 @@
+﻿@using myRaiHelper
+@using myRaiDataTalentia
+@using myRaiCommonManager
+@model RegolaVoceMenu
+
+@{
+    var listRule = new List<SelectListItem>()
+    {
+    new SelectListItem(){Value="*", Text="*"},
+    new SelectListItem(){Value="DB_PARAM",Text="Parametri DB"},
+    new SelectListItem(){Value="CODE", Text="Codice"}
+    };
+}
+
+<div class="row">
+    <div class="col-md-8">
+        @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Dati regola", false))
+        {
+            using (Html.BeginForm("Save_Regola", "Abilitazioni", FormMethod.Post, new { id = "form-rule", @class = "form-group" }))
+            {
+                @Html.HiddenFor(m => m.Regola.ID_REGOLA)
+
+                <div class="row">
+                    <div class="col-sm-12 push-10">
+                        @Html.LabelForRequiredObbl(m => m.Regola.ID_VOCE_MENU, "Voce menu", new { @class = "rai-caption" })
+                        @Html.RaiSelectFor(m => m.Regola.ID_VOCE_MENU, AbilitazioniManager.GetVociMenu())
+                        @Html.ValidationMessageFor(m => m.Regola.ID_VOCE_MENU)
+                    </div>
+                    <div class="col-sm-12 push-10">
+                        @Html.LabelForRequiredObbl(m => m.Regola.CONTESTO, "Contesto", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.Regola.CONTESTO, new { @class = "form-control", required = "required" })
+                        @Html.ValidationMessageFor(m => m.Regola.CONTESTO)
+                    </div>
+                    <div class="col-sm-12 push-10">
+                        @Html.LabelForRequiredObbl(m => m.Regola.TIPO_REGOLA, "Tipo regola", new { @class = "rai-caption" })
+                        @Html.RaiSelectFor(m => m.Regola.TIPO_REGOLA, listRule)
+                        @Html.ValidationMessageFor(m => m.Regola.TIPO_REGOLA)
+                    </div>
+                    <div class="col-sm-12 push-10 push-10-t">
+                        @Html.LabelFor(m => m.Regola.LST_MATR_INCL, "Matricole incluse", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.Regola.LST_MATR_INCL, new { @class = "form-control" })
+                        @Html.ValidationMessageFor(m => m.Regola.LST_MATR_INCL)
+                    </div>
+                    <div class="col-sm-12 push-10 push-10-t">
+                        @Html.LabelFor(m => m.Regola.LST_MATR_EXCL, "Matricole escluse", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.Regola.LST_MATR_EXCL, new { @class = "form-control" })
+                        @Html.ValidationMessageFor(m => m.Regola.LST_MATR_EXCL)
+                    </div>
+                    <div class="col-sm-12 push-10 push-10-t">
+                        @Html.LabelFor(m => m.Regola.ABIL_FUNC, "Funzione abilitazione", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.Regola.ABIL_FUNC, new { @class = "form-control" })
+                        @Html.ValidationMessageFor(m => m.Regola.ABIL_FUNC)
+                    </div>
+                    <div class="col-sm-12 push-10 push-10-t">
+                        @Html.LabelFor(m => m.Regola.ABIL_SUBFUNC, "Sottofunzioni abilitazione", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.Regola.ABIL_SUBFUNC, new { @class = "form-control" })
+                        @Html.ValidationMessageFor(m => m.Regola.ABIL_SUBFUNC)
+                    </div>
+                    <div class="col-sm-12 push-10 push-10-t">
+                        @Html.LabelFor(m => m.Regola.CODE, "Codice", new { @class = "rai-caption" })
+                        @Html.TextAreaFor(m => m.Regola.CODE, new { @class = "form-control"})
+                        @Html.ValidationMessageFor(m => m.Regola.CODE)
+                    </div>
+                </div>
+                <div class="row form-button">
+                    <div class="col-sm-12 ">
+                        <button class="btn rai-btn-primary full-width" onclick="SaveAbilRule(this)">Salva</button>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+
+<script>
+    function SaveAbilRule(button) {
+        event.preventDefault();
+
+        var idForm = 'form-rule';
+
+        $(button).addClass("disable");
+
+        var form = $("#" + idForm).first();
+        var validator = $(form).validate();
+
+        if (!$(form).valid()) {
+            $(button).removeClass("disable");
+            return false;
+        }
+
+        var formData = new FormData($(form)[0]);
+
+        $(form).parent().addClass("rai-loader");
+
+        $.ajax({
+            url: $(form).attr("action"),
+            processData: false,
+            contentType: false,
+            type: "POST",
+            data: formData,
+            dataType: 'json',
+            success: function (data) {
+                if (data.esito) {
+                    swal({ title: "Regola salvata con successo", type: 'success', customClass: 'rai' });
+
+                    RaiUpdateWidget("box-regole", "/Abilitazioni/ElencoRegoleMenu", "html", null);
+                    RaiOPGotoMain('nav-abil', true);
+                } else {
+                    swal({ title: "Ops...", text: data.message, type: 'error', customClass: 'rai' });
+                }
+                $(button).removeClass("disable");
+                $(form).parent().removeClass("rai-loader");
+            },
+            error: function (a, b, c) {
+                swal({ title: "Ops...", text: ' ' + b + ' ' + c, type: 'error', customClass: 'rai' });
+                $(button).removeClass("disable");
+                $(form).parent().removeClass("rai-loader");
+            }
+        })
+    }
+</script>
+

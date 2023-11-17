@@ -1,0 +1,124 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonModel.RaiAcademy;
+@using MVCProject.Custom_Helpers;
+
+@model myRai.Controllers.RichiestaModel
+
+@{
+    bool isMineStep = false;
+    var steps = Model.Richiesta.TREQUESTS_STEP.OrderBy( x => x.NUM_PROGR );
+    int numStep = Model.Richiesta.TREQUESTS_STEP.Count( );
+    var lastStep = Model.Richiesta.TREQUESTS_STEP.ElementAt( numStep - 1 );
+    if ( lastStep.SINTESI1_TO.COD_MATLIBROMAT == CommonHelper.GetCurrentUserMatricola( ) && lastStep.IND_APPROVED == null )
+    {
+
+        isMineStep = true;
+    }
+}
+<div class="modal-dialog modal-dialog-popin">
+    <div class="modal-content height100">
+        <div class="block block-themed block-transparent remove-margin-b">
+            <div class="block-header bg-cdf" style="height: 58px;">
+                <ul class="block-options visible-xs">
+                    <li>
+                        <button data-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+                    </li>
+                </ul>
+                <h4 class="lead" style="float: left; margin: -3px 0 0 0px; font-size: 2.1rem; color: #fff;">Richiesta</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div id="richiestaContentExt" style="overflow:hidden">
+                <div id="richiestaContent" class="row" style="margin:0px;">
+                    <div class="col-md-7 no-pad-left no-pad-right border-right ">
+                        @Html.Partial( "subpartial/DettaglioRichiesta_Anagrafica" , Model )
+                        <!--Dettaglio richiesta-->
+                        <div class="block-header block-header-inc block-content-mini">
+                            <div class="row">
+                                <div class="col-sm-7 col-xs-7 no-padding">
+                                    <h4 class="font-w600">Dettaglio richiesta</h4>
+                                </div>
+                                <div class="col-sm-5 col-xs-5 text-right no-padding" style="padding-top:7px !important;font-size:15px;">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="block-content block-content-mini block-content-full no-padding-left no-padding-right">
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <div class="row">
+                                        <div class="col-sm-3">
+                                            <label class="text-bold">Motivo</label>
+                                        </div>
+                                        <div class="col-sm-9">
+                                            <label>@Model.Richiesta.DES_NEED</label>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-3">
+                                            <label class="text-bold">Note</label>
+                                        </div>
+                                        <div class="col-sm-9">
+                                            <label>@Model.Richiesta.NOT_NOTE</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @if ( isMineStep )
+                        {
+                            <!--Gestione richiesta-->
+                            <div class="block-header block-header-inc block-content-mini">
+                                <div class="row">
+                                    <div class="col-sm-7 col-xs-7 no-padding">
+                                        <h4 class="font-w600">Gestisci la richiesta</h4>
+                                    </div>
+                                    <div class="col-sm-5 col-xs-5 text-right no-padding" style="padding-top:7px !important;font-size:15px;">
+
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="block-content block-content-mini block-content-full no-padding-left no-padding-right">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        @if ( lastStep.ID_PERSONA_FROM != Model.Richiesta.ID_PERSONA )
+                                        {
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <label><i>Inoltrata da @lastStep.SINTESI1_FROM.DES_COGNOMEPERS @lastStep.SINTESI1_FROM.DES_NOMEPERS</i></label>
+                                                </div>
+                                            </div>
+                                        }
+                                        @Html.Partial( "subpartial/Richiesta_approvazione" , Model.Richiesta.ID_TREQUESTS )
+                                        @Html.Partial( "subpartial/Richiesta_rifiuto" , Model.Richiesta.ID_TREQUESTS )
+                                        <div class="row push-10">
+                                            <div class="col-sm-7">
+                                                <h5>Vuoi approvare la richiesta?</h5>
+                                            </div>
+                                            <div class="col-sm-5 text-right">
+                                                <button class="js-swal-confirm btn btn-lg btn-default" type="submit" onclick="RichFormRifiuta(1, @Model.Richiesta.ID_TREQUESTS, @lastStep.ID_TREQUESTS_STEP)">
+                                                    <i class="fa fa-fw fa-remove text-danger"></i>
+                                                </button>
+                                                <button class="btn btn-lg btn-default" type="submit" onclick="RichFormAccetta(1, @Model.Richiesta.ID_TREQUESTS, @lastStep.ID_TREQUESTS_STEP)">
+                                                    <i class="fa fa-fw fa-check text-success"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <div class="col-md-5 no-pad-left no-pad-right border-left">
+                        @Html.Partial( "subpartial/DettaglioRichiesta_Corso" , Model )
+                        @if ( Model.Corso.TipoMetodoFormativo == MetodoEnum.FPRES )
+                        {
+                            @Html.Partial( "subpartial/DettaglioRichiesta_Edizione" , Model )
+                        }
+                        @Html.Partial( "subpartial/DettaglioRichiesta_Steps" , Model )
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

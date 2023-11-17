@@ -1,0 +1,111 @@
+﻿@using myRai.Models
+@using myRai.Business
+@using myRaiHelper
+@using myRaiCommonModel
+
+@model DettaglioDematerializzazioneVM
+
+@{
+    string title = "Documenti da firmare";
+    int idDoc = Model.Navigazione.IdDocumentoCorrente;
+}
+
+<div class="block block-transparent no-margin-bottom">
+    <div class="block-header">
+        <label class="rai-font-modal-heading">@(title)</label>
+        <div class="block-options">
+            <button data-dismiss="modal" class="btn btn-action-icon" onclick="$(this).parent('.modal').css('z-index', '');"><i class="glyphicon glyphicon-remove"></i></button>
+        </div>
+    </div>
+    <div id="corpo-modale" class="block-content">
+        <div class="block block-transparent no-padding" style="margin-bottom:0px;">
+            <div class="row">
+                <div class="row" id="dem-messaggio-firma-in-corso" style="display:none;">
+                    <div class="col-sm-12">
+                        <div class="alert alert-info">
+                            <h4><b>Firma documenti</b></h4>
+                            <b>Il sistema sta processando i documenti nel carrello</b>
+                            <br>Processo di firma dei documenti in corso...<br>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row" id="dem-div-caricamento">
+                <div class="col-md-12">
+                    <div id="errorfirma" style="display: none; max-height: 100px; overflow: auto; margin-top: 10px"><span id="errorspan" style="color: red"></span></div>
+                </div>
+                <div class="col-sm-8" id="dem-elenco-in-firma">
+                    @Html.Partial("~/Views/Dematerializzazione/subpartial/_tbl_elenco_in_firma.cshtml" , Model)
+                </div>
+                <div class="col-sm-4" id="dem-widget-firma-params">
+                    @using (Html.BeginPanel(myRaiHelper.PanelType.Panel , "Firma documenti" , false))
+                    {
+                    <div class="rai form-group">
+                        <div class="row push-10">
+                            <div class="col-sm-12" style="padding-left: 5px; padding-right: 5px;">
+                                <label class="rai-caption required">PASSWORD DELLA FIRMA</label>
+                                <input class="form-control" id="pwd" type="password" value="" placeholder="Inserisci la password" />
+                            </div>
+                        </div>
+                        <div class="row push-10">
+                            <div class="col-sm-12" style="padding-left: 5px; padding-right: 5px;">
+                                <label class="rai-caption required">ONE TIME PASSWORD</label>
+                                <input class="form-control" id="otp" value="" placeholder="000000" />
+                            </div>
+                        </div>
+                        <div class="row push-10">
+                            <div class="col-sm-12" style="padding-left: 5px; padding-right: 5px;">
+                                <label class="rai-font-sm-neutral">Inserire il solo codice di 6 cifre generato dal software VASCO</label>
+                            </div>
+                        </div>
+                        <br />
+                        <div class="row push-10">
+                            <div class="col-sm-12" style="padding-left: 5px; padding-right: 5px;">
+                                <div class="rai-checkbox">
+                                    <input id="ricordami" type="checkbox" data-check-group="scelta-filter" value="1">
+                                    <label class="rai-caption" for="">
+                                        <span>
+                                            Ricordami su questo computer
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <br />
+
+                        <div class="rai-btn-fill push-10">
+                            <button type="button" class="btn rai-btn-primary" onclick="Dematerializzazione_ApplicaFirmaDocumenti();" style="padding: 12px 6px; min-height: 48px;">Firma documenti</button>
+                        </div>
+
+                        @{
+                            string[] param = CommonManager.GetParametri<string>(EnumParametriSistema.AbilitaFirmaRest);
+
+                            if (param != null && param.Any())
+                            {
+                                bool abilitato = bool.Parse(param[0]);
+                                string matricole = param[1];
+
+                                if (abilitato && matricole.Contains(Utente.Matricola()))
+                                {
+                                    <div class="rai-btn-fill push-10">
+                                        <button type="button" class="btn rai-btn-primary" onclick="Dematerializzazione_ApplicaFirmaDocumentiREST();" style="padding: 12px 6px; min-height: 48px;">Firma documenti REST</button>
+                                    </div>
+                                }
+                            }
+                        }
+
+                        <div class="rai-btn-fill">
+                            <button type="button" class="btn rai-btn-secondary" onclick="">Annulla</button>
+                        </div>
+
+                    </div>
+                    }
+
+                </div>
+            </div>
+
+
+        </div>
+
+    </div>
+</div>

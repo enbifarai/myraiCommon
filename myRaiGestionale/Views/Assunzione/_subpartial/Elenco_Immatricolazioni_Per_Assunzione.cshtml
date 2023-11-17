@@ -1,0 +1,102 @@
+﻿@model List<myRaiCommonModel.AssunzioniVM>
+@using myRaiHelper
+@{
+
+
+    if (Model == null || Model.Count() == 0)
+    {
+        <tr>
+            @Html.Partial("~/Views/Shared/_NoDati.cshtml");
+        </tr>
+    }
+    else
+    {
+        string firstClass = "open"; ;
+        foreach (var anno in Model.GroupBy(x => x.DataCreazione.Year))
+        {
+            <tbody class="rai-table-collapsable-header @firstClass">
+                <tr class="bg-neutrals-xl-10">
+                    <td colspan="6" style="padding:12px 18px"><label class="rai-font-lg">Anno @anno.Key</label></td>
+                    <td class="text-right" style="padding:12px 18px;">
+                        <label class="rai-notification">@anno.Count()</label>
+                        <i class="fa fa-chevron-down"></i>
+                    </td>
+                </tr>
+            </tbody>
+
+            <tbody>
+                @foreach (var item in anno)
+                {
+                    @Html.Hidden(item.IdPersona.ToString(), new { id = "idPersona" });
+                <tr style="cursor: pointer;">
+                    <td style="width:1%;" class="ws-nowrap text-center">
+                        <div class="col-sm-12" style="margin-top:-20px; margin-left: -20px;">
+                            @Html.Partial( "~/Views/Dematerializzazione/subpartial/_profiloimage.cshtml" , new myRaiCommonModel.ProfiloImageModel() {
+                           Matricola= item.Matricola ,
+                           Row1 = item.Cognome.TitleCase() + " " + item.Nome.TitleCase(),
+                           Row2 = "Matricola "+ item.Matricola,
+                           display = "inline"
+                       })
+                        </div>
+                        @*<span class="rai-font-md-bold">@item.Matricola</span>*@
+                    </td>
+                    @*<td>
+            <span class="rai-font-md">@item.Cognome.TitleCase() @item.Nome.TitleCase() @item.SecondoCognome.TitleCase() </span>
+        </td>*@
+                    @*<td>
+                        <span class="rai-font-md">
+                            @item.DataCreazione.ToShortDateString()
+                        </span>
+                    </td>*@
+                    <td>
+                        <span class="rai-font-md">
+                            @item.DataInizio.ToShortDateString()
+                        </span>
+                    </td>
+                    <td>
+                        <span class="rai-font-md">
+                            @item.Servizio / @item.Categoria
+                        </span>
+                    </td>
+                    @*<td>
+                        <span class="rai-font-md">
+                            @item.Categoria
+                        </span>
+                    </td>*@
+                    <td>
+                        @if (item.CodAssunzione == "L")
+                        {
+                            <div class="col-sm-9" style="padding:0px; padding-left: 5px; padding-top:5px">
+                                <div class="rai progress progress-xs m-2 light" style="margin-bottom:0px">
+                                    <div class="progress-bar progress-bar-info" role="progressbar" aria-valuemin="0" aria-valuemax="100" style="width: @item.Avanzamento%;">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-3" style="padding:0px">
+                                <label class="rai-font-md" style="margin-left:4px">@item.Avanzamento%</label>
+                            </div>
+                        }
+                    </td>
+                    <td style="width:1%" class="ws-nowrap text-left">
+                        @if (item.CodAssunzione == "L")
+                        {
+                            <button id="modificaAss" class="btn btn-sm rai-btn-small dettaglio" onclick="apriAssunzione(@item.IdEvento, @item.IdPersona, @item.Avanzamento)">Visualizza</button>
+                        }
+                        else
+                        {
+                            <button id="modificaAss" class="btn btn-sm rai-btn-small dettaglio" onclick="apriAssunzione(@item.IdEvento)">Assunzione</button>
+                        }
+                        @if (item.Avanzamento < 85 && item.CodAssunzione == "L")
+                        {
+                            <button id="eliminazione" class="btn btn-action-icon eliminazione" onclick="eliminaAssunzione(@item.IdEvento)"> <i class="fa fa-trash-o"></i></button>
+                        }
+
+                    </td>
+                </tr>
+                }
+            </tbody>
+            firstClass = "";
+        }
+    }
+
+}

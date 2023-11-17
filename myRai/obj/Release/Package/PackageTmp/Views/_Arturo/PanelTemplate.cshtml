@@ -1,0 +1,98 @@
+﻿@using MVCProject.Custom_Helpers;
+@using Arturo.Model;
+
+@model SectionTemplate
+
+@{
+    bool hasContent = !Model.OnlyHeader && !Model.OnlyFooter;
+    string panelId = Guid.NewGuid().ToString("N");
+}
+
+@if (Model.CheckModel)
+{
+    if (!Model.DrawSkeleton && Model.Model == null)
+    {
+        return;
+    }
+}
+
+@if (hasContent || Model.OnlyHeader)
+{
+    @Html.Raw("<section class=\"panel\" role=\"region\" aria-labelledby=\""+panelId+"_title\" >")
+    if (Model.PanelType != PanelType.NoHeader)
+    {
+        <header class="panel-heading">
+            <h1 class="panel-title" id="@(panelId)_title">@Model.Title</h1>
+            <div class="panel-actions rai-panel-actions">
+                @if (Model.SwitchActions != null)
+                {
+                    <div class="btn-action-icon-switch">
+                        @foreach (var action in Model.SwitchActions.Actions)
+                        {
+                            string additionalClass = "";
+                            string additionalAttributes = "";
+                            if (action.Attributes != null && action.Attributes.Count() > 0)
+                            {
+                                additionalClass += String.Join(" ", action.Attributes.Where(x => x.Name == "class").Select(x => " " + x.Value));
+                                additionalAttributes += String.Join(" ", action.Attributes.Where(x => x.Name != "class").Select(x => x.ToString()));
+                            }
+
+                            <button class="btn-action-icon @(action.Active ? "active" : "") @additionalClass" title="@action.Title" onclick="@action.OnClick" @additionalAttributes><i class="@action.Icon"></i></button>
+                        }
+                    </div>
+                }
+                @if (Model.Actions != null && Model.Actions.Count() > 0)
+                {
+                    foreach (var item in Model.Actions)
+                    {
+                        <button onclick="@item.OnClick" title="@item.Title" class="bnt btn-action-icon @(!String.IsNullOrWhiteSpace(item.Text) ? "btn-action-icon-text":"")"><i class="@item.Icon"></i>@item.Text</button>
+                    }
+                }
+                @if (Model.Collapsable)
+                {
+                    <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" aria-labelledby="@(panelId)_title" aria-expanded="true"></a>
+                }
+            </div>
+        </header>
+    }
+    @Html.Raw("<div class=\"panel-body " + (Model.PanelType == PanelType.PanelNoPadding ? "no-padding" : "") + "\">")
+}
+
+@if (hasContent)
+{
+    if (!String.IsNullOrWhiteSpace(Model.ContentId))
+    {
+        @Html.Raw("<div id=\"" + Model.ContentId + "\">")
+    }
+
+    if (Model.Async)
+    {
+        @Html.AsyncPartial(Model.Controller, Model.Action, "~/Views/_RaiDesign/PanelTemplateSkeleton.cshtml", TempData, Model.AsyncCallBack)
+    }
+    else if (Model.DrawSkeleton)
+    {
+        @Html.Partial("~/Views/_RaiDesign/PanelTemplateSkeleton.cshtml")
+    }
+    else
+    {
+        if (Model.Model != null)
+        {
+            @Html.Partial(Model.ViewUrl, Model.Model)
+        }
+        else
+        {
+            @Html.Partial(Model.ViewUrl)
+        }
+    }
+
+    if (!String.IsNullOrWhiteSpace(Model.ContentId))
+    {
+        @Html.Raw("</div>")
+    }
+}
+
+@if (hasContent || Model.OnlyFooter)
+{
+    @Html.Raw("</div>")
+    @Html.Raw("</section>")
+}

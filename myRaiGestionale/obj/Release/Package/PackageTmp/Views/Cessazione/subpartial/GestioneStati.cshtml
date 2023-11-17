@@ -1,0 +1,269 @@
+﻿@using myRaiHelper
+@using myRaiGestionale.Controllers
+@using myRaiCommonModel.Gestionale
+@model CessazioneModel
+
+<!--contenuto-->
+@{
+    bool inseritaDaRPM = Model.Pratica.XR_INC_OPERSTATI.Any(x => x.ID_STATO == (int)IncStato.RichiestaInserita);
+
+    string matricola = CommonHelper.GetCurrentUserMatricola();
+    bool isAdmin = AuthHelper.EnabledToSubFunc(matricola, CessazioneHelper.INCENTIVI_HRGA_FUNC, "ADM");
+
+    bool isInLavorazione = Model.InCarico != null;
+    bool isMiaPratica = isInLavorazione && Model.InCarico.ID_PERSONA == CommonHelper.GetCurrentIdPersona();
+
+    int indexCurrent = Model.Workflow.Select(x => x.ID_STATO).ToList().IndexOf(Model.Stato.ID_STATO);
+    bool canShowProspetto = indexCurrent < Model.Workflow.Count() - 1 ? Model.Workflow[indexCurrent + 1].ID_STATO == (int)IncStato.Conteggio : false;//  Model.Stato.ID_STATO == (int)IncStato.Controllato;
+
+    string qualSaltaUfficioPrestiti = HrisHelper.GetParametro<string>(HrisParam.IncentiviQualificheSaltaUfficioPrestiti);
+    bool saltaUfficioPrestiti = !String.IsNullOrWhiteSpace(qualSaltaUfficioPrestiti) && qualSaltaUfficioPrestiti.Split(',').Any(x => Model.Sintesi.COD_QUALIFICA.StartsWith(x));
+}
+
+@if (Model.Stato.ID_STATO == (int)IncStato.RichiestaRifiutata)
+{
+    <div class="row">
+        <div class="col-sm-12 text-center">
+            <br />
+            <i class="rai-icon fa fa-times"></i>
+            <h4 class="base-text rai-font-modal-heading ">Pratica rifiutata</h4>
+            <i class="rai-font-sm-neutral">@String.Format("{0} - {1:dd/MM/yyyy} alle {1:HH:mm}", Model.OperStato.SINTESI1.Nominativo(), Model.OperStato.DATA)</i>
+            <br />
+        </div>
+    </div>
+}
+else if (Model.Stato.ID_STATO == (int)IncStato.RichiestaAnnullata)
+{
+    <div class="row">
+        <div class="col-sm-12 text-center">
+            <br />
+            <i class="rai-icon fa fa-trash-o"></i>
+            <h4 class="base-text rai-font-modal-heading ">Pratica annullata</h4>
+            <br />
+        </div>
+    </div>
+}
+else if (Model.Stato.ID_STATO == (int)IncStato.RichiestaDecaduta)
+{
+    <div class="row">
+        <div class="col-sm-12 text-center">
+            <br />
+            <i class="rai-icon fa fa-clock-o"></i>
+            <h4 class="base-text rai-font-modal-heading ">Pratica decaduta</h4>
+            <i class="rai-font-sm-neutral">@String.Format("{0} - {1:dd/MM/yyyy} alle {1:HH:mm}", Model.OperStato.SINTESI1.Nominativo(), Model.OperStato.DATA)</i>
+            <br />
+        </div>
+    </div>
+}
+else if (Model.Stato.ID_STATO == (int)IncStato.Conclusa)
+{
+    <div class="row">
+        <div class="col-sm-12 text-center">
+            <br />
+            <i class="rai-icon fa fa-check"></i>
+            <h4 class="base-text rai-font-modal-heading ">Pratica conclusa</h4>
+            <br />
+            <a class="btn rai-btn-primary full-width " href="@Url.Action("CreaRiepilogo", new { idDip = Model.Pratica.ID_DIPENDENTE })" title="Vedi il riepilogo" target="_blank"><i class="icons icon-doc"></i> Vedi il riepilogo</a>
+            <br />
+        </div>
+    </div>
+}
+else if (Model.IsAnpal)
+{
+    @Html.Partial("subpartial/Modifica_DatiAnpal", Model)
+}
+else
+{
+    <div class="block block-content-table block-transparent remove-margin-bottom">
+
+        @if ((isAdmin && Model.Stato.ID_STATO != (int)IncStato.RichiestaAnnullata)
+        || (isInLavorazione && (isMiaPratica || isAdmin)))
+        {
+            <div class="block-header block-content-mini">
+                <label class="block-title">Gestione pratica</label>
+
+
+                <div class="block-options">
+                    @if (isAdmin && Model.Stato.ID_STATO != (int)IncStato.RichiestaAnnullata)
+                    {
+                        <button class="btn btn-action-icon" onclick="IncAnnullaPratica(@Model.Pratica.ID_DIPENDENTE)" title="Annulla pratica"><i class="fa fa-trash"></i></button>
+                    }
+
+                    @if (isInLavorazione && (isMiaPratica || isAdmin))
+                    {
+                        if (canShowProspetto)
+                        {
+                            <a class="btn btn-action-icon btn-action-icon-text disable" id="btnVisualizzaProspetto" href="@Url.Action("CreaProspetto", new { idDip = Model.Pratica.ID_DIPENDENTE })" title="Vedi il prospetto" target="_blank"><i class="icon icon-doc"></i> Visualizza prospetto</a>
+                        }
+                        <button class="btn btn-action-icon" title="Rilascia pratica" id="btnCaricaDatiContabili" onclick="RilasciaPratica(@Model.Pratica.ID_DIPENDENTE)"><i class="icons icon-lock hidden-xs"></i></button>
+                    }
+                </div>
+            </div>
+        }
+            <div class="block-content block-content-mini ">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="alert" id="alertMessage" style="display:none; ">
+
+                        </div>
+                    </div>
+                </div>
+                @{
+                    int indexShowed = 0;
+                }
+                <div id="newwizard" class="wizard-progress wiznew wizard-progress-overflow">
+                    <ul class="wizard-steps">
+                        @for (int i = 0; i < Model.Workflow.Count(); i++)
+                        {
+                            var wkState = Model.Workflow[i].XR_INC_STATI;
+
+                            if (!wkState.IND_SHOWWIZARD.Value)
+                            {
+                                continue;
+                            }
+                            else if (wkState.ID_STATO == (int)IncStato.RecessoEffettuato && !inseritaDaRPM)
+                            {
+                                //Nel caso di pratica inserita dal sistema cessazioni, questo è lo stato iniziale
+                                continue;
+                            }
+
+                            indexShowed++;
+
+                            <li class="tabhead @(i <= indexCurrent ? "completed" : (i == indexCurrent + 1 && isInLavorazione) ? "active" : "")  disable text-center">
+                                <a href="#sez-@i" data-toggle="tab" aria-expanded="@(i == indexCurrent + 1 ? "true" : "false")"><span>@(indexShowed)</span>@wkState.DES_WIZARD</a>
+                                @if (Model.Pratica.XR_INC_OPERSTATI.Any(x=>x.DATA_FINE_VALIDITA==null && x.ID_STATO==wkState.ID_STATO))
+                                {
+                                    <span class="rai-font-sm-neutral">@Model.Pratica.XR_INC_OPERSTATI.First(x=>x.DATA_FINE_VALIDITA==null && x.ID_STATO==wkState.ID_STATO).TMS_TIMESTAMP.ToString("dd/MM/yyyy")</span>
+                                }
+                            </li>
+                        }
+                    </ul>
+                </div>
+
+                @if (isInLavorazione && !isMiaPratica)
+                {
+                    <div class="row push-10" id="lblInCarico">
+                        <div class="col-sm-12 text-center">
+                            <h5>
+                                <em class="text-danger">Pratica in carico a @Model.InCarico.Nominativo()</em>
+                            </h5>
+                        </div>
+                    </div>
+                }
+                @if (Model.AbilitaPresaInCarico)
+                {
+                    <div class="row">
+                        <div class="col-sm-12 text-center">
+                            <br />
+                            <i class="rai-icon fa fa-lock"></i>
+                            <br />
+                            <br />
+                            <div class="rai-btn-fill">
+                                @if (Model.Stato.ID_STATO == (int)IncStato.Conteggio)
+                                {
+                                    <button class="btn rai-btn-secondary " type="button" onclick="InvalidaStato(@Model.Pratica.ID_DIPENDENTE, @Model.OperStato.ID_OPER)">Annulla conteggio</button>
+                                }
+                                <button class="btn rai-btn-primary " type="button" onclick="PresaInCarico(this, @Model.Pratica.ID_DIPENDENTE, @( Model.Workflow[indexCurrent + 1].XR_INC_STATI.ID_STATO == (int)IncStato.Conteggio ? "true" : "false"), '@Model.Pratica.MATRICOLA')">Prendi in carico</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+                @if (isMiaPratica || Model.AbilitaAvviaPratica || Model.SuperUser)
+                {
+                    <div>
+                        <!-- Steps Content -->
+                        <div class="block-content tab-content no-padding" style="margin-top:10px;overflow: visible; border: 0px; box-shadow: none">
+                            @for (int i = 0; i < Model.Workflow.Count(); i++)
+                            {
+                                var wkState = Model.Workflow[i].XR_INC_STATI;
+                                if (wkState.ID_STATO == (int)IncStato.Conclusa)
+                                {
+                                    continue;
+                                }
+
+                                if (i == indexCurrent + 1)
+                                {
+                                    string classTab = i == indexCurrent + 1 ? "active" : "";
+
+                            <div class="tab-pane @classTab" id="sez-@i" role="tabpanel" tabindex="0">
+                                @switch (wkState.ID_STATO)
+                                {
+                                    case (int)IncStato.Controllato:
+                                        @Html.Partial("subpartial/Modifica_DatiPrestiti", Model.Pratica)
+                                        @Html.Partial("subpartial/Dettaglio_SituazioneDebitoria", CessazioneController.GetSituazioneDebitoria(Model.Pratica.MATRICOLA))
+                                        if (Model.Tipologia.ID_TIPOLOGIA == (int)CessazioneTipo.RisoluzioneConsensuale)
+                                        {
+                                            <div class="row push-10">
+                                                <div class="col-sm-12">
+                                                    <button class="btn rai-btn-primary full-width" type="button" onclick="SubmitStatoControllato(@Model.Pratica.ID_DIPENDENTE, @Model.Stato.ID_STATO)">Prosegui</button>
+                                                </div>
+                                            </div>
+                                        }
+                                        else if (Model.Tipologia.ID_TIPOLOGIA == (int)CessazioneTipo.Incentivazione)
+                                        {
+                                            <div class="row push-10">
+                                                <div class="col-sm-12">
+                                                    <button class="btn rai-btn-primary full-width" type="button" onclick="AvviaPratica(@Model.Pratica.ID_DIPENDENTE)">AVVIA</button>
+                                                </div>
+                                            </div>
+                                        }
+                                        break;
+
+                                    case (int)IncStato.Conteggio:
+                                        if (saltaUfficioPrestiti)
+                                        {
+                                            @Html.Hidden("noCheckUffPrest", true)
+                                            @Html.Partial("subpartial/Modifica_DatiPrestiti", Model.Pratica)
+                                        }
+
+                                        if (Model.Tipologia.ID_TIPOLOGIA == (int)CessazioneTipo.Incentivazione)
+                                        {
+                                            Model.Pratica.INCENTIVO_LORDO += Model.Pratica.EX_FISSA;
+                                        }
+                                        @Html.Partial("subpartial/Modifica_DatiContabili", Model.Pratica)
+                                        break;
+                                    @*case (int)IncStato.BozzaVerbale:
+            @Html.Partial("subpartial/Modifica_DatiBozza", Model)
+            break;*@
+                                    case (int)IncStato.Appuntamento:
+                                    case (int)IncStato.VerbaleFirmato:
+                                        @Html.Partial("subpartial/Modifica_DatiAppuntamento", Model)
+                                        break;
+                                    case (int)IncStato.VerbaleCaricato:
+                                        @Html.Partial("subpartial/Modifica_DatiVerbale", Model.Pratica)
+                                        break;
+                                    case (int)IncStato.Cedolini:
+                                        @Html.Partial("subpartial/Modifica_DatiPagamento", Model.Pratica)
+                                        break;
+                                    case (int)IncStato.RichiestaAccettata:
+                                        //Questo è lo stato successivo dell'inserimento richiesta
+                                        @Html.Partial("subpartial/Modifica_DatiRichiesta", Model)
+                                        break;
+                                    case (int)IncStato.RecessoEffettuato:
+                                    case (int)IncStato.RichiestaRifiutata:
+                                        //Lo stato successivo all'approvazione richiesta è quello da avviare
+                                        @Html.Partial("subpartial/Modifica_DatiAvvio", Model)
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            </div>
+                                }
+                            }
+
+                            @if (isInLavorazione && isMiaPratica && Model.Workflow[indexCurrent + 1].XR_INC_STATI.ID_STATO == (int)IncStato.Conteggio)
+                            {
+                                <script>
+                            CaricaDati('@Model.Pratica.MATRICOLA');
+                                </script>
+                            }
+                        </div>
+                        <!-- END Steps Content -->
+                    </div>
+                }
+
+
+            </div>
+        <!--fine contenuto-->
+    </div>
+}

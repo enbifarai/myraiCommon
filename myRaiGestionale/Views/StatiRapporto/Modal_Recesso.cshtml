@@ -1,0 +1,553 @@
+﻿@using myRaiCommonManager.Model.Smartworking
+@using myRaiHelper
+@model Recesso
+
+@{
+    var currentState = Model.Richiesta.XR_WKF_OPERSTATI_GENERIC.OrderByDescending(x => x.ID_STATO).FirstOrDefault();
+    bool canModifyFile = currentState != null && currentState.ID_STATO <= 20;//Completata
+}
+
+@using (Html.BeginModal("Recesso accordo consensuale"))
+{
+    <div class="row">
+        <div class="col-sm-12">
+            @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader))
+            {
+                <div id="row-profile">
+
+                </div>
+
+                <div class="row">
+                    <div class="col-sm-12">
+                        @using (Html.BeginBlock(BlockType.ContentTable, "Dati accordo"))
+                        {
+                            <div class="rai-table-info">
+                                @if (Model.Rapporto.DTA_NOTIF_DIP.HasValue)
+                                {
+                                    <div class="row">
+                                        <div class="col-sm-4"><span>Data proposta</span></div>
+                                        <div class="col-sm-8"><span>@Model.Rapporto.DTA_NOTIF_DIP.Value.ToString("dd/MM/yyyy")</span></div>
+                                    </div>
+                                }
+                                @if (Model.Modulo != null)
+                                {
+                                    <div class="row">
+                                        <div class="col-sm-4"><span>Data firma</span></div>
+                                        <div class="col-sm-8"><span>@Model.Modulo.DATA_COMPILAZIONE.Value.ToString("dd/MM/yyyy")</span></div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-4"><span>Documento</span></div>
+                                        <div class="col-sm-8"><a href="@Url.Action("DownloadAccordo", "StatiRapporto", new { id = Model.Modulo.XR_MOD_DIPENDENTI1 })"><i class="fa fa-download"></i></a></div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-12">
+                        @using (Html.BeginBlock(BlockType.ContentTable, "Dati Smartworking"))
+                        {
+                            <div class="rai-table-info">
+                                <div class="row">
+                                    <div class="col-sm-4"><span>Periodo</span></div>
+                                    <div class="col-sm-8"><span>Dal @Model.Rapporto.DTA_INIZIO.ToString("dd/MM/yyyy") al @Model.Rapporto.DTA_FINE.ToString("dd/MM/yyyy")</span></div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-4"><span>Giorni mensili</span></div>
+                                    <div class="col-sm-8">
+                                        @foreach (var info in Model.Rapporto.XR_STATO_RAPPORTO_INFO.Where(x => x.VALID_DTA_END == null).OrderBy(x => x.DTA_INIZIO))
+                                        {
+                                            <span>Dal @info.DTA_INIZIO.ToString("dd/MM/yyyy") al @info.DTA_FINE.Value.ToString("dd/MM/yyyy") - @info.NUM_GIORNI_MAX.Value@(info.NUM_GIORNI_EXTRA.HasValue ? "+" + info.NUM_GIORNI_EXTRA : "") giorni</span><br />
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                        }
+                    </div>
+                </div>
+
+                var statoRich = Model.Richiesta.XR_WKF_OPERSTATI_GENERIC.FirstOrDefault(x => x.ID_STATO == 10);
+
+
+                if (Model.Richiesta.ID_GESTIONE != 0)
+                {
+                    <div class="row">
+                        <div class="col-sm-12">
+
+
+                            @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Dati recesso"))
+                            {
+                                <div class="rai-table-info">
+                                    <div class="row">
+                                        <div class="col-sm-4"><span>Provenienza</span></div>
+                                        <div class="col-sm-8"><span>@Model.Provenienza.GetAmbientValue()</span></div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-4"><span>Data richiesta</span></div>
+                                        <div class="col-sm-8"><span>@Model.Richiesta.DTA_CREAZIONE.ToString("dd/MM/yyyy HH:mm")</span></div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-4"><span>Richiedente</span></div>
+                                        <div class="col-sm-4"><span>@(statoRich.NOMINATIVO)</span></div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-4"><span>Tipologia</span></div>
+                                        <div class="col-sm-8"><span>@Model.Tipologia.GetAmbientValue()</span></div>
+                                    </div>
+                                    @if (Model.Tipologia == TipoRecesso.GiustificatoMotivo)
+                                    {
+                                        <div class="row">
+                                            <div class="col-sm-4"><span>Motivo</span></div>
+                                            <div class="col-sm-8"><span>@Model.Nota</span></div>
+                                        </div>
+                                    }
+                                    @if (Model.Approvato.HasValue)
+                                    {
+                                        <div class="row">
+                                            <div class="col-sm-4"><span>Modulo</span></div>
+                                            <div class="col-sm-8"><a href="@Url.Action("DownloadRecesso", "StatiRapporto", new { idRecesso = Model.Richiesta.ID_GESTIONE })"><i class="fa fa-download"></i></a></div>
+                                        </div>
+
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    if (Model.Approvato.HasValue)
+                    {
+                        <div class="bg-neutrals-xl-10" style="margin:0px -15px 0px -15px;padding:10px 35px;">
+                            <div id="allegatoRecesso" class="panel panel-no-shadow push-10-t">
+                                <div class="panel-body">
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <span class="rai-font-md-bold" style="font-size: 130%;">Modulo controfirmato</span>
+                                            <span class="rai-font-sm-neutral" style="display: block;">
+                                                @if (Model.RicevutaData.HasValue)
+                                                {
+                                                    @*@:Caricato il @Model.RicevutaData.Value.ToString("dd/MM/yyyy")*@
+                                                }
+                                                else
+                                                {
+                                                    @:Carica la copia controfirmata del modulo
+                                                }
+                                            </span>
+
+                                            @if (!Model.RicevutaData.HasValue || Model.RicevutaPDF == null)
+                                            {
+                                                <div class="rai-btn-fill">
+                                                    <button id="button-allegato-Recesso" type="button" onclick="$('#fileuploadRecesso').click()" class="btn rai-btn-small" style="margin-bottom: 12px;margin-top:16px">
+                                                        Scegli documento
+                                                    </button>
+                                                </div>
+                                                <input style="display:none" type="file" id="fileuploadRecesso" onchange="UploadControfirmato()" />
+                                            }
+                                            else
+                                            {
+                                                <div class="widget-summary" style="margin-top: 8px;">
+                                                    <div class="widget-summary-col widget-summary-col-icon">
+                                                        <div class="summary-icon bg-cda" style="width:42px; height:42px;line-height:32px;background-color:#eee">
+                                                            <i class="icons icon-doc" style="font-size: 65%;"></i>
+                                                        </div>
+                                                    </div>
+                                                    <div class="widget-summary-col">
+                                                        <div class="row">
+                                                            <div class="col-sm-8">
+                                                                <div class="summary">
+                                                                    <span class="rai-font-md" style="word-break:break-word;display: block;">Caricato il @Model.RicevutaData.Value.ToString("dd/MM/yyyy") alle @Model.RicevutaData.Value.ToString("HH:mm")</span>
+                                                                    <span class="rai-font-sm-neutral">@(String.Format("{0:N2} KB", Model.RicevutaPDF.Length / 1000))</span>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="col-sm-4" style="text-align:right;padding-right:0px;padding-left:0px">
+                                                                <a target="_blank" href="@Url.Action("DownloadRecessoFirmato", "StatiRapporto", new { idRecesso = Model.Richiesta.ID_GESTIONE })" class="btn rai-btn-small" onclick="" aria-label="Visualizza file" title="Visualizza" style="min-width:80px;">Visualizza</a>
+
+                                                                @if (canModifyFile)
+                                                                {
+                                                                    <a onclick="RecessoEliminaControfirma()" class="btn btn-action-icon"><i class="fa fa-trash"></i></a>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <div id="uploadingRecesso" class="row" style="display:none">
+                                        <div class="col-sm-12">
+                                            <div class="widget-summary push-10">
+                                                <div class="widget-summary-col widget-summary-col-icon">
+                                                    <div class="summary-icon bg-cda" style="width:42px; height:42px;line-height:32px;background-color:#eee">
+                                                        <i class="icons icon-doc" style="font-size: 65%;"></i>
+                                                    </div>
+                                                </div>
+                                                <div class="widget-summary-col">
+                                                    <div class="summary">
+                                                        <span id="nome-fileRecesso" class="rai-font-md" style="word-break:break-word;display: block;">Nome del file</span>
+                                                        <span id="loadedRecesso" class="rai-font-sm-neutral">100</span> / <span id="totalRecesso" class="rai-font-sm-neutral">200</span>
+                                                        <a href="" id="rimuoviRecesso" style="float: right;display:none">Rimuovi</a>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+
+                                            <div class="rai progress progress-xs m-2 light">
+                                                <div id="progress-barRecesso" class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="6" aria-valuemin="0" aria-valuemax="100" style="width: 6%;">
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    if (!Model.Approvato.HasValue && Model.Tipologia == TipoRecesso.GiustificatoMotivo)
+                    {
+                        using (Html.BeginForm("ApprovaRecesso", "StatiRapporto", FormMethod.Post, new { id = "form-approva-recesso", @class = "form-group" }))
+                        {
+                            @Html.HiddenFor(m=>m.Richiesta.ID_GESTIONE)
+                            @Html.HiddenFor(m=>m.Rapporto.ID_STATO_RAPPORTO)
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    @Html.LabelFor(m => m.NotaApprovazione, "Motivo", new { @class = "rai-caption" })&nbsp;<em class="rai-font-sm">(obbligatorio in caso di rifiuto)</em>
+                                    @Html.TextAreaFor(m => m.NotaApprovazione, new { @class = "form-control", rows = "3" })
+                                    @Html.ValidationMessageFor(m => m.NotaApprovazione)
+                                </div>
+                            </div>
+                            <div class="row push-20-t">
+                                <div class="col-sm-12 rai-btn-fill">
+                                    <button class="btn btn-action-icon btn-action-icon-text feedback-error-color" onclick="SWRecessoApprova(false)"><i class="fa fa-times"></i> Rifiuta</button>
+                                    <button class="btn btn-action-icon btn-action-icon-text feedback-success-color" onclick="SWRecessoApprova(true)"><i class="fa fa-check"></i> Approva</button>
+                                </div>
+                            </div>
+                        }
+                    }
+                    if (canModifyFile && (Model.Tipologia == TipoRecesso.Ordinario || (Model.Tipologia == TipoRecesso.GiustificatoMotivo && Model.RicevutaPDF != null)))//Quindi se è stata approvata
+                    {
+                        <div class="row  push-20-t">
+                            <div class="col-sm-12 rai-btn-fill">
+                                <button class="btn btn-primary" onclick="SWRecessoConcludi(this)">Concludi</button>
+                            </div>
+                        </div>
+                    }
+
+                }
+                else
+                {
+                    <div class="row">
+                        <div class="col-sm-12">
+                            @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Dati recesso"))
+                            {
+                                using (Html.BeginForm("SalvaRecesso", "StatiRapporto", FormMethod.Post, new { id = "form-recesso", @class = "form-group" }))
+                                {
+                                    @Html.HiddenFor(m => m.Rapporto.ID_STATO_RAPPORTO)
+                                    <div class="row push-10">
+                                        <div class="col-sm-12">
+                                            @Html.LabelForRequiredObbl(m => m.Tipologia, "Tipologia", new { @class = "rai-caption" })
+                                            <div class="rai-radio">
+                                                @Html.RadioButtonFor(m => m.Tipologia, (int)TipoRecesso.Ordinario, new { onclick = "SWRecessoChangeType()", id = "recesso-ordinario", required = "required", data_recesso = DateTime.Today.AddDays(70).ToString("dd/MM/yyyy") })
+                                                <label for="recesso-ordinario">
+                                                    <span>Ordinario</span> - <em>Decorrenza: @DateTime.Today.AddDays(70).ToString("dd/MM/yyyy")</em>
+                                                </label>
+                                            </div>
+                                            <div class="rai-radio">
+                                                @Html.RadioButtonFor(m => m.Tipologia, (int)TipoRecesso.GiustificatoMotivo, new { onclick = "SWRecessoChangeType()", id = "recesso-giust-motivo", required = "required", data_recesso = DateTime.Today.AddDays(10).ToString("dd/MM/yyyy") })
+                                                <label for="recesso-giust-motivo">
+                                                    <span>Giustificato motivo</span> - <em>Decorrenza: @DateTime.Today.AddDays(10).ToString("dd/MM/yyyy")</em>
+                                                </label>
+                                            </div>
+                                            @Html.ValidationMessageFor(m => m.Tipologia)
+                                        </div>
+                                    </div>
+                                    <div class="row push-10">
+                                        <div class="col-sm-12">
+                                            @Html.LabelFor(m => m.Nota, "Motivo", new { @class = "rai-caption" })&nbsp;<em class="rai-font-sm">(obbligatorio in caso di giustificato motivo)</em>
+                                            @Html.TextAreaFor(m => m.Nota, new { @class = "form-control", rows = 5, disabled = "disabled", required = "required", minlength = "5" })
+                                            @Html.ValidationMessageFor(m => m.Nota)
+                                        </div>
+                                    </div>
+                                    <div class="row form-button">
+                                        <div class="col-sm-12 rai-btn-fill">
+                                            <button class="btn rai-btn-primary" onclick="SWRecessoInvia(this)">Recedi</button>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
+
+            }
+        </div>
+    </div>
+}
+
+
+<script>
+    HrisHeaderAnagDipIdPers("row-profile", @Model.Rapporto.ID_PERSONA)
+
+    function SWRecessoApprova(flagAppr) {
+        event.preventDefault();
+        $(button).addClass("disable");
+
+        let questionMessage = '';
+        let confirmMessage=''
+        if (flagAppr) {
+            questionMessage = 'Vuoi approvare la richiesta di recesso?';
+            confirmMessage = "Richiesta approvata con successo";
+            $('#NotaApprovazione').removeProp('required');
+        } else {
+            questionMessage = 'Vuoi rifiutare la richiesta di recesso?';
+            confirmMessage = "Richiesta rifiutata con successo";
+            $('#NotaApprovazione').prop('required', 'required');
+        }
+
+        var form = $("#form-recesso-approva").first();
+        var validator = $(form).validate();
+
+        if (!$(form).valid()) {
+            $(button).removeClass("disable");
+            return false;
+        }
+
+        swal({
+            title: 'Sei sicuro?',
+            text: questionMessage,
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sì!',
+            cancelButtonText: 'Annulla',
+            reverseButtons: 'true'
+        }).then(function () {
+            let formData = new FormData($('#form-recesso-approva')[0]);
+            formData.push('Approvato', flagAppr);
+
+            $(form).parent().addClass("rai-loader");
+
+            $.ajax({
+                url: $(form).attr("action"),
+                processData: false,
+                contentType: false,
+                type: "POST",
+                data: formData,
+                dataType: 'json',
+                success: function (data) {
+                    switch (data.esito) {
+                        case true:
+                            swal({ title: confirmMessage, type: 'success', customClass: 'rai' });
+                            StatiModalRecesso(@Model.Richiesta.ID_PERSONA, data.id_stato_rapporto);
+                            RaiUpdateWidget("block-stati", "/StatiRapporto/Modal_Dipendente", "replaceId", { idPersona: @Model.Richiesta.ID_PERSONA });
+                            break;
+                        default:
+                            swal({ title: "Ops...", text: data.errorMsg, type: 'error', customClass: 'rai' });
+                            break;
+                    }
+                    $(button).removeClass("disable");
+                    $(form).parent().removeClass("rai-loader");
+                },
+                error: function (a, b, c) {
+                    swal({ title: "Ops...", text: ' ' + b + ' ' + c, type: 'error', customClass: 'rai' });
+                    $(button).removeClass("disable");
+                    $(form).parent().removeClass("rai-loader");
+                }
+            });
+        }, function () {
+            $(button).removeClass("disable");
+        });
+    }
+
+    function SWRecessoChangeType() {
+        let tipoRecesso = $('[name="Tipologia"]:checked').val();
+        $('#Nota').prop('disabled', tipoRecesso != "2");
+    }
+
+    function SWRecessoInvia(button) {
+        event.preventDefault();
+        $(button).addClass("disable");
+
+        var form = $("#form-recesso").first();
+        var validator = $(form).validate();
+
+        if (!$(form).valid()) {
+            $(button).removeClass("disable");
+            return false;
+        }
+
+        let dataRecesso = $('[name="Tipologia"]:checked').data('recesso');
+
+        swal({
+            title: 'Sei sicuro?',
+            text: "Lo smart working terminerà il "+dataRecesso+". Vuoi confermare?",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sì!',
+            cancelButtonText: 'Annulla',
+            reverseButtons: 'true'
+        }).then(function () {
+            let formData = new FormData($('#form-recesso')[0]);
+
+            $(form).parent().addClass("rai-loader");
+
+            $.ajax({
+                url: $(form).attr("action"),
+                processData: false,
+                contentType: false,
+                type: "POST",
+                data: formData,
+                dataType: 'json',
+                success: function (data) {
+                    switch (data.esito) {
+                        case true:
+                            swal({ title: 'Recesso caricato con successo', type: 'success', customClass: 'rai' });
+                            StatiModalRecesso(@Model.Richiesta.ID_PERSONA, data.id_stato_rapporto);
+                            RaiUpdateWidget("block-stati", "/StatiRapporto/Modal_Dipendente", "replaceId", { idPersona: @Model.Richiesta.ID_PERSONA });
+                            break;
+                        default:
+                            swal({ title: "Ops...", text: data.errorMsg, type: 'error', customClass: 'rai' });
+                            break;
+                    }
+                    $(button).removeClass("disable");
+                    $(form).parent().removeClass("rai-loader");
+                },
+                error: function (a, b, c) {
+                    swal({ title: "Ops...", text: ' ' + b + ' ' + c, type: 'error', customClass: 'rai' });
+                    $(button).removeClass("disable");
+                    $(form).parent().removeClass("rai-loader");
+                }
+            });
+        }, function () {
+            $(button).removeClass("disable");
+        });
+    }
+
+    function SWRecessoConcludi(button) {
+        swal({
+            title: 'Sei sicuro?',
+            text: "La pratica verrà conclusa e non sarà più possibile apportare modifiche.",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sì!',
+            cancelButtonText: 'Annulla',
+            reverseButtons: 'true'
+        }).then(function () {
+            $.ajax({
+                url: '/StatiRapporto/ConcludiRecesso',
+                type: "POST",
+                data: { idRich:@Model.Richiesta.ID_GESTIONE},
+                dataType: 'json',
+                success: function (data) {
+                    switch (data.esito) {
+                        case true:
+                            swal({ title: 'Pratica conclusa con successo', type: 'success', customClass: 'rai' });
+                            StatiModalRecesso(@Model.Richiesta.ID_PERSONA, @Model.Rapporto.ID_STATO_RAPPORTO);
+                            RaiUpdateWidget("block-stati", "/StatiRapporto/Modal_Dipendente", "replaceId", { idPersona: @Model.Richiesta.ID_PERSONA });
+                            break;
+                        default:
+                            swal({ title: "Ops...", text: data.errorMsg, type: 'error', customClass: 'rai' });
+                            break;
+                    }
+                    $(button).removeClass("disable");
+
+                },
+                error: function (a, b, c) {
+                    swal({ title: "Ops...", text: ' ' + b + ' ' + c, type: 'error', customClass: 'rai' });
+                    $(button).removeClass("disable");
+
+                }
+            });
+        }, function () {
+            $(button).removeClass("disable");
+        });
+    }
+
+    function UploadControfirmato() {
+        var nomefile = ($("#fileuploadRecesso").val().split("\\").pop())
+
+        $('#nome-fileRecesso').text(nomefile);
+
+        $("#uploadingRecesso").show();
+        var formdata = new FormData();
+        formdata.append('_file', $('#fileuploadRecesso')[0].files[0]);
+        formdata.append('_idRich',@Model.Richiesta.ID_GESTIONE);
+
+        var request = new XMLHttpRequest();
+        request.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+                if (this.responseText.indexOf("E") >= 0)
+                    swal(this.responseText);
+                else {
+                    RaiUpdateWidget('allegatoRecesso', '/StatiRapporto/Modal_Recesso','replaceId', { idPersona: @Model.Richiesta.ID_PERSONA, idEvento: @Model.Rapporto.ID_STATO_RAPPORTO }, false, null, null, 'POST');
+                    $("#id-allegatoRecesso").val(this.responseText);
+                    $("#button-allegatoRecesso").addClass("disable");
+                    $("#nome-fileRecesso").text(nomefile);
+                    //RaiUpdateWidget('wdgt-allegati' + stato, '/Cessazione/Widget_allegati', 'html', { idDip: $('#Pratica_ID_DIPENDENTE').val(), stato: stato });
+                }
+            }
+        };
+        request.upload.addEventListener('progress', function (e) {
+
+            var filesize = $('#fileuploadRecesso')[0].files[0].size;
+            $("#totalRecesso").text(parseInt(filesize / 1000) + " KB");
+            $("#loadedRecesso").text(parseInt(e.loaded / 1000) + " KB");
+            var percent = Math.round(e.loaded / filesize * 100);
+            $("#progress-barRecesso").css("width", percent + "%");
+
+            if (e.loaded >= filesize) {
+                $("#rimuoviRecesso").show();
+            }
+            else
+                $("#rimuoviRecesso").hide();
+
+        });
+
+        request.open('post', '/StatiRapporto/UploadControfirmato');
+        request.timeout = 45000;
+        request.send(formdata);
+    }
+
+    function RecessoEliminaControfirma() {
+        swal({
+            title: 'Sei sicuro?',
+            text: "Se confermi questo file verrà eliminato. Vuoi confermare?",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sì!',
+            cancelButtonText: 'Annulla',
+            reverseButtons: 'true'
+        }).then(function () {
+            $.ajax({
+                url: "/StatiRapporto/UploadControfirmato",
+                type: "GET",
+                dataType: "html",
+                data: { _idRich: @Model.Richiesta.ID_GESTIONE,_file:null },
+                cache: false,
+                success: function (data) {
+                    switch (data) {
+                        case "OK":
+                            swal("File eliminato", "Il file è stato eliminato correttamente", 'success');
+                            RaiUpdateWidget('allegatoRecesso', '/StatiRapporto/Modal_Recesso','replaceId', { idPersona: @Model.Richiesta.ID_PERSONA, idEvento: @Model.Rapporto.ID_STATO_RAPPORTO }, false, null, null, 'POST');
+                            break;
+                        default:
+                            swal("Ops...", data, 'error');
+                            break;
+                    }
+                },
+                error: function () {
+                    swal("Ops...", "Si è verificato un errore durante la cancellazione del file", 'error');
+                }
+            });
+        })
+    }
+</script>

@@ -1,0 +1,458 @@
+﻿@using myRaiHelper
+@model myRaiCommonModel.UserAdSearch
+
+@{
+    ViewBag.Title = "Gestione Gruppi ";
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+
+    var formId = "form-ric";
+}
+
+<section role="main" class="content-body">
+
+    <!-- start: page -->
+    <!-- Main Container -->
+
+    <main id="main-container">
+
+        <div class="content">
+            @using (Html.BeginOnePageNav("gruppi-ad", "Gestione gruppi AD"))
+            {
+                <div class="row">
+                    <div class="col-md-8">
+                        @Html.RenderAsyncPanel(myRaiHelper.PanelType.PanelNoPadding, "Elenco gruppi", "Elenco_GruppiAd", "GruppiAd", false, sectionId: "elencoGruppi")
+                    </div>
+                    <div class="col-md-4">
+                        @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Ricerca"))
+                        {
+                            <div id="form-ricerca">
+                                <div class="form-group">
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <label class="rai-caption">Matricola</label>
+                                            <input class="form-control" type="text" data-search="elenco-dip" data-search-multi="on" data-search-attr="matr" onkeyup="RaiClickOnKeyUp('SearchOnGroup')" />
+                                        </div>
+                                    </div>
+                                    <div class="row push-10-t">
+                                        <div class="col-sm-12">
+                                            <label class="rai-caption">Nominativo</label>
+                                            <input class="form-control" type="text" data-search="elenco-dip" data-search-multi="on" data-search-attr="name" onkeyup="RaiClickOnKeyUp('SearchOnGroup')" />
+                                        </div>
+                                    </div>
+                                    <div class="row push-20-t">
+                                        <div class="col-sm-12">
+                                            <div class="rai-btn-fill">
+                                                <button class="btn rai-btn-secondary" onclick="AzzeraCercaIndex()">Azzera filtri</button>
+                                                <button class="btn rai-btn-primary" id="SearchOnGroup" onclick="CercaIndex()">Cerca</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+    </main>
+
+    <!-- end: page -->
+</section>
+
+
+<div class="rai modal right fade" id="modal-add-dip" role="dialog" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-popin">
+        <div class="rai modal-content">
+            <div id="modal-add-dip-internal" data-modal-wrapper="">
+                <div class="block block-transparent no-margin-bottom">
+                    <div class="block-header">
+                        <label class="rai-font-modal-heading" id="groupTitle"></label>
+                        <div class="block-options">
+                            <button data-dismiss="modal" class="btn btn-action-icon"><i class="glyphicon glyphicon-remove"></i></button>
+                        </div>
+                    </div>
+                    <div class="block-content">
+                        <div class="rai panel">
+                            <div class="panel-body">
+                                @using (Ajax.BeginForm("RicercaDipendenti", "GruppiAd", null, new AjaxOptions
+                                {
+                                    InsertionMode = InsertionMode.Replace,
+                                    HttpMethod = "POST",
+                                    OnBegin = "$('#result-search-dip').addClass('rai-loader');",
+                                    UpdateTargetId = "result-search-dip",
+                                    OnSuccess = "$('#result-search-dip').removeClass('rai-loader');"
+                                }, new { id = formId, role = "search" }))
+                                {
+                                    <div class="rai form-group">
+                                        <div class="row push-10">
+                                            <div class="col-xs-6 push-10">
+                                                @Html.LabelFor(model => model.Nominativo, "Nominativo", new { @class = "rai-caption" })
+                                                @Html.TextBoxFor(m => m.Nominativo, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Nominativo" })
+                                            </div>
+                                            <div class="col-xs-6 push-10">
+                                                @Html.LabelFor(model => model.Matricola, "Matricola", new { @class = "rai-caption" })
+                                                @Html.TextBoxFor(m => m.Matricola, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Inserisci la matricola" })
+                                            </div>
+                                            <div class="col-xs-6 push-10">
+                                                @Html.LabelFor(model => model.Sede, "Sede", new { @class = "rai-caption" })
+                                                @Html.TextBoxFor(m => m.Sede, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Inserisci la sede" })
+                                            </div>
+                                            <div class="col-xs-6 push-10">
+                                                @Html.LabelFor(model => model.Servizio, "Servizio", new { @class = "rai-caption" })
+                                                @Html.TextBoxFor(m => m.Servizio, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Inserisci il servizio" })
+                                            </div>
+                                        </div>
+                                        <div class="row push-10">
+                                            <div class="col-sm-12">
+                                                <div class="rai-btn-fill">
+                                                    <input type="button" class="btn rai-btn-secondary" onclick="RaiClearForm('@formId')" value="Azzera filtri" />
+                                                    <input type="submit" id="btnCerca" class="btn rai-btn-primary" title="Cerca" value="Cerca" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+
+                                <div id="result-search-dip" style="min-height:20px">
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="rai modal right fade" id="modal-import-dip" role="dialog" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-popin">
+        <div class="rai modal-content">
+            <div id="modal-import-dip-internal" data-modal-wrapper="">
+                <div class="block block-transparent no-margin-bottom">
+                    <div class="block-header">
+                        <label class="rai-font-modal-heading" id="groupImportTitle"></label>
+                        <div class="block-options">
+                            <button data-dismiss="modal" class="btn btn-action-icon"><i class="glyphicon glyphicon-remove"></i></button>
+                        </div>
+                    </div>
+                    <div class="block-content">
+                        @using (Html.BeginPanel(PanelType.Panel, "Definizione dati", false))
+                        {
+                            string formIdImport = "import-form";
+
+                            using (Html.BeginForm("CaricaDati", "StatiRapporto", null, FormMethod.Post, new { @id = formIdImport }))
+                            {
+                                <div class="form-group">
+                                    <div class="row push-10">
+                                        <div class="col-sm-12">
+                                            <label class="rai-caption">File da importare</label>
+                                            @Html.RaiUploader("importFile", UploaderAccept.Custom, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                                        </div>
+                                    </div>
+                                    <div class="row push-10">
+                                        <div class="col-sm-12">
+                                            <div class="rai-btn-fill">
+                                                <input type="submit" class="btn rai-btn-secondary" value="Carica dati" onclick="ImportSubmit()" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+
+                            <div class="row push-20-t">
+                                <div class="col-sm-12">
+                                    <div style="">
+                                        <div id="import-data">
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <div class="rai-btn-fill">
+                                        <button class="btn rai-btn-primary" style="display:none;">Importa</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function AzzeraCercaIndex() {
+        RaiClearForm('form-ricerca');
+        CercaIndex();
+    }
+    function CercaIndex() {
+        $('#acc-slot').addClass('rai-loader');
+        RaiSearchDataMulti(this, 'elenco-dip');
+        CheckVisibleGroup();
+        $('#acc-slot').removeClass('rai-loader');
+    }
+    function CheckVisibleGroup() {
+        debugger
+        $('#acc-slot tbody.js-table-sections-header').each(function () {
+            var countTot = $(this).next('tbody').find('[data-search="elenco-dip"]').length;
+            var countElem = $(this).next('tbody').find('[data-search="elenco-dip"][aria-hidden="false"]').length;
+
+            if (countElem == 0) {
+                $(this).hide();
+            }
+            else {
+                $(this).show();
+
+                var text = countElem + ' ';
+                if (countElem == 1) {
+                    text += "dipendente";
+                }
+                else {
+                    text += "dipendenti";
+                }
+
+                $(this).find('[data-elem-dip-counter]').text(text);
+                if (countElem != countTot)
+                    $(this).find('[data-elem-dip-counter]').addClass('text-warning');
+                else
+                    $(this).find('[data-elem-dip-counter]').removeClass('text-warning');
+            }
+        });
+
+
+        //$('#acc-slot .panel-accordion').each(function () {
+        //    var countElem = $(this).find('[data-search="elenco-dip"][aria-hidden="false"]').length;
+
+        //    if (countElem == 0) {
+        //        $(this).hide();
+        //    } else {
+        //        $(this).show();
+
+        //        $(this).find('[data-elem-dip-counter]').text(countElem);
+        //    }
+        //});
+    }
+
+    function ToggleSingleDip(groupName, searchName, btnId) {
+        var checkAll = '[data-check-group-all="' + groupName + '"]';
+
+        var checkParents = '[data-search="' + searchName + '"][data-search-matr][aria-hidden="false"]';
+        var checkParentsSelected = '[data-search="' + searchName + '"][data-search-matr][aria-hidden="false"] [data-check-group="' + groupName + '"]:checked';
+
+        var allElem = $(checkParents).length;
+        var checked = $(checkParentsSelected).length;
+        if (checked == 0) {
+            $(checkAll)[0].checked = false;
+            $(checkAll).removeClass('not-all');
+        }
+        else if (checked < allElem) {
+            $(checkAll)[0].checked = true;
+            $(checkAll).addClass('not-all');
+        }
+        else {
+            $(checkAll)[0].checked = true;
+            $(checkAll).removeClass('not-all');
+        }
+
+        if ($(checkAll)[0].checked || $(checkAll).hasClass('not-all')) {
+            $('#' + btnId).enable(true);
+            if (groupName == 'dip-assoc-filter') {
+                var textApp = checked + ' ';
+                if (checked == 1) {
+                    textApp += 'selezionato';
+                }
+                else {
+                    textApp += 'selezionati';
+                }
+                $('#dip-filter-counter').text(textApp);
+                $('#dip-filter-row').show();
+            }
+        }
+        else {
+            $('#' + btnId).enable(false);
+            if (groupName == 'dip-assoc-filter') {
+                $('#dip-filter-row').hide();
+            }
+        }
+    }
+    function ToggleAllDip(groupName, searchName, btnId) {
+        var checkAll = '[data-check-group-all="' + groupName + '"]';
+        if ($(checkAll)[0].checked || $(checkAll).hasClass('not-all')) {
+            $('#btn-disassoc-sel').enable(true);
+        }
+        else {
+            $('#btn-disassoc-sel').enable(false);
+        }
+
+        var checkParents = '[data-search="' + searchName + '"][data-search-matr][aria-hidden="false"] [data-check-group="' + groupName + '"]';
+
+        if ($(checkAll).hasClass('not-all')) {
+            $(checkAll)[0].checked = true;
+        }
+
+        if ($(checkAll)[0].checked) {
+            $(checkParents).each(function () {
+                $(this)[0].checked = true;
+            });
+            $(checkAll).removeClass('not-all');
+        }
+        else {
+            $(checkParents).each(function () {
+                $(this)[0].checked = false;
+            });
+            $(checkAll).removeClass('not-all');
+        }
+
+        if ($(checkAll)[0].checked || $(checkAll).hasClass('not-all')) {
+            $('#' + btnId).enable(true);
+            if (groupName == 'dip-assoc-filter') {
+                var checkParentsSelected = '[data-search="' + searchName + '"][data-search-matr][aria-hidden="false"] [data-check-group="' + groupName + '"]:checked';
+                var checked = $(checkParentsSelected).length;
+                var textApp = checked + ' ';
+                if (checked == 1) {
+                    textApp += 'selezionato';
+                }
+                else {
+                    textApp += 'selezionati';
+                }
+                $('#dip-filter-counter').text(textApp);
+                $('#dip-filter-row').show();
+            }
+        }
+        else {
+            $('#' + btnId).enable(false);
+            if (groupName == 'dip-assoc-filter') {
+                $('#dip-filter-row').hide();
+            }
+        }
+    }
+
+    function AzzeraFiltri(groupName, searchName, btnId) {
+        $('[data-search="' + searchName + '"][data-search-attr]').val('');
+        ApplicaFiltri(groupName, searchName, btnId);
+    }
+    function ApplicaFiltri(groupName, searchName, btnId) {
+        event.preventDefault();
+
+        var checkAll = '[data-check-group-all="' + groupName + '"]';
+        $(checkAll).removeClass('not-all');
+        $(checkAll)[0].checked = false;
+        ToggleAllDip(groupName, searchName, btnId);
+
+        RaiSearchDataMulti(this, searchName);
+    }
+
+    function OpenModalAdd(nomeGruppo) {
+        //RaiOpenAsyncModal('modal-add-dip', '@Url.Action("ModalAggiuntaDipendenti", "GruppiAd")', { name: nomeGruppo });
+        $('#groupTitle').text(nomeGruppo);
+        $('#modal-add-dip').modal('show');
+    }
+
+    function OpenModalImport(nomeGruppo) {
+        $('#groupImportTitle').text(nomeGruppo);
+        $('#modal-import-dip').modal('show');
+    }
+
+
+    function OpenDettaglio(nomeGruppo) {
+        RaiOPNavGoToNext('gruppi-ad', 'gruppi-ad-details', 'Dettaglio gruppo', '@Url.Action("Dettaglio_GruppiAd", "GruppiAd")', { name: nomeGruppo })
+    }
+
+    function AssociaSelezionati() {
+        var selected = $('[data-check-group="dip-filter"]:checked');
+        var elencoMatr = '';
+        selected.each(function () { elencoMatr += $(this).attr('data-matr') + ','; });
+        var nomeGruppo = $('#groupTitle').text();
+
+        $.ajax({
+            url: '/GruppiAd/AssociaDipendenti',
+            type: "GET",
+            dataType: "html",
+            data: { nomeGruppo: nomeGruppo, elencoMatr: elencoMatr},
+            success: function (data) {
+                switch (data) {
+                    case "OK":
+                        selected.each(function () {
+                            var row = $(this).parent().parent().parent();
+                            $(row).remove();
+                        });
+                        swal("Salvataggio effettuato con successo", "I dipendenti sono stati associati", "success");
+                        RaiUpdateWidget('dettaglio-gruppo-col', '@Url.Action("Dettaglio_gruppo", "Mappatura")', 'replace', { codiceGruppo: codGruppo });
+                        ApplicaFiltri('dip-filter', 'new-dip', 'btn-assoc-sel');
+                        break;
+                    default:
+                        swal("Oops...", data, 'error');
+                        break;
+                }
+            },
+            error: function (a, b, c) {
+                swal("Oops...", a, 'error');
+            }
+        });
+    }
+
+    function DisassociaSelezionati() {
+        var selected = $('[data-check-group="dip-assoc-filter"]:checked');
+        var elencoMatr = '';
+        selected.each(function () { elencoMatr += $(this).attr('data-matr') + ','; });
+        var codGruppo = $('#groupTitle').text();
+
+        $.ajax({
+            url: '/GruppiAd/DisassociaDipendenti',
+            type: "GET",
+            dataType: "html",
+            data: { nomeGruppo: codGruppo, elencoMatr: elencoMatr },
+            success: function (data) {
+                switch (data) {
+                    case "OK":
+                        //selected.each(function () {
+                        //    var row = $(this).parent().parent().parent();
+                        //    var newRow = $(row).clone();
+                        //    $(newRow).attr('data-search', 'new-dip');
+                        //    $(newRow).find('[data-matr]').attr('data-check-group', 'dip-filter').attr('onclick', "ToggleSingleDip('dip-filter', 'new-dip', 'btn-assoc-sel');")[0].checked = false;
+
+                        //    $(row).remove();
+                        //    $(newRow).appendTo('#new-dip');
+                        //});
+
+                        //var result = $('#new-dip tr[data-search]').sort(function (a, b) {
+                        //    return $(a).attr('data-search-name') > $(b).attr('data-search-name') ? 1 : -1;
+                        //});
+
+
+                        //$('#new-dip').html('');
+                        //$('#new-dip').append(result);
+
+                        swal("Salvataggio effettuato con successo", "I dipendenti sono stati dissassociati", "success");
+
+                        RaiUpdateWidget('dettaglio-gruppo-col', '@Url.Action("Dettaglio_gruppo", "Mappatura")', 'replace', { codiceGruppo: codGruppo });
+
+                        if ($('[data-search="dip-assoc"]').length <= 0) {
+                            $('[data-assigned-dip-empty]').show();
+                        }
+
+                        ApplicaFiltri('dip-assoc-filter', 'dip-assoc', 'btn-disassoc-sel');
+
+                        break;
+                    default:
+                        swal("Oops...", data, 'error');
+                        break;
+                }
+            },
+            error: function (a, b, c) {
+                swal("Oops...", a, 'error');
+            }
+        });
+    }
+</script>
+
+@section afterjs {
+    @Html.Raw(TempData["script"])
+
+}

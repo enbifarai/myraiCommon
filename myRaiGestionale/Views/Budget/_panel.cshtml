@@ -1,0 +1,633 @@
+﻿@using System.Globalization;
+@using myRaiCommonModel
+
+
+@{
+    Layout = null;
+    var cultureInfo = CultureInfo.GetCultureInfo("it-IT");
+}
+
+<style>
+    table > th > p {
+        word-wrap: break-word;
+    }
+
+    /* Absolute Center Spinner */
+    .loading {
+        position: fixed;
+        z-index: 999;
+        height: 2em;
+        width: 2em;
+        overflow: visible;
+        margin: auto;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+    }
+
+        /* Transparent Overlay */
+        .loading:before {
+            content: '';
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.3);
+        }
+
+        /* :not(:required) hides these rules from IE9 and below */
+        .loading:not(:required) {
+            /* hide "loading..." text */
+            font: 0/0 a;
+            color: transparent;
+            text-shadow: none;
+            background-color: transparent;
+            border: 0;
+        }
+
+            .loading:not(:required):after {
+                content: '';
+                display: block;
+                font-size: 10px;
+                width: 1em;
+                height: 1em;
+                margin-top: -0.5em;
+                -webkit-animation: spinner 1500ms infinite linear;
+                -moz-animation: spinner 1500ms infinite linear;
+                -ms-animation: spinner 1500ms infinite linear;
+                -o-animation: spinner 1500ms infinite linear;
+                animation: spinner 1500ms infinite linear;
+                border-radius: 0.5em;
+                -webkit-box-shadow: rgba(0, 0, 0, 0.75) 1.5em 0 0 0, rgba(0, 0, 0, 0.75) 1.1em 1.1em 0 0, rgba(0, 0, 0, 0.75) 0 1.5em 0 0, rgba(0, 0, 0, 0.75) -1.1em 1.1em 0 0, rgba(0, 0, 0, 0.5) -1.5em 0 0 0, rgba(0, 0, 0, 0.5) -1.1em -1.1em 0 0, rgba(0, 0, 0, 0.75) 0 -1.5em 0 0, rgba(0, 0, 0, 0.75) 1.1em -1.1em 0 0;
+                box-shadow: rgba(0, 0, 0, 0.75) 1.5em 0 0 0, rgba(0, 0, 0, 0.75) 1.1em 1.1em 0 0, rgba(0, 0, 0, 0.75) 0 1.5em 0 0, rgba(0, 0, 0, 0.75) -1.1em 1.1em 0 0, rgba(0, 0, 0, 0.75) -1.5em 0 0 0, rgba(0, 0, 0, 0.75) -1.1em -1.1em 0 0, rgba(0, 0, 0, 0.75) 0 -1.5em 0 0, rgba(0, 0, 0, 0.75) 1.1em -1.1em 0 0;
+            }
+
+    /* Animation */
+
+    @@-webkit-keyframes spinner {
+        0% {
+            -webkit-transform: rotate(0deg);
+            -moz-transform: rotate(0deg);
+            -ms-transform: rotate(0deg);
+            -o-transform: rotate(0deg);
+            transform: rotate(0deg);
+        }
+
+        100% {
+            -webkit-transform: rotate(360deg);
+            -moz-transform: rotate(360deg);
+            -ms-transform: rotate(360deg);
+            -o-transform: rotate(360deg);
+            transform: rotate(360deg);
+        }
+    }
+
+    @@-moz-keyframes spinner {
+        0% {
+            -webkit-transform: rotate(0deg);
+            -moz-transform: rotate(0deg);
+            -ms-transform: rotate(0deg);
+            -o-transform: rotate(0deg);
+            transform: rotate(0deg);
+        }
+
+        100% {
+            -webkit-transform: rotate(360deg);
+            -moz-transform: rotate(360deg);
+            -ms-transform: rotate(360deg);
+            -o-transform: rotate(360deg);
+            transform: rotate(360deg);
+        }
+    }
+
+    @@-o-keyframes spinner {
+        0% {
+            -webkit-transform: rotate(0deg);
+            -moz-transform: rotate(0deg);
+            -ms-transform: rotate(0deg);
+            -o-transform: rotate(0deg);
+            transform: rotate(0deg);
+        }
+
+        100% {
+            -webkit-transform: rotate(360deg);
+            -moz-transform: rotate(360deg);
+            -ms-transform: rotate(360deg);
+            -o-transform: rotate(360deg);
+            transform: rotate(360deg);
+        }
+    }
+
+    @@keyframes spinner {
+        0% {
+            -webkit-transform: rotate(0deg);
+            -moz-transform: rotate(0deg);
+            -ms-transform: rotate(0deg);
+            -o-transform: rotate(0deg);
+            transform: rotate(0deg);
+        }
+
+        100% {
+            -webkit-transform: rotate(360deg);
+            -moz-transform: rotate(360deg);
+            -ms-transform: rotate(360deg);
+            -o-transform: rotate(360deg);
+            transform: rotate(360deg);
+        }
+    }
+
+    .NoData {
+        display: none;
+    }
+
+    .NoDataDisabled {
+    }
+
+    .subDirezione {
+        border: 3px solid lightsalmon;
+    }
+</style>
+
+
+@model BudgetVM
+
+@{
+    if (Model.Campagne != null && Model.Campagne.Any())
+    {
+        <div id="loading" class="loading hide">Loading&#8230;</div>
+        <div class="row">
+            <div class="col-xs-3"></div>
+            <div class="col-xs-6">
+                <select id="selezioneCampagna">
+                    @{
+                        foreach (var c in Model.Campagne)
+                        {
+                            <option value="@(c.Id)" @(c.Id == Model.InfoCampagna.Id ? "selected=\"selected\"" : "")>@c.NomeCampagna</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-xs-3"></div>
+        </div>
+        <br />
+    }
+
+    int sediDeltaPos = 0;
+    int sediDeltaNeg = 0;
+    int sediDeltaPerPos = 0;
+    int sediDeltaPerNeg = 0;
+
+    if (Model != null && Model.ReportDirezioni != null && Model.ReportDirezioni.Any())
+    {
+        var groups = Model.ReportDirezioni.GroupBy(l => l.Area).Select(g => new
+        {
+            Area = g.Key,
+            Count = g.Select(l => l.Area).Distinct().Count()
+        });
+        int nGroup = 1;
+        if (groups != null && groups.Any())
+        {
+            foreach (var g in groups.OrderBy(w => w.Area))
+            {
+                sediDeltaPos = 0;
+                sediDeltaNeg = 0;
+                sediDeltaPerPos = 0;
+                sediDeltaPerNeg = 0;
+                if (g.Count > 0)
+                {
+                    <div class="row">
+                        <div class="col-sm-9">
+                            <section class="panel" id="panel-@(g.Area)-container">
+                                <header class="panel-heading">
+                                    <h2 class="panel-title">@(g.Area)</h2>
+                                    <div class="panel-actions rai-panel-actions">
+                                        @{
+                                            if (Model.InfoCampagna.Decorrenze != null && Model.InfoCampagna.Decorrenze.Any())
+                                            {
+                                                var dt = Model.InfoCampagna.Decorrenze.OrderBy(w => w).Select(w => w.Year).Distinct();
+                                                <select class="flatSelect h5">
+                                                    <option value="-1" selected="selected">Tutto</option>
+                                                    @{
+                                                        foreach (var i in dt)
+                                                        {
+                                                            <option value="i">@i</option>
+                                                        }
+                                                    }
+                                                </select>
+                                            }
+                                        }
+                                        <div class="btn-action-icon-switch">
+                                            <button class="btn-action-icon" onclick="showAll(@nGroup);"><i class="icons icon-list"></i></button>
+                                            <button class="btn-action-icon" onclick="showAllData(@nGroup);"><i class="el el-filter"></i></button>
+                                            @*<button class="btn-action-icon @(action.Active?"active":"")" title="@action.Title" onclick="@action.OnClick" @attributes><i class="@action.Icon"></i></button>*@
+                                        </div>
+                                        <a href="#" class="panel-action panel-action-toggle" data-panel-toggle></a>
+                                    </div>
+                                </header>
+                                <div class="panel-body" id="panel-@(g.Area)-container-body">
+                                    <div class="col-xs-12">
+                                        <div class="table-responsive">
+                                            <table id="table-direzioni-@nGroup" class="table table-bordered table-hover">
+                                                <thead>
+                                                    <tr style="border: 1px solid #ddd;">
+                                                        <th style="text-align:center; vertical-align:middle; border-left: 1px solid #ddd;  border-right: 1px solid #ddd;" colspan="2"></th>
+                                                        <th style="text-align:center; vertical-align:middle; border-left: 1px solid #ddd;  border-right: 1px solid #ddd;" colspan="2">Costo </th>
+                                                        <th style="text-align:center; vertical-align:middle; border-left: 1px solid #ddd;  border-right: 1px solid #ddd;" colspan="5">Numeri </th>
+                                                    </tr>
+                                                    <tr style="border: 1px solid #ddd; ">
+                                                        <th style="text-align:center; vertical-align:middle;" class="col-xs-2">Direzione</th>
+                                                        <th style="text-align:center; vertical-align:middle;" class="col-xs-1">Budget</th>
+                                                        <th style="text-align:center; vertical-align:middle; border-left: 1px solid #ddd;" class="col-xs-1">Di periodo</th>
+                                                        <th style="text-align:center; vertical-align:middle;" class="col-xs-1">Annuo</th>
+                                                        @*<th style="text-align:center; vertical-align:middle; border-right: 1px solid #ddd;" class="col-xs-1">Con recupero staordinari</th>*@
+                                                        <th style="text-align:center; vertical-align:middle;" class="col-xs-1" data-toggle="tooltip" title="Promozioni">PD</th>
+                                                        <th style="text-align:center; vertical-align:middle;" class="col-xs-1" data-toggle="tooltip" title="Aumenti">MD</th>
+                                                        <th style="text-align:center; vertical-align:middle;" class="col-xs-1" data-toggle="tooltip" title="Grafitiche">GD</th>
+                                                        <th style="text-align:center; vertical-align:middle;" class="col-xs-1">Totale</th>
+                                                        <th style="text-align:center; vertical-align:middle;" class="col-xs-1">% su organico</th>
+                                                        <th style="text-align:center; vertical-align:middle;" class="col-xs-1">Delta</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @{
+                                                        var elements = Model.ReportDirezioni.Where(w => w.Area.Equals(g.Area)).ToList();
+                                                        if (elements != null && elements.Any())
+                                                        {
+                                                            var listaOrdinata = elements.OrderBy(w => w.Ordine.GetValueOrDefault());
+                                                            foreach (var r in listaOrdinata)
+                                                            {
+                                                                string trClass = "";
+                                                                string trClass2 = "";
+                                                                string trClass3 = "";
+                                                                string stile = "";
+
+                                                                if (r.DeltaSuCostoAnnoCorrente >= 0)
+                                                                {
+                                                                    sediDeltaPos++;
+                                                                    trClass = "trPos";
+                                                                }
+                                                                else
+                                                                {
+                                                                    sediDeltaNeg++;
+                                                                    trClass = "trNeg";
+                                                                }
+
+                                                                if (r.DeltaSuCostoPeriodo >= 0)
+                                                                {
+                                                                    sediDeltaPerPos++;
+                                                                }
+                                                                else
+                                                                {
+                                                                    sediDeltaPerNeg++;
+                                                                }
+
+                                                                if (r.IsConsolidata)
+                                                                {
+                                                                    stile = "border: 3px solid lightgreen;";
+                                                                }
+
+                                                                if (!r.Visibled)
+                                                                {
+                                                                    trClass2 = "NoData";
+                                                                }
+                                                                else
+                                                                {
+                                                                    trClass2 = "";
+                                                                }
+
+                                                                if (r.Direzione.ToUpper() == "CANONE" ||
+                                                                    r.Direzione.ToUpper() == "CANONE SEDI")
+                                                                {
+                                                                    trClass2 = "";
+                                                                }
+
+                                                                //if (r.TotProvv == 0)
+                                                                //{
+                                                                //    trClass2 = "NoData";
+                                                                //}
+                                                                //else
+                                                                //{
+                                                                //    trClass2 = "";
+                                                                //}
+
+                                                                //if (r.Id == 0)
+                                                                //{
+                                                                //    trClass3 = "subDirezione";
+                                                                //}
+
+                                                                <tr class="@(trClass) @(trClass2) @(trClass3)" style="@(stile)">
+                                                                    <td style="text-align:left; vertical-align:middle;">
+                                                                        <h6>
+                                                                            @{
+                                                                                if (r.Id == 0)
+                                                                                {
+                                                                                    <a data-toggle="tooltip" data-html="true" href="#"
+                                                                                       data-titledirezione="@(r.Direzione)" data-href=""
+                                                                                       title="ORGANICO CONTABILE  F1, IMPIEGATI E OPERAI @(r.OrganicoContabile)<br>ORGANICO AI FINI DELLA RIPARTIZIONE BUDGET @(r.OrganicoRipartizione)">
+                                                                                        <b>
+                                                                                            @myRaiHelper.CommonHelper.ToTitleCase(r.Direzione)
+                                                                                        </b>
+                                                                                    </a>
+                                                                                }
+                                                                                else
+                                                                                {
+                                                                                    <a data-target="#modal-dettaglio-direzione" data-toggle="tooltip" data-html="true" href="#"
+                                                                                       data-titledirezione="@(r.Direzione)"
+                                                                                       data-href="@Url.Action("SimulazioneBudgetDirezione","Budget")?id=@(r.Id)&idCamp=@(Model.InfoCampagna.Id)&anno=@(Model.AnnoSelezionato)"
+                                                                                       title="ORGANICO CONTABILE  F1, IMPIEGATI E OPERAI @(r.OrganicoContabile)<br>ORGANICO AI FINI DELLA RIPARTIZIONE BUDGET @(r.OrganicoRipartizione)">
+                                                                                        <b>
+                                                                                            @myRaiHelper.CommonHelper.ToTitleCase(r.Direzione)
+                                                                                        </b>
+                                                                                    </a>
+                                                                                }
+
+                                                                            }
+                                                                        </h6>
+                                                                    </td>
+                                                                    <td style="text-align:right; vertical-align:middle; padding-bottom: 0px; padding-top: 0px;">
+                                                                        <h6 data-toggle="tooltip" data-html="true" title="@(String.Format(cultureInfo, "Anno precedente € {0:N2} ", r.BudgetAnnoPrecedente))">
+                                                                            <i>  @(String.Format(cultureInfo, "€ {0:N2} ", r.BudgetAnnoCorrente))</i>
+                                                                        </h6>
+                                                                    </td>
+                                                                    <td style="text-align:right; vertical-align:middle; padding-bottom: 0px; padding-top: 0px;">
+                                                                        <h6 data-toggle="tooltip" data-html="true" title="@(String.Format(cultureInfo, "Anno precedente € {0:N2} ", r.CostoPeriodoAnnoPrecedente))">
+                                                                            @(String.Format(cultureInfo, "€ {0:N2} ", r.CostoPeriodoAnnoCorrente))
+                                                                        </h6>
+                                                                    </td>
+                                                                    <td style="text-align:right; vertical-align:middle; padding-bottom: 0px; padding-top: 0px;">
+                                                                        <h6>
+                                                                            @(String.Format(cultureInfo, "€ {0:N2} ", r.CostoAnnoCorrente))
+                                                                        </h6>
+                                                                    </td>
+                                                                    @*<td style="text-align:right; vertical-align:middle; padding-bottom: 0px; padding-top: 0px;">
+                                                                            <h6>
+                                                                                @(String.Format(cultureInfo, "€ {0:N2} ", r.CostoRecuperoStraordinario))
+                                                                            </h6>
+                                                                        </td>*@
+                                                                    <td style="text-align:right; vertical-align:middle; padding-bottom: 0px; padding-top: 0px;"><h5>@r.Promozioni</h5></td>
+                                                                    <td style="text-align:right; vertical-align:middle; padding-bottom: 0px; padding-top: 0px;"><h5>@r.Aumenti</h5></td>
+                                                                    <td style="text-align:right; vertical-align:middle; padding-bottom: 0px; padding-top: 0px;"><h5>@r.Gratifiche</h5></td>
+                                                                    <td style="text-align:right; vertical-align:middle; padding-bottom: 0px; padding-top: 0px;"><h5>@r.TotProvv</h5></td>
+                                                                    <td style="text-align:right; vertical-align:middle; padding-bottom: 0px; padding-top: 0px;"><h5>@(String.Format("{0}%", r.PercentualeSuOrganico))</h5></td>
+                                                                    <td style="text-align:right; vertical-align:middle; padding-bottom: 0px; padding-top: 0px;">
+
+                                                                        @{
+                                                                            string myClass = "";
+                                                                            if (r.DeltaSuCostoAnnoCorrente > 0)
+                                                                            {
+                                                                                myClass = "text-success";
+                                                                            }
+                                                                            else if (r.DeltaSuCostoAnnoCorrente == 0)
+                                                                            {
+                                                                                myClass = "";
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                myClass = "text-danger";
+                                                                            }
+                                                                        }
+
+                                                                        <h6 class="@(myClass)" data-toggle="tooltip" data-html="true" title="@(String.Format(cultureInfo, "Anno precedente € {0:N2} ", r.DeltaSuCostoAnnoPrecedente))">
+                                                                            <b>  @(String.Format(cultureInfo, "€ {0:N2}", r.DeltaSuCostoAnnoCorrente))</b>
+                                                                        </h6>
+                                                                    </td>
+                                                                </tr>
+                                                            }
+                                                            <tr class="">
+                                                                <td style="text-align:left; vertical-align:middle;">
+                                                                    <h6><b>TOTALE</b></h6>
+                                                                </td>
+                                                                <td style="text-align:right; vertical-align:middle; padding-bottom: 0px; padding-top: 0px;">
+                                                                    @{
+                                                                        decimal totPrec = elements.Sum(w => w.BudgetAnnoPrecedente);
+                                                                        decimal totCurr = elements.Sum(w => w.BudgetAnnoCorrente);
+                                                                    }
+                                                                    <h6 data-toggle="tooltip" data-html="true" title="@(String.Format(cultureInfo, "Anno precedente € {0:N2} ", totPrec))">
+                                                                        @(String.Format(cultureInfo, "€ {0:N2} ", totCurr))
+                                                                    </h6>
+                                                                </td>
+                                                                <td style="text-align:right; vertical-align:middle; padding-bottom: 0px; padding-top: 0px;">
+                                                                    @{
+                                                                        decimal costoCurr = elements.Sum(w => w.CostoPeriodoAnnoCorrente);
+                                                                    }
+                                                                    <h6 data-toggle="tooltip" data-html="true" title="">
+                                                                        @(String.Format(cultureInfo, "€ {0:N2} ", costoCurr))
+                                                                    </h6>
+                                                                </td>
+                                                                <td style="text-align:right; vertical-align:middle; padding-bottom: 0px; padding-top: 0px;">
+                                                                    @{
+                                                                        decimal regime = elements.Sum(w => w.CostoAnnoCorrente);
+                                                                    }
+                                                                    <h6>
+                                                                        @(String.Format(cultureInfo, "€ {0:N2} ", regime))
+                                                                    </h6>
+                                                                </td>
+                                                                @*<td style="text-align:right; vertical-align:middle; padding-bottom: 0px; padding-top: 0px;">
+                                                                        @{
+                                                                            decimal recupero = elements.Sum(w => w.CostoRecuperoStraordinario);
+                                                                        }
+                                                                        <h6>
+                                                                            @(String.Format(cultureInfo, "€ {0:N2} ", recupero))
+                                                                        </h6>
+                                                                    </td>*@
+                                                                <td style="text-align:right; vertical-align:middle; padding-bottom: 0px; padding-top: 0px;">
+                                                                    @{
+                                                                        int prom = elements.Sum(w => w.Promozioni);
+                                                                    }
+                                                                    <h6>@prom</h6>
+                                                                </td>
+
+                                                                <td style="text-align:right; vertical-align:middle; padding-bottom: 0px; padding-top: 0px;">
+                                                                    @{
+                                                                        int aum = elements.Sum(w => w.Aumenti);
+                                                                    }
+                                                                    <h6>@aum</h6>
+                                                                </td>
+
+                                                                <td style="text-align:right; vertical-align:middle; padding-bottom: 0px; padding-top: 0px;">
+                                                                    @{
+                                                                        int gratifiche = elements.Sum(w => w.Gratifiche);
+                                                                    }
+                                                                    <h5>@gratifiche</h5>
+                                                                </td>
+                                                                <td style="text-align:right; vertical-align:middle; padding-bottom: 0px; padding-top: 0px;">
+                                                                    @{
+                                                                        int totProvv = elements.Sum(w => w.TotProvv);
+                                                                    }
+                                                                    <h6>@totProvv</h6>
+                                                                </td>
+                                                                <td style="text-align:right; vertical-align:middle; padding-bottom: 0px; padding-top: 0px;">
+                                                                    @{
+                                                                        int orgCont = elements.Sum(w => w.OrganicoContabile);
+                                                                        int percentuale = 0;
+                                                                        if (orgCont > 0)
+                                                                        {
+                                                                            decimal _pOrg = (decimal)((decimal)totProvv / (decimal)orgCont);
+                                                                            _pOrg *= 100;
+
+                                                                            percentuale = (int)Math.Round(_pOrg);
+                                                                        }
+                                                                    }
+                                                                    <h6>@(String.Format("{0}%", percentuale))</h6>
+                                                                </td>
+                                                                <td style="text-align:right; vertical-align:middle; padding-bottom: 0px; padding-top: 0px;">
+                                                                    @{
+                                                                        decimal deltaPrec = elements.Sum(w => w.DeltaSuCostoAnnoPrecedente);
+                                                                        decimal deltaCurr = elements.Sum(w => w.DeltaSuCostoAnnoCorrente);
+                                                                    }
+                                                                    <h6 data-toggle="tooltip" data-html="true" title="@(String.Format(cultureInfo, "Anno precedente € {0:N2} ", deltaPrec))">
+                                                                        <b>@(String.Format(cultureInfo, "€ {0:N2} ", deltaCurr))</b>
+                                                                    </h6>
+                                                                </td>
+                                                            </tr>
+                                                        }
+                                                        else
+                                                        {
+                                                            @Html.Partial("~/Views/Shared/_NoDati.cshtml")
+                                                        }
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <div class="col-sm-3">
+                            <section class="panel">
+                                <header class="panel-heading">
+                                    <div class="panel-actions">
+                                        <a href="#" class="panel-action panel-action-toggle" data-panel-toggle></a>
+                                    </div>
+                                    <h2 class="panel-title">@(g.Area)</h2>
+                                </header>
+                                <div class="panel-body">
+                                    <div class="row">
+                                        <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 text-center">
+                                            <span class="h5">Budget anno</span>
+                                            <div id="chart-delta-1-@nGroup" class="chart" style="margin-top: 15px;" aria-label="Delta positivi anno corrente" tabindex="0" data-percent="">
+                                            </div>
+                                            <span id="chart-delta-1-@nGroup-span" class="graph-center-value" style="font-size: 27px; position: relative; top: -80px;"></span>
+                                            <hr class="solid short">
+                                        </div>
+                                        <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+                                            <div class="col-md-4 col-md-offset-2">
+                                                <div class="h4 font-weight-bold mb-0 mt-3"><a href="#" data-tablefilter="@nGroup" data-href="trPos" class="h3 font-weight-bold mb-0 mt-3 text-success" onclick="showPos(@nGroup);"><b>@(sediDeltaPos)</b></a></div>
+                                                <p class="text-3 text-muted mb-0">Delta positivo</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="h4 font-weight-bold mb-0 mt-3"><a href="#" data-tablefilter="@nGroup" data-href="trNeg" class="h3 font-weight-bold mb-0 mt-3 text-danger" onclick="showNeg(@nGroup);"><b>@(sediDeltaNeg)</b></a></div>
+                                                <p class="text-3 text-muted mb-0">Delta negativo</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 text-center">
+                                            <span class="h5">Budget periodo</span>
+                                            <div id="chart-delta-2-@nGroup" class="chart" style="margin-top: 15px;" aria-label="Delta positivi periodo" tabindex="0" data-percent="">
+                                            </div>
+                                            <span id="chart-delta-2-@nGroup-span" class="graph-center-value" style="font-size: 27px; position: relative; top: -80px;"></span>
+                                            <hr class="solid short">
+                                        </div>
+                                        <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+                                            <div class="col-md-4 col-md-offset-2">
+                                                <div class="h4 font-weight-bold mb-0 mt-3"><a href="#" data-tablefilter="@nGroup" data-href="trPos" class="h3 font-weight-bold mb-0 mt-3 text-success"><b>@(sediDeltaPerPos)</b></a></div>
+                                                <p class="text-3 text-muted mb-0">Delta periodo positivo</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="h4 font-weight-bold mb-0 mt-3"><a href="#" data-tablefilter="@nGroup" data-href="trNeg" class="h3 font-weight-bold mb-0 mt-3 text-danger"><b>@(sediDeltaPerNeg)</b></a></div>
+                                                <p class="text-3 text-muted mb-0">Delta periodo negativo</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <hr class="solid short">
+                                        @{
+                                            var a = Model.InfoCampagna.DettaglioCampagna.Where(w => w.NomeArea == g.Area).FirstOrDefault();
+                                        }
+
+                                        @if (a != null)
+                                        {
+                                            <p class="mb-1 h4"><a href="@Url.Action("EsportaAreaXLSX", "Budget", new { idCamp = Model.InfoCampagna.Id, idArea = a.IdArea })" target="_blank">Esporta direzioni</a></p>
+                                        }
+                                        else
+                                        {
+                                            <p class="mb-1 h4"><a href="@Url.Action("EsportaAreaXLSXByGruppo", "Budget", new { idCamp = Model.InfoCampagna.Id, idGruppo = nGroup })" target="_blank">Esporta direzioni</a></p>
+                                        }
+
+                                        @if (a != null)
+                                        {
+                                            <p class="mb-1 h4"><a href="@Url.Action("EsportaRiepilogoArea", "Budget", new { idCamp = Model.InfoCampagna.Id, idArea = a.IdArea })" target="_blank">Esporta riepilogo</a></p>
+                                        }
+                                        else
+                                        {
+                                            <p class="mb-1 h4"><a href="@Url.Action("EsportaRiepilogoAreaByGruppo", "Budget", new { idCamp = Model.InfoCampagna.Id, idGruppo = nGroup })" target="_blank">Esporta riepilogo</a></p>
+                                        }
+
+                                    </div>
+                                    <div style="text-align: center; margin-bottom: 20px" class="col-xs-12">
+                                        @*<button class="wizard-next btn btn-primary large-btn" type="button">CONSOLIDA</button>*@
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                }
+
+                nGroup++;
+            }
+        }
+    }
+}
+
+<script type="text/javascript">
+
+    function showPos(gruppo) {
+        var tipo = "trPos";
+        $('#table-direzioni-' + gruppo+' > tbody > tr').each(function () {
+            if (!$(this).hasClass(tipo)) {
+                $(this).hide();
+            }
+            else {
+                $(this).show();
+            }
+        });
+    }
+
+    function showNeg(gruppo) {
+        var tipo = "trNeg";
+        $('#table-direzioni-' + gruppo + ' > tbody > tr').each(function () {
+            if (!$(this).hasClass(tipo)) {
+                $(this).hide();
+            }
+            else {
+                $(this).show();
+            }
+        });
+    }
+
+    function showAll(gruppo)
+    {
+        $('#table-direzioni-' + gruppo + ' > tbody > tr').each(function () {
+            $(this).show();
+        });
+    }
+
+    function showAllData(gruppo)
+    {
+        $('#table-direzioni-' + gruppo + ' > tbody > tr').each(function () {
+            if ($(this).hasClass('NoData'))
+            {
+                $(this).hide();
+            }
+            else
+            {
+                $(this).show();
+            }
+        });
+    }
+</script>

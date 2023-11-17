@@ -1,0 +1,184 @@
+﻿@using MVCProject.Custom_Helpers
+@using myRaiHelper;
+@{
+    string matricola = myRaiHelper.UtenteHelper.EsponiAnagrafica()._matricola;
+
+    myRai.Data.CurriculumVitae.cv_ModelEntities db = new myRai.Data.CurriculumVitae.cv_ModelEntities();
+
+    string tmp_date;
+    try
+    {
+        var aa = db.sp_GETDTAGGCV(matricola);
+        var rbb = aa.ToList();
+        if (rbb != null && rbb.Count() > 0 && rbb[0].HasValue)
+        {
+            tmp_date = rbb[0].Value.ToShortDateString();
+        }
+        else
+        {
+            tmp_date = null;
+        }
+    }
+    catch (Exception ex)
+    {
+        tmp_date = "";
+    }
+    //   int i;
+    // i = 0;
+    var TourElements = new myRaiData.digiGappEntities().MyRai_Tour.ToList();
+}
+
+
+<!-- FREAK - DATO DA IMPLEMENTARE-->
+<section class="rai panel">
+    <div class="panel-body">
+        <div class="row">
+            <div class="thumb-info mb-md">
+
+                <div class="col-xs-5 removepdleft">
+                    <img src="@myRaiHelper.UtenteHelper.EsponiAnagrafica()._foto" class="rounded img-responsive " alt="" width="200px;">
+                </div>
+                <div class="col-xs-7 pull-5-t ">
+                    <span class="thumb-info-inner h1 nomeProfilo removetop">@CommonHelper.ToTitleCase(myRaiHelper.UtenteHelper.EsponiAnagrafica()._nome)<br />@CommonHelper.ToTitleCase(myRaiHelper.UtenteHelper.EsponiAnagrafica()._cognome)</span>
+                    <span class="thumb-info-wrapper h4 sottonomeProfilo">@CommonHelper.ToTitleCase(myRaiHelper.UtenteHelper.EsponiAnagrafica()._figProfessionale)</span>
+                </div>
+            </div>
+        </div>
+        @* freak - progress bar *@
+        @{
+            int percCompletamento = 0;
+            List<string> sezioniMancanti = new List<string>();
+            List<string> sezioniIncomplete = new List<string>();
+            percCompletamento = myRaiHelper.CommonHelper.GetPercentualCV(matricola, ref sezioniMancanti, ref sezioniIncomplete);
+        }
+        <div class="widget-toggle-expand mb-md">
+            <div class="widget-header">
+                @if (percCompletamento > 0)
+                {
+                    <label class="rai-font-lg-bold push-5-t">Aggiorna il tuo Curriculum</label>
+                }
+                else
+                {
+                    <label class="rai-font-lg-bold push-5-t">Inserisci il tuo Curriculum</label>
+                }
+                @if (tmp_date != "")
+                {
+                    <br />
+                    <label class="rai-font-sm-neutral text-italic">Ultimo aggiornamento: @tmp_date</label>
+                }
+            </div>
+            <div class="widget-content-collapsed push-20-t progress-bars" data-tourdb="tour-index-progress"
+                 @Html.IntroTourAttributes(TourElements, "tour-index-progress")>
+                <div class="progress progress-xl light">
+                    <div class="progress-bar rai-bg-primary" role="progressbar" aria-valuenow="@percCompletamento" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                        <span class="sottotitolettoBox progress-bar-tooltip" id="span_before">@percCompletamento%</span>
+                    </div>
+                </div>
+            </div>
+            @if (percCompletamento < 100 && ((sezioniMancanti != null && sezioniMancanti.Count > 0) || (sezioniIncomplete != null && sezioniIncomplete.Count > 0)))
+            {
+                <div class="widget-header" tabindex="0">
+                    <p>Non hai compilato le sezioni:</p>
+                    <ul>
+                        @foreach (var item in sezioniMancanti)
+                        {
+                            <li><p><i>@item</i></p></li>
+                        }
+                        @foreach (var item in sezioniIncomplete)
+                        {
+                            <li><p><i>@item (incompleta)</i></p></li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
+        @* freak - fine progress bar *@
+
+        @* freak - Sezione CV_Menu  *@
+        <div id="menu-new" data-tourdb="tour-index-menu"
+             @Html.IntroTourAttributes(TourElements, "tour-index-menu")>
+            
+        </div>
+        @* freak - Fine Sezione *@
+        <hr class="dotted short" />
+
+        <h5 class="push-20-t"><b>SETTORE</b></h5>
+        @* freak - Sezione Inquadramento *@
+        <ul class="simple-todo-list push-10-t">
+            @{
+                string tmp = myRaiHelper.UtenteHelper.EsponiAnagrafica()._inquadramento.ToString();
+                string[] inquadramento;
+                int count;
+                if ((tmp != null) && (tmp != ""))
+                {
+                    inquadramento = tmp.Split(';');
+                    count = (int)inquadramento.Count();
+                }
+                else
+                {
+                    count = 0;
+                    inquadramento = null;
+                }
+            }
+
+            @{
+                string tabs = "";
+                for (int i = 1; i < count; i++)
+                {
+                    tabs += "<i class='fa fa-circle-o' aria-hidden='true' '></i>";
+
+                    <li class="" style="position: static;padding:0px;">
+                        @Html.Raw(tabs)&nbsp;<h5 style="display:inline-block;"> @inquadramento[i]</h5>
+                    </li>
+
+                }
+            }
+        </ul>
+
+        @* freak - fine sezione inquadramento *@
+
+        <hr class="dotted short">
+        <h5 class="push-20-t"><b>CONTRATTO</b></h5>
+        <h5>@CommonHelper.ToTitleCase(@myRaiHelper.UtenteHelper.EsponiAnagrafica()._contratto)</h5>
+
+        <!--<p class="block-title">Tempo Indeterminato</p>-->
+
+        <h5 class="push-20-t"><b>FIGURA PROFESSIONALE</b></h5>
+        <h5>@CommonHelper.ToTitleCase(@myRaiHelper.UtenteHelper.EsponiAnagrafica()._figProfessionale)</h5>
+        <h5 class="push-20-t"><b>MATRICOLA</b></h5>
+        <h5>@matricola</h5>
+        <hr class="dotted short">
+        <h5 class="push-20-t"><b>DATA DI NASCITA</b></h5>
+        <h5>
+            @{
+                var tmp_string2 = (myRaiHelper.UtenteHelper.EsponiAnagrafica()._dataNascita != null ? myRaiHelper.UtenteHelper.EsponiAnagrafica()._dataNascita.Value.ToShortDateString() : "");
+        }
+        @CommonHelper.ToTitleCase(@tmp_string2)
+    </h5>
+
+    <h5 class="push-10-t"><b>COMUNE DI NASCITA</b></h5>
+    <h5>@CommonHelper.ToTitleCase(@myRaiHelper.UtenteHelper.EsponiAnagrafica()._comuneNascita)</h5>
+
+    <h5 class="push-20-t"><b>EMAIL</b></h5>
+    <h5>@myRaiHelper.UtenteHelper.EsponiAnagrafica()._email.ToLower()</h5>
+
+    <h5 class="push-20-t"><b>TELEFONO</b></h5>
+    <h5>@myRaiHelper.UtenteHelper.EsponiAnagrafica()._telefono</h5>
+
+    <div class="panel-footer text-center bg-white" style="display: block; margin-top: 20px">
+        <div class="rai-btn-fill">
+            <a class="btn btn-primary push-20-t" style="margin-right: 10px;"
+               href="@Html.Raw(Request.Url.Scheme + "://" + Request.Url.Authority + Request.ApplicationPath.TrimEnd('/') + "/cv_online/pdf")" target="_blank">Stampa CV</a>
+        </div>
+
+    </div>
+</div>
+</section>
+
+<script>
+    $(".progress-bar").each(function () {
+        each_bar_width = $(this).attr('aria-valuenow');
+        $(this).width(each_bar_width + '%');
+    });
+    BuildCVmenu();
+</script>

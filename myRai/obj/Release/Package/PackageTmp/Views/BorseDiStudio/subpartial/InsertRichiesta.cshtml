@@ -1,0 +1,244 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model NuovaRichiesta_BorseDiStudio
+
+<style>
+    .mb-3 {
+        margin-bottom: 1rem !important;
+    }
+</style>
+
+<div id="containerInsertRichiesta">
+    <form id="formNewRic" class="col-md-11 form-group" method="post" onsubmit="event.preventDefault(); confirmSaveNewRichiestaBS();">
+        <label for="sceltaAnno" class="">Selezionare l'anno scolastico di riferimento</label>
+        <select id="sceltaAnno" class="form-control mb-3" name="AnnoScolasticoRichiesta" required autofocus onchange="ricaricaFamiliari()">
+            @foreach ( var anno in Model.AnniScolasticiSelezionabili )
+            {
+                <option value="@anno" @(Model.AnnoScolasticoRichiesta == anno ? "selected" : "")>@(anno + "/" + ( int.Parse( anno ) + 1 )) </option>
+            }
+        </select>
+        @Html.ValidationMessageFor( n => n.AnnoScolasticoRichiesta )
+        <i id="famLoader" class="fa fa-refresh fa-spin" style="display: none;"></i>
+        <label for="sceltaFamiliare" class="">Selezionare il destinatario della richiesta</label>
+        <select id="sceltaFamiliare" class="form-control mb-3" name="CodFiscaleDestinatario" required onchange="ricaricaIstituti()">
+            @foreach ( var familiare in Model.FamiliariSelezionabili )
+            {
+                <option value="@familiare.CodFiscale" @(Model.CodFiscaleRichiedente == familiare.CodFiscale ? "selected" : "")>@familiare.Nominativo</option>
+            }
+        </select>
+        @Html.ValidationMessageFor( n => n.CodFiscaleRichiedente )
+
+        @{ var famSelezionato = Model.FamiliariSelezionabili.FirstOrDefault( n => n.CodFiscale == Model.CodFiscaleRichiedente ); }
+
+        <label for="famCodFiscale" class="">Codice fiscale</label>
+        <input id="famCodFiscale" class="form-control mb-3" type="text" readonly="readonly" value="@(famSelezionato == null ? "" : famSelezionato.CodFiscale)" />
+        <label for="famDataNascita" class="mb-2">Data di nascita</label>
+        <input id="famDataNascita" class="form-control mb-3" type="text" readonly="readonly" value="@(famSelezionato == null ? "" : famSelezionato.DataNascita.ToString("dd/MM/yyyy"))" />
+        <i id="istLoader" class="fa fa-refresh fa-spin" style="display: none;"></i>
+        <label for="sceltaIstituto" class="">Selezionare l'istituto scolastico relativo alla richiesta</label>
+        <select id="sceltaIstituto" class="form-control mb-3" name="IstitutoRichiesta" required>
+            @foreach ( var istituto in Model.IstitutiSelezionabili )
+            {
+                <option value="@istituto" @(Model.IstitutoRichiesta == istituto ? "selected" : "")>@istituto</option>
+            }
+        </select>
+        @Html.ValidationMessageFor( n => n.IstitutoRichiesta )
+
+        <label for="numTelefono" class="mb-2">Numero di telefono</label>
+        <input id="numTelefono" class="form-control mb-3" type="text" value="@Model.NumeroTelefono" />
+        <label for="fileUpload" class="mb-2 fileUpload" style="display: none;">Documento in formato pdf da inserire</label>
+        <input type="file" name="fileUpload" id="fileUpload" class="form-control mb-3 fileUpload" style="display: none;" />
+        <button id="confirmButton" class="col-md-4 btn btn-primary mb-3" type="submit">Invia Richiesta</button>
+    </form>
+</div>
+
+<script type="text/javascript">
+    var Familiari;
+    var Istituti;
+    var codiceIstituto;
+    $("#sceltaAnno").val($("#sceltaAnno option:first").val());
+    ricaricaFamiliari()
+
+    $("#sceltaIstituto").change(
+        //{ passive: true },
+        function () {
+            codiceIstituto = $('option:selected', this).attr("data-codist");
+            //var regex = new RegExp("[A|H|P|S]");
+            ///[A|H|P|S]/
+            //var result = regex.test(codiceIstituto);
+            if (/[A|H|P|S]/.test(codiceIstituto)) {
+                $(".fileUpload").css("display", "none");
+                $("input[type='file']#fileUpload").val("");
+            }
+            else { $(".fileUpload").css("display", "block"); }
+        });
+
+    function ricaricaFamiliari() {
+        var annoSelez = $("#sceltaAnno").val();
+
+        if (annoSelez != "") {
+            $.ajax({
+                url: "@(Url.Action("getFamiliariSelezionabili", "BorseDiStudio"))",
+                type: "POST",
+                cache: false,
+                datatype: "json",
+                beforeSend: function () {
+                    $('#famLoader').show();
+                },
+                complete: function () {
+                    $('#famLoader').hide();
+                },
+                data: { annoRiferimento: annoSelez },
+                success: function (data) {
+                    Familiari = $(data);
+                    $famPicker = $("#sceltaFamiliare");
+                    $famPicker.empty().prepend("<option value='' disabled selected hidden>Prego selezionare...</option>");
+
+                    Familiari.each(function (index, item) {
+                        $famPicker.append("<option value='" + item.CodFiscale + "'>" + item.Nominativo + "</option>");
+                    });
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log("error");
+                    console.log(jqXHR);
+                    console.log(textStatus);
+                    console.log(errorThrown);
+
+                    $("#famCodFiscale").val("");
+                    $("#famDataNascita").val("");
+                    $("#famCaricoPerc").val("");
+                    $("#sceltaIstituto").empty();
+
+                    Familiari.each(function (index, item) {
+                        if (item.CodFiscale == familiareSelez) {
+                            $("#famDataNascita").val(new Date(parseInt(item.DataNascita.substr(6))).toLocaleDateString());
+                            $("#famCodFiscale").val(item.CodFiscale);
+                            $("#famCaricoPerc").val(item.PercentualeACarico + " %");
+                        }
+                    });
+                    swal(errorThrown);
+                }
+            });
+            }
+        }
+
+        function ricaricaIstituti() {
+            var annoSelez = $("#sceltaAnno").val();
+            var familiareSelez = $("#sceltaFamiliare").val();
+
+            if (annoSelez != "" && familiareSelez != "") {
+                $.ajax({
+                    url: "@(Url.Action("getIstitutiSelezionabili", "BorseDiStudio"))",
+                type: "POST",
+                cache: false,
+                datatype: "json",
+                beforeSend: function () {
+                    $('#istLoader').show();
+                },
+                complete: function () {
+                    $('#istLoader').hide();
+                },
+                data: { annoRiferimento: annoSelez, codFiscaleDestinatario: familiareSelez },
+                success: function (data) {
+                    $istPicker = $("#sceltaIstituto");
+                    $istPicker.empty().prepend("<option value='' disabled selected hidden>Prego selezionare...</option>");
+
+                    $(data.istituti).each(function (index, item) {
+                        $istPicker.append("<option value='" + item + "' data-codist=" + data.cod[index] + ">" + item + "</option>");
+                    });
+
+                    data.cod = jQuery.unique(data.cod);
+
+                    $(data.cod).each(function (index, item) {
+                        $("#sceltaIstituto").find("[data-codist='" + item + "']").first().before("<optgroup>");
+                        $("#sceltaIstituto").find("[data-codist='" + item + "']").last().after("</optgroup>");
+                    });
+
+                    $("#famCodFiscale").val("");
+                    $("#famDataNascita").val("");
+                    $("#famCaricoPerc").val("");
+
+                    Familiari.each(function (index, item) {
+                        if (item.CodFiscale == familiareSelez) {
+                            $("#famDataNascita").val(new Date(parseInt(item.DataNascita.substr(6))).toLocaleDateString());
+                            $("#famCodFiscale").val(item.CodFiscale);
+                            $("#famCaricoPerc").val(item.PercentualeACarico + " %");
+                        }
+                    });
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log("error");
+                    console.log(jqXHR);
+                    console.log(textStatus);
+                    console.log(errorThrown);
+
+                    $("#famCodFiscale").val("");
+                    $("#famDataNascita").val("");
+                    $("#famCaricoPerc").val("");
+                    $("#sceltaIstituto").empty();
+
+                    Familiari.each(function (index, item) {
+                        if (item.CodFiscale == familiareSelez) {
+                            $("#famDataNascita").val(new Date(parseInt(item.DataNascita.substr(6))).toLocaleDateString());
+                            $("#famCodFiscale").val(item.CodFiscale);
+                            $("#famCaricoPerc").val(item.PercentualeACarico + " %");
+                        }
+                    });
+                    swal(errorThrown);
+                }
+            });
+        }
+    }
+
+    function confirmSaveNewRichiestaBS() {
+        if (!/[A|H|P|S]/.test(codiceIstituto) && $("input[type='file']#fileUpload").val() == "") { swal("Documento necessario"); }
+        else {
+            swal({
+                title: "I dati inseriti verrano salvati, confermare?",
+                html: "",
+                type: 'question',
+                showCloseButton: true,
+                showCancelButton: true,
+                confirmButtonText: 'Ok',
+                cancelButtonText: 'Annulla'
+            }).then(function () {
+
+                var formData = new FormData();
+
+                var files = $("input[type='file']#fileUpload")[0].files
+                if (files.length > 0 && files[0].type != "application/pdf") {
+                    swal("Il documento deve essere in formato pdf");
+                    return;
+                }
+
+                formData.append('fileUpload', $("input[type='file']#fileUpload")[0].files[0], $("input[type='file']#fileUpload")[0].files[0].name);
+                formData.append('CodFiscaleDestinatario', $("#famCodFiscale").val());
+                formData.append('AnnoScolasticoRichiesta', $("#sceltaAnno").val());
+                formData.append('IstitutoRichiesta', $("#sceltaIstituto").val());
+                formData.append('NumeroTelefono', $("#numTelefono").val());
+
+                $.ajax({
+                    url: "@Url.Action("insertRichiesta", "BorseDiStudio")",
+                    type: "POST",
+                    contentType: false,
+                    processData: false,
+                    data: formData,
+                    success: function (data) {
+                        swal(data);
+                        location.reload();
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log("error");
+                        console.log(jqXHR);
+                        console.log(textStatus);
+                        console.log(errorThrown);
+                        swal(errorThrown);
+                    }
+                });
+            });
+        }
+    };
+
+</script>

@@ -1,0 +1,361 @@
+﻿@using myRaiCommonModel.Gestionale
+@using myRaiHelper
+@model CessazioneModel
+
+@{
+    bool hasErrorAlert = false;
+    string errorAlertText = "";
+
+    int limitDataArrivo = 15;
+    int limitDataArrivoAz = 15;
+    int limitDataRecessoOnline = 15;
+
+
+    DateTime minDateInvioProp = DateTime.MinValue;
+    if (Model.Pratica.DATA_ARRIVO_INT.HasValue)
+    {
+        minDateInvioProp = Model.Pratica.DATA_ARRIVO_INT.Value;
+    }
+    else if (Model.Pratica.DATA_RICH_INT.HasValue)
+    {
+        minDateInvioProp = Model.Pratica.DATA_RICH_INT.Value;
+    }
+    else if (Model.Pratica.DATA_ARRIVO_DOC.HasValue)
+    {
+        minDateInvioProp = Model.Pratica.DATA_ARRIVO_DOC.Value;
+    }
+    else if (Model.Pratica.DTA_RICHIESTA.HasValue)
+    {
+        minDateInvioProp = Model.Pratica.DTA_RICHIESTA.Value;
+    }
+
+    DateTime minDateRicProp;
+    if (Model.Pratica.DATA_INVIO_PROP.HasValue)
+    {
+        minDateRicProp = Model.Pratica.DATA_INVIO_PROP.Value;
+    }
+    else
+    {
+        minDateRicProp = minDateInvioProp;
+    }
+
+    DateTime minDateComAz;
+    if (Model.Pratica.DATA_FIRMA_DIP.HasValue)
+    {
+        minDateComAz = Model.Pratica.DATA_FIRMA_DIP.Value;
+    }
+    else
+    {
+        minDateComAz = minDateRicProp;
+    }
+
+    DateTime minDateRecesso;
+    if (Model.Pratica.DTA_ACCETT_AZ.HasValue)
+    {
+        minDateRecesso = Model.Pratica.DTA_ACCETT_AZ.Value;
+    }
+    else
+    {
+        minDateRecesso = minDateComAz;
+    }
+
+    //if (!Model.Pratica.DATA_ARRIVO_DOC.HasValue && Model.Pratica.DTA_RICHIESTA.Value.AddDays(limitDataArrivo) < DateTime.Today)
+    //{
+    //    hasErrorAlert = true;
+    //    errorAlertText = "Scadenza termine consegna estratti";
+    //}
+    //else
+
+    if (Model.Pratica.DTA_ACCETT_AZ.HasValue && !Model.Pratica.DATA_FIRMA_DIP_ACCETT_AZ.HasValue && Model.Pratica.DTA_ACCETT_AZ.Value.AddDays(limitDataArrivoAz) < DateTime.Today)
+    {
+        hasErrorAlert = true;
+        errorAlertText = "Scadenza termine recesso";
+    }
+
+    var tipologieList = new List<SelectListItem>()
+{
+new SelectListItem(){Value="Quota100",Text="Quota 100"},
+new SelectListItem(){Value="NoQuota100;PensioneVecchiaia",Text="No Quota 100 - Pensione di vecchiaia"},
+new SelectListItem(){Value="NoQuota100;PensioneAnticipata",Text="No Quota 100 - Pensione anticipata"},
+new SelectListItem(){Value="NoQuota100;PensioneAnzianita",Text="No Quota 100 - Pensione di anzianita"},
+};
+
+
+    var ultimoAggDatiCont = "";
+    var param = myRaiHelper.HrisHelper.GetParametro<string>(myRaiHelper.HrisParam.IncentiviEsecuzioneFNL930);
+    if (!String.IsNullOrWhiteSpace(param))
+    {
+        ultimoAggDatiCont = "Aggiornamento dati contabili: " + param;
+    }
+
+    var partTimeList = new List<SelectListItem>()
+{
+new SelectListItem(){Value="", Text="No"},
+new SelectListItem(){Value="Verticale", Text="Verticale"},
+new SelectListItem(){Value="Orizzontale", Text="Orizzontale"}
+};
+}
+
+<div id="modAvvioPrat">
+    @if (hasErrorAlert)
+    {
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="alert alert-danger">
+                    <label class="text-bold">Domanda decaduta</label><br />
+                    <span>@errorAlertText</span>
+                </div>
+            </div>
+        </div>
+
+    }
+    <form id="form-avvioPratica" class="form-group">
+        @Html.HiddenFor(m => m.Pratica.ID_DIPENDENTE)
+        @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Dati dipendente"))
+        {
+            <div class="row ">
+                <div class="col-sm-6 push-10">
+                    @Html.LabelForRequiredObbl(model => model.Pratica.DATA_ANZIANITA, "Data Anzianità", new { @class = "rai-caption" })
+                    @Html.TextBoxFor(m => m.Pratica.DATA_ANZIANITA, new { @class = "js-datetimepicker form-control form-control-value", style = "width: 100%", placeholder = "Data Anzianità", data_format = "DD/MM/YYYY", required = "required" })
+                </div>
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(model => model.Pratica.PART_TIME, "Part-Time", new { @class = "rai-caption" })
+                    @*@Html.TextBoxFor(m => m.Pratica.PART_TIME, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Part-Time" })*@
+                    @Html.RaiSelectFor(m => m.Pratica.PART_TIME, partTimeList, hideSearch: true)
+                </div>
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(model => model.Pratica.CAUSE_VERTENZE, "Cause/Vertenze", new { @class = "rai-caption" })
+                    @Html.TextBoxFor(m => m.Pratica.CAUSE_VERTENZE, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Cause/Vertenze" })
+                </div>
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(model => model.Pratica.CELLULARE, "Numero Telefono", new { @class = "rai-caption" })
+                    @Html.TextBoxFor(m => m.Pratica.CELLULARE, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Nome" })
+                </div>
+                <div class="col-sm-6 push-10">
+                    @Html.LabelFor(model => model.Pratica.MAIL, "Mail", new { @class = "rai-caption" })
+                    @Html.TextBoxFor(m => m.Pratica.MAIL, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Mail" })
+                </div>
+            </div>
+        }
+
+        <div class="block block-content-table">
+            <div class="block-header block-content-mini">
+                <label class="block-title">Dati cessazione</label>&nbsp;<span class="rai-font-sm-neutral text-italic">@ultimoAggDatiCont</span>
+            </div>
+            <div class="block-content">
+                <div class="row">
+                    <div class="col-sm-6 push-10">
+                        @Html.LabelForRequiredObbl(model => model.Pratica.DATA_CESSAZIONE, "Data Cessazione", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.Pratica.DATA_CESSAZIONE, new { @class = "js-datetimepicker form-control form-control-value", style = "width: 100%", placeholder = "Data Cessazione", data_format = "DD/MM/YYYY", required = "required" })
+                    </div>
+                    <div class="col-sm-6 push-10">
+                        @Html.LabelFor(model => model.Pratica.DATA_PAGAMENTO, "Data Pagamento", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.Pratica.DATA_PAGAMENTO, new { @class = "js-datetimepicker form-control form-control-value", style = "width: 100%", placeholder = "Data Pagamento", data_format = "DD/MM/YYYY" })
+                    </div>
+                </div>
+                <div class="row" data-tipologia="1">
+                    <div class="col-sm-6 push-10">
+                        @Html.LabelForRequiredObbl(model => model.Pratica.UNA_TANTUM_LORDA, "Importo Una Tantum", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.Pratica.UNA_TANTUM_LORDA, new { @class = "form-control form-control-value", style = "width: 100%", data_type = "currency", pattern = @"^\d{1,3}(.\d{3})*(\,\d+)?$", placeholder = "Una Tantum", required = "required" })
+                    </div>
+                    <div class="col-sm-6 push-10">
+                        @Html.LabelForRequiredObbl(model => model.Pratica.INCENTIVO_LORDO, "Importo Incentivo Lordo", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.Pratica.INCENTIVO_LORDO, new { @class = "form-control form-control-value", style = "width: 100%", data_type = "currency", pattern = @"^\d{1,3}(.\d{3})*(\,\d+)?$", placeholder = "Incentivo Lordo", required = "required" })
+                    </div>
+                </div>
+                <div class="row" data-tipologia="1">
+                    <div class="col-sm-6 push-10">
+                        @Html.LabelFor(m => m.Pratica.TFR_LORDO_INPS_IP, "TFR Lordo INPS", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.Pratica.TFR_LORDO_INPS_IP, new { @class = "form-control form-control-value", style = "width: 100%", data_type = "currency", pattern = @"^\d{1,3}(.\d{3})*(\,\d+)?$" })
+                    </div>
+                    <div class="col-sm-6 push-10">
+                        @Html.LabelFor(m => m.Pratica.TFR_LORDO_AZ_IP, "TFR Lordo Azienda", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.Pratica.TFR_LORDO_AZ_IP, new { @class = "form-control form-control-value", style = "width: 100%", data_type = "currency", pattern = @"^\d{1,3}(.\d{3})*(\,\d+)?$" })
+                    </div>
+                </div>
+                <div class="row" data-tipologia="1">
+                    <div class="col-sm-6 push-10">
+                        @Html.LabelFor(m => m.Pratica.TFR_NETTO, "TFR Netto", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.Pratica.TFR_NETTO, new { @class = "form-control form-control-value", style = "width: 100%", data_type = "currency", pattern = @"^\d{1,3}(.\d{3})*(\,\d+)?$" })
+                    </div>
+                    <div class="col-sm-6 push-10">
+                        @Html.LabelFor(m => m.Pratica.ALIQ_TFR, "Aliquota TFR", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.Pratica.ALIQ_TFR, new { @class = "form-control form-control-value", style = "width: 100%", data_type = "currency", pattern = @"^\d{1,3}(.\d{3})*(\,\d+)?$" })
+                    </div>
+                </div>
+                <div class="row" data-tipologia="1">
+                    <div class="col-sm-12">
+                        <label class="rai-caption">Mensilità incentivo</label>
+                    </div>
+                    <div class="col-sm-6 push-10">
+                        @Html.LabelFor(m => m.Pratica.NUM_MENS_PRINC_DEC, "principali", new { @class = "text-italic" })
+                        @Html.TextBoxFor(m => m.Pratica.NUM_MENS_PRINC_DEC, new { @class = "form-control" })
+                    </div>
+                    <div class="col-sm-6 push-10">
+                        @Html.LabelFor(m => m.Pratica.NUM_MENS_AGG_DEC, "aggiuntive", new { @class = "text-italic" })
+                        @Html.TextBoxFor(m => m.Pratica.NUM_MENS_AGG_DEC, new { @class = "form-control" })
+                    </div>
+                </div>
+                <div class="row" data-tipologia="1">
+                    <div class="col-sm-6 push-10">
+                        @Html.LabelFor(model => model.Pratica.EX_FISSA, "Accordo 13.03.2018", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(model => model.Pratica.EX_FISSA, new { @class = "form-control form-control-value", style = "width: 100%", data_type = "currency", pattern = @"^\d{1,3}(.\d{3})*(\,\d+)?$", placeholder = "Accordo 13.03.2018" })
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Proposta inviata in bozza al dipendente"))
+        {
+            <div class="row">
+                @if (myRaiHelper.HrisHelper.GetParametro<string>(myRaiHelper.HrisParam.IncentiviAbilitaMail) == "TRUE")
+                {
+                    <div class="col-sm-12 push-10">
+                        <button class="btn rai-btn-small full-width" onclick="OpenBozza(@Model.Pratica.ID_DIPENDENTE)">Gestione mail</button>
+                    </div>
+                }
+
+                <div class="col-sm-6 push-10">
+                    @if (!Model.Pratica.DATA_INVIO_PROP.HasValue)
+                    {
+                        @Html.LabelForRequiredObbl(m => m.Pratica.DATA_INVIO_PROP, "Data invio", new { @class = "text-italic" })
+                        <div class="input-group">
+                            <div class="input-group-addon" onclick="$('#Pratica_DATA_INIVIO_PROP').datetimepicker('show')"><i class="fa fa-calendar"></i></div>
+                            @Html.TextBoxFor(m => m.Pratica.DATA_INVIO_PROP, new { @class = "js-datetimepicker form-control form-control-value", data_locale = "it", style = "width: 100%", data_format = "DD/MM/YYYY", required="required", onchange="IncDateAvvioLimit()" })
+                        </div>
+                        @Html.ValidationMessageFor(m=>m.Pratica.DATA_INVIO_PROP)
+                    }
+                    else
+                    {
+                        @Html.LabelFor(m => m.Pratica.DATA_INVIO_PROP, "Data invio", new { @class = "text-italic" })
+                        <div class="input-group">
+                            @Html.TextBoxFor(m => m.Pratica.DATA_INVIO_PROP, new { @class = "js-datetimepicker form-control form-control-value", data_locale = "it", style = "width: 100%", data_format = "DD/MM/YYYY", @readonly = "readonly" })
+                            <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                        </div>
+                    }
+                    @if (Model.Pratica.DATA_INVIO_PROP.HasValue && !String.IsNullOrWhiteSpace(Model.Pratica.NOT_INVIO_PROP))
+                    {
+                        <i class="rai-font-sm-neutral">@Model.Pratica.NOT_INVIO_PROP</i>
+                    }
+                </div>
+
+                <div class="col-sm-6 push-10">
+                    @Html.LabelForRequiredObbl(m => m.Pratica.DATA_FIRMA_DIP, "Data firma", new { @class = "text-italic", id = "lblFirmaProp" })
+                    <div class="input-group">
+                        <div class="input-group-addon" onclick="$('#Pratica_DATA_FIRMA_DIP').datetimepicker('show')"><i class="fa fa-calendar"></i></div>
+                        @Html.TextBoxFor(m => m.Pratica.DATA_FIRMA_DIP, new { @class = "js-datetimepicker form-control form-control-value", data_locale = "it", style = "width: 100%", data_format = "DD/MM/YYYY", onchange = "IncDateAvvioLimit()", required = "required" })
+                    </div>
+                    @Html.ValidationMessageFor(m => m.Pratica.DATA_FIRMA_DIP)
+                </div>
+            </div>
+        }
+        <div id="wdgt-allegati@((int)IncStato.TempFileProposta)" class="bg-neutrals-xl-10" style="margin-left:-15px; margin-right:-15px; padding:10px 25px; margin-bottom:20px">
+            @if (Model.AllegatiProp != null)
+            {
+                @Html.Partial("subpartial/widget_allegati", Model.AllegatiProp)
+            }
+        </div>
+
+
+        @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Comunicazione al dipendente dell'Accettazione"))
+        {
+            <div class="row">
+                <div class="col-sm-6 push-10">
+                    @Html.LabelForRequiredObbl(m => m.Pratica.DTA_ACCETT_AZ, "Data invio", new { @class = "text-italic" })
+                    <div class="input-group">
+                        <div class="input-group-addon" onclick="$('#Pratica_DTA_ACCETT_AZ').datetimepicker('show')"><i class="fa fa-calendar"></i></div>
+                        @Html.TextBoxFor(m => m.Pratica.DTA_ACCETT_AZ, new { @class = "js-datetimepicker form-control form-control-value", data_locale = "it", style = "width: 100%", data_format = "DD/MM/YYYY", onchange = "IncDateAvvioLimit()", required = "required" })
+                    </div>
+                    @Html.ValidationMessageFor(m => m.Pratica.DTA_ACCETT_AZ)
+                </div>
+                <div class="col-sm-6 push-10">
+                    @Html.LabelForRequiredObbl(m => m.Pratica.DATA_FIRMA_DIP_ACCETT_AZ, "Data controfirma", new { @class = "text-italic", id = "lblFirmaDip" })
+                    <div class="input-group">
+                        <div class="input-group-addon" onclick="$('#Pratica_DATA_FIRMA_DIP_ACCETT_AZ').datetimepicker('show')"><i class="fa fa-calendar"></i></div>
+                        @Html.TextBoxFor(m => m.Pratica.DATA_FIRMA_DIP_ACCETT_AZ, new { @class = "js-datetimepicker form-control form-control-value", data_locale = "it", style = "width: 100%", data_format = "DD/MM/YYYY", onchange = "IncDateAvvioLimit()", required = "required" })
+                    </div>
+                    @Html.ValidationMessageFor(m => m.Pratica.DATA_FIRMA_DIP_ACCETT_AZ)
+                </div>
+                <div class="col-sm-6 push-10">
+                    @Html.LabelForRequiredObbl(m => m.Pratica.DTA_RECESSO, "Data recesso online", new { @class = "text-italic", id = "lblRecesso" })
+                    <div class="input-group">
+                        <div class="input-group-addon" onclick="$('#Pratica_DTA_RECESSO').datetimepicker('show')"><i class="fa fa-calendar"></i></div>
+                        @Html.TextBoxFor(m => m.Pratica.DTA_RECESSO, new { @class = "form-control js-datetimepicker", data_locale = "it", data_format = "DD/MM/YYYY", required = "required" })
+                    </div>
+                    @Html.ValidationMessageFor(m => m.Pratica.DTA_RECESSO)
+                </div>
+            </div>
+        }
+        <div id="wdgt-allegati@((int)IncStato.TempFileAccettazione)" class="bg-neutrals-xl-10" style="margin-left:-15px; margin-right:-15px; padding:10px 25px; margin-bottom:20px">
+            @if (Model.AllegatiAccett != null)
+            {
+                @Html.Partial("subpartial/widget_allegati", Model.AllegatiAccett)
+            }
+        </div>
+
+        <div class="row form-button">
+            <div class="col-sm-12 push-10 rai-btn-fill">
+                <button class="btn rai-btn-small" onclick="SubmitAvviaPratica(false, false,'')">Salva</button>
+            </div>
+            <div class="col-sm-12 rai-btn-fill">
+                <button class="btn btn-action-icon btn-action-icon-text feedback-warning-color" onclick="SubmitAvviaPratica(true, false, 'd')">
+                    <i class="fa fa-clock-o"></i>
+                    Decaduta
+                </button>
+                <button class="btn btn-action-icon btn-action-icon-text feedback-error-color" onclick="SubmitAvviaPratica(true, false, 'r')">
+                    <i class="fa fa-times"></i>
+                    Rifiuta
+                </button>
+                <button class="btn btn-action-icon btn-action-icon-text feedback-success-color" onclick="SubmitAvviaPratica(true, true,'')">
+                    <i class="fa fa-check"></i>
+                    Avvia
+                </button>
+            </div>
+        </div>
+    </form>
+    <script>
+        InitDatePicker();
+        $("input[data-type='currency']").on({
+            keyup: function () {
+                formatCurrency($(this));
+            },
+            blur: function () {
+                formatCurrency($(this), "blur");
+            }
+        });
+        function formatAllCurrency() {
+            var list = $('input[data-type="currency"]');
+            for (var i = 0; i < list.length; i++) {
+                formatCurrency($(list[i]));
+            }
+        }
+        formatAllCurrency();
+
+
+        function IncDateAvvioLimit() {
+            $('#Pratica_DATA_INVIO_PROP').data('DateTimePicker').minDate('@minDateInvioProp.ToString("dd/MM/yyyy")');
+            var valInvioProp = $('#Pratica_DATA_INVIO_PROP').val();
+            if (valInvioProp == '') {
+                valInvioProp = '@minDateRicProp.ToString("dd/MM/yyyy")';
+            }
+            $('#Pratica_DATA_FIRMA_DIP').data('DateTimePicker').minDate(moment(valInvioProp, 'DD/MM/YYYY').format('DD/MM/YYYY'));
+
+
+            var richInt = $('#Pratica_DTA_ACCETT_AZ');
+            var valRich = $(richInt).val();
+            if (valRich != '') {
+                var arrivoInt = $('#Pratica_DATA_FIRMA_DIP_ACCETT_AZ');
+                $(arrivoInt).data('DateTimePicker').minDate(moment(valRich, 'DD/MM/YYYY').format('DD/MM/YYYY'));
+                $(arrivoInt).data('DateTimePicker').maxDate(moment(valRich, 'DD/MM/YYYY').add(@limitDataArrivoAz, 'days').format('DD/MM/YYYY'));
+            } 
+
+            var valControFirma = $('#Pratica_DATA_FIRMA_DIP_ACCETT_AZ').val();
+            if (valControFirma != '') {
+                var recesso = $('#Pratica_DTA_RECESSO');
+                $(recesso).data('DateTimePicker').minDate(moment(valControFirma, 'DD/MM/YYYY').format('DD/MM/YYYY'));
+                $(recesso).data('DateTimePicker').maxDate(moment(valControFirma, 'DD/MM/YYYY').add(@limitDataRecessoOnline, 'days').format('DD/MM/YYYY'));
+            }
+        }
+        IncDateAvvioLimit();
+    </script>
+</div>

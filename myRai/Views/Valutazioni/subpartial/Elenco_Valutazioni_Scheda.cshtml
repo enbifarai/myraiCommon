@@ -1,0 +1,355 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel.Gestionale
+@model myRaiCommonModel.Gestionale.SheetContainer
+
+@{
+    int idCampaignSheet = Model.Sheet.ID_CAMPAIGN_SHEET;
+    int myVal = Model.Roles.SelectMany(x => x.Evaluations).Count();
+    bool hasSub = Model.SubRoles != null && Model.SubRoles.Count() > 0;
+    int subVal = 0;
+    if (hasSub)
+    {
+        subVal = Model.SubRoles.SelectMany(x => x.Evaluations.Where(y=>y.Evaluation!=null)).Count();
+    }
+
+    string title = Model.Sheet.XR_VAL_CAMPAIGN.NAME + " - " + Model.Sheet.DESCRIPTION;
+}
+
+<section class="rai panel">
+    <header class="panel-heading">
+        <h1 class="panel-title">@title</h1>
+        <div class="panel-actions rai-panel-actions">
+            <div class="btn-action-icon-switch">
+                <button class="btn-action-icon active" title="Vista totale" onclick="RaiChangeView(this)" data-view-container="@(idCampaignSheet)" data-view-show="blockAll"><i class="fa fa-user"></i></button>
+                <button class="btn-action-icon " title="Vista per delega" onclick="RaiChangeView(this)" data-view-container="@(idCampaignSheet)" data-view-show="blockGroup"><i class="fa fa-users"></i></button>
+            </div>
+            <button onclick="ValUpdateValutazioniSheet('@Model.Sheet.ID_CAMPAIGN_SHEET')" title="Aggiorna i dati" class="btn-action-icon"><i class="fa fa-refresh"></i></button>
+            <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" aria-labelledby="lblRightBox" aria-expanded="true"></a>
+        </div>
+    </header>
+    <div class="panel-body no-padding">
+    <div class="block no-margin-bottom">
+        <ul class="nav nav-tabs nav-tabs-alt nav-justified" data-toggle="tabs" role="tablist">
+                @if (myVal > 0)
+                {
+            <li class="active" role="presentation">
+                <a href="#ElencoDaValutare@(idCampaignSheet)" class="rai-badge-anchor" id="hrefDaValutare@(idCampaignSheet)" tabindex="0" role="tab" aria-controls="ElencoDaValutare@(idCampaignSheet)">
+                    Da valutare
+                    <div class="rai-badge-tab">
+                        @myVal
+                    </div>
+                </a>
+            </li>
+                }
+            @if (hasSub)
+            {
+                    <li class="@(myVal==0?"active":"")" role="presentation">
+                    <a href="#ElencoDaVisionare@(idCampaignSheet)" class="rai-badge-anchor" id="hrefDaVisionare@(idCampaignSheet)" tabindex="0" role="tab" aria-controls="ElencoDaVisionare@(idCampaignSheet)">
+                        Da visionare
+                        <div class="rai-badge-tab">
+                            @subVal
+                        </div>
+                    </a>
+                </li>
+            }
+        </ul>
+
+        <div class="block-content tab-content" style="padding:5px">
+                @if (myVal > 0)
+                {
+            <div class="tab-pane active" id="ElencoDaValutare@(idCampaignSheet)" role="tabpanel">
+                @if (myVal == 0)
+                {
+                    <div class="row" style="padding:10px">
+                        <div class="col-sm-12">
+                            <label class="rai-font-md-neutral">Non ci sono dati da visualizzare</label>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div data-view-container="@(idCampaignSheet)" data-view-block="blockAll" style="">
+                        <div class="panel-group no-margin-bottom" id="accordionDaValutareAll@(idCampaignSheet)">
+                            @foreach (var role in Model.Roles.Where(x => x.Evaluations.Count() > 0).OrderBy(x => x.Role.SINTESI1.Nominativo()))
+                            {
+                                <div class="panel panel-accordion">
+                                    <div class="panel-heading">
+                                        <h4 class="panel-title">
+                                            <a class="accordion-toggle collapse no-padding" data-toggle="collapse" data-parent="#accordionDaValutareAll@(idCampaignSheet)" href="#collapse_possAll_@(role.Role.ID_EVALUATOR)" aria-expanded="false">
+                                                <span>Le mie valutazioni</span>
+                                                @if (role.Role.IsDelegate())
+                                                {
+                                                    <span class="rai-font-md-neutral"> delegate da @role.Role.DELEGATO.First().DELEGANTE.SINTESI1.Nominativo()</span>
+                                                }
+                                            </a>
+                                        </h4>
+                                        <div class="panel-actions">
+                                            <span class="rai-notification">@role.Evaluations.Count()</span>
+                                        </div>
+                                    </div>
+                                    <div id="collapse_possAll_@(role.Role.ID_EVALUATOR)" class="collapse" aria-expanded="false">
+                                        <div class="panel-body panel-row-bordered" style="padding:5px;padding-top:0px">
+                                            @foreach (var val in role.Evaluations.OrderBy(x => x.Person.Nominativo()))
+                                                {
+                                                    string matricola = val.Person.COD_MATLIBROMAT;
+                                                    string nominativo = val.Person.Nominativo();
+                                                    string details1 = "";
+                                                    if (!role.Role.IsDelegate() && val.Delegation != null)
+                                                    {
+                                                        details1 = "Delegato a " + val.Delegation.DELEGATO.SINTESI1.Nominativo();
+                                                    }
+
+                                                    string statoVal = "";
+                                                    if (val.Evaluation != null)
+                                                    {
+                                                            var currentState = ValutazioniManager.GetCurrentEvalState(val.Evaluation.XR_VAL_OPER_STATE);
+                                                            if (currentState != null)
+                                                        {
+                                                                statoVal = currentState.NAME;
+                                                        }
+                                                        }
+
+                                                        string statoExtVal = "";
+                                                        if (val.ExternalEvaluator != null)
+                                                        {
+                                                            if (!val.ExternalEvaluator.IND_APPROVED.HasValue)
+                                                            {
+                                                                statoExtVal = "rai-label-warning";
+                                                            }
+                                                            else if (val.ExternalEvaluator.IND_APPROVED.Value)
+                                                            {
+                                                                statoExtVal = "rai-label-success";
+                                                            }
+                                                            else
+                                                        {
+                                                                statoExtVal = "rai-label-error";
+                                                        }
+                                                    }
+
+                                                <div class="row" style="padding:10px;" data-val-asResp="false" data-val-sheet="@idCampaignSheet" data-val-eval="@val.Evaluation.ID_EVALUATION">
+                                                            <div class="col-sm-6">
+                                                        @Html.ProfileWidget(matricola, nominativo, null, details1)
+                                                    </div>
+                                                            <div class="col-sm-3 text-right">
+                                                                @if (val.Evaluation != null && !String.IsNullOrWhiteSpace(statoVal))
+                                                        {
+                                                            <label class="rai-label">@statoVal</label>
+                                                        }
+                                                        @if (val.ExternalEvaluator != null)
+                                                            {
+                                                                    <label class="rai-label @statoExtVal">Valutatore esterno</label>
+                                                            }
+                                                    </div>
+                                                    <div class="col-sm-3 text-right">
+                                                                <a class="btn rai-btn-small" href="#" onclick="ValModal_Valutazione(@val.Evaluation.ID_EVALUATION, false)">Visualizza</a>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div data-view-container="@(idCampaignSheet)" data-view-block="blockGroup" style="display:none;">
+                        <div class="panel-group no-margin-bottom" id="accordionDaValutareDel@(idCampaignSheet)">
+                            @foreach (var role in Model.Roles.Where(x =>  x.Evaluations.Count() > 0).OrderBy(x => x.Role.SINTESI1.Nominativo()))
+                            {
+                                        foreach (var subGroup in role.Evaluations.GroupBy(x => x.Delegation != null ? x.Delegation.ID_DELEGATION : 0))
+                                {
+                                    <div class="panel panel-accordion">
+                                        <div class="panel-heading">
+                                            <h4 class="panel-title">
+                                                <a class="accordion-toggle collapse no-padding" data-toggle="collapse" data-parent="#accordionDaValutareDel@(idCampaignSheet)" href="#collapse_possDel_@(role.Role.ID_EVALUATOR)_@(subGroup.Key)" aria-expanded="false">
+                                                    @if (subGroup.Key == 0)
+                                                    {
+                                                        <span>Le mie valutazioni</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>Delegate a @subGroup.First().Delegation.DELEGATO.SINTESI1.Nominativo()</span>
+                                                    }
+
+                                                            @*<span>@role.Role.SINTESI1.Nominativo()</span>
+                                                                @if (role.Role.IsDelegate())
+                                                                {
+                                                                    <span class="rai-font-md-neutral"> delegato da @role.Role.DELEGATO.First().DELEGANTE.SINTESI1.Nominativo()</span>
+                                                                }*@
+                                                </a>
+                                            </h4>
+                                            <div class="panel-actions">
+                                                <span class="rai-notification">@subGroup.Count()</span>
+                                            </div>
+                                        </div>
+                                        <div id="collapse_possDel_@(role.Role.ID_EVALUATOR)_@(subGroup.Key)" class="collapse" aria-expanded="false">
+                                            <div class="panel-body panel-row-bordered" style="padding:5px;padding-top:0px">
+                                                @foreach (var val in subGroup.OrderBy(x => x.Person.Nominativo()))
+                                                {
+                                                    string matricola = val.Person.COD_MATLIBROMAT;
+                                                    string nominativo = val.Person.Nominativo();
+                                                    string details1 = "";
+                                                            //if (!role.Role.IsDelegate() && val.Delegation != null)
+                                                            //{
+                                                            //    details1 = "Delegato a " + val.Delegation.DELEGATO.SINTESI1.Nominativo();
+                                                            //}
+
+                                                    string statoVal = "";
+                                                    if (val.Evaluation != null)
+                                                    {
+                                                                var currentState = ValutazioniManager.GetCurrentEvalState(val.Evaluation.XR_VAL_OPER_STATE);
+                                                                if (currentState != null)
+                                                        {
+                                                                    statoVal = currentState.NAME;
+                                                        }
+                                                            }
+
+                                                            string statoExtVal = "";
+                                                            if (val.ExternalEvaluator != null)
+                                                            {
+                                                                if (!val.ExternalEvaluator.IND_APPROVED.HasValue)
+                                                                {
+                                                                    statoExtVal = "rai-label-warning";
+                                                                }
+                                                                else if (val.ExternalEvaluator.IND_APPROVED.Value)
+                                                                {
+                                                                    statoExtVal = "rai-label-success";
+                                                                }
+                                                                else
+                                                        {
+                                                                    statoExtVal = "rai-label-error";
+                                                        }
+                                                    }
+
+                                                    <div class="row" style="padding:10px;" data-val-asResp="false" data-val-sheet="@idCampaignSheet" data-val-eval="@val.Evaluation.ID_EVALUATION">
+                                                                <div class="col-sm-6">
+                                                            @Html.ProfileWidget(matricola, nominativo, null, details1)
+                                                        </div>
+                                                                <div class="col-sm-3 text-right">
+                                                                    @if (val.Evaluation != null && !String.IsNullOrWhiteSpace(statoVal))
+                                                            {
+                                                                <label class="rai-label">@statoVal</label>
+                                                            }
+                                                            @if (val.ExternalEvaluator != null)
+                                                                {
+                                                                        <label class="rai-label @statoExtVal">Valutatore esterno</label>
+                                                                }
+                                                        </div>
+                                                        <div class="col-sm-3 text-right">
+                                                                    <a class="btn rai-btn-small" href="#" onclick="ValModal_Valutazione(@val.Evaluation.ID_EVALUATION, false)">Visualizza</a>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+                }
+            @if (hasSub)
+            {
+                    <div class="tab-pane @(myVal==0?"active":"")" id="ElencoDaVisionare@(idCampaignSheet)" role="tabpanel">
+                    @if (subVal == 0)
+                    {
+                        <div class="row" style="padding:10px;">
+                            <div class="col-sm-12">
+                                <label class="rai-font-md-neutral">Non ci sono dati da visualizzare</label>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="panel-group no-margin-bottom" id="accordionDaVisionare@(idCampaignSheet)">
+                            @foreach (var role in Model.SubRoles.Where(x => !x.Role.IsDelegate() && x.Evaluations.Count(y=>y.Evaluation!=null) > 0).OrderBy(x => x.Role.SINTESI1.Nominativo()))
+                            {
+                                <div class="panel panel-accordion">
+                                    <div class="panel-heading">
+                                        <h4 class="panel-title">
+                                            <a class="accordion-toggle collapse no-padding" data-toggle="collapse" data-parent="#accordionDaVisionare@(idCampaignSheet)" href="#collapse_vis_@(role.Role.ID_EVALUATOR)" aria-expanded="false">
+                                                <span>@role.Role.SINTESI1.Nominativo()</span>
+                                            </a>
+                                        </h4>
+                                        <div class="panel-actions">
+                                            <span class="rai-notification">@role.Evaluations.Count(x=>x.Evaluation!=null)</span>
+                                        </div>
+                                    </div>
+                                    <div id="collapse_vis_@(role.Role.ID_EVALUATOR)" class="collapse" aria-expanded="false">
+                                        <div class="panel-body panel-row-bordered" style="padding:5px;padding-top:0px">
+                                            @foreach (var val in role.Evaluations.Where(x=>x.Evaluation!=null).OrderBy(x => x.Person.Nominativo()))
+                                            {
+                                                string matricola = val.Person.COD_MATLIBROMAT;
+                                                string nominativo = val.Person.Nominativo();
+                                                string details1 = "";
+                                                if (!role.Role.IsDelegate() && val.Delegation != null)
+                                                {
+                                                    details1 = "Delegato a " + val.Delegation.DELEGATO.SINTESI1.Nominativo();
+                                                }
+
+                                                string statoVal = "";
+                                                    myRaiData.Incentivi.XR_VAL_STATE currentState = null;
+                                                if (val.Evaluation != null)
+                                                {
+                                                        currentState = ValutazioniManager.GetCurrentEvalState(val.Evaluation.XR_VAL_OPER_STATE);
+                                                        if (currentState != null)
+                                                    {
+                                                            statoVal = currentState.NAME;
+                                                    }
+                                                    }
+
+                                                    string statoExtVal = "";
+                                                    if (val.ExternalEvaluator != null)
+                                                    {
+                                                        if (!val.ExternalEvaluator.IND_APPROVED.HasValue)
+                                                        {
+                                                            statoExtVal = "rai-label-warning";
+                                                        }
+                                                        else if (val.ExternalEvaluator.IND_APPROVED.Value)
+                                                        {
+                                                            statoExtVal = "rai-label-success";
+                                                    }
+                                                        else
+                                                    {
+                                                            statoExtVal = "rai-label-error";
+                                                    }
+                                                }
+
+                                                <div class="row" style="padding:10px;" data-val-asResp="true" data-val-sheet="@idCampaignSheet" data-val-eval="@val.Evaluation.ID_EVALUATION">
+                                                        <div class="col-sm-6">
+                                                        @Html.ProfileWidget(matricola, nominativo, null, details1)
+                                                    </div>
+                                                        <div class="col-sm-3 text-right">
+                                                            @if (currentState!=null && currentState.ID_STATE >= (int)ValutazioniState.Analizzata && !val.Evaluation.XR_VAL_EVALUATION_NOTE.Any(x=> x.COD_TIPO == "PresaVisione" && (x.VALID_DTA_END == null || x.VALID_DTA_END > DateTime.Now)))
+                                                        {
+                                                                <span class="rai-font-md"><i class="fa fa-warning feedback-warning-color"></i> Da visionare</span>
+                                                        }
+                                                            else if (val.Evaluation != null && !String.IsNullOrWhiteSpace(statoVal))
+                                                        {
+                                                            <label class="rai-label">@statoVal</label>
+                                                        }
+                                                        @if (val.ExternalEvaluator != null)
+                                                            {
+                                                                <label class="rai-label @statoExtVal">Valutatore esterno</label>
+                                                            }
+                                                    </div>
+                                                    <div class="col-sm-3 text-right">
+                                                            <a class="btn rai-btn-small" href="#" onclick="ValModal_Valutazione(@val.Evaluation.ID_EVALUATION, true)">Visualizza</a>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+</section>
+
+

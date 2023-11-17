@@ -1,0 +1,408 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel.Gestionale
+@model ReportCampagnaScheda
+
+@{
+    var title = Model.CampagnaScheda.Campagna_Name + " - " + Model.CampagnaScheda.Descrizione;
+
+    double totDaValutare = Model.Valutazioni.Count();
+    double totValutati = Model.Valutazioni.Count(x => x.Stato > (int)ValutazioniState.Bozza);
+    int totValutatiPerc = (int)(totValutati / totDaValutare * 100);
+
+    int result = 0;
+    int cc = 0;
+
+    var listVal = Model.Valutazioni.Where(x => x.Stato > (int)ValutazioniState.Bozza && x.Media > 0);
+    double sommaMedie = listVal.Sum(x => x.Media);
+    double media = totValutati > 0 ? sommaMedie / totValutati : 0;
+    double varianza = listVal.Sum(x => Math.Pow(x.Media - media, 2)) / totValutati;
+
+    double sqm = Math.Sqrt(varianza);
+
+    double phi_firstpart = 1 / (sqm * Math.Sqrt(2 * Math.PI));
+
+    List<double[]> phis = new List<double[]>();
+    foreach (var item in listVal)
+    {
+        double euleroExp = -(Math.Pow(item.Media - media, 2) / (2 * varianza));
+        double phi = phi_firstpart * Math.Pow(Math.E, euleroExp);
+        phis.Add(new double[] { item.Media, phi });
+    }
+
+    var dataRaw = String.Join(",", phis.OrderBy(x => x[0]).Select(x => "{x:" + x[0].ToString("0.00").Replace(",", ".") + ", y:" + x[1].ToString("0.00").Replace(",", ".") + "}"));
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="panel">
+            <div class="panel-body">
+                <h3 style="margin:0px;">@title</h3>
+            </div>
+        </div>
+
+        @using (Html.BeginPanel(PanelType.PanelNoPadding, "Analisi valutazioni"))
+        {
+            <table class="table rai-table rai-table-collapsable rai-table-panel rai-table-vcenter rai-table-high-row" data-rai-table-collapsable-accordion="true">
+                @foreach (var item in Model.Scheda.Groups)
+                {
+
+
+                    string groupName = item.Name;
+                    <tbody class="rai-table-collapsable-header">
+                        <tr>
+                            <td>
+                                <span class="rai-font-md-bold">@groupName</span>
+                            </td>
+                            <td class="rai-table-td-toggle">
+                                <i class="fa fa-chevron-down"></i>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tbody>
+                        <tr>
+                            <td colspan="2" class="no-padding">
+                                <table class="table rai-table rai-table-collapsable rai-table-panel rai-table-vcenter" data-rai-table-collapsable-accordion="true">
+                                    @foreach (var qst in item.Questions)
+                                    {
+                                        cc++;
+                                        var answData = Model.ElencoDati.FirstOrDefault(x => x.IdDomanda == qst.Id);
+                                        int legend = 96; //a
+
+                                        <tbody class="rai-table-collapsable-header" data-rai-collapsable-onopen="UpdateGrafico">
+                                            <tr>
+                                                <td class="full-width">
+                                                    <span>@qst.Name</span><br />
+                                                    <span class="rai-font-sm-neutral">@qst.Description</span>
+                                                </td>
+                                                <td>
+                                                    @if (answData.ValoreMedio > 0)
+                                                    {
+                                                        <span class="rai-font-lg-bold">@answData.ValoreMedio.ToString("0.00")</span>
+                                                    }
+                                                </td>
+                                                <td class="rai-table-td-toggle">
+                                                    <i class="fa fa-chevron-down"></i>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                        <tbody>
+                                            <tr>
+                                                <td colspan="3">
+                                                    <div class="row push-10-t">
+                                                        <div class="col-sm-6">
+                                                            <table class="rai-table table rai-table-vcenter rai-table-bordered">
+                                                                @foreach (var pieItem in answData.PieItems)
+                                                                {
+                                                                    legend++;
+                                                                    <tr>
+                                                                        <td style="width:25px;padding:0px;"><div class="rai-chart-legend rai-chart-legend-2x pie ct-series-@((char)legend)"></div></td>
+                                                                        <td>@pieItem.label</td>
+                                                                        <td class="text-right"><a href="#" onclick="LoadDettaglioRisposte(@Model.CampagnaScheda.ID, @qst.Id, '@pieItem.labelObj.ToString()')">@pieItem.data[0][1]</a></td>
+                                                                    </tr>
+                                                                }
+                                                            </table>
+                                                        </div>
+                                                        <div class="col-sm-6">
+                                                            <div class="rai-chart rai-chart-slice-border chart chart-md" id="pie-@(result)-@(+cc)"
+                                                                 style="position: relative;margin-top:20px;margin-bottom:20px;padding-top:10px;padding-bottom:10px;">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    }
+                                </table>
+                            </td>
+                        </tr>
+                    </tbody>
+                }
+            </table>
+        }
+
+
+        @using (Html.BeginPanel(PanelType.PanelNoPadding, "Dettaglio valutazioni"))
+        {
+            <table class="table rai-table rai-table-vcenter">
+                <thead>
+                    <tr>
+                        <th style="width:50%">Nominativo</th>
+                        <th style="width:50%">Valutatore</th>
+                        <th>Media</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                @foreach (var item in Model.Valutazioni.OrderByDescending(x => x.Media).ThenBy(x => x.Persona.Nominativo()))
+                {
+                    <tr>
+                        <td>
+                            @Html.ProfileWidget(item.Persona.COD_MATLIBROMAT, item.Persona.Nominativo(), null, CezanneHelper.GetDes(item.Persona.COD_SERVIZIO, item.Persona.DES_SERVIZIO).TitleCase())
+                        </td>
+                        <td>
+                            <label>@item.Valutatore.SINTESI1.Nominativo()</label>
+                        </td>
+                        <td>
+                            <label class="rai-font-lg-bold">@item.Media</label>
+                        </td>
+                        <td class="text-right">
+                            <a class="btn rai-btn-small" href="#" onclick="ValModal_Valutazione(@item.IdValutazione, false)">Visualizza</a>
+                        </td>
+                    </tr>
+                }
+            </table>
+        }
+    </div>
+    <div class="col-md-4">
+        @using (Html.BeginPanel(PanelType.NoHeader, "Popolazione valutata", false))
+        {
+            <div class="row push-20">
+                <div class="col-sm-8">
+                    <h3 style="margin:0px;">Popolazione valutata</h3>
+                </div>
+                <div class="col-sm-4 text-right">
+                    <h3 style="margin:0px;"><b>@totValutati su @totDaValutare</b></h3>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="rai progress progress-chart progress-xl light">
+                        <div class="progress-bar rai-bg-primary" role="progressbar" aria-valuenow="@(totValutatiPerc)" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                            <span class="sottotitolettoBox progress-bar-tooltip" id="span_before">@(totValutatiPerc)%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        @using (Html.BeginPanel(PanelType.NoHeader, ""))
+        {
+            <div class="row push-20">
+                <div class="col-sm-8">
+                    <h3 style="margin:0px;">Media</h3>
+                </div>
+                <div class="col-sm-4 text-right">
+                    <h3 style="margin:0px;"><b>@media.ToString("0.00")</b></h3>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12">
+                    @*<div class="rai-chart chart chart-md" id="chart-average"
+                             style="position: relative;margin-top:20px;margin-bottom:20px;padding-top:10px;padding-bottom:10px;">
+                        </div>*@
+                    <canvas id="chart-average"></canvas>
+                </div>
+            </div>
+        }
+        @using (Html.BeginPanel(PanelType.Panel, "Dettagli", false))
+        {
+            <div class="rai-table-info">
+                <div class="row push-10">
+                    <div class="col-sm-6">
+                        <span>Periodo di osservazione</span>
+                    </div>
+                    <div class="col-sm-6">
+                        <span>@Model.CampagnaScheda.OsservazioneDataInizio.Value.ToString("dd/MM/yyyy") - @Model.CampagnaScheda.OsservazioneDataFine.Value.ToString("dd/MM/yyy")</span>
+                    </div>
+                </div>
+                <div class="row push-10">
+                    <div class="col-sm-6">
+                        <span>Categoria</span>
+                    </div>
+                    <div class="col-sm-6">
+                        <ul class="list-style-none" style="padding-left:0px;">
+                            @foreach (var item in Model.CampagnaScheda.Qualifiche)
+                            {
+                                <li><span>@item</span></li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-6">
+                        <span>Direzioni</span>
+                    </div>
+                    <div class="col-sm-6">
+                        <span><a href="#" data-toggle="modal" data-targer="#modal-dettaglio-direzioni" onclick="$('#modal-dettaglio-direzioni').modal('show')">@(Model.CampagnaScheda.Servizi.Count()) direzioni</a></span>
+                        @*<div style="overflow:hidden;overflow-y:auto;max-height:200px;">
+                                @foreach (var item in Model.CampagnaScheda.Servizi.OrderBy(x => x))
+                                {
+                                    <label class="rai-label">@item</label>
+                                }
+                            </div>*@
+                    </div>
+                </div>
+            </div>
+        }
+
+
+    </div>
+
+    <div id="tooltip-chart" class="tooltip" style="position:fixed;"><div class="tooltip-inner"></div></div>
+</div>
+
+<!-- Modal -->
+<div class="modal right fade" id="modal-dettaglio-direzioni" tabindex="-1" role="dialog" aria-labelledby="titoloModaleDirezione">
+    <div class="modal-dialog modal-half-dialog modal-dialog-popin" role="document">
+        <div class="modal-content">
+            <div data-modal-wrapper="">
+                <div class="block block-transparent no-margin-bottom">
+                    <div class="block-header">
+                        <label class="rai-font-modal-heading" id="titoloModaleDirezione">Dettaglio direzioni</label>
+                        <div class="block-options">
+                            <button data-dismiss="modal" class="btn btn-action-icon"><i class="glyphicon glyphicon-remove"></i></button>
+                        </div>
+                    </div>
+                    <div class="block-content" data-isdirty="false">
+                        <div class="panel">
+                            <div class="panel-body">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <table class="table rai-table rai-table-vcenter">
+                                            <thead>
+                                                <tr>
+                                                    <th>Codice</th>
+                                                    <th class="full-width">Descrizione</th>
+                                                </tr>
+                                            </thead>
+                                            @foreach (var item in Model.CampagnaScheda.Servizi.OrderBy(x => x))
+                                            {
+                                            <tr>
+                                                <td>@item.Substring(0, 2)</td>
+                                                <td>@item.Substring(5).TitleCase()</td>
+                                            </tr>
+                                            }
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- modal-content -->
+    </div><!-- modal-dialog -->
+</div><!-- modal -->
+@Html.RenderModal("dettaglio-risposte")
+
+
+<script>
+    $(".progress-bar").each(function () {
+        each_bar_width = $(this).attr('aria-valuenow');
+        $(this).width(each_bar_width + '%');
+    });
+</script>
+
+<script type="text/javascript">
+    function CreaGrafici() {
+        var color = "#0088CC";
+        if (document.getElementsByClassName("rai-btn-small").length) {
+            var style = window.getComputedStyle(document.getElementsByClassName("rai-btn-small")[0], null);
+            if (style.length) {
+                var rgb = style["color"];
+                if (rgb.length) {
+                    var color = rgb.replace('rgb(', '').replace(')', '').split(',');
+
+                    var r, g, b;
+                    r = parseInt(color[0].trim());
+                    g = parseInt(color[1].trim());
+                    b = parseInt(color[2].trim());
+
+                    color = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+                }
+            }
+        }
+
+
+        var options = {
+                labelPosition: 'outside',
+                ignoreEmptyValues: true,
+                labelDirection: 'explode',
+                labelOffset: 30
+            };
+
+        @{
+            int c = 0;
+            int i = 0;
+            foreach (var item in Model.ElencoDati)
+            {
+                i++;
+        <text>
+        var chart2 = new Chartist.Pie('#pie-@c-@i', {
+        labels: ["@(Html.Raw(String.Join("\",\"", item.PieItems.Select(x=>x.label.Replace("\"","'")))))"],
+        series: [@(Html.Raw(String.Join(",",item.PieItems.Select(x=>x.data[0][1]))))]
+        }, options);
+        </text>
+            }
+        }
+
+        var charr = document.getElementById('chart-average');
+        var chart = new Chart(charr, {
+            type: 'scatter',
+            data: {
+                labels: ['0', '1', '2', '3', '4', '5'],
+                datasets: [{
+                    data: [@dataRaw],
+                    pointBackgroundColor: color,
+                    pointBorderColor: color,
+                    pointerRadius: 2,
+                    pointerHoverRadius:3,
+                    backgroundColor: 'transparent',
+                    borderWidth: 0,
+                    fill: false,
+                    showLine:false
+                }]
+            },
+            options: {
+                scales: {
+                    xAxes: [{
+                        ticks: {
+                            beginAtZero: true,
+                            min: 0,
+                            max: 5,
+                            stepSize:1
+                        }
+                    }]
+                },
+                legend: {
+                    display: false
+                }
+            }
+        });
+        chart.render();
+
+        $('.rai-chart').on('mouseenter', '.ct-slice-pie', function () {
+            var $point = $(this),
+                value = $point.attr('ct:value'),
+                seriesName = $point.parent().attr('ct:series-name');
+
+            var index = $point.parent().parent().find('.ct-series').index($point.parent());
+
+
+            $('#tooltip-chart .tooltip-inner').html($($point.closest('.ct-chart-pie').find('.ct-label')[index]).html() + '<br>' + value);
+            $('#tooltip-chart').addClass('in');
+        });
+
+        $('.rai-chart').on('mouseleave', '.ct-slice-pie', function () {
+            $('#tooltip-chart').removeClass('in');
+        });
+
+        $('.rai-chart').on('mousemove', function (event) {
+            $('#tooltip-chart').css({
+                left: event.clientX+2,
+                top: event.clientY+2
+            });
+        });
+    }
+
+    $(document).ready(function () {
+        CreaGrafici();
+    });
+
+    function UpdateGrafico(element) {
+        $(element).next('tbody').find('.rai-chart')[0].__chartist__.update();
+    }
+
+    function LoadDettaglioRisposte(idScheda, idQst, answer) {
+        RaiOpenAsyncModal("modal-dettaglio-risposte", "/Valutazioni/GetReportDomandaRisposta", { idScheda: idScheda, idQst: idQst, answer: answer }, null, "POST");
+    }
+</script>

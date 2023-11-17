@@ -1,0 +1,86 @@
+﻿@using myRaiCommonModel
+@using myRaiHelper
+@model BaseEventiContainerModel
+
+@{
+    var cont = Model;
+    IEnumerable<EventoModel> records = Model.Eventi;
+    if (cont.Tipologia == TipoEvento.Mansione)
+    {
+        records = cont.Eventi.Where(x => x.Principale);
+    }
+    else
+    {
+        records = cont.Eventi;
+    }
+    var tmpList = records.OrderBy(x => x.DataInizio).ToList();
+}
+
+<tr data-evento-row="" data-type="@cont.Tipologia">
+    @for (int i = 0; i < tmpList.Count(); i++)
+    {
+        var record = tmpList[i];
+        var dtaFine = record.DataFine;
+        if (dtaFine == record.MaxDate)
+        {
+            dtaFine = DateTime.Today;
+        }
+        double colspan = (dtaFine - record.DataInizio).Days + 1;
+
+        int maxColspan = 1000;
+
+        if (colspan > maxColspan)
+        {
+            int nSubCol = (int)(colspan / maxColspan);
+            for (int j = 0; j < nSubCol; j++)
+            {
+                <td colspan="@maxColspan" data-s="@(j==0?"s":"m")" data-i="@record.DataInizio.ToString("yyyyMMdd")" data-f="@record.DataFine.ToString("yyyyMMdd")">
+                    <div class="@(record.DataFine == record.MaxDate ? "actual-event" : "")">
+                        <div data-toggle="popover" data-html="true" data-placement="top" data-content="" data-container="body" onclick="showContractPopover(this)">
+                            <span><span>@record.Codice</span> <b>@CezanneHelper.GetDes(record.Codice, record.Descrizione).TitleCase()</b></span><br />
+                            <span>@record.DataInizio.ToString("dd/MM/yyyy") - @record.DataFine.ToString("dd/MM/yyyy")</span><br />
+                            <span>@record.DescrizioneEvento</span>
+                        </div>
+                    </div>
+                </td>
+            }
+            if (nSubCol * maxColspan < colspan)
+            {
+                <td colspan="@(colspan - nSubCol * maxColspan)" data-s="e" data-i="@record.DataInizio.ToString("yyyyMMdd")" data-f="@record.DataFine.ToString("yyyyMMdd")">
+                    <div class="@(record.DataFine == record.MaxDate ? "actual-event" : "")">
+                        <div data-toggle="popover" data-html="true" data-placement="top" data-content="" data-container="body" onclick="showContractPopover(this)">
+                            <span><span>@record.Codice</span> <b>@CezanneHelper.GetDes(record.Codice, record.Descrizione).TitleCase()</b></span><br />
+                            <span>@record.DataInizio.ToString("dd/MM/yyyy") - @record.DataFine.ToString("dd/MM/yyyy")</span><br />
+                            <span>@record.DescrizioneEvento</span>
+                        </div>
+                    </div>
+                </td>
+            }
+        }
+        else
+        {
+            <td colspan="@(colspan)" data-i="@record.DataInizio.ToString("yyyyMMdd")" data-f="@record.DataFine.ToString("yyyyMMdd")">
+                <div @(record.DataFine == record.MaxDate ? "class=actual-event" : "")>
+                    <div data-toggle="popover" data-html="true" data-placement="top" data-content="" data-container="body" onclick="showContractPopover(this)">
+                        <span><span>@record.Codice</span> <b>@CezanneHelper.GetDes(record.Codice, record.Descrizione).TitleCase()</b></span><br />
+                        <span>@record.DataInizio.ToString("dd/MM/yyyy") - @record.DataFine.ToString("dd/MM/yyyy")</span><br />
+                        <span>@record.DescrizioneEvento</span>
+                    </div>
+                </div>
+            </td>
+        }
+
+        if (i < tmpList.Count() - 1)
+        {
+            var recordSucc = tmpList[i + 1];
+            int diffDays = (recordSucc.DataInizio - record.DataFine).Days - 1;
+            DateTime dateRife = record.DataFine;
+            <td colspan="@diffDays" />
+            @*for (int j = 0; j < diffDays; j++)
+                {
+                    dateRife = dateRife.AddDays(1);
+                    <td data-i="@dateRife.ToString("yyyyMMdd")" data-f="@dateRife.AddMonths(1).AddDays(-1).ToString("yyyyMMdd")" />
+                }*@
+        }
+    }
+</tr>

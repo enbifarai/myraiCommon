@@ -1,0 +1,81 @@
+﻿@model myRaiCommonModel.DettaglioCedolinoModel
+
+
+<form action="/maternitaCongedi/ModificaCedolino" method="POST" id="modifica-cedolino">
+    <input type="hidden" name="idrichiesta" value="@Model.Richiesta.ID" />
+    <input type="hidden" id="tipodip" name="tipodip" value="@Model.TipoDipendente" />
+    <input type="hidden" id="changes"   value="0" />
+    <input type="hidden" id="meseannocedolino" name="meseannocedolino" />
+
+    @{ 
+        string ecc = myRaiCommonManager.MaternitaCongediManager.GetEccezioneRisultante(Model.Richiesta);
+    }
+    @foreach (var item in Model.ListaItemCedolino)
+    {
+        if ((ecc=="AF" || ecc=="MU") && item.NameAttuale != null && item.NameAttuale.ToLower().Contains("redaz"))
+        {
+            continue;
+        }
+        if (
+            (Model.TipoDipendente == "G" && (item.TipiDipendenteSpettanti == "*" || item.TipiDipendenteSpettanti == "G"))
+            ||
+             (Model.TipoDipendente != "G" && (item.TipiDipendenteSpettanti == "*" || item.TipiDipendenteSpettanti == "!G"))
+            )
+        {
+            if (item.CalcolatoModel != null)
+            {
+                if ((ecc == "AF" || ecc == "MU") &&
+                    (item.CalcolatoModel .NameAttuale.Contains("13ma") || item.CalcolatoModel.NameAttuale.Contains("14ma")
+                    || item.CalcolatoModel.NameAttuale.Contains("premio")))
+                {
+                    continue;
+                }
+                @Html.Partial("_cedolinoItemRowCalcolato", item.CalcolatoModel);
+            }
+            else
+            {
+                item.IsGiornalista = Model.TipoDipendente == "G";
+                @Html.Partial("_cedolinoItemRow", item);
+            }
+        }
+
+    }
+
+
+
+    @if (Model.ModificaAbilitata)
+    {
+        <div style="height:66px"></div>
+    }
+    else
+    {
+        <div style="height:16px"></div>
+    }
+
+    @*<div id="importo-fixed" class="row" style="height: 68px;background-color: #eee;padding-top: 22px;margin-top: 30px;position:fixed;bottom:@(Model.ModificaAbilitata?"54px":"4px");left:37px;">*@
+    <div class="row">
+        <div class="col-sm-8" style="margin-bottom:14px">
+            <h2 style="font-weight:bold" id="cat-domanda" class="panel-title">Importo totale</h2>
+        </div>
+        <div class="col-sm-4" style="text-align:right;padding-right:24px">
+            <span class="rai-font-md-neutral-bold	" style="    margin-right: 10px;    font-size: 125%;">Euro</span>
+            <h2 id="importo-totale" style="display:inline;font-weight:bold" class="panel-title">@(String.Format("{0:0.00}", Model.VociGeneriche.ImportoTotale))</h2>
+            <input type="hidden" id="importo-totalehid" name="ImportoTotale"
+                   value="@(String.Format("{0:0.00}", Model.VociGeneriche.ImportoTotale))" />
+        </div>
+
+        @*@if (Model.ModificaAbilitata)
+            {
+
+                <div class="col-sm-12" style="background-color:#eee;padding-bottom:16px">
+
+                    <div class="rai-btn-fill">
+                        <button class="btn rai-btn-secondary" type="button" onclick="$('#acc-ced').click()">Annulla modifiche</button>
+                        <button id="conferma-mod-cedo" type="button" class="btn rai-btn-primary" onclick="ConfermaModificheCedolino(@Model.Richiesta.ID)">Conferma modifiche</button>
+                    </div>
+                </div>
+
+            }*@
+
+    </div>
+</form>

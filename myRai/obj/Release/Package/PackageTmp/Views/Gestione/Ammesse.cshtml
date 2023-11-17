@@ -1,0 +1,442 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+@model GestioneEccezioniAmmesseModel
+
+@{
+    Layout = "~/Views/Shared/_layout.cshtml";
+}
+
+<div id="page-loaderR"><span class="loaderR"><span class="loader-innerR">S</span></span></div>
+
+<!-- Container di Pagina -->
+
+<div id="page-container" class="sidebar-l sidebar-mini sidebar-o header-navbar-fixed">
+    @Html.Partial( "../Shared/sidebar" , myRaiHelper.UtenteHelper.getSidebarModel( appType: myRaiHelper.ApplicationType.Gestionale ) )
+
+    @Html.Partial( "../Shared/header" , new myRaiCommonModel.NotifichePopupModel( CommonHelper.GetCurrentUserMatricola( ) ) )
+
+    <!-- Main Container -->
+    <main id="main-container">
+        @using ( Html.BeginForm( "save" , "gestione" , FormMethod.Post , new { id = "f1" } ) )
+        {
+            <div class="content">
+                <div class="row">
+                    <div class="col-sm-5 col-lg-3">
+                        <div class="collapse navbar-collapse remove-padding" id="inbox-nav">
+                            <div class="block">
+                                <div class="block-content">
+                                    Solo con valid. dinamica JS
+                                    @Html.RaiCheckBoxFor(m => Model.SoloConValidazioneJS, new
+                               {
+                                   onchange = "$('#f1').attr('action','/gestione/ammesse'); $('#b1').click()"
+                               })
+
+                                    <ul class="nav nav-pills nav-stacked push" id="sediul">
+
+                                        @foreach ( var item in Model.ListaEccezioni )
+                                        {
+                                            <li style="background-color:@(item.selected == true ? "#eee" : "")">
+                                                @Html.ActionLink( item.DescEccezione , "ammesse" , new { idEcc = item.id , soloConValidazioneJS = item.validazSelected } )
+                                            </li>
+                                        }
+
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-7 col-lg-9" style="border:solid 2px #fff">
+                        <h1>@Model.EccezioneAmmessa.cod_eccezione</h1>
+
+
+                        @Html.HiddenFor( modelItem => modelItem.EccezioneAmmessa.id )
+                        @Html.HiddenFor( modelItem => modelItem.idEcc )
+
+                        <table id="table-gest" style="width:98%">
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.cod_eccezione )
+                                </td>
+                                <td>
+                                    @Html.TextBoxFor( x => x.EccezioneAmmessa.cod_eccezione , new { @class = "form-control" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.cod_eccezione )
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.desc_eccezione )
+                                </td>
+                                <td>
+                                    @Html.TextBoxFor( x => x.EccezioneAmmessa.desc_eccezione , new { @class = "form-control" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.desc_eccezione )
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.data_inizio_validita )
+                                </td>
+                                <td>
+                                    @Html.TextBoxFor( x => x.EccezioneAmmessa.data_inizio_validita , new { @class = "form-control dtpbar" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.data_inizio_validita )
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.data_fine_validita )
+                                </td>
+                                <td>
+                                    @Html.TextBoxFor( x => x.EccezioneAmmessa.data_fine_validita , new { @class = "form-control dtpbar" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.data_fine_validita )
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.flag_attivo )
+                                </td>
+                                <td>
+                                    @Html.RaiCheckBoxFor( x => x.EccezioneAmmessa.flag_attivo )
+
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.tipo_controllo )
+                                </td>
+                                <td>
+                                    @Html.TextBoxFor( x => x.EccezioneAmmessa.tipo_controllo , new { @class = "form-control" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.tipo_controllo )
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.id_raggruppamento )
+                                </td>
+                                <td>
+                                    @Html.DropDownListFor( x => x.EccezioneAmmessa.id_raggruppamento , Model.RaggruppamentiList , new { @class = "form-control" , style = "width:300px" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.id_raggruppamento )
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.periodo )
+                                </td>
+                                <td>
+                                    @Html.TextBoxFor( x => x.EccezioneAmmessa.periodo , new { @class = "form-control" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.periodo )
+                                </td>
+                            </tr>
+
+
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.controlli_specifici )
+                                </td>
+                                <td>
+                                    @Html.TextBoxFor( x => x.EccezioneAmmessa.controlli_specifici , new { @class = "form-control" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.controlli_specifici )
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.OreInPassato )
+                                </td>
+                                <td>
+                                    @Html.TextBoxFor( x => x.EccezioneAmmessa.OreInPassato , new { @class = "form-control" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.OreInPassato )
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.OreInFuturo )
+                                </td>
+                                <td>
+                                    @Html.TextBoxFor( x => x.EccezioneAmmessa.OreInFuturo , new { @class = "form-control" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.OreInFuturo )
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.PartialView )
+                                </td>
+                                <td>
+                                    @Html.TextBoxFor( x => x.EccezioneAmmessa.PartialView , new { @class = "form-control" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.PartialView )
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.FunzioneJS )
+                                </td>
+                                <td>
+                                    @Html.TextAreaFor( x => x.EccezioneAmmessa.FunzioneJS , new { @class = "form-control" , @rows = "10" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.FunzioneJS )
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.CodiceCsharp )
+                                    <br />
+                                    Esempio:  <br />
+                                    if (ecc=="FE")<br />
+                                    { <br />
+                                    if (R.giornata.data.Day % 2 ==1) <br />
+                                    Rimuovi.Add("FE");<br />
+                                    }<br />
+
+                                </td>
+                                <td>
+                                    @Html.TextAreaFor( x => x.EccezioneAmmessa.CodiceCsharp , new { @class = "form-control" , @rows = "10" , @style = "font-size:11px" , @wrap = "off" , @id = "areacodice" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.CodiceCsharp )
+
+                                    <button id="buttontest" type="button" class="btn btn-info" onclick="$('#codetest').modal('show');$('#codi').val($('#areacodice').val());  $('#codecc').val($('h1').text());">Testa il codice</button>
+
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.TipiDipendente )
+                                </td>
+                                <td>
+                                    @Html.TextBoxFor( x => x.EccezioneAmmessa.TipiDipendente , new { @class = "form-control" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.TipiDipendente )
+
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.TipiDipendenteEsclusi )
+                                </td>
+                                <td>
+                                    @Html.TextBoxFor( x => x.EccezioneAmmessa.TipiDipendenteEsclusi , new { @class = "form-control" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.TipiDipendenteEsclusi )
+
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.Categoria )
+                                </td>
+                                <td>
+                                    @Html.TextBoxFor( x => x.EccezioneAmmessa.Categoria , new { @class = "form-control" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.Categoria )
+
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.OrarioPrevisto )
+                                </td>
+                                <td>
+                                    @Html.TextBoxFor( x => x.EccezioneAmmessa.OrarioPrevisto , new { @class = "form-control" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.OrarioPrevisto )
+
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.OrarioEffettivo )
+
+                                </td>
+                                <td>
+                                    @Html.TextBoxFor( x => x.EccezioneAmmessa.OrarioEffettivo , new { @class = "form-control" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.OrarioEffettivo )
+
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.TipoGiornata )
+                                </td>
+                                <td>
+                                    @Html.TextBoxFor( x => x.EccezioneAmmessa.TipoGiornata , new { @class = "form-control" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.TipoGiornata )
+
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.CaratteriMotivoRichiesta )
+                                </td>
+                                <td>
+                                    @Html.TextBoxFor( x => x.EccezioneAmmessa.CaratteriMotivoRichiesta , new { @class = "form-control" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.CaratteriMotivoRichiesta )
+
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.StatoGiornata )
+                                </td>
+                                <td>
+                                    @Html.DropDownListFor( x => x.EccezioneAmmessa.StatoGiornata , Model.StatoGiornataList , new { @class = "form-control" , style = "width:200px" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.StatoGiornata )
+
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.Prontuario )
+                                </td>
+                                <td class="text-left">
+                                    @Html.RaiCheckBoxFor( x => x.EccezioneAmmessa.Prontuario )
+                                </td>
+                            </tr>
+
+
+
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.id_workflow )
+                                </td>
+                                <td>
+                                    @Html.DropDownListFor( x => x.EccezioneAmmessa.id_workflow , Model.WorkflowsList , new { @class = "form-control" , style = "width:200px" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.id_workflow )
+
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    @Html.LabelFor( modelItem => modelItem.EccezioneAmmessa.descrizione_eccezione )
+                                </td>
+                                <td>
+                                    @Html.TextAreaFor( x => x.EccezioneAmmessa.descrizione_eccezione , new { @class = "form-control" , @rows = "5" } )
+                                    @Html.ValidationMessageFor( x => x.EccezioneAmmessa.descrizione_eccezione )
+
+                                </td>
+                            </tr>
+
+                        </table>
+
+                        <button id="b1" type="submit" class="btn btn-info">Salva eccezione</button>
+
+
+                    </div>
+
+                </div>
+            </div>
+        }
+
+        <div class="modal fade" id="codetest" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+            @using ( Html.BeginForm( "testcodice" , "gestione" , FormMethod.Post , new { id = "f2" } ) )
+            {
+                <div class="modal-dialog modal-dialog-popout" style="width:1000px">
+                    <div class="modal-content">
+                        <div class="block block-themed block-transparent remove-margin-b">
+                            <div class="block-content">
+                                Test Macinatore
+                                <form class="form-horizontal" action="base_pages_tickets.html" method="post" onsubmit="return false;">
+                                    <div class="form-group push-10">
+                                        <div class="col-xs-12">
+                                            <div class="row">
+                                                <br />
+                                                <div class="col-xs-2">
+                                                    Eccezione
+                                                    <input id="codecc" name="codeccezione" readonly type="text" class="form-control" style="width:100px" />
+                                                </div>
+                                                <div class="col-xs-2">
+                                                    Matricola
+                                                    <input value="@CommonHelper.GetCurrentUserMatricola()" name="matricola" type="text" class="form-control" style="width:100px" />
+                                                </div>
+                                                <div class="col-xs-2">
+                                                    (ggmmaaaa)
+                                                    <input value="@DateTime.Now.ToString("ddMMyyyy")" name="data" type="text" class="dtp form-control" style="width:100px" />
+                                                </div>
+                                                <div class="col-xs-12">
+                                                    <br />
+                                                    C#
+                                                    <textarea spellcheck="false" id="codi" name="codice" class="form-control" style="width:100%" wrap="off" rows="10"></textarea>
+                                                    <span style="font-size:160%;color:black" id="risposta"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div class="block-content block-content-full bg-gray-lighter clearfix">
+                                <button style="margin-top: 20px;" id="inviacodice" onclick="$('#risposta').text('attendi');inviacod()" class="pull-right btn btn-square btn-default push-5-r push-10" type="button">
+                                    Check Eccezione
+                                </button>
+                                <button style="margin-top:20px;" onclick="savecod()" class="btn btn-default pull-right">Salva Codice</button>
+                                <button style="margin-top: 20px;" class="btn btn-default pull-right" data-dismiss="modal">Chiudi</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="action-url" />
+            }
+        </div>
+    </main>
+</div>
+
+@section afterjs
+{
+    <script>
+        $(document).ready(function () {
+
+            $.validator.methods.date = function (value, element) {
+                return this.optional(element) || $.datepicker.parseDate('dd/mm/yy', value);
+            }
+
+            $(".dtp").datetimepicker({ format: 'DDMMYYYY' })
+            $(".dtpbar").datetimepicker({ format: 'DD/MM/YYYY' })
+            code();
+            $('#areacodice').bind('input propertychange', function () {
+                code();
+            });
+
+            function code() {
+
+                if ($.trim($("#areacodice").val()) == "")
+                    $("#buttontest").attr("disabled", "disabled");
+                else
+                    $("#buttontest").removeAttr("disabled");
+            }
+
+        });
+
+        function savecod() {
+            var ser = $("#f2").serialize();
+            $.ajax({
+                url: '/gestione/savecodice',
+                type: "POST",
+                data: ser,
+
+                success: function (data) {
+                    if (data == "OK") location.reload();
+                    else
+                        $("#risposta").text(data);
+                }
+
+            });
+        }
+        function inviacod() {
+            //            var ser = $("#f2").serialize();
+            var matricola = $('input[type="text"][name="matricola"]').val();
+            var data = $('input[type="text"][name="data"]').val();
+            var codeccezione = $('#codecc').val();
+            var codice = $('#codi').val();
+
+            $.ajax({
+                url: '/gestione/testcodice',
+                type: "POST",
+                contentType: 'application/json; charset=UTF-8',
+                data: JSON.stringify({
+                    matricola: matricola,
+                    data: data,
+                    codeccezione: codeccezione,
+                    codice: codice
+                }),
+                success: function (data) {
+                    $("#risposta").text(data);
+                },
+                error: function (err1, err2, err3) {
+                }
+            });
+
+        }
+    </script>
+}

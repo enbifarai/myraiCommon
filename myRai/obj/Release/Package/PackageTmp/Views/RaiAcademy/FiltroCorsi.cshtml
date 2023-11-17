@@ -1,0 +1,176 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonModel.RaiAcademy;
+@using MVCProject.Custom_Helpers;
+@using myRaiCommonManager;
+@using myRai.Controllers.RaiAcademy;
+
+@model RaiAcademyVM
+
+@using ( Ajax.BeginForm( "search" , "raiacademy" , new AjaxOptions
+{
+    InsertionMode = InsertionMode.Replace ,
+    HttpMethod = "GET" ,
+    UpdateTargetId = "ElencoCorsi" ,
+    OnBegin = "preSubmit" ,
+    OnSuccess = "checkSelectedTab"
+} , new { id = "form-filtri" , @class = "block" , role = "search" } ) )
+{
+
+    @Html.HiddenFor( m => m.filtri.OrderBy )
+    @Html.HiddenFor( m => m.filtri.SelectedTag )
+    @Html.HiddenFor( m => m.filtri.SelectedFilter )
+
+
+    <div class="input-group mb-md" style="margin-top: 40px">
+        @Html.TextBoxFor(m => m.filtri.SearchString, new
+{
+    @class = "form-control",
+    placeholder = "Cerca nel catalogo",
+    @style = "height:45px;font-size: 14px;font-weight: bold;"
+})
+        <span class="input-group-btn">
+            <button class="btn btn-primary" type="button" aria-label="Cerca tra i corsi" onclick="submitFiltri()"><i class="fa fa-search" style="margin-top: 8px; font-size: 160%"></i></button>
+        </span>
+    </div>
+
+    <a id="FilterBoxToggle" href="javascript:ToggleFilterBox(this)" class="text-italic visible-xs">Mostra tutti i filtri</a>
+
+    <div id="FilterBox" class="@(Request.Browser.IsMobileDevice?"collapse":"")" aria-expanded="@(Request.Browser.IsMobileDevice?"false":"true")">
+        <br />
+        <a class="text-primary azzera-filtri" href="javascript:resetFiltri()">Azzera tutti i filtri</a>
+
+        @{
+            int counterSez = 0;
+            int counterVoc = 0;
+            int counterSotVoc = 0;
+        }
+
+        @foreach ( var sezione in Model.filtri.Sezioni )
+        {
+            counterSez++;
+
+            <div style="margin-top: 30px">
+                <i class="fa fa-filter" aria-hidden="true" style="display: inline; font-size: 136%; color: #ccc;"></i>
+                <h5 tabindex="0" aria-label="@sezione.NomeSezione" class="text-primary" style="display: inline; font-weight: bold; font-size: 120%" onkeydown="enterSezFilter(this)">@sezione.NomeSezione</h5>
+
+                @{
+                    counterVoc = 0;
+
+                    foreach ( var voce in sezione.Voci )
+                    {
+                        counterVoc++;
+                        if ( voce.IsTag )
+                        {
+                            <div class="tag-container">
+                                @foreach ( var v in sezione.Voci )
+                                {
+                                    <div class="tag-corsi"><span style="cursor:pointer" onclick="$('#filtri_SelectedTag').val('@v.NomeVoce')">@v.NomeVoce</span></div>
+                                }
+                            </div>
+                            break;
+                        }
+                        else if ( voce.SottoVoci == null || voce.SottoVoci.Count == 0 )
+                        {
+                            if ( voce.showCheckbox )
+                            {
+                                <div class="checkbox-custom checkbox-default item-cat" data-stato="@voce.StatoAttribute">
+                                    <input id="check_@(counterSez)_@(counterVoc)" type="checkbox" @(voce.Impostato ? "checked" : "") onclick="CheckSelectedFilter2(this, false)" data-filter="@voce.RefField" data-filter-value="@voce.NomeVoce">
+                                    <label for="check_@(counterSez)_@(counterVoc)">@voce.NomeVoce</label>
+                                </div>
+                            }
+                            else
+                            {
+                                string functionOrder = "";
+                                switch ( voce.OrderType )
+                                {
+                                    case OrderTypeEnum.None:
+                                        break;
+                                    case OrderTypeEnum.String:
+                                        functionOrder = "sortCorsiByString(this, '" + voce.OrderTag + "')";
+                                        break;
+                                    case OrderTypeEnum.Number:
+                                        functionOrder = "sortCorsiByNumber(this, '" + voce.OrderTag + "')";
+                                        break;
+                                    default:
+                                        break;
+                                }
+
+                                <div class="nocb item-cat">
+                                    @*<label class="pointer" for="checkboxExample1" onclick="$('#filtri_OrderBy').val('@voce.NomeVoce');submitFiltri();">@voce.NomeVoce</label>*@
+                                    <label class="pointer" for="checkboxExample1" onclick="@functionOrder" role="link" tabindex="-1" data-sort="" data-sort-order="1">@voce.NomeVoce</label>
+                                </div>
+                            }
+
+                        }
+                        else
+                        {
+                            <div class="panel panel-primary" data-stato="@voce.StatoAttribute" data-filter-title="@voce.NomeVoce" data-portlet-item=""
+                                 style="opacity: 1;margin-bottom: 0px;">
+
+                                @{
+                                    bool hasSelected = voce.SottoVoci.Any( x => x.Impostato );
+                                }
+
+                                <header class="panel-heading text-primary sez-he" style="padding-top: 6px; padding-bottom: 6px; border-top: solid 1px #eee;">
+                                    <div onclick="togg($(this).closest('.panel'))" class="pointer" style="color: #444;width:95%">@voce.NomeVoce</div>
+                                    <div class="panel-actions academy-panel-action" style="top: 6px">
+                                        <a tabindex="-1" aria-expanded="@(hasSelected ? "true" : "false")" role="link" aria-haspopup="true" aria-label="@voce.NomeVoce">
+                                            <i class="pointer fa fa-chevron-@(hasSelected ? "down" : "up") mcv" aria-hidden="true" style="color:#888"
+                                               onclick="javascript:togg($(this).closest('.panel'))"></i>
+                                        </a>
+                                    </div>
+                                </header>
+
+
+
+                                <div class="panel-body body-sez">
+                                    <div class="internal @(hasSelected ? "" : "collapse")" aria-expanded="@(hasSelected ? "true" : "false")" style="">
+
+                                        @{
+                                            counterSotVoc = 0;
+                                        }
+
+                                        @foreach ( var sottovoce in voce.SottoVoci )
+                                        {
+                                            counterSotVoc++;
+
+                                            <div class="checkbox-custom checkbox-default item-cat" data-stato="@sottovoce.StatoAttribute">
+                                                <input id="check_@(counterSez)_@(counterVoc)_@(counterSotVoc)" type="checkbox" @(sottovoce.Impostato ? "checked" : "") onclick="CheckSelectedFilter2(this, false)" data-filter="@sottovoce.RefField" data-filter-value="@sottovoce.NomeVoce">
+                                                <label for="check_@(counterSez)_@(counterVoc)_@(counterSotVoc)">@sottovoce.NomeVoce</label>
+                                            </div>
+                                        }
+
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                    }
+                }
+            </div>
+        }
+
+        <a class="text-primary azzera-filtri" href="javascript:resetFiltri()">Azzera tutti i filtri</a>
+    </div>
+
+    @*
+        var linksCatalogo = CommonHelper.GetParametri<string>(EnumParametriSistema.AcademyCatalogoPDF);
+
+
+        if (Request.Browser.IsMobileDevice)
+        {
+        <a id="buttonPdfCorsi" class="btn btn-primary pdf-corsi" target="_blank" href="@(linksCatalogo[1])">CATALOGO PDF</a>
+        }
+        else
+        {
+        <a id="buttonPdfCorsi" class="btn btn-primary pdf-corsi" target="_blank" href="@(linksCatalogo[0])">CATALOGO PDF</a>
+        }
+
+    *@
+}
+
+
+

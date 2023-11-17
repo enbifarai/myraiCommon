@@ -1,0 +1,422 @@
+﻿@using myRaiCommonModel.Gestionale
+@using myRaiHelper
+@model CessazioneModel
+
+@{
+    bool hasErrorAlert = false;
+    string errorAlertText = "";
+    bool showExpireDate = false;
+    string expireText = "";
+
+    int limitDataArrivo = 15;
+    int limitDataArrivoInt = 7;
+
+    DateTime limitQuota100 = new DateTime(2021, 12, 31);
+
+
+    if (Model.Pratica.ID_TIPOLOGIA==(int)CessazioneTipo.Incentivazione && Model.Pratica.DTA_RICHIESTA.HasValue)
+    {
+        if (!Model.Pratica.DATA_ARRIVO_DOC.HasValue)
+        {
+            var dataScadenza = Model.Pratica.DTA_RICHIESTA.Value.AddDays(limitDataArrivo);
+            if (dataScadenza < DateTime.Today)
+            {
+                hasErrorAlert = true;
+                errorAlertText = "Scadenza termine consegna estratti";
+            }
+            else
+            {
+                showExpireDate = true;
+                expireText = "Scadenza " + dataScadenza.ToString("dd/MM/yyyy");
+            }
+        }
+        else if (Model.Pratica.DATA_RICH_INT.HasValue && !Model.Pratica.DATA_ARRIVO_INT.HasValue)
+        {
+            var dataScadenza = Model.Pratica.DATA_RICH_INT.Value.AddDays(limitDataArrivoInt);
+            if (dataScadenza < DateTime.Today)
+            {
+                hasErrorAlert = true;
+                errorAlertText = "Scadenza termine consegna integrazione";
+            }
+            else
+            {
+                showExpireDate = true;
+                expireText = "Scadenza " + dataScadenza.ToString("dd/MM/yyyy");
+            }
+        }
+    }
+
+    var tipologieList = new List<SelectListItem>()
+{
+new SelectListItem(){Value="Quota100",Text="Quota 100"},
+new SelectListItem(){Value="NoQuota100;PensioneVecchiaia",Text="No Quota 100 - Pensione di vecchiaia"},
+new SelectListItem(){Value="NoQuota100;PensioneAnticipata",Text="No Quota 100 - Pensione anticipata"},
+new SelectListItem(){Value="NoQuota100;PensioneAnzianita",Text="No Quota 100 - Pensione di anzianita"},
+};
+
+    var decodScelta = tipologieList.Where(x => x.Value == Model.Pratica.NOT_TIP_SCELTA).Select(x => x.Text).FirstOrDefault();
+
+    var matObiettivi = myRaiGestionale.Controllers.CessazioneController.GetDateMaturazioneRequisiti();
+}
+
+<div id="modRichIns">
+    @if (hasErrorAlert)
+    {
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="alert alert-danger">
+                    <label class="text-bold">Domanda decaduta</label><br />
+                    <span>@errorAlertText</span>
+                </div>
+            </div>
+        </div>
+
+    }
+    @if (showExpireDate)
+    {
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="alert alert-warning">
+                    <label class="text-bold">In scadenza</label><br />
+                    <span>@expireText</span>
+                </div>
+            </div>
+        </div>
+    }
+    @if (Model.DatiQuota100 != null && Model.DatiQuota100.data_compimento_62_anni_eta < limitQuota100 && Model.DatiQuota100.data_38_anni_anzianita_servizio < limitQuota100)
+    {
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="alert alert-info">
+                    <label class="text-bold">Quota 100</label><br />
+                    <span>
+                        Il dipendente ha raggiunto i requisiti per la "Quota 100" in data
+                        @if (Model.DatiQuota100.data_compimento_62_anni_eta > Model.DatiQuota100.data_38_anni_anzianita_servizio)
+                        {
+                            <span>@(Model.DatiQuota100.data_compimento_62_anni_eta.ToString("dd/MM/yyyy")).</span>
+                        }
+                        else
+                        {
+                            <span>@(Model.DatiQuota100.data_38_anni_anzianita_servizio.ToString("dd/MM/yyyy")).</span>
+                        }
+                    </span>
+                </div>
+            </div>
+        </div>
+    }
+
+    <form id="form-accettazioneRichiesta" novalidate="novalidate" method="post">
+        @Html.HiddenFor(x => x.Pratica.ID_DIPENDENTE)
+        <div class="form-group">
+            @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Dati richiesta"))
+            {
+                <div class="rai-table-info">
+                    @if (Model.Pratica.PROGR_RICHIESTA.HasValue)
+                    {
+                    <div class="row push-5">
+                        <div class="col-sm-4">
+                            <label>Progressivo</label>
+                        </div>
+                        <div class="col-sm-8">
+                            <span>@Model.Pratica.PROGR_RICHIESTA</span>
+                        </div>
+                    </div>
+                    }
+                    @if (Model.Pratica.DTA_RICHIESTA.HasValue)
+                    {
+                        <div class="row push-5">
+                            <div class="col-sm-4">
+                                @Html.LabelFor(m => m.Pratica.DTA_RICHIESTA, "Data inserimento")
+                            </div>
+                            <div class="col-sm-8">
+                                <span>@Model.Pratica.DTA_RICHIESTA.Value.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                            </div>
+                        </div>
+                    }
+                    <div class="row push-5">
+                        <div class="col-sm-4">
+                            @Html.LabelFor(m => m.Pratica.DATA_USCITA_RICH, "Data uscita richiesta")
+                        </div>
+                        <div class="col-sm-8">
+                            <span>@Model.Pratica.DATA_USCITA_RICH.Value.ToString("dd/MM/yyyy")</span>
+                        </div>
+                    </div>
+                    <div class="row push-5">
+                        <div class="col-sm-4">
+                            @Html.LabelFor(m => m.Pratica.NOT_TIP_SCELTA, "Tipologia scelta")
+                        </div>
+                        <div class="col-sm-8">
+                            <span>@decodScelta</span>
+                        </div>
+                    </div>
+                    <div class="row push-5">
+                        <div class="col-sm-4">
+                            <label>In servizio a TI il 20/05/78</label>
+                        </div>
+                        <div class="col-sm-8">
+                            @(Model.TempoInd_19780520 ? "Sì" : "No")
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <a href="@Url.Action("GetModuloRich","Cessazione", new { idDip = Model.Pratica.ID_DIPENDENTE })" target="_blank"><i class="fa fa-download"></i>&nbsp; Modulo di richiesta</a>
+                        </div>
+                    </div>
+                </div>
+            }
+
+
+            <style>
+                a[href="#quota100Info"]:not(.collapsed) span.fa-chevron-down {
+                    transform: rotate(180deg);
+                }
+            </style>
+            <div class="row push-10">
+                <div class="col-sm-12">
+                    @Html.LabelForRequiredObbl(m => m.Pratica.NOT_TIP_ACCERT, "Tipologia accertata", new { @class = "rai-caption" })
+                    @Html.RaiSelectFor(m => m.Pratica.NOT_TIP_ACCERT, tipologieList, onSelectchange: "IncCheckTipologia()", attributes: new { required = "required" }, hideSearch: true)
+                    <a data-toggle="collapse" class="collapsed rai-font-sm-neutral-bold interactive-primary-color" aria-expanded="false" href="#quota100Info">Informazioni Quota 100 <span class="fa fa-chevron-down"></span></a>
+                </div>
+            </div>
+            <div class="row collapse " id="quota100Info">
+                <div class="col-sm-12">
+                    @if (Model.DatiQuota100 != null)
+                    {
+                        <div class="rai-table-info rounded bg-neutrals-xl-10" style="padding-top:5px;padding-bottom:5px;">
+                            <div class="row push-10-t">
+                                <div class="col-sm-8"><span>Compimento 62° anno età</span></div>
+                                <div class="col-sm-4"><span>@Model.DatiQuota100.data_compimento_62_anni_eta.ToString("dd/MM/yyyy")</span></div>
+                            </div>
+                            <div class="row push-10-t push-10">
+                                <div class="col-sm-8"><span>Raggiungimento 38 anni anzianità servizio</span></div>
+                                <div class="col-sm-4"><span>@Model.DatiQuota100.data_38_anni_anzianita_servizio.ToString("dd/MM/yyyy")</span></div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="row">
+                            <div class="col-sm-12 text-center">
+                                <label class="rai-font-md">Dati non disponibili</label>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="row push-10">
+                <div class="col-sm-12">
+                    @Html.LabelForRequiredObbl(m => m.Pratica.NOT_REQ_MATURATO, "Maturazione requisiti", new { @class = "rai-caption", id = "lblReqMa" })
+                    @Html.RaiSelectFor(m => m.Pratica.NOT_REQ_MATURATO, matObiettivi, hideSearch: true, attributes: new { required = "required" })
+                </div>
+            </div>
+            @*<div class="row push-10">
+                    <div class="col-sm-12">
+                        @Html.LabelForRequiredObbl(m => m.Pratica.DATA_PENSIONE_ANTICIPATA, "Data pensione anticipata", new { @class = "rai-caption", id = "lblPensAnticipata" })
+                        <div class="input-group">
+                            <div class="input-group-addon" onclick="$('#Pratica_DATA_PENSIONE_ANTICIPATA').datetimepicker('show')"><i class="fa fa-calendar"></i></div>
+                            @Html.TextBoxFor(m => m.Pratica.DATA_PENSIONE_ANTICIPATA, new { @class = "form-control js-datetimepicker", required = "required", data_format = "DD/MM/YYYY" })
+                        </div>
+                    </div>
+                </div>*@
+            <div class="row push-10">
+                <div class="col-sm-12">
+                    @Html.LabelFor(m => m.Pratica.DATA_ARRIVO_DOC, "Data arrivo estratti", new { @class = "rai-caption" })
+                    <div class="input-group">
+                        <div class="input-group-addon" onclick="$('#Pratica_DATA_ARRIVO_DOC').datetimepicker('show')"><i class="fa fa-calendar"></i></div>
+                        @Html.TextBoxFor(m => m.Pratica.DATA_ARRIVO_DOC, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY", onchange = "IncArrivoLimit()" })
+                    </div>
+                </div>
+            </div>
+            <div class="row push-10">
+                <div class="col-sm-12">
+                    @Html.LabelFor(m => m.Pratica.DATA_RICH_TESS_CONTR, "Data richiesta approfondimenti all'amministrazione", new { @class = "rai-caption" })
+                    <div class="input-group">
+                        <div class="input-group-addon" onclick="$('#Pratica_DATA_RICH_TESS_CONTR').datetimepicker('show')"><i class="fa fa-calendar"></i></div>
+                        @Html.TextBoxFor(m => m.Pratica.DATA_RICH_TESS_CONTR, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY" })
+                    </div>
+                </div>
+            </div>
+
+
+
+            @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Richiesta integrazione al dipendente"))
+            {
+                <div class="row">
+                    <div class="col-sm-6 push-10">
+                        @Html.LabelFor(m => m.Pratica.DATA_RICH_INT, "Data richiesta", new { @class = "text-italic" })
+                        <div class="input-group">
+                            <div class="input-group-addon" onclick="$('#Pratica_DATA_RICH_INT').datetimepicker('show')"><i class="fa fa-calendar"></i></div>
+                            @Html.TextBoxFor(m => m.Pratica.DATA_RICH_INT, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY", onchange = "IncArrivoLimit()" })
+                        </div>
+                    </div>
+                    <div class="col-sm-6 push-10">
+                        @Html.LabelFor(m => m.Pratica.DATA_ARRIVO_INT, "Data arrivo", new { @class = "text-italic", id = "lblArrivoInt" })
+                        <div class="input-group">
+                            <div class="input-group-addon" onclick="$('#Pratica_DATA_ARRIVO_INT').datetimepicker('show')"><i class="fa fa-calendar"></i></div>
+                            @Html.TextBoxFor(m => m.Pratica.DATA_ARRIVO_INT, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY" })
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <div class="row">
+                <div class="col-sm-12">
+                    <label class="as-block-title">Allegati</label>
+                </div>
+            </div>
+            <div id="wdgt-allegati@((int)IncStato.TempFileEstratti)" class="bg-neutrals-xl-10" style="margin-left:-15px; margin-right:-15px; padding:10px 25px; margin-bottom:20px">
+                @if (Model.Allegati != null)
+                {
+                    @Html.Partial("subpartial/widget_allegati", Model.Allegati)
+                }
+            </div>
+
+
+            <div class="row form-button">
+                <div class="col-sm-12 push-10 rai-btn-fill">
+                    <button class="btn rai-btn-small" onclick="IncApprovazioneRich(@Model.Pratica.ID_DIPENDENTE, false, true,'')">Salva</button>
+                </div>
+                <div class="col-sm-12 rai-btn-fill">
+                    <button class="btn btn-action-icon btn-action-icon-text feedback-warning-color" onclick="IncApprovazioneRich(@Model.Pratica.ID_DIPENDENTE, true, false, 'd')">
+                        <i class="fa fa-clock-o"></i>
+                        Decaduta
+                    </button>
+                    <button class="btn btn-action-icon btn-action-icon-text feedback-error-color" onclick="IncApprovazioneRich(@Model.Pratica.ID_DIPENDENTE, true, false, 'r')">
+                        <i class="fa fa-times"></i>
+                        Rifiuta
+                    </button>
+                    <button class="btn btn-action-icon btn-action-icon-text feedback-success-color" onclick="IncApprovazioneRich(@Model.Pratica.ID_DIPENDENTE, true, true,'')">
+                        <i class="fa fa-check"></i>
+                        Convalida
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+<script>
+    InitDatePicker();
+
+    function IncCheckTipologia() {
+        //var scelta = $('#Pratica_NOT_TIP_ACCERT').val();
+        //if (scelta == 'NoQuota100;PensioneAnticipata') {
+        //    $('#Pratica_DATA_PENSIONE_ANTICIPATA').attr('required', 'required');
+        //    if ($('#lblPensAnticipata').html().indexOf('*') < 0) {
+        //        $('#lblPensAnticipata').append('<font color="#d2322d">*</font>');
+        //    }
+
+        //    $('#lblReqMa').html($('#lblReqMa').html().replace('<font color="#d2322d">*</font>', ''));
+        //    $('#Pratica_NOT_REQ_MATURATO').removeAttr('required');
+        //} else if (scelta == "Quota100") {
+        //    $('#Pratica_NOT_REQ_MATURATO').attr('required', 'required');
+        //    if ($('#lblReqMa').html().indexOf('*') < 0) {
+        //        $('#lblReqMa').append('<font color="#d2322d">*</font>');
+        //    }
+
+        //    $('#lblPensAnticipata').html($('#lblPensAnticipata').html().replace('<font color="#d2322d">*</font>', ''));
+        //    $('#Pratica_DATA_PENSIONE_ANTICIPATA').removeAttr('required');
+        //} else {
+        //    $('#lblReqMa').html($('#lblReqMa').html().replace('<font color="#d2322d">*</font>', ''));
+        //    $('#Pratica_NOT_REQ_MATURATO').removeAttr('required');
+
+        //    $('#lblPensAnticipata').html($('#lblPensAnticipata').html().replace('<font color="#d2322d">*</font>', ''));
+        //    $('#Pratica_DATA_PENSIONE_ANTICIPATA').removeAttr('required');
+        //}
+    }
+
+    function IncArrivoLimit() {
+        var arrivoEstr = $('#Pratica_DATA_ARRIVO_DOC');
+        $(arrivoEstr).data('DateTimePicker').minDate('@Model.Pratica.DTA_RICHIESTA.GetValueOrDefault().ToString("dd/MM/yyyy")');
+        $(arrivoEstr).data('DateTimePicker').maxDate('@Model.Pratica.DTA_RICHIESTA.GetValueOrDefault().AddDays(limitDataArrivo).ToString("dd/MM/yyyy")');
+
+        var valArrivo = $(arrivoEstr).val();
+        if (valArrivo != '') {
+            $(Pratica_DATA_RICH_INT).data('DateTimePicker').minDate(moment(valArrivo, 'DD/MM/YYYY').add(1, 'days').format('DD/MM/YYYY'));
+        }
+
+        var richInt = $('#Pratica_DATA_RICH_INT');
+        var valRich = $(richInt).val();
+        if (valRich != '') {
+            if ($('#lblArrivoInt').html().indexOf('*') < 0) {
+                $('#lblArrivoInt').append('<font color="#d2322d">*</font>');
+            }
+            $('#Pratica_DATA_ARRIVO_INT').attr('required', 'required');
+
+
+            var arrivoInt = $('#Pratica_DATA_ARRIVO_INT');
+            $(arrivoInt).data('DateTimePicker').minDate(moment(valRich, 'DD/MM/YYYY').format('DD/MM/YYYY'));
+            $(arrivoInt).data('DateTimePicker').maxDate(moment(valRich, 'DD/MM/YYYY').add(@limitDataArrivoInt, 'days').format('DD/MM/YYYY'));
+        } else {
+            $('#lblArrivoInt').html($('#lblArrivoInt').html().replace('<font color="#d2322d">*</font>', ''));
+            $('#Pratica_DATA_ARRIVO_INT').removeAttr('required');
+        }
+    }
+
+    function IncFileUpload() {
+        var nomefile = ($("#extractUpload").val().split("\\").pop())
+        var idDip = $('')
+
+        $("#extractUploadRow").show();
+        var formdata = new FormData();
+
+        formdata.append('_file', $('#extractUpload')[0].files[0]);
+        formdata.append("fileName", nomefile);
+        formdata.append()
+
+        //if ($("#titolodoc" + i).length > 0) {
+        //    formdata.append("titolo", $("#titolodoc" + i).val());
+        //}
+        //if ($("#descrizionedoc" + i).length > 0) {
+        //    formdata.append("desc", $("#descrizionedoc" + i).val());
+        //}
+
+        var request = new XMLHttpRequest();
+        request.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+                if (this.responseText.indexOf("E") >= 0)
+                    swal(this.responseText);
+                else {
+                    $("#id-allegato").val(this.responseText);
+                    //$("#button-allegato-" + i).addClass("disable");
+                    $("#ext-nome-file").text(nomefile);
+                    $.ajax({
+                        type: 'POST',
+                        url: "/Cessazione/getallegato",
+                        dataType: "html",
+                        data: { indice: i },
+                        cache: false,
+                        success: function (data) {
+                            $(data).insertAfter($("#allegato" + i));
+                            //$("#allegato" + i).insertAfter(data);
+                        }
+                    });
+                }
+            }
+        };
+        request.upload.addEventListener('progress', function (e) {
+
+            var filesize = $('#extractUpload')[0].files[0].size;
+            $("#ext-total").text(parseInt(filesize / 1000) + " KB");
+            $("#ext-loaded").text(parseInt(e.loaded / 1000) + " KB");
+            var percent = Math.round(e.loaded / filesize * 100);
+            $("#ext-progress-bar").css("width", percent + "%");
+
+            if (e.loaded >= filesize) {
+                $("#ext-rimuovi").show();
+            }
+            else
+                $("#ext-rimuovi").hide();
+
+        });
+
+        request.open('post', '/Cessazione/UploadFile');
+        request.timeout = 45000;
+        request.send(formdata);
+    }
+
+
+    IncArrivoLimit();
+    IncCheckTipologia();
+
+
+</script>

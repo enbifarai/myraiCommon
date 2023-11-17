@@ -1,0 +1,171 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonModel.raiplace;
+@using MVCProject.Custom_Helpers;
+@using myRaiCommonManager;
+
+@model CestiniModel
+
+<div class="row no-margin-left-right">
+    <div class="params">
+        <div class="row">
+            @Html.HiddenFor( m => m.richiestaCorrente.flagRisorsa )
+            <div class="row no-margin-left-right">
+                <div class="params">
+                    @Html.LabelFor( m => m.richiestaCorrente.flagRisorsa , "Tipo risorsa" )
+                    <div id="">
+                        @Html.Label( "Interno" )
+                    </div>
+                </div>
+            </div>
+            <div class="row no-margin-left-right">
+                <div class="params">
+                    @Html.LabelFor( m => m.richiestaCorrente.cognomeRisorsa , ( Model.richiestaCorrente.flagRisorsa ) ? "Nominativo risorsa" : "Cognome risorsa" , htmlAttributes: new { id = "labcog" } )
+                    <div id="divcogs" hidden="@(!Model.richiestaCorrente.flagRisorsa)">
+                        <select id="SelectUser" class="js-data-example-ajax"></select>
+                    </div>
+                    <div id="divcogi" hidden="@(Model.richiestaCorrente.flagRisorsa)">
+                        @Html.TextBoxFor( m => m.richiestaCorrente.cognomeRisorsa , htmlAttributes: new { @class = "form-control disabilita" , required = "required" } )
+                    </div>
+                </div>
+            </div>
+            <div class="row no-margin-left-right" id="divnome" hidden="@(Model.richiestaCorrente.flagRisorsa)">
+                <div class="params">
+                    @Html.LabelFor( m => m.richiestaCorrente.nomeRisorsa , "Nome risorsa" )
+                    @Html.TextBoxFor( m => m.richiestaCorrente.nomeRisorsa , htmlAttributes: new { @class = "form-control disabilita" , required = "required" , onchange = "CtrInput($(this));" } )
+                </div>
+            </div>
+            <div id="divmatricola" class="row no-margin-left-right" hidden="@(!Model.richiestaCorrente.flagRisorsa)">
+                <div class="params">
+                    @Html.LabelFor( m => m.richiestaCorrente.matricolaRisorsa , "Matricola risorsa" )
+                    @Html.TextBoxFor( m => m.richiestaCorrente.matricolaRisorsa , htmlAttributes: new { @class = "form-control disabilita typeahead" , required = "required" } )
+                </div>
+            </div>
+            <div id="divmotesterno" class="row no-margin-left-right" hidden="@(Model.richiestaCorrente.flagRisorsa)">
+                <div class="params">
+                    @Html.LabelFor( m => m.richiestaCorrente.motivoEsterno , "Motivazione" )
+                    @Html.TextBoxFor( m => m.richiestaCorrente.motivoEsterno , htmlAttributes: new { @class = "form-control disabilita" , required = "required" } )
+                </div>
+            </div>
+            <div id="selectorPastoDiv" class="row no-margin-left-right">
+                @Html.LabelFor( m => m.richiestaCorrente.tipoCestino )
+                <select id="richiestaCorrente_SelectTipoCestino" style="width:100%" class="js-select2-templating form-control val-custom" required="required">
+                    @{
+                        foreach ( var opt in ( List<myRai.Models.raiplace.Lookup> ) ViewBag.CestiniTypes )
+                        {
+                            <option value="@(opt.Id)" data-description="@(opt.Description)" @(opt.Selected ? "selected=\"selected\"" : "")>@(opt.Codice)</option>
+                        }
+                    }
+                </select>
+                <div class="val-message"></div>
+                @Html.HiddenFor( m => m.richiestaCorrente.tipoCestino )
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+
+    $( ".js-data-example-ajax" ).select2( {
+        placeholder: "il cognome comincia per",
+        minimumInputLength: 3,
+        width: '100%',
+        ajax: {
+            url: '/Cestini/GetCognomiRisorsa',
+            type: "POST",
+            dataType: 'json',
+            data: function ( params )
+            {
+                return {
+                    cog: params.term
+                };
+            },
+            processResults: function ( data )
+            {
+                return {
+                    results: $.map( data, function ( obj )
+                    {
+                        var a = new Array();
+                        for ( var item in obj )
+                        {
+                            var txt = obj[item].text;
+                            var array = txt.split( '/' );
+                            var nome = array[1];
+                            var cognome = array[0];
+                            var direzione = array[2];
+                            var matricola = obj[item].id;
+                            var fullname = matricola + ' - ' + cognome + ' ' + nome + ' (' + direzione + ')';
+
+                            a.push( { id: obj[item].id, text: fullname, nome: nome, cognome: cognome } );
+                        }
+                        return a;
+                    } )
+                };
+            }
+        }
+    } );
+
+    $( '#SelectUser' ).on( "select2:selecting", function ( e, item )
+    {
+        var txt = e.params.args.data.text;
+        var array = txt.split( '/' );
+        var nome = e.params.args.data.nome;
+        var cognome = e.params.args.data.cognome;
+        var matricola = e.params.args.data.id;
+
+        $( '#richiestaCorrente_cognomeRisorsa' ).val( cognome );
+        $( '#richiestaCorrente_nomeRisorsa' ).val( nome );
+        $( '#richiestaCorrente_matricolaRisorsa' ).val( matricola );
+    } );
+
+    $( function ()
+    {
+        var anagraficaUtenti = new Array();
+        $( '#richiestaCorrente_matricolaRisorsa' ).autoComplete( {
+            minChars: 6,
+            source: function ( term, response )
+            {
+                $.ajax( {
+                    async: false,
+                    cache: false,
+                    type: "POST",
+                    url: '@(Url.Action("GetUtenteByMatricola", "Cestini"))',
+                    data: { "term": term },
+                    success: function ( data )
+                    {
+                        utenti = new Array
+                        anagraficaUtenti = new Array();
+                        for ( var i = 0; i < data.length ; i++ )
+                        {
+                            var txt = data[i].text;
+                            var array = txt.split( '/' );
+                            var nome = array[1];
+                            var cognome = array[0];
+                            var _text = data[i].text.replace( "/", " " );
+                            anagraficaUtenti.push( [data[i].id, _text, cognome, nome] );
+                        }
+                        response( anagraficaUtenti );
+                    }
+                } );
+            },
+            renderItem: function ( item, search )
+            {
+                return '<div class="autocomplete-suggestion" data-matricola="' + item[0] + '" data-cognome="' + item[2] + '" data-nome="' + item[3] + '"> ' + item[1] + '</div>';
+            },
+            onSelect: function ( event, term, item )
+            {
+                var nome = item.data( 'nome' );
+                var cognome = item.data( 'cognome' );
+                var matricola = item.data( 'matricola' );
+                $( '#richiestaCorrente_cognomeRisorsa' ).val( cognome );
+                $( '#richiestaCorrente_nomeRisorsa' ).val( nome );
+                $( '#SelectUser' ).select2( "val", "" );
+                var newOption = new Option( cognome + ' ' + nome, matricola, true, true );
+                $( "#SelectUser" ).append( newOption );
+                $( '#richiestaCorrente_matricolaRisorsa' ).val( matricola );
+            }
+        } );
+    } );
+</script>

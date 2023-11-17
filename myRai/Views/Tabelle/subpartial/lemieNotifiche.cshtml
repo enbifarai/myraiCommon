@@ -1,0 +1,276 @@
+﻿@using myRaiData;
+@using myRaiHelper;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+@using MyRaiServiceInterface.it.rai.servizi.digigappws;
+
+@model MieNotificheModel
+
+<section class="panel" id="panel-notifiche">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+            <a href="#" class="panel-action panel-action-refresh" id="button-refresh-not" type="button" data-toggle="block-option" data-action="refresh_toggle"
+               data-refreshurl="/notifiche/refreshMieNotifiche@(Model.tipo)" data-parentdiv="panel-notifiche"
+               data-refreshelements="mienotifiche"
+               data-action-mode="demo"></a>
+        </div>
+        @if ( Model.tipo == 2 )
+        {
+            <h2 class="panel-title">Le mie notifiche</h2>
+        }
+        else
+        {
+            <h2 class="panel-title">Le mie cose da fare</h2>
+        }
+    </header>
+
+    <div id="mienotifiche" class="block panel-body no-padding">
+        <!-- Block Tabs Justified Alternative Style -->
+        <div class="block-content tab-content">
+            <table class="js-table-sections table table-hover rai-table-vcenter" id="table-notifiche">
+                <thead>
+                    <tr>
+                        <th>Tipologia</th>
+                        <th>Testo</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Notifiche != null && Model.Notifiche.Count > 0)
+                    {
+                        foreach (var item in Model.Notifiche)
+                        {
+                            int idEccRich = 0;
+                            if (item.richiesta != null && item.richiesta.MyRai_Eccezioni_Richieste != null)
+                            {
+                                var eccrich = item.richiesta.MyRai_Eccezioni_Richieste.FirstOrDefault();
+                                if (eccrich != null)
+                                {
+                                    idEccRich = eccrich.id_eccezioni_richieste;
+                                }
+                            }
+                            <tr>
+                                <td>
+                                    @{
+                                        string catNotDescrizione = item.notifica.categoria;
+                                        try
+                                        {
+                                            EnumCategoriaNotifica catNotifica = (EnumCategoriaNotifica)Enum.Parse(typeof(EnumCategoriaNotifica), item.notifica.categoria);
+
+                                            catNotDescrizione = catNotifica.GetAmbientValue();
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            catNotDescrizione = item.notifica.categoria;
+                                        }
+                                    }
+                                    <span class="rai-font-md-neutral">@(catNotDescrizione)</span>
+                                </td>
+                                <td>
+                                    @if ( item.richiesta != null &&
+                                        ( !String.IsNullOrEmpty( item.notifica.categoria ) && (
+                                            item.notifica.categoria.Equals( "ApprovazioneEccezione" ) ||
+                                            item.notifica.categoria.Equals( "RifiutoEccezione" ) ) ) )
+                                    {
+                                        <span class="text-primary" style="cursor:pointer" onclick="showPopoverNotification(this, @idEccRich)" data-placement="top" data-html="true"
+                                              data-content="Attendere" data-toggle="popover">
+                                            @if ( item.notifica.id == 0 )
+                                            {
+                                                @Html.Raw( item.notifica.descrizione )
+                                            }
+                                            else
+                                            {
+                                                @item.notifica.descrizione
+                                            }
+                                        </span>
+                                    }
+                                    else if ( item.ShowDetail )
+                                    {
+                                        <span class="text-primary" style="cursor:pointer" onclick="showPopoverDetail(this, @Json.Encode( item.Dettaglio ))" data-placement="bottom" data-html="true" data-content="Attendere" data-toggle="popover">
+                                            @if ( item.notifica.id == 0 )
+                                            {
+                                                @Html.Raw( item.notifica.descrizione )
+                                            }
+                                            else
+                                            {
+                                                @item.notifica.descrizione
+                                            }
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        string link = "#";
+
+                                        if ( !String.IsNullOrEmpty( item.notifica.categoria ) && (
+                                            item.notifica.categoria.Equals( "InsRichiesta" ) ||
+                                            item.notifica.categoria.Equals( "InsStorno" ) ) )
+                                        {
+                                        }
+
+                                        if ( !String.IsNullOrEmpty( item.notifica.categoria ) && (
+                                            item.notifica.categoria.Equals( "Prenotazione Evento" ) ) )
+                                        {
+                                            <span>
+                                                <a href="@(Url.Action("Index", "Events"))?backurl=Events/&id=@(item.notifica.id_riferimento)" class="">
+                                                    @if ( item.notifica.id == 0 )
+                                                    {
+                                                        @Html.Raw( item.notifica.descrizione )
+                                                    }
+                                                    else
+                                                    {
+                                                        @item.notifica.descrizione
+                                                    }
+                                                </a>
+                                            </span>
+                                        }
+                                    else if (item.notifica.categoria == "PianoFerie")
+                                    {
+                                        <span>
+                                            <a  class="">
+                                                @if (item.notifica.id == 0)
+                                                {
+                                                    @Html.Raw(item.notifica.descrizione)
+                                                }
+                                                else
+                                                {
+                                                    @item.notifica.descrizione
+                                                }
+                                            </a>
+                                        </span>
+                                    }
+                                        else if ( !String.IsNullOrEmpty( item.notifica.categoria ) && (
+                                            item.notifica.categoria.Equals( "PDF firma" ) ) )
+                                        {
+                                            <span>
+                                                <a href="@(Url.Action("Index", "Firma"))" class="">
+                                                    @if ( item.notifica.id == 0 )
+                                                    {
+                                                        @Html.Raw( item.notifica.descrizione )
+                                                    }
+                                                    else
+                                                    {
+                                                        @item.notifica.descrizione
+                                                    }
+                                                </a>
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span>
+                                                <a onclick="openRichiestaDialog('@(item.notifica.data_inserita.ToString( "dd/MM/yyyy" ))', '@(idEccRich)',@(item.richiesta!=null?"'"+item.richiesta.matricola_richiesta+"'":null ));" href="#" data-toggle="modal" data-target="#giornata-modal-cloned" data-day="@(item.notifica.data_inserita.ToString( "dd/MM/yyyy" ))" data-ideccrich="@(idEccRich)" class="">
+                                                    @if ( item.notifica.id == 0 )
+                                                    {
+                                                        @Html.Raw( item.notifica.descrizione )
+                                                    }
+                                                    else
+                                                    {
+                                                        @item.notifica.descrizione
+                                                    }
+                                                </a>
+                                            </span>
+                                        }
+                                    }
+                                @* @if(item.richiesta!=null)
+        {
+
+            var EccRich = item.richiesta.MyRai_Eccezioni_Richieste.FirstOrDefault();
+            if (EccRich !=null && EccRich.nominativo_primo_livello !=null )
+            {
+             <br />
+              <span>da @EccRich.nominativo_primo_livello</span>
+              if (EccRich.data_validazione_primo_livello !=null)
+              {
+                <span>il @(((DateTime)EccRich.data_validazione_primo_livello).ToString("dd/MM/yyyy"))</span>
+              }
+            }
+        } *@
+
+                                </td>
+                            <td style="text-align: center">
+                                @if (item.notifica.id != 0)
+                                {
+                                    <div class="btn btn-action-icon" onclick="DelNotifica(@item.notifica.id,'notif_@item.notifica.id')">
+                                        <i id="notif_@item.notifica.id" class="icons icon-trash " style="cursor:pointer"
+                                           ></i>
+                                    </div>
+
+                                    @* <a style="width:80px" id="notif_@item.notifica.id" href="javascript:DelNotifica(@item.notifica.id,'notif_@item.notifica.id')" class="btn btn-default btn-scriv text-uppercase bg-puls_dash">CANCELLA</a>*@
+
+                                }
+                            </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        @Html.Partial("_nodati")
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<script type="text/javascript">
+
+    function openRichiestaDialog(dataRic, idEccRich, matr) {
+        $('#giornata-modal-cloned').html('');
+        UIRai.loader('show');
+        $.get("/Home/dettagliogiornata?data=" + dataRic + "&ideccezionerichiesta=" + idEccRich, function (data) {
+
+        }).done(function (result) {
+            $('#giornata-modal-cloned').html(result);
+            UIRai.loader('hide');
+            $('#giornata-modal-cloned').modal();
+
+            $.ajax({
+                url: '/ajax/getInfoGiornataAjaxView',
+                type: "GET",
+                dataType: "html",
+                data: {
+                    date: dataRic,
+                    ideccezionerichiesta: idEccRich,
+                    matr: matr
+                },
+                success: function (data) {
+                    var t = $("#InfoGiornataCorrenteContainer");
+                    $(t).html(data);
+                    var parent = $("#InfoGiornataCorrenteContainerParent");
+                    $(parent).removeClass('hide');
+                    if (dataRic != "01/01/1900" &&
+                        !IsDayClosed(dataRic) &&
+                        !IsDayLockedOrario()) {
+                        GetProposteAuto(dataRic);
+                    }
+                },
+                error: function (a, b, c) {
+                    alert("Failed info " + a + b + c);
+                }
+            });
+
+            $.ajax({
+                url: '/ajax/getSegnalazioniAjaxView',
+                type: "GET",
+                dataType: "html",
+                data: {
+                    date: dataRic,
+                    matricola: '',
+                    abilitaApprovazione: '0',
+                    ideccezionerichiesta: idEccRich,
+                    hideCurrentDataRow: true
+                },
+                success: function (data) {
+                    var t = $("#InfoGiornataCorrenteContainerApprovazione");
+                    $(t).html(data);
+                    $(t).data('dataVisualizzata', dataRic);
+                    $(t).removeClass('hide');
+                }
+            });
+        }).fail(function () {
+            UIRai.loader('hide');
+        });
+    }
+</script>

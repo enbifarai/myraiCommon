@@ -1,0 +1,205 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel.Detassazione;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model DetassazioneListaDipendentiVM
+<section class="panel ">
+    <header class="panel-heading">
+        <div class="panel-actions visible-xs">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblLeftBox" aria-expanded="true"></a>
+        </div>
+        <h2 id="lblLeftBox" class="panel-title">Elenco dipendenti</h2>
+    </header>
+    <div class="panel-body no-padding">
+        <div class="block" id="" style="margin-bottom:0px;">
+            <ul class="nav nav-tabs nav-tabs-alt nav-justified" data-toggle="tabs" role="tablist">
+                <li class="active" role="presentation">
+                    <a href="#btab-all" id="" tabindex="0" role="tab" aria-selected="false" aria-controls="btab-pratiche">
+                        @(Html.Raw( Model.DescrizioneTab ))
+                        <span id="badge-tot-pr" style="margin-left: 5px;margin-top: -4px;" class="badge btn-primary">@(Model.Badge)</span>
+                    </a>
+                </li>
+            </ul>
+            <div class="block-content tab-content" style="padding:5px 5px 1px;">
+                <div class="tab-pane active" id="btab-all" role="tabpanel">
+                    @{
+                        if ( Model.Dipendenti != null && Model.Dipendenti.Any( ) )
+                        {
+                            int count = 0;
+                            foreach ( var d in Model.Dipendenti )
+                            {
+                                count++;
+                                <div class="row" role="row">
+                                    <div class="col-sm-2 col-xs-2">
+                                        <h5 class="text-bold">@(d.Matricola)</h5>
+                                    </div>
+                                    <div class="col-sm-4 col-xs-4">
+                                        <h5 class="text-bold">@(d.Nominativo)</h5>
+                                    </div>
+                                    <div class="col-sm-1 col-xs-1">
+                                        <label class="text-bold">@(d.TipoModello)</label>
+                                    </div>
+                                    <div class="col-sm-3 col-xs-3">
+                                        @{
+                                            string txCompletato = "";
+                                            if ( d.Completato )
+                                            {
+                                                txCompletato = String.Format( "Compilato il {0}" , d.DataCompletamento.GetValueOrDefault( ).ToString( "dd/MM/yyyy" ) );
+                                            }
+                                            else
+                                            {
+                                                txCompletato = "Non compilato";
+                                            }
+                                        }
+                                        <span>
+                                            @txCompletato
+                                        </span>
+                                    </div>
+                                    <div class="col-sm-2 col-xs-2">
+                                        @{
+                                            if ( d.Completato )
+                                            {
+                                                <a style="cursor:pointer;" href="javascript:getDetassazionePDF('@(DateTime.Now.Year)', '@(d.Matricola)', 'DETAX');" style="margin-right:5px;">
+                                                    <i title="Visualizza pdf" class="fa interactive-primary-color fa-file-pdf-o h4 text-success" style="font-size: 1.4em;"></i>
+                                                </a>
+                                                if ( Model.UtenteAbilitatoModifica )
+                                                {
+                                                    <a style="cursor:pointer;" href="javascript:resetData('@(DateTime.Now.Year)', '@(d.Matricola)', 'DETAX', '@(d.DataCompletamento.GetValueOrDefault().ToString("dd/MM/yyyy HH:mm:ss.fff"))');">
+                                                        <i title="Ripristina dati" class="fa interactive-primary-color fa-undo h4 text-success" style="font-size: 1.4em;"></i>
+                                                    </a>
+                                                }
+                                            }
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            @Html.Partial( "~/Views/Shared/_NoDatidiv.cshtml" )
+                        }
+                    }
+
+                    <div class="row text-center" id="row_pagination" style="">
+                        <ul class="pagination academy-no-margin" role="tablist">
+                            <li class="page-item @(Model.Paginatore.PaginaCorrente == 1 ? "disabled disable" : "")" role="presentation">
+                                <a style="cursor:pointer;" role="tab" tabindex="-1" aria-selected="false" class="page-link academy-page-item" aria-label="Pagina precedente" onclick="javascript:paginaPrecedente();">«</a>
+                            </li>
+                            @{
+                                for ( var idx = Model.Paginatore.PaginaMin ; idx <= Model.Paginatore.PaginaMax ; idx++ )
+                                {
+                                    <li class="page-item @(idx == Model.Paginatore.PaginaCorrente ? "active":"")" role="presentation">
+                                        <a style="cursor:pointer;" role="tab" tabindex="0" aria-selected="@(idx == Model.Paginatore.PaginaCorrente ? "true":"false")" class="page-link academy-page-item" aria-label="Pagina @idx" onclick="javascript:caricaPagina(@idx);">@idx</a>
+                                    </li>
+                                }
+                            }
+                            <li class="page-item @(Model.Paginatore.PaginaCorrente == Model.Paginatore.Pagine ? "disabled disable": "")" role="presentation">
+                                <a style="cursor:pointer;" href="#" role="tab" tabindex="-1" aria-selected="false" class="page-link academy-page-item" aria-label="Pagina successiva" onclick="javascript:paginaSuccessiva();">»</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script type="text/javascript">
+    var filtri = jQuery.parseJSON('@Html.Raw( Json.Encode( Model.Filtri ) )');
+
+    function caricaPagina(page) {
+        filtri.Pagina = page;
+        $.ajax({
+            url: '@Url.Action( "ListaDipendenti" , "GestioneDetassazione" )',
+            cache: false,
+            type: "POST",
+            data: filtri,
+            success: function (data) {
+                $('#panel-lista-dipendenti').html(data);
+            },
+            error: function (parm1, parm2, parm3) {
+            }
+        });
+    }
+
+    function paginaPrecedente() {
+        var page = @(Model.Paginatore.PaginaCorrente - 1);
+        if (page == 0) return false;
+        filtri.Pagina = page;
+        $.ajax({
+            url: '@Url.Action( "ListaDipendenti" , "GestioneDetassazione" )',
+            type: "POST",
+            cache: false,
+            data: filtri,
+            success: function (data) {
+                $('#panel-lista-dipendenti').html(data);
+            },
+            error: function (parm1, parm2, parm3) {
+            }
+        });
+    }
+
+    function paginaSuccessiva() {
+        var page = @(Model.Paginatore.PaginaCorrente + 1);
+        if (page > @(Model.Paginatore.PaginaMax)) return false;
+        filtri.Pagina = page;
+        $.ajax({
+            url: '@Url.Action( "ListaDipendenti" , "GestioneDetassazione" )',
+            type: "POST",
+            cache: false,
+            data: filtri,
+            success: function (data) {
+                $('#panel-lista-dipendenti').html(data);
+            },
+            error: function (parm1, parm2, parm3) {
+            }
+        });
+    }
+
+    function resetData(anno, matricola, codice, dataOperazione) {
+        swal({
+            title: "I dati verranno ripristinati alle condizioni iniziali.\nSicuro di voler continuare?",
+            html: "",
+            type: 'question',
+            showCloseButton: true,
+            showCancelButton: true,
+            confirmButtonText: ' SI',
+            cancelButtonText: ' NO'
+        }).then(function () {
+            $.ajax({
+                url: '@Url.Action( "ResetData" , "GestioneDetassazione")',
+                type: "POST",
+                dataType: "html",
+                data: {
+                    anno: anno,
+                    matricola: matricola,
+                    dataOperazione: dataOperazione,
+                    codiceDetassazione: codice
+                },
+                success: function (data) {
+                    var ricarica = false;
+                    switch (data) {
+                        case "OK":
+                            swal('Reset dati', "Dati ripristinati con successo", "success");
+                            ricarica = true;
+                            break;
+                        case "OLDDATA":
+                            swal('Reset dati', "E' necessario aggiornare l'elenco i dati potrebbero non essere aggiornati", "info");
+                            ricarica = true;
+                            break;
+                        default:
+                            swal("Oops...", data, 'error');
+                            break;
+                    }
+                    if (ricarica) {
+                        caricaPagina(1);
+                    }
+                },
+                error: function (parm1, parm2, parm3) {
+                }
+            });
+        });
+    }
+
+</script>

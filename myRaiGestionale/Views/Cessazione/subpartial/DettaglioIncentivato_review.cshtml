@@ -1,0 +1,488 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiHelper
+@using myRaiCommonModel.Gestionale
+@using myRaiCommonManager.Cessazione
+@model CessazioneModel
+
+@{
+    string matricola = CommonHelper.GetCurrentUserMatricola();
+    bool isAdmin = CessazioneHelper.IsRoleAdmin(matricola);
+
+    int stato = Model.Stato.ID_STATO;
+    bool showHalfModal = Model.IsPreview
+                        || !Model.Pratica.XR_INC_OPERSTATI.Any(x => x.XR_INC_STATI.IND_DETAIL_WIDGET)
+                        || Model.IsAnpal
+                        || (Model.AbilitaAvviaPratica && !isAdmin);
+
+
+    var tipologieList = CessazioneManager.GetTipologiaUscita();
+
+    var decodScelta = tipologieList.Where(x => x.Value == Model.Pratica.NOT_TIP_SCELTA).Select(x => x.Text).FirstOrDefault();
+    var decodAccert = tipologieList.Where(x => x.Value == Model.Pratica.NOT_TIP_ACCERT).Select(x => x.Text).FirstOrDefault();
+
+    var matObiettivi = myRaiGestionale.Controllers.CessazioneController.GetDateMaturazioneRequisiti();
+    var decodMat = matObiettivi.Where(x => x.Value == Model.Pratica.NOT_REQ_MATURATO).Select(x => x.Text).FirstOrDefault();
+
+    //Nuovi
+
+    bool inseritaDaRPM = Model.Pratica.XR_INC_OPERSTATI.Any(x => x.ID_STATO == (int)IncStato.RichiestaInserita);
+    int indexCurrent = Model.Workflow.Select(x => x.ID_STATO).ToList().IndexOf(Model.Stato.ID_STATO);
+
+    string nominativo = Model.Pratica.SINTESI1.Nominativo();
+    string subtitle = "Matricola: " + Model.Pratica.MATRICOLA;
+
+    bool isInLavorazione = Model.InCarico != null;
+    bool isMiaPratica = isInLavorazione && Model.InCarico.ID_PERSONA == CommonHelper.GetCurrentIdPersona();
+
+    List<string> enabledMatr = null;
+    bool applyFilters = CessazioneHelper.GetEnabledNoteChange(matricola, out enabledMatr);
+
+    bool canModifyMail = !Model.IsAnpal && CessazioneHelper.EnabledToAnySubFunc(matricola, "ADM", "GEST") && Model.Stato.ID_STATO != (int)IncStato.RichiestaAccettata;
+}
+
+@using (Html.BeginModal("Scheda dipendente"))
+{
+    <div id="incContent" class="row">
+        <input type="hidden" id="openFunction" value="@(Model.OpenFunction)" />
+        <div class="col-md-8">
+            <section class="panel ">
+                <header class="panel-heading">
+                    <h2 id="lblRightBox" class="panel-title">@Model.Tipologia.DES_TIPOLOGIA</h2>
+                </header>
+                <div class="panel-body panel-body-nopadding">
+                    <div id="newwizard" class="wizard-progress wiznew wizard-progress-overflow">
+                        @{
+                            int indexShowed = 0;
+                        }
+                        <ul class="wizard-steps">
+                            @for (int i = 0; i < Model.Workflow.Count(); i++)
+                            {
+                                var wkState = Model.Workflow[i].XR_INC_STATI;
+
+                                if (!wkState.IND_SHOWWIZARD.Value)
+                                {
+                                    continue;
+                                }
+                                else if (wkState.ID_STATO == (int)IncStato.RecessoEffettuato && !inseritaDaRPM)
+                                {
+                                    //Nel caso di pratica inserita dal sistema cessazioni, questo è lo stato iniziale
+                                    continue;
+                                }
+
+                                indexShowed++;
+
+                                <li class="tabhead  @(i <= indexCurrent ? "completed" : (i == indexCurrent + 1 && isInLavorazione && isMiaPratica) ? "active" : "")  disable text-center ">
+                                    <a href="#sez-@i" data-toggle="tab" aria-expanded="@(i == indexCurrent + 1 ? "true" : "false")">
+                                        <span>@(indexShowed)</span>@wkState.DES_WIZARD
+
+                                    </a>
+                                    @if (Model.Pratica.XR_INC_OPERSTATI.Any(x => x.DATA_FINE_VALIDITA == null && x.ID_STATO == wkState.ID_STATO))
+                                    {
+                                        <span class="rai-font-sm-neutral">@Model.Pratica.XR_INC_OPERSTATI.First(x => x.DATA_FINE_VALIDITA == null && x.ID_STATO == wkState.ID_STATO).TMS_TIMESTAMP.ToString("dd/MM/yyyy")</span>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </section>
+            <section class="panel">
+                <header class="panel-heading">
+                    <label class="panel-title">Dettagli richiesta</label>
+                </header>
+                <div class="panel-body panel-body-nopadding">
+                    <div class="tab-content" style="overflow: visible; border: 0px; box-shadow: none">
+                        @*@for (int i = 0; i < Model.Workflow.Count(); i++)*@
+                        @for (int i = 0; i <= indexCurrent + 1; i++)
+                        {
+                            var wkState = Model.Workflow[i].XR_INC_STATI;
+                            if (wkState.ID_STATO == (int)IncStato.Conclusa)
+                            {
+                                continue;
+                            }
+
+                            if (i < indexCurrent + 1 && !Model.Pratica.XR_INC_OPERSTATI.Any(x => x.ID_STATO == wkState.ID_STATO))
+                            {
+                                continue;
+                            }
+
+                            string classTab = i == indexCurrent + 1 ? "active" : "";
+                            <div class="tab-pane @classTab" id="sez-@i" role="tabpanel" tabindex="0">
+                                @switch (wkState.ID_STATO)
+                                {
+                                    case (int)IncStato.Controllato:
+                                        @Html.Partial("subpartial/Modifica_DatiPrestiti", Model.Pratica)
+                                        @Html.Partial("subpartial/Dettaglio_SituazioneDebitoria", CessazioneController.GetSituazioneDebitoria(Model.Pratica.MATRICOLA))
+                                        if (Model.Tipologia.ID_TIPOLOGIA == (int)CessazioneTipo.RisoluzioneConsensuale)
+                                        {
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <button class="btn rai-btn-primary full-width" type="button" onclick="SubmitStatoControllato(@Model.Pratica.ID_DIPENDENTE, @Model.Stato.ID_STATO)">Prosegui</button>
+                                                </div>
+                                            </div>
+                                        }
+                                        else if (Model.Tipologia.ID_TIPOLOGIA == (int)CessazioneTipo.Incentivazione)
+                                        {
+                                            <br />
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <button class="btn rai-btn-primary full-width" type="button" onclick="AvviaPratica(@Model.Pratica.ID_DIPENDENTE)">AVVIA</button>
+                                                </div>
+                                            </div>
+                                        }
+                                        break;
+                                    case (int)IncStato.Conteggio:
+                                        @Html.Partial("subpartial/Modifica_DatiContabili", Model.Pratica)
+                                        break;
+                                    case (int)IncStato.Appuntamento:
+                                    case (int)IncStato.VerbaleFirmato:
+                                        @Html.Partial("subpartial/Modifica_DatiAppuntamento", Model.Pratica)
+                                        break;
+                                    case (int)IncStato.VerbaleCaricato:
+                                        @Html.Partial("subpartial/Modifica_DatiVerbale", Model.Pratica)
+                                        break;
+                                    case (int)IncStato.Cedolini:
+                                        @Html.Partial("subpartial/Modifica_DatiPagamento", Model.Pratica)
+                                        break;
+                                    case (int)IncStato.RichiestaAccettata:
+                                        //Questo è lo stato successivo dell'inserimento richiesta
+                                        @Html.Partial("subpartial/Modifica_DatiRichiesta", Model)
+                                        break;
+                                    case (int)IncStato.RecessoEffettuato:
+                                    case (int)IncStato.RichiestaRifiutata:
+                                        //Lo stato successivo all'approvazione richiesta è quello da avviare
+                                        @Html.Partial("subpartial/Modifica_DatiAvvio", Model)
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </section>
+        </div>
+        <div class="col-md-4">
+            <div class="block block-content-table block-transparent">
+                <div class="block-header">
+                    <label class="block-title">Dati generali</label>
+                </div>
+                <div class="block-content">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="panel remove-margin-bottom">
+                                <div class="panel-body">
+                                    <div class="rai-table-info">
+                                        <div class="row push-5">
+                                            <div class="col-sm-12">
+                                                @Html.ProfileWidget(Model.Pratica.MATRICOLA, nominativo, null, subtitle)
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-sm-6 col-lg-4">
+                                                <label class="">Nascita</label>
+                                            </div>
+                                            <div class="col-sm-6 col-lg-8">
+                                                <label>@Model.Pratica.SINTESI1.DTA_NASCITAPERS.Value.ToString("dd/MM/yyyy")</label>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-sm-6 col-lg-4">
+                                                <label class="">Assunzione</label>
+                                            </div>
+                                            <div class="col-sm-6 col-lg-8">
+                                                @if (Model.Pratica.ID_DIPENDENTE > 0)
+                                                {
+                                                    <label>@Model.Pratica.DATA_ASSUNZIONE.ToString("dd/MM/yyyy")</label>
+                                                }
+                                                else
+                                                {
+                                                    <label>@Model.Pratica.SINTESI1.DTA_INIZIO_CR.GetValueOrDefault().ToString("dd/MM/yyyy")</label>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-sm-6 col-lg-4">
+                                                <label class="">Anzianità</label>
+                                            </div>
+                                            <div class="col-sm-6 col-lg-8 @(Model.Pratica.DATA_ASSUNZIONE != Model.Pratica.DATA_ANZIANITA ? "text-danger" : "")">
+                                                @if (Model.Pratica.ID_DIPENDENTE > 0)
+                                                {
+                                                    <label>@Model.Pratica.DATA_ANZIANITA.ToString("dd/MM/yyyy")</label>
+                                                }
+                                                else
+                                                {
+                                                    <label>@Model.Pratica.SINTESI1.DTA_ANZCONV.GetValueOrDefault().ToString("dd/MM/yyyy")</label>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-sm-6 col-lg-4">
+                                                <label class="">Cessazione</label>
+                                            </div>
+                                            <div class="col-sm-6 col-lg-8">
+                                                @if (Model.Pratica.ID_DIPENDENTE > 0)
+                                                {
+                                                    <label>@Model.Pratica.DATA_CESSAZIONE.Value.ToString("dd/MM/yyyy")</label>
+                                                }
+                                                else if (Model.Pratica.SINTESI1.DTA_FINE_CR.GetValueOrDefault() <= DateTime.Today)
+                                                {
+                                                    <label>@Model.Pratica.SINTESI1.DTA_FINE_CR.Value.ToString("dd/MM/yyyy")</label>
+                                                }
+                                                else
+                                                {
+                                                    <label>-</label>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-sm-6 col-lg-4">
+                                                <label class="">Sede</label>
+                                            </div>
+                                            <div class="col-sm-6 col-lg-8">
+                                                <label title="@Model.Pratica.SEDE">@Model.Pratica.SEDE</label>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-sm-6 col-lg-4">
+                                                <label class="">Categoria</label>
+                                            </div>
+                                            <div class="col-sm-6 col-lg-8">
+                                                <label>@Model.Pratica.SINTESI1.DES_QUALIFICA</label>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            @if (!String.IsNullOrWhiteSpace(Model.Pratica.CAUSE_VERTENZE))
+                                            {
+                                                <label class="rai-label rai-label-interactive" data-toggle="tooltip" data-placement="right" title="@Model.Pratica.CAUSE_VERTENZE">Gestione manuale</label>
+                                            }
+
+                                            @if (!Model.IsAnpal)
+                                            {
+                                                var cc = Model.Pratica.ANAGPERS.XR_DATIBANCARI.OrderByDescending(y => y.DTA_FINE).FirstOrDefault(x => x.XR_UTILCONTO.Count() == 1 && x.XR_UTILCONTO.First().COD_UTILCONTO == "01");
+                                                if (cc != null)
+                                                {
+                                                    if (cc.IND_CONGELATO == "Y")
+                                                    {
+                                                        <label class="rai-label rai-label-error">Conto congelato</label>
+                                                    }
+                                                    if (cc.IND_VINCOLATO == "Y")
+                                                    {
+                                                        <label class="rai-label rai-label-error">Conto vincolato</label>
+                                                    }
+                                                }
+                                            }
+
+                                            @if (!String.IsNullOrWhiteSpace(Model.Pratica.IND_PROPRIO_IBAN) && Model.Pratica.IND_PROPRIO_IBAN == "B")
+                                            {
+                                                <label class="rai-label rai-label-error">Vincolo BCCR</label>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @if (!Model.IsAnpal && Model.Pratica.ID_DIPENDENTE > 0)
+            {
+                <div class="block block-content-table block-transparent">
+                    <div class="block-header">
+                        <label class="block-title">Contatti</label>
+                    </div>
+                    <div class="block-content">
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <div class="panel remove-margin-bottom">
+                                    <div class="panel-body panel-body-nopadding">
+                                        <table class="table rai-table rai-table-vcenter rai-table-panel">
+                                            <tr>
+                                                <td>
+                                                    <span class="rai-font-md-neutral-bold">Mail</span>
+                                                    <br />
+                                                    @if (String.IsNullOrWhiteSpace(Model.Pratica.MAIL))
+                                                    {
+                                                        <span id="lblMail" class="rai-font">-</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span id="lblMail">@Model.Pratica.MAIL</span>
+                                                    }
+                                                </td>
+                                                <td class="rai-table-td-action">
+                                                    @if (canModifyMail)
+                                                    {
+                                                        <a class="btn btn-action-icon" onclick="IncModificaMail(@Model.Pratica.ID_DIPENDENTE)"><i class="fa fa-pencil"></i></a>
+
+                                                    }
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <span class="rai-font-md-neutral-bold">Cellulare</span>
+                                                    <br />
+                                                    @if (String.IsNullOrWhiteSpace(Model.Pratica.CELLULARE))
+                                                    {
+                                                        <span id="lblCell">-</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span id="lblCell">@Model.Pratica.CELLULARE</span>
+                                                    }
+                                                </td>
+                                                <td class="rai-table-td-action">
+                                                    @if (canModifyMail)
+                                                    {
+                                                        <a class="btn btn-action-icon" onclick=""><i class="fa fa-pencil"></i></a>
+
+                                                    }
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            <div class="block block-content-table block-transparent">
+                <div class="block-header">
+                    <div class="block-title">Assegnazione</div>
+                </div>
+                <div class="block-content">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="panel remove-margin-bottom">
+                                <div class="panel-body">
+                                    @if (isInLavorazione)
+                                    {
+                                        <div class="row">
+                                            <div class="col-sm-12">
+                                                @Html.ProfileWidget(Model.InCarico.COD_MATLIBROMAT, Model.InCarico.Nominativo())
+                                            </div>
+                                        </div>
+                                        if (isMiaPratica || isAdmin)
+                                        {
+                                            <div class="row push-10-t">
+                                                <div class="col-sm-12">
+                                                    <button class="btn rai-btn-small full-width" title="Rilascia pratica" id="btnCaricaDatiContabili" onclick="RilasciaPratica(@Model.Pratica.ID_DIPENDENTE)">Rilascia pratica</button>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="row">
+                                            <div class="col-sm-12">
+                                                <label class="rai-font-sm-neutral">
+                                                    Questa pratica non è ancora assegnata a un operatore.
+                                                    @if (Model.AbilitaPresaInCarico)
+                                                    {
+                                                        <span>Clicca qui sotto per prenderla in carico.</span>
+                                                    }
+                                                </label>
+                                            </div>
+                                        </div>
+                                        if (Model.AbilitaPresaInCarico)
+                                        {
+                                            <div class="row push-10-t">
+                                                <div class="col-sm-12">
+                                                    <button class="btn rai-btn-primary full-width" type="button" onclick="PresaInCarico(this, @Model.Pratica.ID_DIPENDENTE, @( Model.Workflow[indexCurrent + 1].XR_INC_STATI.ID_STATO == (int)IncStato.Conteggio ? "true" : "false"), '@Model.Pratica.MATRICOLA')">Prendi in carico</button>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            @if (!Model.IsAnpal && Model.Pratica.ID_DIPENDENTE > 0)
+            {
+                <div class="block block-content-table block-transparent">
+                    <div class="block-header">
+                        <label class="block-title">Note</label>
+                    </div>
+                    <div class="block-content">
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <div class="panel remove-margin-bottom">
+                                    <div class="panel-body panel-body-nopadding">
+                                        <table class="table rai-table rai-table-vcenter">
+                                            @if (Model.Pratica.XR_INC_DIPENDENTI_NOTE != null && Model.Pratica.XR_INC_DIPENDENTI_NOTE.Any())
+                                            {
+
+                                                foreach (var nota in Model.Pratica.XR_INC_DIPENDENTI_NOTE)
+                                                {
+                                                    <tr>
+                                                        <td>
+                                                            @if (nota.ID_PERSONA != Model.Pratica.ID_PERSONA)
+                                                            {
+                                                                <div class="row push-10-t push-10">
+                                                                    <div class="col-sm-12">
+                                                                        @Html.ProfileWidget(nota.SINTESI1.COD_MATLIBROMAT, nota.SINTESI1.Nominativo(), null, nota.TMS_TIMESTAMP.ToString("dd/MM/yyyy HH:mm"))
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                            <div class="row push-10-t push-10">
+                                                                <div class="col-sm-12">
+                                                                    <span data-nota="nota.ID_NOTA">@Html.Raw(nota.NOTA.Replace("\r\n", "<br/>"))</span>
+                                                                </div>
+                                                            </div>
+                                                            @if (nota.ID_PERSONA == CommonHelper.GetCurrentIdPersona() || (!applyFilters || enabledMatr.Contains(nota.SINTESI1.COD_MATLIBROMAT)))
+                                                            {
+                                                                <div class="row push-10-t">
+                                                                    <div class="col-sm-12 text-right">
+                                                                        <div class="btn-action-icon-container">
+                                                                            <a class="btn-action-icon" href="#" onclick="IncModificaNotaPratica(@Model.Pratica.ID_DIPENDENTE, @nota.ID_NOTA)" title="Modifica questa nota"><i class="fa fa-pencil"></i></a>
+                                                                            <a class="btn-action-icon" href="#" onclick="CancellazioneNotaPratica(@Model.Pratica.ID_DIPENDENTE, @nota.ID_NOTA)" title="Elimina questa nota"><i class="fa fa-trash"></i></a>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            }
+                                            <tr>
+                                                <td>
+                                                    @if (Model.Pratica.XR_INC_DIPENDENTI_NOTE == null || !Model.Pratica.XR_INC_DIPENDENTI_NOTE.Any())
+                                                    {
+                                                        <div class="row push-10-t push-10">
+                                                            <div class="col-sm-12">
+                                                                <span class="rai-font-sm-neutral">Aggiungi una nota alla richiesta che potrà essere visualizzata da altri operatori</span>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                    <div class="row">
+                                                        <div class="col-sm-12">
+                                                            <button class="btn rai-btn-small full-width" onclick="AggiungiNotaPratica(@Model.Pratica.ID_DIPENDENTE)"><i class="icons icon-note"></i> Aggiungi nota</button>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+
+                                        </table>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+

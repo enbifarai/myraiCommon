@@ -1,0 +1,78 @@
+﻿@using myRaiCommonModel
+@using myRaiHelper
+@model AnagraficaModel
+
+@{
+    var currentContract = Model.DatiContratti.Eventi.OrderByDescending(x => x.DataInizio).First();
+    var minDate = Model.DatiContratti.Eventi.Min(x => x.DataInizio);
+    var maxDate = Model.DatiContratti.Eventi.Max(x => x.DataFine);
+    if (maxDate == currentContract.MaxDate)
+    {
+        maxDate = DateTime.Today;
+    }
+
+    DateTime dateRif = minDate;
+    var stringEmptyRow = "";
+
+    var iDate = minDate;
+    var iMaxDate = maxDate;
+
+    string rowMonthZoomMonth = "";
+    string rowDayZoomMonth = "";
+
+    string monthFormat = "<th colspan=\"{1}\" title=\"{3:MMMM yyyy}\" class=\"{2}\" data-i=\"{3:yyyyMMdd}\" data-f=\"{4:yyyyMMdd}\">{0}</th>";
+    string dayFormat = "<th title=\"{2} {1} {0}\" data-i=\"{0}{3}{2}\" data-f=\"{0}{3}{2}\">{2}</th>";
+
+    while (iDate <= iMaxDate)
+    {
+        DateTime startMonth = new DateTime(iDate.Year, iDate.Month, 1);
+        DateTime endMonth = startMonth.AddMonths(1).AddDays(-1);
+
+        if (startMonth < minDate)
+        {
+            startMonth = minDate;
+        }
+        if (endMonth > maxDate)
+        {
+            endMonth = maxDate;
+        }
+
+        rowMonthZoomMonth += String.Format(monthFormat, iDate.ToString("MMMM yyyy").TitleCase(), (endMonth-startMonth).Days+1, "", startMonth, endMonth);
+
+        string month = startMonth.ToString("MMMM");
+        string year = startMonth.ToString("yyyy");
+        string month2 = startMonth.ToString("MM");
+
+        string tmp = "";
+        string tmp2 = "";
+        for (int i = startMonth.Day; i <= endMonth.Day; i++)
+        {
+            tmp += String.Format(dayFormat, year, month, i.ToString("00"), month2);
+            tmp2 += String.Format("<td data-i=\"{0}{3}{2}\" data-f=\"{0}{3}{2}\"></td>", year, month, i.ToString("00"), month2);
+        }
+        stringEmptyRow += tmp2;
+        rowDayZoomMonth += tmp;
+
+        iDate = endMonth.AddDays(1);//  iDate.AddMonths(1);
+    }
+}
+
+<table class="table rai-table rai-table-vcenter push-5 table-storico-carriera view-month-day">
+    <thead>
+        <tr>@Html.Raw(rowMonthZoomMonth)</tr>
+        <tr>@Html.Raw(rowDayZoomMonth)</tr>
+    </thead>
+    <tbody>
+        <tr data-evento-row data-type="@TipoEvento.Sede">@Html.Raw(stringEmptyRow)</tr>
+        @Html.Partial("carriera/Tab_CarrieraPerContratto_MeseGiorno_sub", Model.DatiSedi)
+        <tr data-evento-row data-type="@TipoEvento.Servizio">@Html.Raw(stringEmptyRow)</tr>
+        @Html.Partial("carriera/Tab_CarrieraPerContratto_MeseGiorno_sub", Model.DatiServizi)
+        <tr data-evento-row data-type="@TipoEvento.Mansione">@Html.Raw(stringEmptyRow)</tr>
+        @Html.Partial("carriera/Tab_CarrieraPerContratto_MeseGiorno_sub", Model.DatiRuoli)
+        <tr data-evento-row data-type="@TipoEvento.Qualifica">@Html.Raw(stringEmptyRow)</tr>
+        @Html.Partial("carriera/Tab_CarrieraPerContratto_MeseGiorno_sub", Model.DatiQualifiche)
+        <tr data-evento-row data-type="@TipoEvento.Sezione">@Html.Raw(stringEmptyRow)</tr>
+        @Html.Partial("carriera/Tab_CarrieraPerContratto_MeseGiorno_sub", Model.DatiSezioni)
+        <tr>@Html.Raw(stringEmptyRow)</tr>
+    </tbody>
+</table>

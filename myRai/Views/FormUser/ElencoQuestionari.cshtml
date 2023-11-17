@@ -1,0 +1,110 @@
+﻿@model List<myRaiData.MyRai_FormPrimario>
+@{
+
+    string matricola = myRai.Business.CommonManager.GetCurrentUserMatricola();
+
+    var alberghiVisitati = myRai.Controllers.HotelManager.GetAlberghiVisitati();
+
+    var listaQuest = Model;
+
+    if (alberghiVisitati==null || !alberghiVisitati.Any())
+    {
+        if (listaQuest != null && Model.Count()>0)
+        {
+            listaQuest = Model.Where(x => x.MyRai_FormTipologiaForm.tipologia != "Hotel").ToList();
+        }
+    }
+}
+
+@if (listaQuest == null || listaQuest.Count() == 0)
+{
+    <div class="row">
+        <div class="col-sm-12 text-center">
+            <label class="rai-font-md-neutral">Non ci sono questionari attivi</label>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row">
+        <div class="col-sm-12">
+            <table class="table rai-table rai-table-vcenter">
+                @foreach (var form in listaQuest)
+                {
+                    if (form.MyRai_FormTipologiaForm.tipologia != "Hotel")
+                    {
+                        <tr aria-labelledby="form_@form.id">
+                            <td>
+                                <label id="form_@form.id" class="rai-font-md-bold push-5-t">@form.titolo</label><br />
+                                <span class="rai-label rai-label-interactive">Valido fino al @form.data_fine_validita.ToString("dd/MM/yyyy")</span>
+                            </td>
+                            <td>
+                                @*@{
+                                    if (form.MyRai_FormCompletati.Any(x => x.matricola == matricola))
+                                    {
+                                        <span class="rai-label rai-label-interactive">Compilato</span>
+                                    }
+                                }*@
+                            </td>
+                            <td>
+                                @{
+                                    var today = DateTime.Today;
+                                    TimeSpan diff = form.data_fine_validita.Subtract(today);
+                                    if (!form.MyRai_FormCompletati.Any(x => x.matricola == matricola) && diff.TotalDays < 5)
+                                    {
+                                        <span class="rai-label rai-label-error">In scadenza</span>
+                                    }
+                                }
+                            </td>
+                            <td class="text-right">
+                                @{ 
+                                    var formCompilato = "";
+                                    var textCompilato = "Compila";
+                                    if (form.MyRai_FormCompletati.Any(x=>x.matricola==matricola))
+                                    {
+                                        formCompilato = "disabled";
+                                        textCompilato = "Compilato";
+                                    }
+                                }
+                                
+                                <a href="@Url.Action("Fill", "FormUser", new { idForm = form.id })" @formCompilato title="Compila il questionario" class="btn rai-btn-small @formCompilato" target="_blank">@textCompilato</a>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var albergo in alberghiVisitati)
+                        {
+                            var data_fine_validita = form.data_fine_validita;
+                            var data_limite_q_albergo = albergo.DataVisita.AddDays(30);
+                            if (data_limite_q_albergo < form.data_fine_validita)
+                            {
+                                data_fine_validita = data_limite_q_albergo;
+                            }
+                            
+                            <tr aria-labelledby="form_@(form.id)_@(albergo.CodAlbergo)">
+                                <td>
+                                    <label id="form_@(form.id)_@(albergo.CodAlbergo)" class="rai-font-md-bold push-5-t">@form.titolo: @albergo.Albergo.Nome - @albergo.Albergo.Città.Nome_Città (@albergo.Albergo.Città.Province.Sigla_Provincia)</label><br />
+                                    <span class="rai-label rai-label-interactive">Valido fino al @data_fine_validita.ToString("dd/MM/yyyy")</span>
+                                </td>
+                                <td>
+                                    @{
+                                        var today = DateTime.Today;
+                                        TimeSpan diff = data_fine_validita.Subtract(today);
+                                        if (diff.TotalDays < 5)
+                                        {
+                                            <span class="rai-label rai-label-error">In scadenza</span>
+                                        }
+                                    }
+                                </td>
+                                <td class="text-right">
+                                    <a href="@Url.Action("Fill", "FormUser", new { idForm = form.id, idHotel = albergo.CodAlbergo })" title="Compila il questionario" class="btn rai-btn-small" target="_blank">Compila</a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                }
+            </table>
+        </div>
+    </div>
+}

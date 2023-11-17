@@ -1,0 +1,113 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+@model AnagraficaModel
+
+@{
+    bool isSmartWorker = Model.DatiStatiRapporti.Eventi.Any(x => x.Codice == "SW" && x.DataInizio <= DateTime.Now && DateTime.Now <= x.DataFine);
+    var labelStato = isSmartWorker ? "Smart worker" : "In presenza";
+
+    List<string> stati = new List<string>();
+    if (!isSmartWorker) { stati.Add(labelStato); }
+    stati.AddRange(Model.DatiStatiRapporti.Eventi.Where(x => x.DataInizio <= DateTime.Now && DateTime.Now <= x.DataFine).Select(x => x.Descrizione));
+
+    bool ifStateCTA = Model.ActionState;
+}
+
+<div class="panel">
+    <div class="panel-body">
+
+        @if (!Model.IsNeoMatr)
+        {
+            <div class="row push-20-t push-10">
+                <div class="col-sm-12 text-center">
+                    @{
+                        string matricola = Model.Matricola;
+                        if (Model.IsNeoMatr)
+                        {
+                            matricola = Model.Sesso;
+                        }
+                    }
+                    @Html.ProfileWidget(matricola, htmlImgAttributes: new { @class = "img-doubled" })
+                </div>
+            </div>
+        }
+        <div class="row" style="margin-bottom:32px;">
+            <div class="col-sm-12 text-center">
+                <span class="rai-font-text-heading-bold">@Model.Nome  @Model.Cognome</span><br />
+                <span class="rai-font-md-neutral">Matricola @Model.Matricola</span>
+                <br />
+                @if (!Model.IsNeoMatr)
+                {
+                    if (!ifStateCTA)
+                    {
+                        foreach (var item in stati)
+                        {
+                            <span class="rai-label push-10-t">@item</span>
+                        }
+                    }
+                    else
+                    {
+                        foreach (var item in stati)
+                        {
+                            <a class="rai-label rai-label-interactive" onclick="OpenModalDipStati(@Model.IdPersona,'modal-stati-rapporto')">@item</a>
+                        }
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="row border-top">
+            <div class="col-sm-6 push-5-t push-5" style="padding-top:10px;">
+                <span class="rai-font-md-bold">Data assunzione</span><br />
+                <span class="rai-font-md-neutral">@Model.DataAssunzione.ToString("dd/MM/yyyy")</span>
+            </div>
+            <div class="col-sm-6 push-5-t push-5" style="padding-top:10px;">
+                <span class="rai-font-md-bold">Contratto</span><br />
+                <span class="rai-font-md-neutral">@Model.TipoContratto</span>
+            </div>
+            <div class="col-sm-6 push-5-t push-5" style="padding-top:10px;">
+                <span class="rai-font-md-bold">Sede</span><br />
+                <span class="rai-font-md-neutral">@Model.Sede</span>
+            </div>
+            <div class="col-sm-6 push-5-t push-5" style="padding-top:10px;">
+                <span class="rai-font-md-bold">Servizio</span><br />
+                <span class="rai-font-md-neutral">@Model.Servizio</span>
+            </div>
+        </div>
+
+
+        <div class="row">
+            <div class="col-sm-12 push-10-t " style="padding-top:10px;">
+                <span class="rai-font-md-bold">Direzione</span><br />
+                <span class="rai-font-md-neutral">@Model.Sezione</span>
+            </div>
+        </div>
+
+
+        @if (!Model.IsNeoMatr && ifStateCTA)
+        {
+            <div class="row  push-10-t border-top">
+                <div class="col-xs-9" style="padding-top:10px;">
+                    <span class="rai-font-md-bold">Stato</span><br />
+                    <span class="rai-font-md-neutral">@String.Join(" - ", stati)</span>
+                </div>
+                <div class="col-xs-3 text-right" style="padding-top:10px;">
+                    <button class="btn btn-action-icon" onclick="OpenModalDipStati(@Model.IdPersona,'modal-stati-rapporto')"><i class="fa fa-pencil"></i></button>
+                </div>
+            </div>
+        }
+
+        @if (Model.ActionToAnagrafica)
+        {
+            <div class="row push-10-t">
+                <div class="col-sm-12">
+                    <div class="rai-btn-fill">
+                        <a class="btn rai-btn-small" href="@Url.Action("Index", "Anagrafica", new { m = Model.Matricola, idPersona = Model.IdPersona,  isNeoMatr=Model.IsNeoMatr })">Visualizza scheda anagrafica</a>
+                    </div>
+                </div>
+            </div>
+        }
+
+
+    </div>
+</div>

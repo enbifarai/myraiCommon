@@ -1,0 +1,197 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@model SpeseProduzioneVoce
+@{
+    /**/
+
+    List<SelectListItem> valute = new List<SelectListItem>();
+    valute.Add(new SelectListItem()
+    {
+        Selected = true,
+        Value = "",
+        Text = "Selezionare la valuta"
+    });
+
+    Model.Valute.ForEach(x => { valute.Add(new SelectListItem() { Value = x.Valuta, Text = x.descrizione }); });
+    bool read = true;
+    string descval = "";
+    if (Model.SelectedValuta != null)
+    {
+        descval = Model.Valute.FirstOrDefault(x => x.Valuta == Model.SelectedValuta).descrizione;
+    }
+    else
+    {
+        Model.SelectedValuta = "EUR";
+    }
+}
+@*<form id="form-submitAggiuntaVoce" name="form1" method="post" enctype="multipart/form-data">*@
+@Html.Hidden("progressivoVoce", @Model.ProgressivoVoce)
+@Html.Hidden("id", @Model.Id)
+@Html.Hidden("tipoTarghetta", @Model.TipoTarghetta)
+
+<div class="rai form-group">
+
+    @if (Model.ConCarta)
+    {
+        <div class="row">
+            <div class="col-sm-12 push-10">
+                <div class="stile-data">
+                    @Html.LabelFor(m => m.DataSpesa, "Data spesa", new { @class = "rai-caption" })
+                    <div class="input-group mb-md">
+                        <span onclick="$('#DataSpesa').datetimepicker('show')" class="input-group-addon"><i class="icons icon-calendar rai"></i></span>
+                        @Html.TextBoxFor(m => m.DataSpesa, Model.DataSpesa.ToShortDateString(), new { @class = "js-datetimepicker form-control rai", data_format = "DD/MM/YYYY", data_locale = "it", @readonly = true })
+                        <div class="input-group-addon">
+                            <i class="fa fa-lock"></i>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    }
+    else
+    {
+        @Html.Hidden("DataSpesa", @Model.DataSpesa)
+    }
+    <div class="row push-10">
+        <div class="col-sm-12">
+            @{
+                string tipo;
+                switch (Model.SelectedTipologia)
+                {
+                    case "S":
+                        tipo = "Scontrino";
+                        break;
+                    case "F":
+                        tipo = "Fattura";
+                        break;
+                    default:
+                        tipo = "Non Documentato";
+                        break;
+                }
+            }
+            @Html.LabelFor(m => m.SelectedTipologia, "Tipologia", new { @class = "rai-caption" })
+            <div class="input-group">
+                @Html.TextBoxFor(m => m.SelectedTipologia, tipo, htmlAttributes: new { @class = "form-control rai", @readonly = true })
+                <div class="input-group-addon">
+                    <i class="fa fa-lock"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row push-10">
+        <div class="col-sm-12">
+            @Html.LabelFor(m => m.SelectedVoce, "Voce", new { @class = "rai-caption" })
+            <div class="input-group">
+                @Html.TextBoxFor(m => m.SelectedVoce, Model.DescVoce, htmlAttributes: new { @class = "form-control rai", @readonly = true })
+                <div class="input-group-addon">
+                    <i class="fa fa-lock"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row push-10">
+        <div class="col-sm-4">
+
+            @Html.LabelFor(m => m.SelectedValuta, "Valuta", new { @class = "rai-caption" })
+            <div class="input-group">
+                @Html.TextBoxFor(m => m.SelectedValuta, descval, htmlAttributes: new { @class = "form-control rai", @readonly = true })
+                <div class="input-group-addon">
+                    <i class="fa fa-lock"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row push-10">
+        <div class="col-sm-4">
+            @Html.LabelFor(m => m.Importo, "Importo", new { @class = "rai-caption" })
+            <div class="input-group">
+                @Html.TextBoxFor(m => m.Importo, format: "{0:0.00}", htmlAttributes: new { oninput = "setEuro()", @class = "form-control rai", data_type = "currency", pattern = "^\\d{1,3}(\\.\\d{3})*(,\\d+)?$", placeholder = "0,00", @required = "required", @data_rule_importi = "true", @autocmplete = "off", @readonly = read })
+                <div class="input-group-addon">
+                    <i class="fa fa-lock"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+
+            @Html.LabelFor(m => m.CambioVoce, "Cambio Applicato", new { @class = "rai-caption" })
+            <div class="input-group rai">
+                @Html.TextBoxFor(m => m.CambioVoce, htmlAttributes: new { @readonly = true, @class = "form-control rai" })
+                <div class="input-group-addon">
+                    <i class="fa fa-lock"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            @Html.LabelFor(m => m.ValoreEuro, "Valore in Euro", new { @class = "rai-caption" })
+            <div class="input-group">
+                @Html.TextBoxFor(m => m.ValoreEuro, format: "{0:0.00}", htmlAttributes: new { @readonly = true, @class = "form-control rai" })
+                <div class="input-group-addon">
+                    <i class="fa fa-lock"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    @if (Model.IdFile != 0)
+    {
+        <div class="row">
+            <div class="col-sm-12">
+                <label class="rai-caption">Documento</label>
+            </div>
+
+            <div id="filePresente" class="row push-20-t000">
+                <div class="col-sm-12">
+                    <div class="widget-summary" style="margin-top: 8px;">
+                        <div class="widget-summary-col widget-summary-col-icon">
+                            <div class="summary-icon bg-cda" style="width:42px; height:42px;line-height:32px;background-color:#eee">
+                                <i class="icons icon-doc" style="font-size: 65%;"></i>
+                            </div>
+                        </div>
+                        <div class="widget-summary-col">
+                            <div class="row">
+                                @Html.Hidden("IdFile", @Model.IdFile)
+
+                                <div class="col-sm-8">
+                                    <div class="summary">
+                                        <span id="visnomefile" class="rai-font-md" style="word-break:break-word;display: block;">@Model.NomeFile</span>
+                                        <span id="visdimensionefile" class="rai-font-sm-neutral">@Model.SizeFile</span>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4" style="text-align:right;padding-right:0px;padding-left:0px" id="visualizzaDoc">
+                                    <a target="_blank" href="~/Anagrafica/GetDoc?idFile=@Model.IdFile" class="btn rai-btn-small" @*onclick="visualizzaDocumento()"*@ aria-label="Scegli file" title="Visualizza" style="min-width:80px;">Visualizza</a>
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    }
+    <div></div>
+
+    <div id="divFile" class="row push-20-t hidden">
+        <div class="col-sm-12">
+            <input type="file" name="file" id="file" class="form-control mb-3 fileUpload" />
+        </div>
+    </div>
+
+</div>
+@*</form>*@
+
+<script>
+    InitDatePicker();
+    @*
+       var html = "<a target='_blank' href='~/SpeseProduzione/GetDoc?idFile=" + ' @Model.IdFile' + "' class='btn rai-btn-small' aria-label='Scegli file' title='Visualizza' style='min-width: 80px; '>Visualizza</a>  <a href='javascript: rimuoviDocumento()' id='rimuovi' class='btn btn-action-icon'><i class='fa fa-trash'></i></a>";
+        $("#visualizzaDoc").html("");
+       $("#visualizzaDoc").html(html);
+       $("#divDocumento").addClass("hidden");
+*@
+</script>

@@ -1,0 +1,101 @@
+﻿@using myRaiHelper
+@model myRaiHelper.ProfileTemplate
+
+@{
+    bool hasContextMenu = false;
+    string urlSimula = "";
+    string guid = "";
+    if (myRaiHelper.UtenteHelper.IsAdmin())
+    {
+        guid = Guid.NewGuid().ToString("N");
+        hasContextMenu = true;
+        urlSimula = "/home/simula?m=" + Model.Matricola;
+    }
+
+    string urlImage = "";
+    if (Model.Matricola == "M" || Model.Matricola == "F")
+    {
+        urlImage = CommonHelper.GetParametro<string>(EnumParametriSistema.PathImmaginiFittizie);
+        urlImage = Path.Combine(urlImage, Model.Matricola.ToLower() + "1.png");
+        if (urlImage.StartsWith("~"))
+        {
+            urlImage = urlImage.Substring(1);
+        }
+    }
+    else if (!String.IsNullOrWhiteSpace(Model.Matricola))
+    {
+        urlImage = CommonHelper.GetUrlFoto(Model.Matricola);// Url.Action("getimg", "home", new { matr = Model.Matricola });// CommonHelper.GetUrlFotoExternal(Model.Matricola);
+    }
+    }
+@if (Model.Details1 != null && Model.Details1 == "medium")
+{
+    urlImage = urlImage.Replace("risoluzione=3", "risoluzione=2");
+}
+<div class="rai-profile-widget">
+    <div class="rai-profile-image">
+        <img src="@urlImage" class="@Html.Raw(Model.GetImgClass())" @Html.Raw(Model.GetImgAttributes()) 
+             @if (hasContextMenu)
+    {
+                 @:oncontextmenu="event.preventDefault();$('#@guid').dropdown('toggle')"
+             }
+             data-empty/>
+        @if (hasContextMenu)
+        {
+            <div class="btn-group flex-wrap dropleft" style="display:block;position:absolute;">
+                <a id="@guid" hidden class="dropdown-toggle text-primary" data-toggle="dropdown" aria-expanded="false" tabindex="-1" role="link"></a>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item text-primary" href="@urlSimula" target=""> Simula </a>
+                </div>
+            </div>
+        }
+        @if (Model.HasPresence)
+        {
+            string presClass = "";
+            switch (Model.PresenceValue)
+            {
+                case myRaiHelper.EnumPresenzaDip.Presente:
+                    presClass = "bg-feedback-success";
+                    break;
+                case myRaiHelper.EnumPresenzaDip.Assente:
+                    presClass = "bg-feedback-error";
+                    break;
+                case myRaiHelper.EnumPresenzaDip.SmartWorking:
+                    presClass = "smartworking-dot";
+                    break;
+                default:
+                    break;
+            }
+            <div class="border-base-color rai-profile-presence @presClass"></div>
+        }
+    </div>
+    @if (!String.IsNullOrWhiteSpace(Model.ProfileName))
+    {
+        <div class="rai-profile-info">
+            @if (Model.HasCaption)
+            {
+                <span class="rai-caption">@Model.Caption</span><br />
+            }
+
+            @if (Model.HasAction)
+            {
+                <a href="@Model.Action" class="rai-font-md-bold @Html.Raw(Model.GetNameClass())" @Html.Raw(Model.GetNameAttributes())>@Model.ProfileName</a>
+            }
+            else
+            {
+                <span class="rai-font-md-bold @Html.Raw(Model.GetNameClass())" @Html.Raw(Model.GetNameAttributes())>@Model.ProfileName</span>
+            }
+
+            @if (Model.HasDetails1)
+            {
+                <br />
+                <span class="rai-font-sm">@Html.Raw(Model.Details1)</span>
+
+                if (Model.HasDetails2)
+                {
+                    <br />
+                    <span class="rai-font-sm-neutral">@Html.Raw(Model.Details2)</span>
+                }
+            }
+        </div>
+    }
+</div>

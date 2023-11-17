@@ -1,0 +1,109 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+@using myRaiData.Incentivi
+@model XR_HRIS_ABIL_PROFILO
+
+<div class="row">
+    <div class="col-md-8">
+        @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Dati profilo", false))
+        {
+            using (Html.BeginForm("Save_Profilo", "Abilitazioni", FormMethod.Post, new { id = "form-profilo", @class = "form-group" }))
+            {
+                @Html.HiddenFor(m => m.ID_PROFILO)
+
+                <div class="row">
+                    <div class="col-sm-12 push-10">
+                        @Html.LabelForRequiredObbl(m => m.COD_PROFILO, "Codice", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.COD_PROFILO, new { @class = "form-control", required = "required" })
+                        @Html.ValidationMessageFor(m => m.COD_PROFILO)
+                    </div>
+                    <div class="col-sm-12 push-10">
+                        @Html.LabelForRequiredObbl(m => m.DES_PROFILO, "Descrizione", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.DES_PROFILO, new { @class = "form-control" })
+                        @Html.ValidationMessageFor(m => m.DES_PROFILO)
+                    </div>
+                    <div class="col-sm-12 push-10 push-10-t">
+                        @Html.RaiCheckBoxLabelFor(m => m.IND_ATTIVO, "Attivo", "")
+                    </div>
+                </div>
+                <div class="row form-button">
+                    <div class="col-sm-12 ">
+                        <button class="btn rai-btn-primary full-width" onclick="SaveAbilProfilo(this)">Salva</button>
+                    </div>
+                </div>
+            }
+        }
+        @if (Model.ID_PROFILO > 0)
+        {
+            @Html.Partial("ElencoAssociazioni", Model)
+        }
+    </div>
+    <div class="col-sm-4">
+        @if (Model.ID_PROFILO > 0)
+        {
+            var ricModel = new CercaDipendenteModel()
+            {
+                Provenienza = "ABIL",
+                Action = "AbilAbilPers(0, null, " + Model.ID_PROFILO + ", null, '$matricola', '$matricola')",
+                ActionText = "Abilita"
+            };
+
+            @Html.Partial("~/Views/CercaDipendente/Index.cshtml", ricModel)
+
+            <div class="row">
+                <div class="col-sm-12">
+                    @Html.Partial("ElencoAbilitazioni", Model.XR_HRIS_ABIL)
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+
+<script>
+    function SaveAbilProfilo(button) {
+        event.preventDefault();
+
+        var idForm = 'form-profilo';
+
+        $(button).addClass("disable");
+
+        var form = $("#" + idForm).first();
+        var validator = $(form).validate();
+
+        if (!$(form).valid()) {
+            $(button).removeClass("disable");
+            return false;
+        }
+
+        var formData = new FormData($(form)[0]);
+
+        $(form).parent().addClass("rai-loader");
+
+        $.ajax({
+            url: $(form).attr("action"),
+            processData: false,
+            contentType: false,
+            type: "POST",
+            data: formData,
+            dataType: 'json',
+            success: function (data) {
+                if (data.esito) {
+                    swal({ title: "Profilo salvato con successo", type: 'success', customClass: 'rai' });
+
+                    RaiUpdateWidget("box-profili", "/Abilitazioni/ElencoProfili", "html", null);
+                    RaiOPNavGoToNext('nav-abil', 'nav-abil-profilo', 'Profilo ' + $('#COD_PROFILO').val() + ' - ' + $('#DES_PROFILO').val(), '/Abilitazioni/Modal_Profilo', { id: data.idProfilo }, 'POST');
+                } else {
+                    swal({ title: "Ops...", text: data.message, type: 'error', customClass: 'rai' });
+                }
+                $(button).removeClass("disable");
+                $(form).parent().removeClass("rai-loader");
+            },
+            error: function (a, b, c) {
+                swal({ title: "Ops...", text: ' ' + b + ' ' + c, type: 'error', customClass: 'rai' });
+                $(button).removeClass("disable");
+                $(form).parent().removeClass("rai-loader");
+            }
+        })
+    }
+</script>

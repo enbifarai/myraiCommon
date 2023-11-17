@@ -1,0 +1,231 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model ApprovazioniAttivitaModel
+
+<div id="approvazioni-attivita">
+    <header class="panel-heading">
+        <h2 class="panel-title" tabindex="0">Da approvare</h2>
+        <div class="panel-actions">
+            <a tabindex="0" type="button" data-toggle="block-option" data-action="refresh_toggle"
+               data-refreshurl____="/approvazioneAttivita/getDaApprAtt"
+               data-parentdiv="approvazioni-attivita"
+               data-refreshelements="my-block,my-block2" data-action-mode="demo"
+               aria-label="Aggiorna le richieste da approvare">
+                <i class="icons icon-refresh"></i>
+            </a>
+        </div>
+    </header>
+
+    <div id="blockDay" class="block" style="">
+        <div class="block-content" style="padding: 0px;">
+            <div class="block" id="my-block2">
+                <div id="appr" class="block-content tab-content">
+                    <div role="tabpanel" class="tab-pane tab-filtro active" id="tab2-0">
+                        <table id="tabapp" class="js-table-sections table table-hover" role="grid">
+                            <thead>
+                                <tr>
+                                    <th style="width: 5%;"></th>
+                                    <th style="width: 75%;"></th>
+                                    <th style="width: 20%;"></th>
+                                </tr>
+                            </thead>
+                            @if ( Model.ListaDate == null || Model.ListaDate.Count == 0 )
+                            {
+                                @Html.Partial( "~/Views/Shared/_NoDati.cshtml" )
+                            }
+
+                            @foreach ( var item in Model.ListaDate )
+                            {
+                                //----------TBODY DATA ATTIVITA--------------
+                                <tbody class="js-table-sections-header">
+                                    <tr role="row" tabindex="0" aria-label="" aria-expanded="false">
+                                        <td class="text-center">
+                                            <i class="fa fa-angle-right"></i>
+                                        </td>
+                                        <td style="font-size: 14px;">
+                                            <span class="text-gray-darker" data-rep-desc="REPARTO 00" data-rep-cod="00">
+                                                @item.data.ToString( "dd/MM/yyyy" )
+                                            </span>
+                                        </td>
+                                        <td class="text-right">
+                                            <span class="text-primary totale-rich" style="font-size: 12px; font-weight: bold;">
+                                                @item.ListaAttivita.Count( ) attività
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tbody class="tbodydata">
+                                    <tr>
+                                        <td colspan="3" style="padding:0px">
+                                            <table class="js-table-sections table table-hover" role="grid">
+                                                <thead></thead>
+                                                @foreach ( var att in item.ListaAttivita )
+                                                {
+                                                    <tbody class="js-table-sections-header">
+                                                        <tr role="row" tabindex="0" aria-label=" " aria-expanded="false">
+                                                            <td class="text-center" style="padding-left:20px">
+                                                                <i class="fa fa-angle-right"></i>
+                                                            </td>
+                                                            <td style="font-size: 14px; padding-left: 10px">
+                                                                <span class="text-gray-darker" data-rep-desc="REPARTO 00" data-rep-cod="00">
+                                                                    @att.AttivitaPrimaria - @att.OraInizioAttivita / @att.OraFineAttivita
+                                                                </span>
+
+                                                                @if ( Model.MostraApprovaTutti )
+                                                                {
+                                                                    <button class="pad6 butt-ap btn btn-xs btn-default button-appr-att-all"
+                                                                            style="float:right" type="submit" aria-label="Approva tutte le richieste">
+                                                                        Approva tutti
+                                                                    </button>
+                                                                    <button class="pad6 btn butt-ap  btn-xs btn-default button-rif-att-all"
+                                                                            style="float:right" type="submit" aria-label="Rifiuta tutte le richieste">
+                                                                        Rifiuta tutti
+                                                                    </button>
+                                                                }
+                                                                <br />
+                                                                <span>@att.Titolo</span>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                    <tbody class="tbodydata body-stripes">
+                                                        @{
+                                                            var RichiesteGrouped = att.MyRai_Richieste
+                                                                .OrderBy( x => x.nominativo )
+                                                                .GroupBy(
+                                                            p => p.matricola_richiesta ,
+                                                            p => p ,
+                                                            ( key , g ) => new { matricola = key , richiesteDaMatricola = g.ToList( ) } );
+                                                        }
+
+                                                        @foreach ( var itemGrouped in RichiesteGrouped )
+                                                        {
+                                                            DateTime per_dal = itemGrouped.richiesteDaMatricola.Select( x => x.periodo_dal ).FirstOrDefault( );
+                                                            string nome = itemGrouped.richiesteDaMatricola.Select( x => x.nominativo ).FirstOrDefault( );
+
+                                                            <tr role="row" onfocus="onFocusRow(this)">
+                                                                <td colspan="7" style="padding-left:30px">
+                                                                    <div class="row">
+                                                                        <div class="col-sm-4">
+                                                                            <div class="widget-profile-info">
+                                                                                <div class="profile-picture">
+                                                                                    <img style="width: 45px; height: 45px;" src="@CommonHelper.GetUrlFoto(itemGrouped.matricola)">
+                                                                                </div>
+                                                                                <a class="text-primary matricola-nome"
+                                                                                   href="javascript:ShowPopupBoss('0@(itemGrouped.matricola)','@att.DataAttivita.Value.ToString("dd/MM/yyyy")','@nome.Trim()','1')">
+                                                                                    @nome
+                                                                            </a>
+                                                                            @if ( item.MatricoleVisualizzateQuestaGiornata.Contains( itemGrouped.matricola ) )
+                                                                            {
+                                                                                <div title="VISUALIZZATO" style="background-color: #eeeeee;">
+                                                                                    <span style="font-weight: 500; font-size: 9px; color: #000000;">VISUALIZZATO</span>
+                                                                                </div>
+                                                                            }
+                                                                        </div>
+                                                                        <div>
+                                                                            @if ( Model.MostraApprovaTutti )
+                                                                            {
+                                                                                <button class="pad6 butt-ap btn btn-xs btn-default button-appr-att" type="submit" aria-label="Approva tutte le richieste di  @nome">
+                                                                                    Approva tutti
+                                                                                </button>
+                                                                                <button class="pad6 btn butt-ap  btn-xs btn-default button-rif-att" type="submit" aria-label="Rifiuta tutte le richieste di  @nome">
+                                                                                    Rifiuta tutti
+                                                                                </button>
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-sm-8" style="padding:0px">
+                                                                        <table class="js-table-sections table table-hover">
+                                                                            <tbody>
+                                                                                @foreach ( var richiesta in itemGrouped.richiesteDaMatricola )
+                                                                                {
+                                                                                    int idEcc = 0;
+                                                                                    int? ndoc = 0;
+                                                                                    string codEcc = "";
+                                                                                    string motivo = "";
+                                                                                    string descrittiva = "";
+                                                                                    string periodo = "";
+                                                                                    var ecc = richiesta.MyRai_Eccezioni_Richieste.Where( x => x.azione == "I" ).FirstOrDefault( );
+                                                                                    bool storno = richiesta.MyRai_Eccezioni_Richieste.Any( x => x.azione == "C" && x.id_stato == 10 );
+
+                                                                                    if ( ecc != null )
+                                                                                    {
+                                                                                        idEcc = ecc.id_eccezioni_richieste;
+                                                                                        ndoc = ecc.numero_documento;
+                                                                                        codEcc = ecc.cod_eccezione;
+                                                                                        motivo = ecc.motivo_richiesta;
+                                                                                        descrittiva = Model.EccezioniAll.Where( x => x.codice == codEcc.Trim( ) ).Select( x => x.descr ).FirstOrDefault( );
+                                                                                        if ( ecc.dalle != null )
+                                                                                        {
+                                                                                            periodo = " dalle " + ( ( DateTime ) ecc.dalle ).ToString( "HH.mm" ) + " alle " +
+                                                                                                ( ( DateTime ) ecc.alle ).ToString( "HH.mm" );
+                                                                                        }
+                                                                                    }
+                                                                                    <tr tabindex="-1" role="row" aria-label="" class="trdata"
+                                                                                        data-idrichiesta="@richiesta.id_richiesta" data-ideccezione="@idEcc"
+                                                                                        data-eccez-data="@richiesta.periodo_dal.ToString("dd/MM/yyyy")"
+                                                                                        data-tr="@ndoc" data-livello-richiedente="0" data-eccezione="@codEcc"
+                                                                                        onfocus="onFocusRowShowCtrl(this)" onblur="onBlurRowShowCtrl(this)">
+                                                                                        <td class="font-w600 " style="font-weight: bold; padding: 2px;vertical-align:top">
+                                                                                            @if ( storno )
+                                                                                            {
+                                                                                                <div class="text-muted">
+                                                                                                    <span style="font-weight: bold; font-size: 10px; background-color:yellow;">STORNO</span>
+                                                                                                </div>
+                                                                                            }
+                                                                                            <a data-toggle="modal" role="link" tabindex="-1" data-target="#giornata-modal"
+                                                                                               data-day="@richiesta.periodo_dal.ToString("dd/MM/yyyy")" href="#">
+                                                                                                <b>@codEcc</b>
+                                                                                                <span class="descr-ecc"> - @descrittiva </span>
+                                                                                                <span class="periodo-ecc">@periodo</span>
+                                                                                            </a>
+
+                                                                                            <div class="text-muted motivo-ecc">
+                                                                                                @if ( !String.IsNullOrWhiteSpace( motivo ) )
+                                                                                                {
+                                                                                                    <span><em>Motivo: @motivo</em></span>
+                                                                                                }
+                                                                                            </div>
+                                                                                        </td>
+                                                                                        <td style="padding: 2px;"></td>
+                                                                                        <td class="text-right" role="toolbar" style="padding: 2px;">
+                                                                                            @if ( richiesta.id_stato == 10 )
+                                                                                            {
+                                                                                                <button role="link" aria-label="Rifiuta richiesta" tabindex="-1" style="border: solid 1px #eaeaea;" class="pad6 @ndoc button-rifiuta btn btn-lg btn-default btn-rif-@idEcc" type="submit">
+                                                                                                    <i class="glyphicon glyphicon-remove text-danger"></i>
+                                                                                                </button>
+                                                                                                <button role="link" aria-label="Approva richiesta" tabindex="-1" style="border: solid 1px #eaeaea;" class="pad6 @ndoc button-approva btn btn-lg btn-default btn-app-@idEcc" type="submit">
+                                                                                                    <i class="fa fa-fw fa-check text-success"></i>
+                                                                                                </button>
+                                                                                            }
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                }
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                    </tbody>
+                                                }
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            }
+                        </table>
+                    </div>
+                    <div role="tabpanel" class="tab-pane tab-filtro" id="tab2-1">
+                    </div>
+                    <div role="tabpanel" class="tab-pane tab-filtro" id="tab2-2">
+                    </div>
+                    <div role="tabpanel" class="tab-pane tab-filtro" id="tab2-3">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,446 @@
+﻿@using MVCProject.Custom_Helpers;
+@using myRaiGestionale.Controllers;
+@{
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    ViewBag.Title = "HRIS - Struttura organizzativa";
+}
+
+@model myRaiCommonModel.Gestionale.GenericTreeModel
+
+
+<style>
+    .table-inc-nested {
+        margin-left: 2%;
+        width: 98%;
+    }
+
+    .js-table-sections-header.open > tr {
+        background-color: inherit;
+    }
+
+    #div-inc td {
+        padding: 4px !important;
+    }
+
+    #fixedPanel {
+        position: fixed;
+        background: #fff;
+        width: 100%;
+        z-index: 1000;
+        top: 59px;
+        margin-bottom: 10px;
+    }
+
+
+
+
+    @@media screen and (min-width: 1701px) {
+
+
+        #fixedPanel {
+            position: fixed;
+            background: #fff;
+            width: 100%;
+            z-index: 1000;
+            top: 59px;
+            margin-bottom: 10px;
+            padding-left: 200px;
+        }
+    }
+
+    @@media screen and (min-width: 1200px) and (max-width: 1700px) {
+
+
+        #fixedPanel {
+            position: fixed;
+            background: #fff;
+            width: calc(100% - 212px);
+            z-index: 1000;
+            top: 59px;
+            margin-bottom: 10px;
+            margin-left: -28px;
+        }
+    }
+
+    @@media screen and (min-width: 800px) and (max-width: 1199px) {
+
+
+        #fixedPanel {
+            position: fixed;
+            background: #fff;
+            width: calc(100% - 212px);
+            z-index: 1000;
+            top: 59px;
+            margin-bottom: 10px;
+            margin-left: -28px;
+        }
+    }
+</style>
+
+<section role="main" class="content-body" style="padding-top:10px;">
+    <!-- start: page -->
+    <!-- Main Container -->
+
+    <main id="main-container">
+        <div class="content">
+            <div class="row">
+                <div class="col-sm-12">
+                    <section class="panel">
+                        <div class="panel-body panel-body-nopadding">
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <table class="table rai-table rai-table-vcenter">
+                                        <tr>
+                                            <td style="width:175px">
+                                                Struttura aziendale al
+                                            </td>
+                                            <td style="width:175px">
+                                                <div class="input-group">
+                                                    <span class="input-group-addon" onclick="$('#data-strut').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                                                    <input id="data-strut" value="@Model.DataStruttura" onchange="OnDataStrutChangeProcessi()" type="text" data-format="DD/MM/YYYY" data-locale="it" class="js-datetimepicker form-control">
+                                                </div>
+                                            </td>
+                                            <td style="width:100px">
+                                                &nbsp;
+                                            </td>
+                                            <td style="width:125px">
+                                                @*Dati visualizzati*@
+                                            </td>
+                                            <td style="width:175px">
+                                                @*<select onchange="changeDbInc()" id="dati-vis" class="form-control @(Model.DBorigine == "I" ? "sel-ipotesi" : "")" style="display:inline;width:140px">
+                                                    <option @if (Model.DBorigine == "P") { @: selected
+                                                            }
+                                                            value="P">
+                                                        Produzione
+                                                    </option>
+                                                    <option @if (Model.DBorigine == "I") { @: selected
+                                                            }
+                                                            value="I">
+                                                        Ipotesi
+                                                    </option>
+                                                </select>*@
+                                            </td>
+                                            <td style="width:160px">
+                                                @if (Model.DBorigine == "I")
+                                                {
+                                                    @*<a id="btn-riversa" href="#" class="btn btn-sm rai-btn-small" style="margin-bottom :5px;width:155px" onclick="riversaProd()">Riversa su produzione</a>*@
+                                                }
+                                            </td>
+                                            <td>
+                                                &nbsp;
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+
+
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-4" id="tree-container">
+
+                    @Html.Partial("_treegen", Model)
+                </div>
+                <div class="col-sm-8">
+
+                    <div id="dettaglio-container">
+                        @Html.Partial("_dettaglioProcesso", Model.SelectedProcess)
+                    </div>
+
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- end: page -->
+</section>
+
+
+<div class="modal right fade" id="modal-processi" role="dialog" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-popin modal-half-dialog">
+        <div class="modal-content">
+            <div id="modal-processi-internal" data-modal-wrapper="">
+
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="sist" role="dialog" aria-hidden="true">
+    <div style="overflow-x:hidden;overflow-y:auto">
+        <div class="modal-dialog modal-dialog-popin" style="width:60%; ">
+            <div class="modal-content ">
+                <div class="block block-themed block-transparent no-margin-bottom">
+                    <div class="block-header" style="height: 58px; border-radius: 6px 6px 0px 0px; text-align:center">
+                        <label id="label-inc" class="rai-font-modal-heading  text-center">Sistemi IT</label>
+                        <div class="block-options">
+
+                            <button data-dismiss="modal" class="btn btn-action-icon"><i class="glyphicon glyphicon-remove"></i></button>
+                        </div>
+                    </div>
+                    <div class="block-content">
+                        <section class="panel">
+                            <div class="panel-body" id="sist-container">
+                                
+                                @*@{Html.RenderAction("_sistemi", "strutturaorganizzativa");}*@
+                            </div>
+                        </section>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+@section afterjs {
+
+    <script>
+        function changeDbInc() {
+
+            var orig = ($("#dati-vis option:selected").val());
+
+            var msg = "Stai cambiando l'origine dei dati, le operazioni varranno eseguite su di una base dati dedicata alle <b>Ipotesi</b>, diversa dai dati di <b>Produzione</b>. Confermi ?";
+            if (orig == "P") {
+                msg = "Stai cambiando l'origine dei dati, le operazioni varranno eseguite sulla base dati di <b>Produzione</b>. Confermi ?";
+            }
+
+            swal({
+                title: '<strong>Attenzione</strong>',
+                html: msg,
+                showCloseButton: true,
+                showCancelButton: true,
+                focusConfirm: false,
+                confirmButtonText:
+                    '<i class="fa fa-thumbs-up"></i> Conferma',
+                confirmButtonAriaLabel: 'conferma',
+                cancelButtonText:
+                    'Annulla',
+                cancelButtonAriaLabel: 'annulla'
+
+            }).then(function () { changeDB(orig); });
+        }
+
+        function changeDB(orig) {
+
+            setCookie("db_orig", orig, 30);
+
+
+            $.ajax({
+                url: "/StrutturaOrganizzativa/changedb",
+                type: 'POST',
+                cache: false,
+                data: { orig: orig },
+                dataType: "json",
+                success: function (data) {
+                    if (data.error == "")
+                        location.reload();
+                    else
+                        swal(data.error);
+                }
+            });
+        }
+        function setCookie(name, value, days) {
+            var expires = "";
+            if (days) {
+                var date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            document.cookie = name + "=" + (value || "") + expires + "; path=/";
+        }
+
+        function getCookie(name) {
+            var nameEQ = name + "=";
+            var ca = document.cookie.split(';');
+            for (var i = 0; i < ca.length; i++) {
+                var c = ca[i];
+                while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        }
+        function ricercaProcesso() {
+            if ($("#search-str").hasClass("hide")) {
+
+                $("#search-str").removeClass("hide");
+                $("#search-box").focus();
+            }
+            else {
+                $("#search-str").addClass("hide");
+                $("#search-box").val("");
+                $("#jstree-proc").jstree(true).search("");
+            }
+
+        }
+        function treeSearch() {
+            var k = $("#search-box").val();
+            $("#jstree-proc").jstree(true).search(k);
+        }
+        function OnDataStrutChangeProcessi() {
+
+            var dataStruttura = $("#data-strut").val();
+            var opened = [];
+            $("#tree-container li.jstree-open").each(function () {
+                opened.push($(this).attr("data-idprocesso"));
+            });
+
+            var clicked = $("a.jstree-clicked").parent("li").attr("data-idprocesso");
+            var clicked_parent = $("a.jstree-clicked").parent("li").parent("ul").parent("li").attr("data-idprocesso");
+
+            debugger
+            $.ajax({
+                url: "/StrutturaOrganizzativa/getTreeProcessi",
+                type: 'GET',
+                data: { data: dataStruttura },
+                dataType: "html",
+                success: function (data) {
+                    $("#tree-container").html(data);
+                    if (opened.length > 0) {
+                        for (var i = 0; i < opened.length; i++) {
+                            $("#jstree-proc").jstree("open_node", $("[data-idprocesso='" + opened[i] + "']"));
+                        }
+                    }
+
+                    setTimeout(function () {
+                        if (clicked) {
+                            debugger
+                            var a_clicked = $("[data-idprocesso='" + clicked + "']>a");
+                            if (a_clicked.length > 0) {
+                                $("[data-idprocesso='" + clicked + "']>a").click();
+                                $("#jstree-proc").jstree("select_node", $("[data-idprocesso='" + clicked + "']"));
+                                $("[data-idprocesso='" + clicked + "']>a")[0].scrollIntoView({
+                                    behavior: "smooth", // or "auto" or "instant"
+                                    block: "end" // or "end"
+                                });
+                            }
+                            else {
+                                $("[data-idprocesso='" + clicked_parent + "']>a").click();
+                                $("#jstree-proc").jstree("select_node", $("[data-idprocesso='" + clicked_parent + "']"));
+                                $("[data-idprocesso='" + clicked_parent + "']>a").scrollIntoView({
+                                    behavior: "smooth", // or "auto" or "instant"
+                                    block: "end" // or "end"
+                                });
+                            }
+                        }
+                    }, 1000);
+                }
+            });
+        }
+
+
+        $(document.body).on("click", '#jstree-proc .jstree-anchor', function (event) {
+            event.stopPropagation();
+            var li = $(this).parent("li");
+            var idprocesso = $(li).attr("data-idprocesso");
+            var dataStruttura = $("#data-strut").val();
+
+            $.ajax({
+                url: "/StrutturaOrganizzativa/getProcesso",
+                type: 'GET',
+                cache: false,
+                data: { idprocesso: idprocesso, data: dataStruttura },
+                dataType: "html",
+                success: function (data) {
+                    $("#dettaglio-container").html(data);
+                }
+            });
+        });
+
+
+        ActivateTree();
+
+        function ActivateTree() {
+            $("#jstree-proc")
+                .on('open_node.jstree', function (e, data) {
+                    if (data.node.icon != 'fa fa-home') {
+                        data.node.icon = 'fa fa-folder-open';
+                        $('#' + data.node.id + '_anchor i.jstree-icon').removeClass('fa-folder').addClass('fa-folder-open');
+                    }
+                })
+                .on('close_node.jstree', function (e, data) {
+                    if (data.node.icon != 'fa fa-home') {
+                        data.node.icon = 'fa fa-folder';
+                        $('#' + data.node.id + '_anchor i.jstree-icon').removeClass('fa-folder-open').addClass('fa-folder');
+                    }
+                })
+                .jstree({
+                    'search': {
+                        'show_only_matches': true,
+                        'show_only_matches_children': true
+                    },
+                    "plugins": ["search"],
+
+                });
+            $("#jstree-proc").show();
+        }
+
+        function ModProcesso(idprocesso) {
+            var dataStruttura = $("#data-strut").val();
+            $.ajax({
+                url: "/StrutturaOrganizzativa/ModProcesso",
+                type: 'GET',
+                cache: false,
+                data: { idprocesso: idprocesso, data: dataStruttura },
+                dataType: "html",
+                success: function (data) {
+                    $("#modal-processi-internal").html(data);
+                    $("#modal-processi").modal("show");
+                }
+            });
+        }
+
+        function AddProcesso(idProcessoPadre) {
+            var dataStruttura = $("#data-strut").val();
+            debugger
+            $.ajax({
+                url: "/StrutturaOrganizzativa/addProcesso",
+                type: 'GET',
+                cache: false,
+                data: { idprocesso: idProcessoPadre, data: dataStruttura },
+                dataType: "html",
+                success: function (data) {
+                    $("#modal-processi-internal").html(data);
+                    $("#modal-processi").modal("show");
+                }
+            });
+        }
+        function CloseProcesso(idProcesso) {
+
+            swal({
+                title: "Confermi la chiusura di questo processo ?",
+                html: "",
+                type: 'question',
+                showCloseButton: true,
+                showCancelButton: true,
+                reverseButtons: true,
+                confirmButtonText: ' OK',
+                cancelButtonText: "Annulla",
+            })
+                .then(function () {
+                    $.ajax({
+                        url: "/StrutturaOrganizzativa/closeProcesso",
+                        type: 'GET',
+                        cache: false,
+                        data: { idprocesso: idProcesso },
+                        dataType: "json",
+                        success: function (data) {
+                            if (data.esito == true) {
+                                swal("Modifiche eseguite con successo", "", "success");
+                                OnDataStrutChangeProcessi();
+                            }
+                            else {
+                                swal(data.error);
+                            }
+                        }
+                    });
+                });
+        }
+    </script>
+}

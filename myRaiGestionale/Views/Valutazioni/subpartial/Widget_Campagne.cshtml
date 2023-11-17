@@ -1,0 +1,96 @@
+﻿@using myRaiCommonModel.Gestionale
+@using myRaiData.Incentivi
+
+@model List<Campagna>
+
+@{
+    bool anyInactive = Model.Any(x => x.IsEnded());
+    bool allInactive = Model.All(x => x.IsEnded());
+
+    string boxTitle = "Iniziative";
+}
+
+@if (Model != null && Model.Count > 0)
+{
+    <section class="panel" id="panelApriCampagna">
+        <header class="panel-heading">
+            <h2 class="panel-title">@boxTitle</h2>
+            <div class="panel-actions ">
+                <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblRightBox" aria-expanded="true"></a>
+            </div>
+        </header>
+        <div class="panel-body no-padding" style="">
+            @if (anyInactive)
+            {
+                <div class="row bg-neutrals-xl-10" style="margin-left:0px; margin-right:0px;">
+                    <div class="col-sm-12  ">
+                        <div class="rai-checkbox push-5 push-5-t">
+                            <input id="chkShowEndedCampaign" type="checkbox" onclick="ValToggleEndedCampaign(this,'tableCampaign')" @(allInactive ? "checked" : "") />
+                            <label class="rai-caption" for="chkShowEndedCampaign">Mostra iniziative non attive</label>
+                        </div>
+                    </div>
+                </div>
+            }
+            <table class="table js-table-sections rai-table rai-table-panel rai-table-vcenter" role="grid" id="tableCampaign">
+
+                @foreach (var item in Model)
+                {
+                    <tbody class="js-table-sections-header">
+                        <tr data-val-campaign-id="@item.ID" data-val-campaign-active="@item.IsActive()" style="@(allInactive || !item.IsEnded()?"":"display:none;")">
+                            <td>
+                                <div class="rai-group-info">
+                                    <span class="rai-font-md-bold">@item.Name</span><br />
+                                    <span class="rai-font-sm-neutral">Dal @item.DateStart.ToString("dd/MM/yyyy") al @item.DateEnd.ToString("dd/MM/yyyy")</span>
+                                </div>
+                                @if (item.IsEnded())
+                                {
+                                    <br class="hidden-xl" style="margin-top:2px;" />
+                                    <span class="rai-label hidden-xl">Terminata</span>
+                                }
+                            </td>
+                            <td>
+                                @if (item.IsEnded())
+                                {
+                                    <span class="rai-label visible-xl">Terminata</span>
+                                }
+                            </td>
+                            <td class="rai-table-td-action">
+                                <div class="btn-action-icon-container">
+                                    <a href="#" class="btn btn-action-icon" onclick="ValModificaCampagna(@item.ID)"><div class="fa fa-pencil"></div></a>
+                                    <a href="#" class="btn btn-action-icon" onclick="ValCancellaCampagna(@item.ID)"><div class="fa fa-trash"></div></a>
+                                </div>
+                            </td>
+                            <td class="rai-table-td-toggle"><i class="fa fa-chevron-down"></i></td>
+                        </tr>
+                    </tbody>
+                    <tbody class="tbodydata">
+                        @if (!item.IsEnded())
+                        {
+                            <tr>
+                                <td colspan="4" class="bg-neutrals-xl-10 text-right">
+                                    <a href="#" onclick="ValModificaCampagnaScheda(@item.ID, 0)">Aggiungi scheda</a>
+                                </td>
+                            </tr>
+                        }
+                        <tr>
+                            <td colspan="4" class="no-padding" id="sheet_campaign_@item.ID">
+                                @Html.Partial("subpartial/Widget_Campagna_Schede", item.Schede)
+                            </td>
+                        </tr>
+
+                    </tbody>
+                }
+
+            </table>
+        </div>
+        <div class="panel-footer">
+            <div class="rai-btn-fill">
+                <a href="#" class="btn rai-btn-small" onclick="ValAperturaCampagna()">Crea iniziativa</a>
+            </div>
+        </div>
+    </section>
+}
+else
+{
+    @Html.RenderWidget(myRaiHelper.WidgetType.Normal, boxTitle, "fa fa-pencil", "Crea una nuova inziativa", idWidget: "panelApriCampagna", action: new myRaiHelper.ActionTemplate() { OnClick = "ValAperturaCampagna()", Text = "Crea iniziativa" })
+}

@@ -1,0 +1,53 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiData.Incentivi
+@model HrisScheduleFilter
+
+@{
+    IncentiviEntities db = new IncentiviEntities();
+    List<SelectListItem> list = new List<SelectListItem>(){
+new SelectListItem(){Value="",Text="Tutte"}
+};
+    list.AddRange(db.XR_TSK_TIPOLOGIE.Select(x => x.COD_TIPOLOGIA).Distinct().OrderBy(x => x).Select(x => new SelectListItem() { Value = x, Text = x }));
+
+    List<SelectListItem> listSottotipologia = new List<SelectListItem>(){
+new SelectListItem(){Value="",Text="Tutte"}
+};
+    listSottotipologia.AddRange(db.XR_TSK_TIPOLOGIE.Where(x => x.COD_SOTTOTIPOLOGIA != null).Select(x => x.COD_SOTTOTIPOLOGIA).OrderBy(x => x).Select(x => new SelectListItem() { Value = x, Text = x }));
+}
+
+@using (Ajax.BeginForm("Elenco_Schedule", "DashboardController", new AjaxOptions
+{
+    InsertionMode = InsertionMode.Replace,
+    HttpMethod = "POST",
+    OnBegin = "$('#hris-schedule').addClass('rai-loader');",
+    UpdateTargetId = "hris-schedule",
+    OnSuccess = "$('#hris-schedule').removeClass('rai-loader');"
+}, new { id = "form-ricerca-schedule", @class = "", role = "search" }))
+{
+    <div class="form-group">
+        <div class="row push-10">
+            <div class="col-sm-12">
+                @Html.LabelFor(m => m.Tipologia, "Tipologia", new { @class = "rai-caption" })
+                @Html.RaiSelectFor(m => m.Tipologia, list)
+            </div>
+        </div>
+        <div class="row push-10">
+            <div class="col-sm-12">
+                @Html.LabelFor(m => m.Sottotipologia, "Sottotipologia", new { @class = "rai-caption" })
+                @Html.RaiSelectFor(m => m.Sottotipologia, listSottotipologia)
+            </div>
+        </div>
+        <div class="row push-10">
+            <div class="col-sm-12">
+                @Html.LabelFor(m => m.Nome, "Nome", new { @class = "rai-caption" })
+                @Html.TextBoxFor(m => m.Nome, new { @class = "form-control" })
+            </div>
+        </div>
+        <div class="row form-button">
+            <div class="col-sm-12 rai-btn-fill">
+                <input type="reset" class="btn rai-btn-secondary" />
+                <input type="submit" class="btn rai-btn-primary" value="Cerca" />
+            </div>
+        </div>
+    </div>
+}

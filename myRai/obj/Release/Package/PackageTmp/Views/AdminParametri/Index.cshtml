@@ -1,0 +1,148 @@
+﻿@using myRaiCommonModel;
+@model Parametri
+@{
+    Layout = "~/Views/Shared/_Layout2.cshtml";
+}
+<style>
+    td {
+        max-width: 1058.660px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    table {
+        table-layout: fixed;
+    }
+
+        table td {
+            overflow: hidden;
+        }
+</style>
+<section class="body">
+    @Html.Partial("../Shared/header2", new myRaiCommonModel.NotifichePopupModel(myRaiHelper.CommonHelper.GetCurrentUserMatricola()))
+    <div class="inner-wrapper">
+        @Html.Partial("../Shared/sidebar3", myRaiHelper.CommonHelper.getSidebarModel())
+        <section role="main" class="content-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <section class="rai panel" style="margin-bottom: 50px;">
+                        <header class="panel-heading">
+                            <h2 class="panel-title">Parametri Sistema</h2>
+                            <div class="panel-actions">
+                                <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblNotifiche" aria-expanded="true"></a>
+                            </div>
+                        </header>
+                        <div class="panel-body panel-body-nopadding" id="table_FSpese">
+                            <div id="sez_Parametri">
+                                <table class="rai rai-table table table-hover rai-table-vcenter">
+                                    <thead>
+                                        <tr>
+                                            <th class="" style="width:35%">Descrizione</th>
+                                            <th class="text-center">Primo Valore</th>
+                                            <th class="text-center">Secondo Valore</th>
+                                            <th class="text-center" style="">Categoria</th>
+                                            <th style="width:100px;"> &nbsp;</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="sez_CorpoParametri">
+                                        @foreach (var item in Model.listaparametri)
+                                        {
+                                            <tr>
+                                                <td>
+
+                                                    <span class="rai-font-md-bold">@item.Chiave</span>
+                                                </td>
+                                                <td style="text-align: center">
+
+                                                    <span class="rai-font-md">@item.Valore1</span>
+                                                </td>
+                                                @if (item.Valore2 == null)
+                                                {
+                                                    <td style="text-align: center">
+
+                                                        <span class="rai-font-md">&nbsp;</span>
+                                                    </td>
+                                                }
+                                                else
+                                                {
+                                                    <td style="text-align: center">
+
+                                                        <span class="rai-font-md">@item.Valore2</span>
+                                                    </td>
+                                                }
+                                                <td class="text-center">
+                                                    @if (!String.IsNullOrWhiteSpace(item.categoria))
+                                                    {
+                                                        <span class="rai-label">@item.categoria</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <a href="#" id="@item.ID" class="btn rai-btn-small" onclick="showModalPopup('@item.ID')" style="height:auto;">Dettagli</a>
+                                                </td>
+                                            </tr>
+
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+        </section>
+    </div>
+
+</section>
+
+<div class="modal right fade" id="DettaglioParametro" role="dialog" aria-modal="true" aria-hidden="false" style="display: none;"></div>
+@Html.RenderModal("DettaglioParametro")
+
+@section afterjs{
+    <script>
+    function showModalPopup(id) {
+        console.log(id)
+        @*$.ajax({
+            url: '@Url.Action("GetDettaglioParametro","AdminParametri")',
+            data: { id: id },
+            type: "GET",
+            success: function (data) {
+                debugger;
+                console.log(data);
+                $('#DettaglioParametro').html(data);
+                $('#DettaglioParametro').modal();
+            },
+            error: function (e, er, err) {
+                console.log(e, er, err)
+            }
+        });*@
+
+        RaiOpenAsyncModal('modal-DettaglioParametro', '@Url.Action("GetDettaglioParametro","AdminParametri")', { id: id });
+    }
+    function showDropDownListCategorie() {
+        event.preventDefault();
+        $('btnInserimentoCategoria').hide();
+        $('#ddlCategorieList').show();
+    }
+    function InsertNewCategoria(id) {
+        var categoria = $('#selectCategoria').val();
+        var chiave =
+        $.ajax({
+            type: "POST",
+            url: '@Url.Action("InsertCategoriaParametro", "AdminParametri")',
+            data: { categoria: categoria, id: id , chiave : chiave},
+            success: function (data) {
+
+            },
+            error: function (e, er, err) {
+                swal("Errore nell'inserimento", "", "error");
+                console.log(e,er,err)
+            },
+            complete: function () {
+                swal("Modifiche eseguite con successo", "", "success");
+            }
+            });
+    }
+    </script>
+}

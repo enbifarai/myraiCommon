@@ -1,0 +1,152 @@
+﻿@using MVCProject.Custom_Helpers
+@using myRaiCommonModel.GestioneBatch;
+@using myRaiHelper;
+
+@model GestioneBatchVM
+
+@{
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    //string[] mess = myRai.Business.CommonManager.GetParametri<string>( myRai.Business.EnumParametriSistema.MessaggioChiusura );
+}
+
+
+<section role="main" class="content-body" >
+    <main id="main-container">
+        <div class="row">
+
+
+            <div class="col-sm-8">
+                <section class="rai panel">
+                    <header class="panel-heading">
+                        <div class="panel-actions">
+                            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="" aria-expanded="true"></a>
+                        </div>
+                        <h2 id="" class="panel-title">Report on Demand</h2>
+                    </header>
+
+                    <div class="panel-body" id="my-block">
+
+
+                        <div class="block block-transparent block-content-table">
+                            <div class="block-content block-content-mini">
+                                <div class="">
+                                    @{
+                                        foreach (var row in Model.ReportOnDemandItems)
+                                        {
+                                            <div class="row">
+                                                <div class="col-xs-3"><label class="rai-font-md-bold">@row.Titolo</label></div>
+                                                <div class="col-xs-6"><span class="rai-font-md">@row.Descrizione</span></div>
+                                                <div class="col-xs-3 text-right">
+                                                    <span class="rai-font-md">
+                                                        @{
+                                                            if (row.GiaInEsecuzione)
+                                                            {
+                                                                <a id="btnEsegui" class="btn rai-btn-small disable" href="#">in corso...</a>
+                                                            }
+                                                            else if (row.AvvioImmediato)
+                                                            {
+                                                                <a id="btnEsegui" class="btn rai-btn-small disable" href="#">in corso...</a>
+                                                            }
+                                                            else
+                                                            {
+                                                                <a id="btnEsegui" class="btn rai-btn-small" href="#" onclick="EseguiBatchPresenze();">Esegui</a>
+                                                            }
+                                                        }
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div class="col-sm-4">
+                @{
+                    string classIcons = "";
+                    string descriptionTx = "";
+                    string mainTx = "";
+                    string detail = "";
+                    if (Model.ElaborazioniInCorso > 0)
+                    {
+                        classIcons = "icons icon-refresh";
+                        descriptionTx = "Le elaborazioni avviate non possono essere fermate....";
+                        if (Model.ElaborazioniInCorso > 1)
+                        {
+                            mainTx = String.Format("{0} Elaborazioni in corso....", Model.ElaborazioniInCorso);
+                        }
+                        else
+                        {
+                            mainTx = String.Format("{0} Elaborazione in corso....", Model.ElaborazioniInCorso);
+                        }
+                    }
+                    else
+                    {
+                        classIcons = "icons icon-clock";
+                        descriptionTx = "";
+                        mainTx = "Nessuna attività in corso";
+                    }
+                }
+
+                @Html.RenderWidget(WidgetType.Normal, "Stato Elaborazioni", classIcons, mainTx, detail, descriptionTx, "wdgElaborazioni")
+
+            </div>
+        </div>
+    </main>
+    <!-- end: page -->
+</section>
+
+@section afterjs {
+    @Html.Raw(TempData["script"])
+
+    <script type="text/javascript">
+
+        function EseguiBatchPresenze() {
+            $.ajax({
+                url: '@Url.Action( "AvviaBatchPresenze" , "GestioneBatch" )',
+                type: "POST",
+                dataType: 'json',
+                cache: false,
+                data: { },
+                success: function (data) {
+                    if (data.Result) {
+                        swal('Report presenze', "Programma di creazione report avviato con successo", "success");
+                        $('#btnEsegui').addClass('disabled');
+                        $('#btnEsegui').html('in corso...');
+                        if (data.ElaborazioniInCorso > 0) {
+                            $('#wdgElaborazioni_description_container').removeClass('hide');
+                            $('#wdgElaborazioni_description').html('Le elaborazioni avviate non possono essere fermate....');
+                            if (data.ElaborazioniInCorso == 1) {
+                                $('#wdgElaborazioni_maintext').html('1 Elaborazione in corso....');
+                            }
+                            else {
+                                $('#wdgElaborazioni_maintext').html(data.ElaborazioniInCorso + ' Elaborazioni in corso....');
+                            }
+                        }
+                        else {
+                            $('#wdgElaborazioni_description').html('');
+                            $('#wdgElaborazioni_description_container').addClass('hide');
+                            $('#wdgElaborazioni_maintext').html('Nessuna attività in corso');
+                        }
+                    }
+                    else {
+                        $('#btnEsegui').removeClass('disabled');
+                        $('#btnEsegui').html('Esegui');
+                        if (data.Error) {
+                            swal('Report presenze', "Non è stato possibile avviare il programma di creazione report. " + Error, "error");
+                        }
+                        else {
+                            swal('Report presenze', "Non è stato possibile avviare il programma di creazione report", "error");
+                        }
+                    }
+                },
+                error: function (result) {
+                }
+            });
+        }
+
+    </script>
+}

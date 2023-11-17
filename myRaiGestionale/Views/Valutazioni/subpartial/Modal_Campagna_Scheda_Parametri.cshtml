@@ -1,0 +1,350 @@
+﻿@using myRaiGestionale.Controllers
+@model myRaiCommonModel.Gestionale.CampagnaScheda
+
+@helper DrawUorgItem(myRaiCommonModel.Gestionale.TAlberoSezioneModel nodo, string checkAllParent)
+{
+    string checkGroupAll = "";// "uorg-" + nodo.id;
+    <div class="rai-checkbox">
+        <input id="filter-@(nodo.id)" type="checkbox" data-check-group="@checkAllParent" data-check-group-all="@checkGroupAll" data-uorg="@nodo.codice_visibile" @(Model.Uorg.Contains(nodo.codice_visibile) ? "checked" : "") />
+        <label class="rai-caption" for="filter-@(nodo.id)">@nodo.descrizione_lunga</label>
+    </div>
+
+    @*if (Model.Albero.AlberoItems.Any(x => x.subordinato_a == nodo.id))
+        {
+            <div class="rai-checkbox-container" id="container-@nodo.id">
+                @foreach (var childNode in Model.Albero.AlberoItems.Where(x => x.subordinato_a == nodo.id).OrderBy(x => x.num_ordina))
+                {
+                    @DrawUorgItem(childNode, checkGroupAll);
+                }
+            </div>
+        }*@
+
+}
+
+@{
+    var idForm = "form-modal-scheda";
+}
+
+
+@using (Html.BeginForm("Save_Scheda", "Valutazioni", FormMethod.Post, new { @id = idForm }))
+{
+    <div class="form-group">
+        @Html.HiddenFor(m => m.ID)
+        @Html.HiddenFor(m => m.Id_Campagna)
+        <div id="wiz-parent">
+            <div id="wiz-body">
+                <div class="js-wizard-classic-validation">
+                    <div id="newwizard" class="wizard-progress wizard-progress-llg wiznew">
+                        <ul class="wizard-steps">
+                            <li class="tabhead tabheadrich active disable" id="LiTabGenerale" role="presentation">
+                                <a role="tab" tabindex="-1" aria-label="Filtra per categoria" aria-controls="wizgenerale" id="tab1" data-toggle="tab" href="#wizgenerale"><span>1</span>Generali</a>
+                            </li>
+                            @if (Model.TipologiaCampagna != "MBO")
+                            {
+                                <li class="tabhead tabheadrich disable" id="LiTabCategoria" role="presentation">
+                                    <a role="tab" tabindex="-1" aria-label="Filtra per categoria" aria-controls="wizfiltro-categoria" id="tab2" data-toggle="tab" href="#wizfiltro-categoria"><span>2</span>Categoria</a>
+                                </li>
+                                <li class="tabhead tabheadrich disable" id="LiTabDirezione" role="presentation">
+                                    <a role="tab" tabindex="-1" aria-label="Filtra per direzione" aria-controls="wizfiltro-direzione" id="tab3" data-toggle="tab" href="#wizfiltro-direzione"><span>3</span>Direzione</a>
+                                </li>
+                                @*<li class="tabhead tabheadrich disable" id="LiTabStruttura" role="presentation">
+                                        <a role="tab" tabindex="-1" aria-label="Filtra per struttura" aria-controls="wizbudget-struttura" id="tab4" data-toggle="tab" href="#wizfiltro-struttura"><span>4</span>Struttura</a>
+                                    </li>*@
+                            }
+                            <li class="tabhead tabheadrich disable" id="LiTabRiepilogo" role="presentation">
+                                <a role="tab" tabindex="-1" aria-label="Riepilogo" aria-controls="wizriepilogo" id="tab4" data-toggle="tab" href="#wizriepilogo"><span>4</span>Riepilogo</a>
+                            </li>
+                        </ul>
+                        <div class="block-content tab-content" style="overflow: visible; padding:0px; border: 0px; box-shadow: none">
+                            <div class="tab-pane active text-left" id="wizgenerale" role="tabpanel" tabindex="0">
+                                <div style="">
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            @Html.LabelForRequiredObbl(m => m.Descrizione, "Descrizione", new { @class = "rai-caption" })
+                                            @Html.TextBoxFor(m => m.Descrizione, new { @class = "form-control", required = "required" })
+                                            @Html.ValidationMessageFor(m => m.Descrizione)
+                                        </div>
+                                    </div>
+                                    @if (Model.TipologiaCampagna == "MBO")
+                                    {
+                                        List<SelectListItem> list = new List<SelectListItem>();
+                                        list.Add(new SelectListItem() { Value = "", Text = "Seleziona un'iniziativa" });
+                                        list.AddRange(myRaiCommonManager.MboManager.GetIniziative()
+                                                                                    .Select(x => new SelectListItem()
+                                                                                    {
+                                                                                        Value = x.Id.ToString(),
+                                                                                        Text = x.Descrizione
+                                                                                    }));
+
+                                        <div class="row">
+                                            <div class="col-sm-12">
+                                                @Html.LabelForRequiredObbl(m => m.IdObjColl, "Iniziativa MBO collegata", new { @class = "rai-caption" })
+                                                @Html.RaiSelectFor(m => m.IdObjColl, list)
+                                                @Html.ValidationMessageFor(m => m.IdObjColl)
+                                            </div>
+                                        </div>
+                                    }
+                                    <div class="row push-10">
+                                        <div class="col-sm-12">
+                                            @Html.LabelForRequiredObbl(m => m.Id_Sheet, "Scheda di valutazione", new { @class = "rai-caption" })
+                                            <div class="input-group">
+                                                @Html.DropDownListFor(m => m.Id_Sheet, new SelectList(ValutazioniController.GetSelectEvalSheet(), "Value", "Text"), new { @class = "form-control", required = "required" })
+                                                <a class="input-group-addon" title="Mostra anteprima" style="text-transform:none;" onclick="ShowEvalSheetPreview()"><i class="icon icon-magnifier text-bold"></i></a>
+                                            </div>
+                                            @Html.ValidationMessageFor(m => m.Id_Sheet)
+                                        </div>
+                                    </div>
+                                    <div class="row push-10">
+                                        <div class="col-sm-6">
+                                            @Html.LabelForRequiredObbl(m => m.OsservazioneDataInizio, "Inizio periodo di osservazione", new { @class = "rai-caption" })
+                                            <div class="input-group">
+                                                <span class="input-group-addon" style="cursor: pointer" onclick="$('#_dataStart').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                                                @Html.TextBoxFor(m => m.OsservazioneDataInizio, new { @class = "js-datetimepicker  form-control required-min", data_format = "DD/MM/YYYY", data_locale = "it", id = "_dataStart", placeholder = "Selezionare una data", autocomplete = "off" })
+                                            </div>
+                                            @Html.ValidationMessageFor(m => m.OsservazioneDataInizio)
+                                        </div>
+                                        <div class="col-sm-6">
+                                            @Html.LabelForRequiredObbl(m => m.OsservazioneDataFine, "Fine periodo di osservazione", new { @class = "rai-caption" })
+                                            <div class="input-group">
+                                                <span class="input-group-addon" style="cursor: pointer" onclick="$('#_dataEnd').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                                                @Html.TextBoxFor(m => m.OsservazioneDataFine, new { @class = "js-datetimepicker  form-control required-min", data_format = "DD/MM/YYYY", data_locale = "it", id = "_dataEnd", placeholder = "Selezionare una data", autocomplete = "off" })
+                                            </div>
+                                            @Html.ValidationMessageFor(m => m.OsservazioneDataFine)
+                                        </div>
+                                    </div>
+                                    <div class="row push-10">
+                                        <div class="col-sm-12">
+                                            @Html.LabelFor(m => m.AllowExtEvaluator, "Scelta valutatore esterno", new { @class = "rai-caption" })
+                                            @Html.RaiSelectFor(m => m.AllowExtEvaluator, new SelectList(ValutazioniController.GetAllowExtEvaluator(), "Value", "Text"))
+                                        </div>
+                                    </div>
+                                    <div class="row push-10">
+                                        <div class="col-sm-12">
+                                            @Html.LabelFor(m => m.Autovalutazione, "Autovalutazione", new { @class = "rai-caption" })
+                                            @Html.RaiSelectFor(m => m.Autovalutazione, new SelectList(ValutazioniController.GetAutoValutazioneList(), "Value", "Text"))
+                                        </div>
+                                    </div>
+                                    <div class="row push-20-t">
+                                        <div class="col-sm-12">
+                                            @Html.RaiCheckBoxLabelFor(m => m.AllowEmployeeView, "Permetti visualizzazione al valutato", "rai-caption")
+                                        </div>
+                                    </div>
+                                    <div class="row push-20-t">
+                                        <div class="col-sm-12">
+                                            @Html.RaiCheckBoxLabelFor(m => m.AllowDelegation, "Permetti designazione delegato", "rai-caption")
+                                        </div>
+                                    </div>
+                                    <div class="row push-20-t">
+                                        <div class="col-sm-12">
+                                            @{
+                                                var pianoList = new List<SelectListItem>();
+                                                pianoList.Add(new SelectListItem() { Text = "Nessuno" });
+                                                pianoList.Add(new SelectListItem() { Value = "PianoSviluppo_2021", Text = "Piano sviluppo 2021" });
+                                            }
+                                            @*@Html.RaiCheckBoxLabelFor(m => m.PianoSviluppo, "Definizione piano di sviluppo", "rai-caption")*@
+                                            @Html.LabelFor(m => m.CodicePianoSviluppo, "Piano sviluppo", new { @class = "rai-caption" })
+                                            @Html.RaiSelectFor(m => m.CodicePianoSviluppo, pianoList, hideSearch: true)
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            @if (Model.TipologiaCampagna != "MBO")
+                            {
+                                <div class="tab-pane text-left" id="wizfiltro-categoria" role="tabpanel" tabindex="0">
+                                    <div style="height:400px;">
+                                        <div class="row push-10-t">
+                                            <div class="col-sm-12">
+                                                <div class="rai-checkbox-container">
+                                                    <div class="rai-checkbox" style="display:none;">
+                                                        <input id="chkFiltroQual" type="checkbox" data-toggle="collapse" data-target="#qualContainer" checked @*@(Model.QualificheInt.Count() > 0 ? "checked" : "")*@ />
+                                                        <label class="rai-caption" for="chkFiltroQual">Filtra per categoria</label>
+                                                    </div>
+
+                                                    <div class="col-sm-12 no-padding push-10">
+                                                        <div class="rai-checkbox">
+                                                            <input id="chkSelectAllQual" type="checkbox" data-check-group-all="qual-filter" onclick="RaiToggleCheckBoxAll('qual-filter')" />
+                                                            <label class="rai-caption" for="chkSelectAllQual">Seleziona tutti</label>
+                                                        </div>
+                                                    </div>
+                                                    @foreach (var item in ValutazioniController.GetSelectQualFilter())
+                                                    {
+                                                        <div class="col-sm-12 col-xl-6 no-padding push-10">
+                                                            <div class="rai-checkbox">
+                                                                <input id="filter@(item.Value)" type="checkbox" data-check-group="qual-filter" onclick="RaiUpdateCheckBoxAll('qual-filter')" value="@item.Value" @(Model.QualificheInt.Contains(Convert.ToInt32(item.Value)) ? "checked" : "") />
+                                                                <label class="rai-caption" for="filter@(item.Value)">@item.Text</label>
+                                                            </div>
+                                                        </div>
+                                                    }
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tab-pane text-left" id="wizfiltro-direzione" role="tabpanel" tabindex="0">
+                                    <div style="height:400px;">
+                                        <div class="row push-10-t">
+                                            <div class="col-sm-12">
+                                                <div class="rai-checkbox-container">
+                                                    <div class="rai-checkbox" style="display:none;">
+                                                        <input id="chkFiltroDir" type="checkbox" data-toggle="collapse" data-target="#dirContainer" checked @*@(Model.Servizi.Count() > 0 ? "checked" : "")*@ />
+                                                        <label class="rai-caption" for="chkFiltroDir">Filtra per direzione</label>
+                                                    </div>
+                                                    <div class="row push-10">
+                                                        <div class="col-sm-12 no-padding">
+                                                            <input class="form-control" type="text" data-search="direzione-scheda" onkeyup="RaiSearchData(this, 'direzione-scheda', 'name')" placeholder="Inserisci la direzione da ricercare" />
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-sm-12 no-padding push-10">
+                                                        <div class="rai-checkbox" data-search="direzione-scheda" data-search-name="">
+                                                            <input id="chkSelectAllDir" type="checkbox" data-check-group-all="dir-filter" onclick="RaiToggleCheckBoxAll('dir-filter')" />
+                                                            <label class="rai-caption" for="chkSelectAllDir">Seleziona tutti</label>
+                                                        </div>
+                                                    </div>
+                                                    @foreach (var item in ValutazioniController.GetSelectDirezioniFilter())
+                                                    {
+                                                        <div class="col-sm-12 col-xl-6 no-padding push-10" data-search="direzione-scheda" data-search-name="@item.Text">
+                                                            <div class="rai-checkbox">
+                                                                <input id="filter@(item.Value)" type="checkbox" data-check-group="dir-filter" onclick="RaiUpdateCheckBoxAll('dir-filter')" value="@item.Value" @(Model.Servizi.Contains(item.Value) ? "checked" : "") />
+                                                                <label class="rai-caption" for="filter@(item.Value)">@item.Text</label>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            }
+                            <div class="tab-pane text-left" id="wizriepilogo" role="tabpanel" tabindex="0">
+                                <div style="height:400px;overflow-x:hidden;overflow-y:auto">
+                                    <div class="row push-10-t">
+                                        <div class="col-sm-12">
+                                            <div class="row">
+                                                <div class="col-sm-5">
+                                                    <label class="rai-font-md-neutral">Descrizione</label>
+                                                </div>
+                                                <div class="col-sm-7">
+                                                    <label class="rai-font-md" id="summary-des"></label>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-sm-5">
+                                                    <label class="rai-font-md-neutral">Scheda di valutazione</label>
+                                                </div>
+                                                <div class="col-sm-7">
+                                                    <label class="rai-font-md" id="summary-sheet"></label>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-sm-5">
+                                                    <label class="rai-font-md-neutral">Categorie</label>
+                                                </div>
+                                                <div class="col-sm-7">
+                                                    <ul id="summary-qual"></ul>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-sm-5">
+                                                    <label class="rai-font-md-neutral">Direzioni</label>
+                                                </div>
+                                                <div class="col-sm-7">
+                                                    <ul id="summary-dir"></ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="rai-btn-fill">
+                <button class="btn rai-btn-secondary disable" onclick="GotoPreviousTab()" id="btnPrevTab">Indietro</button>
+                <button class="btn rai-btn-@(Model.Id_Campagna==0?"primary":"secondary")" onclick="GotoNextTab()" id="btnNextTab">Prosegui</button>
+                @if (Model.Id_Campagna == 0)
+                {
+                    <button class="btn rai-btn-primary" style="display:none;" onclick="ValAggiungiScheda(this, '@idForm', @Model.Id_Campagna)" id="btnSave">Salva</button>
+                }
+                else
+                {
+                    <button class="btn rai-btn-primary" onclick="ValAggiungiScheda(this, '@idForm', @Model.Id_Campagna)" id="btnSaveMod">Salva</button>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<script>
+    InitDatePicker();
+
+    RaiUpdateCheckBoxAll('qual-filter');
+    RaiUpdateCheckBoxAll('dir-filter');
+
+    function GotoPreviousTab() {
+        event.preventDefault();
+        var steps = $('.wizard-steps > li');
+        var activeTab = $('.wizard-steps > li.active');
+        var stepCount = $(steps).length;
+        var stepIndex = $(steps).index(activeTab);
+        if (stepIndex == 1) {
+            $('#btnPrevTab').addClass('disable');
+        }
+        $('#btnNextTab').show();
+        $('#btnSave').hide();
+        $(activeTab).removeClass("completed");
+        $(steps).eq(stepIndex - 1).find('a').click();
+    }
+    function GotoNextTab() {
+        event.preventDefault();
+        var steps = $('.wizard-steps > li');
+        var activeTab = $('.wizard-steps > li.active');
+        var stepCount = $(steps).length;
+        var stepIndex = $(steps).index(activeTab);
+        if (stepIndex == stepCount - 2) {
+            $('#summary-des').text($('#Descrizione').val());
+            $('#summary-sheet').text($('#Id_Sheet option:selected').text());
+
+            if ($('#chkFiltroQual').length > 0) {
+                $('#summary-qual').empty();
+                if ($('#chkFiltroQual')[0].checked) {
+                    $('[data-check-group="qual-filter"]').each(function () {
+                        if ($(this)[0].checked) {
+                            $('#summary-qual').append('<li class="rai-font-md">' + $(this).siblings('label').text() + '</li>');
+                        }
+                    });
+                }
+            }
+
+            if ($('#chkFiltroDir').length > 0) {
+                $('#summary-dir').empty();
+                if ($('#chkFiltroDir')[0].checked) {
+                    $('[data-check-group="dir-filter"]').each(function () {
+                        if ($(this)[0].checked) {
+                            $('#summary-dir').append('<li class="rai-font-md">' + $(this).siblings('label').text() + '</li>');
+                        }
+                    });
+                }
+            }
+
+            $('#btnNextTab').hide();
+            $('#btnSave').show();
+        }
+        $('#btnPrevTab').removeClass('disable');
+        $(activeTab).addClass("completed");
+        $(steps).eq(stepIndex + 1).find('a').click();
+    }
+
+    function ShowEvalSheetPreview() {
+        var idSheet = $('#Id_Sheet').val();
+        if (idSheet != 0) {
+            ValAnteprimaScheda(idSheet);
+        }
+    }
+</script>

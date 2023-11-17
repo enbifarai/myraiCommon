@@ -1,0 +1,159 @@
+﻿@using myRaiHelper;
+@model myRaiCommonModel.ProfiloPersonaleModel
+
+<script src="~/assets/js/plugins/jquery-validation/additional-methods.min.js"></script>
+
+@{
+    string accreditoStipendio = "";
+}
+
+@if (Model.ContiCorrente != null)
+
+{
+    foreach (var item in Model.ContiCorrente)
+    {
+        if (myRai.Business.CommonManager.ToTitleCase(item.Tipologia).Equals("Accredito Stipendio"))
+        {
+
+            accreditoStipendio = item.Iban;
+
+        }
+
+    }
+
+}
+
+@using (Html.BeginModal("Modifica IBAN"))
+{
+    <div class="row">
+        <div class="col-sm-12">
+
+            @using (Html.BeginPanel(PanelType.Panel, "Accredito Stipendio", false))
+            {
+
+                using (Html.BeginForm("ModificaStipendioIbanDB", "ProfiloPersonale", FormMethod.Post, new { @id = "form-nuovo-iban-stipendio" }))
+                {
+
+
+
+
+            <div class="form-group rai">
+
+
+
+
+                <div class="row push-20">
+                    <div class="col-sm-12">
+                        @Html.LabelForRequiredObbl(m => m.Contocorrentedb.COD_IBAN, "Codice IBAN", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.Contocorrentedb.COD_IBAN, new
+                   {
+                       @class = "rai form-control",
+                       data_rule_iban = "true",
+                            data_msg_iban = "Specifica un IBAN corretto",
+                       id = "inputiban",
+                       onblur = "updateValue(event)",
+                       onkeyup = "checkInputValue(false)"
+                   })
+                        @Html.ValidationMessageFor(m => m.Contocorrentedb.COD_IBAN)
+                    </div>
+                </div>
+
+                <div class="row push-20">
+
+                    <div id="ugualestipendio" class="field-validation-error col-sm-12" style="display:none;">Attenzione: le coordinate inserite sono già utilizzate per l'accredito dello stipendio.</div>
+                    <div id="ibanestero" class="field-validation-error col-sm-12" style="display:none;">In questo momento non è possibile la registrazione di coordinate bancarie estere.</div>
+                    <div id="stipendio" class="col-sm-12" style="display:none;">@accreditoStipendio</div>
+                </div>
+
+                <div class="row push-20">
+
+                    <div class="col-sm-12 " id="datibanca" style="display:none;">
+                        <div class="bg-neutrals-xl-10 rai-table-info" style="padding: 10px 5px">
+                            <div class="row push-10">
+                                <div class="col-sm-4">
+                                    <label>Agenzia:</label>
+                                </div>
+                                <div class="col-sm-8">
+                                    <label id="datibanca_agenzia"></label>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-4">
+                                    <label>Indirizzo agenzia:</label>
+                                </div>
+                                <div class="col-sm-8">
+                                    <label id="datibanca_indirizzo"></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="row push-20">
+
+
+                    <div class="col-sm-12">
+                        @Html.LabelForRequiredObbl(m => m.Contocorrentedb.DES_INTESTATARIO, "Intestatario", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.Contocorrentedb.DES_INTESTATARIO, new { @readonly = "true", @class = "rai form-control" })
+                        @Html.ValidationMessageFor(m => m.Contocorrentedb.DES_INTESTATARIO)
+
+                    </div>
+
+
+
+                </div>
+
+
+
+                <div class="row">
+                    <div class="col-sm-12">
+                        <label class="rai-font-md">
+                            Compilando il modulo si dichiara di essere intestatario dei rapporti qui indicati e di essere a conoscenza che, salvo diversa e tempestiva indicazione di diverse coordinate bancarie, eventuali competenze arretrate (nonché le indennità di fine rapporto, qualora lavoratore a tempo determinato) saranno accreditate sul conto già utilizzato per l’accredito dello stipendio.
+                        </label>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-sm-12">
+                        <label class="rai-font-md">
+                            In merito alle tempistiche necessarie al fine di registrare una modifica relativa a dati bancari, è consigliabile mantenere temporaneamente attivo il vecchio codice iban in quanto non si assicura già per il mese corrente l’accredito sulle nuove coordinate bancarie.
+                        </label>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-sm-12">
+                        <label class="rai-font-md">
+                            Attenzione: in caso di conto <b>vincolato</b>, è propria responsabilità consegnare all’Ufficio di competenza la necessaria modulistica relativa alle coordinate bancarie dichiarate.
+                        </label>
+                    </div>
+                </div>
+
+
+                <div class="row">
+                    <div class="col-sm-12 text-left" style="margin-top:30px">
+                        <div class="rai-btn-fill">
+                            <button onclick="ModificaIbanStipendioDB()" type="button" class="btn rai-btn-primary" id="submitIban" disabled>Salva i dati </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+
+                }
+            }
+
+        </div>
+    </div>
+
+}
+
+
+
+<script>
+    InitDatePicker();
+    $.validator.unobtrusive.parse(document);
+
+</script>

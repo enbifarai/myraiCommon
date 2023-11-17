@@ -1,0 +1,117 @@
+﻿
+@using myRaiGestionale.Controllers
+@model IEnumerable<myRaiData.Incentivi.XR_PRV_DIPENDENTI>
+@{Layout = null;}
+
+
+<div class="row bg-neutrals-xl-10" id="SummaryFiltri" style="display:none;margin-left:0px;margin-right:0px;">
+    <div class="col-md-12">
+        <h5 class="text-italic"><span id="textSummary"></span><span id="textSummaryBold" class="text-bold"></span>. <a class="cursor-pointer" onclick="javascript:GestPulisciFiltri('form-ricerca-ElencoDipendenti',true)">Vedi tutte</a></h5>
+    </div>
+</div>
+
+@if (Model != null && Model.Count() > 0)
+{
+    var groupByArea = Model.OrderBy(y => y.XR_PRV_DIREZIONE.XR_PRV_AREA.ORDINE).GroupBy(x => x.XR_PRV_DIREZIONE.ID_AREA);
+
+<div class="block" id="praticheBlock" style="margin-bottom:0px;">
+    <ul class="nav nav-tabs nav-tabs-alt nav-justified hidden-xs" data-toggle="tabs" role="tablist">
+        @{
+            var countAreaGroup = 0;
+        }
+
+        @foreach (var areaGroup in groupByArea)
+        {
+            <li class="@(countAreaGroup==0?"active":"0") " role="presentation">
+                <a class="rai-badge-anchor" href="#btab-provv-@areaGroup.Key" id="hrefpratiche-@areaGroup.Key" tabindex="@(countAreaGroup==0?"0":"-1")" role="tab" aria-selected="@(countAreaGroup==0?"true":"false")" aria-controls="btab-provv-@areaGroup.Key">
+                    <span>@areaGroup.First().XR_PRV_DIREZIONE.XR_PRV_AREA.NOME</span>
+                    <div class="rai-badge-tab">
+                        <span id="badge-@areaGroup.Key">@areaGroup.Count()</span>
+                    </div>
+                </a>
+            </li>
+
+            countAreaGroup++;
+        }
+    </ul>
+
+    <ul class="nav nav-pills nav-justified visible-xs" data-toggle="tabs" role="tablist" style="padding:5px;">
+        @{
+            countAreaGroup = 0;
+        }
+
+        @foreach (var areaGroup in groupByArea)
+        {
+            <li class="@(countAreaGroup==0?"active":"") " role="presentation">
+                <a class="rai-badge-anchor" href="#btab-provv-@areaGroup.Key" id="hrefpratiche-xs-@areaGroup.Key" tabindex="@(countAreaGroup==0?"0":"-1")" role="tab" aria-selected="@(countAreaGroup==0?"true":"false")" aria-controls="btab-provv-@areaGroup.Key">
+                    <span>@areaGroup.First().XR_PRV_DIREZIONE.XR_PRV_AREA.NOME</span>
+                    <div class="rai-badge-tab">
+                        <span id="badge-@areaGroup.Key" >@areaGroup.Count()</span>
+                    </div>
+                </a>
+            </li>
+
+            countAreaGroup++;
+        }
+    </ul>
+
+    <div class="block-content tab-content" style="padding:5px 5px 1px;">
+        @{
+            countAreaGroup = 0;
+        }
+        @foreach (var areaGroup in groupByArea)
+        {
+            var groupByDir = areaGroup.OrderBy(y => y.XR_PRV_DIREZIONE.ORDINE).GroupBy(x => x.ID_DIREZIONE);
+            int countDir = 0;
+
+            <div class="tab-pane @(countAreaGroup==0?"active":"0")" id="btab-provv-@areaGroup.Key" role="tabpanel">
+                <div class="panel-group" id="accordion">
+                    @foreach (var dirGroup in groupByDir)
+                    {
+                        <div class="panel panel-accordion">
+                            <div class="panel-heading">
+                                <h4 class="panel-title">
+                                    <a class="accordion-toggle " style="padding:0px!important" data-toggle="collapse" data-parent="#accordion" href="#collapse@(dirGroup.Key)" aria-expanded="false">
+                                        <span>@(dirGroup.First().XR_PRV_DIREZIONE.CODICE + " - " + dirGroup.First().XR_PRV_DIREZIONE.NOME)</span>
+                                    </a>
+                                </h4>
+                                <div class="panel-actions">
+                                    <span class="rai-notification">@dirGroup.Count()</span>
+                                    @*<i class="panel-action panel-action-toggle" data-panel-toggle="" aria-expanded="false"></i>*@
+                                </div>
+                            </div>
+
+                            @*<div id="collapse@(dirGroup.Key)" class="collapse" >*@
+                                <div class="panel-body collapse" style="padding:5px;" id="collapse@(dirGroup.Key)" aria-expanded="false">
+                                    @Html.Partial("../PoliticheRetributive/subpartial/ElencoPratiche_table", dirGroup)
+                                </div>
+                            @*</div>*@
+                        </div>
+
+                        countDir++;
+                    }
+                </div>
+            </div>
+
+            countAreaGroup++;
+        }
+    </div>
+</div>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-12">
+            <h4 class="text-center">Nessuna pratica trovata</h4>
+        </div>
+    </div>
+}
+
+<script type="text/javascript">
+    $('.collapse').on('shown.bs.collapse', function (e) {
+        var $panel = $(this).closest('.panel');
+        $('html,body').animate({
+            scrollTop: $panel.offset().top - 70
+        }, 500);
+    });
+</script>

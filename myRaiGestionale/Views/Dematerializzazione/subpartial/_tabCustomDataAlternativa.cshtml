@@ -1,0 +1,136 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiCommonModel
+@using myRaiHelper
+@using Newtonsoft.Json
+@using System.Web.Script.Serialization
+
+@model DematerializzazioneCustomDataView
+
+@{
+    Layout = null;
+}
+
+@{
+    if (Model.Attributi != null && Model.Attributi.Any())
+    {
+        <div class="row" id="">
+            <div class="col-sm-12">
+                <div class="form-group">
+                    @{
+                        var attrs = Model.Attributi.OrderBy(w => w.Ordinamento).ToList();
+                        bool almenoUno = false;
+                        almenoUno = attrs.Count(w => !String.IsNullOrEmpty(w.Valore) && w.Visible) > 0;
+
+                        foreach (var riga in attrs)
+                        {
+                            // prima di tutto verifica che la riga non sia di tipo inline
+                            if (riga.InLine == null || !riga.InLine.Any())
+                            {
+                                string visibile = riga.Visible ? "" : "display:none;";
+                                string visibileSoloSinistra = riga.VisibileSoloRead ? "display:none;" : "";
+                                string divID = "";
+
+                                if (riga.Tipo != TipologiaAttributoEnum.Check && riga.Tipo != TipologiaAttributoEnum.Radio)
+                                {
+                                    divID = String.Format("id=row_{0}", riga.Id);
+                                }
+                                else
+                                {
+                                    divID = String.Format("group-id=row_{0}", riga.Id);
+                                }
+
+                                <div class="row push-10" @(divID) style="@(visibile)">
+                                    <!-- 
+                                        se l'elemento è allineato a sinistra allora deve avere il primo div 
+                                        con l'elemento ed il secondo con un br
+                                    -->
+                                    @{
+                                        if (riga.Align == AttributiAggiuntiviAlign.Left)
+                                        {
+                                            @Html.Partial("~/Views/Dematerializzazione/subpartial/_jsonViewAlignSX.cshtml", riga)
+                                        }
+                                        else
+                                        {
+                                            // altrimenti è con allineamento classico dove sulla sinistra viene mostrato
+                                            // l'attuale valore, mentre a destra è presente l'elemento per poter effettuare
+                                            // la modifica di tale valore
+                                            @Html.Partial("~/Views/Dematerializzazione/subpartial/_jsonViewCurrentSXNewDX.cshtml", riga)
+                                        }
+                                    }
+                                </div>
+                            }
+                        }
+                    }
+                    </div>
+            </div>
+        </div>
+    }
+}
+
+<script type="text/javascript">
+        InitDatePicker();
+    
+    function formatAllCurrency() {
+        var list = $('input[data-type="currency"]');
+        for (var i = 0; i < list.length; i++) {
+            formatCurrency($(list[i]));
+        }
+    }
+
+
+    $(function () {
+        $("input[data-type='currency']").on({
+            keyup: function () {
+                formatCurrency($(this));
+            },
+            blur: function () {
+                formatCurrency($(this), "blur");
+            }
+        });
+        formatAllCurrency();
+
+        $('.dem-customdata').each(function () {
+            $(this).on('keyup', function () {
+                var tx = $(this).val();
+                tx = $.trim(tx);
+
+                if (tx.length >= 1) {
+                    $(this).data('compilato', 'true');
+                }
+                else {
+                    $(this).data('compilato', 'false');
+                }
+
+                Dematerializzazione_AbilitaSeCompilati();
+            });
+
+            $(this).on('blur', function () {
+                var tx = $(this).val();
+                tx = $.trim(tx);
+
+                if (tx.length >= 1) {
+                    $(this).data('compilato', 'true');
+                }
+                else {
+                    $(this).data('compilato', 'false');
+                }
+
+                Dematerializzazione_AbilitaSeCompilati();
+            });
+
+            $(this).on('change', function () {
+                var tx = $(this).val();
+                tx = $.trim(tx);
+
+                if (tx.length >= 1) {
+                    $(this).data('compilato', 'true');
+                }
+                else {
+                    $(this).data('compilato', 'false');
+                }
+
+                Dematerializzazione_AbilitaSeCompilati();
+            });
+        });
+    });
+</script>

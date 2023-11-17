@@ -1,0 +1,174 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel.DocFirmaModels;
+@using MVCProject.Custom_Helpers;
+
+@model PDFmodel
+
+<div class="row" style="margin-top: 30px;margin: 10px;background-color: #fafafa;padding-top: 8px;padding-bottom: 8px;">
+    <div class="col-sm-4" id="int1" style="background-color: #fafafa;"></div>
+    <div class="col-sm-4" id="int2" style="    text-align: center;"></div>
+    <div class="col-sm-4" id="int3" style="    text-align: right;"></div>
+</div>
+<div class="row" style="    margin-top: 20px;">
+    <div class="col-sm-2">
+        <button class="btn btn-default btn-scriv text-uppercase bg-puls_dash "
+                style="margin-top: -25px; width: 100px;"
+                type="button" id="pdfprev-pf" onclick="PdfPrevPF()">
+            &lt; PRECEDENTE
+        </button>
+    </div>
+    <div class="col-sm-8">
+        <button class="btn btn-scriv text-uppercase text-white bg-firma "
+                style="margin-top: -25px;width: 100%;@(Model.PdfCarrelloDisabledAttribute=="c"?"display:none":"")"
+                type="button" id="pdfcarrello-pf" onclick="AggiungiCarrelloPF()">
+            METTI IN FIRMA IL DOCUMENTO
+        </button>
+        <button class="btn btn-scriv text-white text-uppercase"
+                style="margin-top: -25px;width: 100%;background-color:red;@(Model.PdfCarrelloDisabledAttribute==""?"display:none":"")"
+                type="button" id="pdfremove-pf" onclick="CancellaDaCarrelloPF()">
+            RIMUOVI IL DOCUMENTO
+        </button>
+    </div>
+    <div class="col-sm-2" style="text-align:right">
+        <button class="btn btn-default btn-scriv text-uppercase bg-puls_dash "
+                style="margin-top: -25px;margin-left: 10px;width: 100px;" type="button" id="pdfnext-pf"
+                onclick="PdfNextPF()">
+            SUCCESSIVO&gt;
+        </button>
+    </div>
+</div>
+<div class="row pdfbar" id="pdfok" style="display:none"></div>
+<div class="row pdfbar" id="pdfnok" style="display:none"></div>
+<div class="bg-primary-dark" style="padding: 8px">
+    <input type="hidden" id="idpdfcurrent-pf" value="@Model.idPdf" />
+    <iframe id="myframe-pf" style="width:100%;height:750px" src="/FIRMA/getpdfbinarypf?idpdf=@Model.idPdf" />
+    <div class="row" style="margin-top:16px">
+        <div class="col-sm-4">&nbsp;</div>
+        <div class="col-sm-4">
+            <button class="btn btn-scriv text-uppercase bg-primary btn-lg "
+                    style="margin-top: -25px;margin-left: 10px;width: 100%;"
+                    type="button" id="firmapf" onclick="FirmaDoc()">
+                FIRMA <span id="pdfcount">@Model.PdfCountInCarrello</span> DOCUMENTI
+            </button>
+        </div>
+        <div class="col-sm-4">&nbsp;</div>
+    </div>
+</div>
+
+<script>
+    function CancellaDaCarrelloPF() {
+        var id = $("#idpdfcurrent-pf").val();
+        $.ajax({
+            url: '/firma/DelCarrelloPF',
+            type: "POST",
+            dataType: "json",
+            data: { idpdf: id },
+            success: function (data) {
+                if (data.result == true) {
+                    $("#pdfcarrello-pf").show();
+                    $("#pdfremove-pf").hide();
+                    UpdateTotaliCarrello();
+                }
+                else
+                    swal('Errore', data.error, 'error');
+            }
+        });
+    }
+
+    function AggiungiCarrelloPF() {
+        var id = $("#idpdfcurrent-pf").val();
+        $.ajax({
+            url: '/firma/AddCarrelloPF',
+            type: "POST",
+            dataType: "json",
+            data: { idpdf: id },
+            success: function (data) {
+                if (data.result == true) {
+                    $("#pdfcarrello-pf").hide();
+                    $("#pdfremove-pf").show();
+                    UpdateTotaliCarrello();
+                }
+                else
+                    swal('Errore', data.error, 'error');
+            }
+        });
+    }
+
+    function UpdateTotaliCarrello() {
+        $.ajax({
+            url: '/firma/quantiInCarrello',
+            type: "GET",
+            dataType: "json",
+            data: {},
+            success: function (data) {
+                var tot = data.car1 + data.car2;
+                $("#totdoc").text(tot);
+                if (tot == 0) {
+                    $("#button-firmadoc").text("FIRMA 0 DOCUMENTI");
+                    $("#button-firmadoc").addClass("disable");
+                    $("#firmapf").text("FIRMA 0 DOCUMENTI");
+                    $("#firmapf").addClass("disable");
+                }
+                if (tot == 1) {
+                    $("#button-firmadoc").text("FIRMA 1 DOCUMENTO");
+                    $("#button-firmadoc").removeClass("disable");
+                    $("#firmapf").text("FIRMA 1 DOCUMENTO");
+                    $("#firmapf").removeClass("disable");
+                }
+                if (tot > 1) {
+                    $("#button-firmadoc").text("FIRMA " + tot + " DOCUMENTI");
+                    $("#button-firmadoc").removeClass("disable");
+                    $("#firmapf").text("FIRMA " + tot + " DOCUMENTI");
+                    $("#firmapf").removeClass("disable");
+                }
+            }
+        });
+    }
+
+    function PdfNextPF() {
+        var idPdf = $("#idpdfcurrent-pf").val();
+        var rows = [];
+        $("tr[data-ispf]").each(function () { rows.push($(this).attr("data-idpdf")) });
+        var tot = rows.length;
+        var prog = rows.indexOf(idPdf.toString());
+        $("#idpdfcurrent-pf").val(rows[prog + 1]);
+        UpdateButtonPF(rows[prog + 1]);
+        $("#myframe-pf").attr("src", "/FIRMA/getpdfbinarypf?idpdf=" + rows[prog + 1]);
+        ButtonAddDel(rows[prog + 1]);
+    }
+
+    function PdfPrevPF() {
+        var idPdf = $("#idpdfcurrent-pf").val();
+        var rows = [];
+        $("tr[data-ispf]").each(function () { rows.push($(this).attr("data-idpdf")) });
+        var tot = rows.length;
+        var prog = rows.indexOf(idPdf.toString());
+        $("#idpdfcurrent-pf").val(rows[prog - 1]);
+        UpdateButtonPF(rows[prog - 1]);
+        $("#myframe-pf").attr("src", "/FIRMA/getpdfbinarypf?idpdf=" + rows[prog - 1]);
+        ButtonAddDel(rows[prog - 1]);
+    }
+
+    function ButtonAddDel(id) {
+        IsInCarrelloPF(id);
+    }
+
+    function IsInCarrelloPF(id) {
+        $.ajax({
+            url: '/firma/IsInCarrelloPF',
+            type: "GET",
+            dataType: "json",
+            data: { idpdf: id },
+            success: function (data) {
+                if (data.result == true) {
+                    $("#pdfcarrello-pf").hide();
+                    $("#pdfremove-pf").show();
+                }
+                else {
+                    $("#pdfcarrello-pf").show();
+                    $("#pdfremove-pf").hide();
+                }
+            }
+        });
+    }
+</script>

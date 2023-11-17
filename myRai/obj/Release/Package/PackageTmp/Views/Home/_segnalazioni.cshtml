@@ -1,0 +1,180 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model ModelDash
+
+<div id="sectsegn" class="block block-transparent block-content-table">
+    <div class="block-header block-content-mini">
+        <label class="rai-font-table-heading">Segnalazioni presenti</label>
+    </div>
+    <div class="block-content block-content-mini">
+
+
+        <div class="row">
+            <div class="col-sm-12">
+                @using (Html.BeginPanel(PanelType.NoHeader, ""))
+                {
+                    <table class="table rai-table" id="table-segnalazioni">
+                        @*@if (Model.dettaglioGiornata != null && Model.dettaglioGiornata.eccezioni != null && Model.dettaglioGiornata.eccezioni.Count() > 0)
+                            {
+                                var lista = Model.dettaglioGiornata.eccezioni.ToList();
+                                lista.RemoveAll(e => e.cod != null && e.cod.Trim() == "CAR");
+                                Model.dettaglioGiornata.eccezioni = lista.ToArray();
+                            }*@
+                        @if (Model.dettaglioGiornata != null && Model.dettaglioGiornata.eccezioni != null && Model.dettaglioGiornata.eccezioni.Where(x => x.cod != null && x.cod.Trim() != "CAR").Count() > 0)
+                        {
+                            <thead>
+                                <tr>
+                                    <th>Segnalazione</th>
+                                    <th class="hidden-xs text-center">Durata</th>
+                                    <th class="hidden-xs text-center rai-table-td-action" >Stato</th>
+                                    <th class="text-center">Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (MyRaiServiceInterface.it.rai.servizi.digigappws.Eccezione eccezione in Model.dettaglioGiornata.eccezioni.Where(x => x.cod != null && x.cod.Trim() != "CAR"))
+                                {
+                                    if (eccezione.cod == null)
+                                    { continue; }
+
+                                    myRaiData.MyRai_Richieste richPadre = null;
+                                    if (eccezione.IdRichiestaPadre > 0)
+                                    {
+                                        richPadre = CommonHelper.GetEccezionePadre(eccezione.IdRichiestaPadre);
+                                    }
+                                <tr data-segna="test" data-codice-ecc="@eccezione.cod" data-ndoc-segn="@eccezione.ndoc" data-idecc-rich="@eccezione.IdEccezioneRichiesta" data-idric-parent="@eccezione.IdRichiestaPadre">
+                                    <td class="va-middle">
+                                        <b>@eccezione.cod</b><br />
+                                        @eccezione.descrittiva_lunga
+                                        <p class="mb-none">
+                                            <small>(@EccezioniManager.decodificaStatoEccezione(eccezione))</small>
+                                            @if (richPadre != null && richPadre.id_Attivita_ceiton.HasValue && richPadre.id_Attivita_ceiton.Value > 0)
+                                            {
+                                                <br /><small class="text-italic">Id attività: @richPadre.MyRai_AttivitaCeiton.idCeiton</small>
+                                                <br /><small class="text-italic">@richPadre.MyRai_AttivitaCeiton.Titolo - @richPadre.MyRai_AttivitaCeiton.AttivitaPrimaria</small>
+                                            }
+                                        </p>
+
+                                        @if (eccezione.EsisteStorno)
+                                        {
+                                                var eccrimp= myRai.Business.CommonManager.GetEccezioneRimpiazzo(eccezione.IdRichiestaPadre);
+                                                string addtext = "";
+                                                if (eccrimp != null)
+                                                {
+                                                    addtext = " e permesso (" + eccrimp + ") ";
+                                                }
+
+                                                <em class="text-warning">Richiesta di storno @addtext @(eccezione.IdStatoStorno == 10 ? "in approvazione" : eccezione.IdStatoStorno == 50 ? "rifiutata" : "approvata")</em>
+
+                                        }
+                                        @if (eccezione.IdStato == 10)
+                                        {
+                                            <span class="label visible-xs label-warning">In approvazione</span>
+                                        }
+                                        @if (eccezione.IdStato == 20)
+                                        {
+                                            if (!String.IsNullOrEmpty(eccezione.DescrizioneApprovatorePrimoLivello))
+                                            {
+                                                if (eccezione.matricola == eccezione.matricolaPrimoLivello)
+                                                {
+                                                    <span class="label visible-xs label-success" title="Approvata automaticamente"><i class="fa fa-check"></i>Approvata automaticamente</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="label visible-xs label-success" title="Approvata da @eccezione.DescrizioneApprovatorePrimoLivello"><i class="fa fa-check"></i>Approvata da @eccezione.DescrizioneApprovatorePrimoLivello</span>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="label visible-xs label-success"><i class="fa fa-check"></i>Approvato</span>
+                                            }
+                                        }
+                                        @if (richPadre != null && !String.IsNullOrWhiteSpace(richPadre.motivo_richiesta))
+                                        {
+                                            <small class="text-bold" title="@richPadre.motivo_richiesta" style="white-space: nowrap; overflow: hidden;text-overflow: ellipsis;">Nota: @richPadre.motivo_richiesta</small>
+                                        }
+                                    </td>
+
+                                    <td class="va-middle hidden-xs text-center">
+                                        <span class="rai-label">@eccezione.qta</span>
+                                        @if (@eccezione.dalle != null && @eccezione.dalle.Trim() != "00:00")
+                                        {<br />
+                                            <span class="smaller">
+                                                @(eccezione.dalle != null ? eccezione.dalle.Trim() : "")/
+                                                @(eccezione.alle != null ? eccezione.alle.Trim() : "")
+
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="va-middle hidden-xs text-center">
+
+                                        @*Visualizza pallino colorato come display template: *@
+                                        @Html.DisplayFor(e => eccezione.IdStato, "IdStato")
+
+
+                                    </td>
+                                    <td class="va-middle" style="text-align: center;">
+                                        @if (Model.NascondiCestino == false && eccezione.IdEccezioneRichiesta != 0 && eccezione.IdStato < 60)
+                                        {
+                                                if (eccezione.EsisteStorno && eccezione.IdStatoStorno == 10)
+                                                {
+                                                    @Html.Partial("TrashIcon", new TrashIconModel()
+                                              {
+                                                  JavaScriptFunction = "CancellaRichiestaInApprovazione",
+                                                  IdRichiestaPadre = eccezione.IdRichiestaPadre,
+                                                  Conferma = true
+                                              })
+                                                }
+                                                else if (eccezione.IdStato == 10)
+                                            {
+                                                @Html.Partial("TrashIcon", new TrashIconModel()
+                                           {
+                                               JavaScriptFunction = "CancellaRichiestaInApprovazione",
+                                               IdRichiestaPadre = eccezione.IdRichiestaPadre,
+                                               Conferma = true
+                                           })
+                                            }
+                                            else if (eccezione.no_corrispondenza_gapp == false)
+                                            {
+
+                                                @Html.Partial("TrashIcon", new TrashIconModel()
+                                           {
+                                               JavaScriptFunction = "CancellaRichiestaDaSegnalazioni",
+                                               IdRichiestaPadre = eccezione.IdRichiestaPadre,
+                                               Conferma = true
+                                           })
+                                            }
+                                        }
+
+
+                                        @{
+                                            if (eccezione.IdStato == (int)EnumStatiRichiesta.InApprovazione && Model.AbilitaApprovazione)
+                                            {
+                                                <a id="btn_rifiuta_@(eccezione.IdEccezioneRichiesta)" style="border: solid 1px #eaeaea;" class="btnRifiuta pad6 btn btn-action-icon" data-idEcc="@(eccezione.IdEccezioneRichiesta)" onclick="ActionRifiutaEccezione(@(eccezione.IdEccezioneRichiesta));">
+                                                    <i class="glyphicon glyphicon-remove text-danger"></i>
+                                                </a>
+                                                <a id="btn_approva_@(eccezione.IdEccezioneRichiesta)" style="border: solid 1px #eaeaea;" class="btnApprova pad6 btn btn-action-icon " data-idEcc="@(eccezione.IdEccezioneRichiesta)" onclick="ActionApprovaEccezione(@(eccezione.IdEccezioneRichiesta));">
+                                                    <i class="fa fa-fw fa-check text-success"></i>
+                                                </a>
+                                            }
+                                        }
+                                    </td>
+                                </tr>
+                                }
+                            </tbody>
+
+                        }
+                        else
+                        {
+                            @Html.Partial("_nodati")
+                        }
+                    </table>
+                }
+            </div>
+        </div>
+
+    </div>
+    @*.............AJAX CONTENT SEGNALAZIONI.................*@
+</div>

@@ -1,0 +1,209 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model FormDomanda
+
+@{
+    string title = "Nuova voce";
+    if (Model.id != 0)
+    {
+        title = "Modifica voce";
+    }
+}
+
+@using (Html.BeginModal(title))
+{
+    using (Html.BeginPanel(PanelType.Panel, "Caratteristiche Form"))
+    {
+        using (Html.BeginForm("FormQuestionSave", "FormAdmin", FormMethod.Post, new { id = "form-question" }))
+        {
+            @Html.HiddenFor(model => model.id) @*ID domanda*@
+            @Html.HiddenFor(model => model.id_form_secondario)@* ID form secondario di appartenenza *@
+
+<div class="rai form-group">
+    @using (Html.BeginBlock(BlockType.ContentTable, "Dati generali"))
+    {
+                <div class="row push-10">
+                    <div class="col-sm-2"><label class="rai-caption">Form Primario</label></div>
+                    <div class="col-sm-10">
+                        <label class="rai-font-md-bold" style="margin-top:10px">@Html.DisplayFor(model => model.titolo_form_primario)</label>
+                    </div>
+                </div>
+
+
+                <div class="row push-10">
+                    <div class="col-sm-2"><label class="rai-caption">Form Secondario</label></div>
+                    <div class="col-sm-10">
+                        <label class="rai-font-md-bold" style="margin-top:10px;">@Html.DisplayFor(model => model.titolo_form_secondario)</label>
+                    </div>
+                </div>
+
+                <div class="row push-10">
+                    <div class="col-sm-2"><label class="rai-caption">Titolo</label></div>
+                    <div class="col-sm-10">
+                @Html.TextBoxFor(model => model.titolo, new { @class = "rai form-control" })
+                        @Html.ValidationMessageFor(model => model.titolo)
+                    </div>
+                </div>
+
+                <div class="row push-10">
+                    <div class="col-sm-2"><label class="rai-caption">Descrizione</label></div>
+                    <div class="col-sm-10">
+                @Html.TextAreaFor(model => model.descrizione, new { @class = "rai form-control html-editor-small" })
+                        @Html.ValidationMessageFor(model => model.descrizione)
+                    </div>
+                </div>
+
+        <div class="row push-10">
+            <div class="col-sm-2"><label class="rai-caption">Progressivo</label></div>
+            <div class="col-sm-10">
+                @Html.TextBoxFor(model => model.Progressivo, new { @class = "rai form-control", @style = "width:10%" })
+                @Html.ValidationMessageFor(model => model.Progressivo)
+            </div>
+        </div>
+
+        <div class="row push-20-t">
+            <div class="col-sm-12">
+                @Html.RaiCheckBoxLabelFor(model => model.obbligatoria, "Obbligatoria", "rai-caption")
+            </div>
+        </div>
+
+        <div class="row push-20-t">
+            <div class="col-sm-12">
+                @Html.RaiCheckBoxLabelFor(model => model.attiva, "Attivo", "rai-caption")
+            </div>
+        </div>
+    }
+
+
+
+    @using (Html.BeginBlock(BlockType.ContentTable, "Tipologia domanda"))
+    {
+                <div class="row push-10">
+                    <div class="col-sm-2"><label class="rai-caption">Tipologia</label></div>
+                    <div class="col-sm-10">
+                @Html.DropDownListFor(model => model.id_tipologia, Model.tipologia_list, "Seleziona", new { @class = "rai form-control", @style = "width:44%", onchange = "checkTipologia()" })
+                        @Html.ValidationMessageFor(model => model.id_tipologia)
+                    </div>
+                </div>
+
+                <div class="row push-10" id="max-scelte" style="display:@(Model.id_tipologia == 4 || Model.id_tipologia == 8 ? "block" : "none")">
+                    <div class="col-sm-2"><label class="rai-caption">Max scelte</label></div>
+                    <div class="col-sm-10">
+                        @if (Model.id_tipologia == 4 || Model.id_tipologia == 8)
+                        {
+                    @Html.TextBoxFor(model => model.max_scelte, new { @class = "rai form-control", @style = "width:10%" })
+                        }
+                        else
+                        {
+                    @Html.TextBoxFor(model => model.max_scelte, new { @class = "rai form-control", @style = "width:10%", @disabled = "disabled" })
+                        }
+
+                        @Html.ValidationMessageFor(model => model.max_scelte)
+                    </div>
+                </div>
+
+                <div class="row push-10">
+                    <div class="col-sm-2"><label class="rai-caption" id="dom-rif" style="@(Model.id_tipologia == 9 ? "" : "display:none")">Domanda di riferimento</label></div>
+                    <div class="col-sm-10">
+                        <div id="div-dom-parent">
+                            @if (Model.id_tipologia == 9)
+                            {
+                                @Html.DropDownListFor(model => model.id_domanda_parent, Model.DomandeMasterDisponibili_list, "Seleziona", new
+                           {
+                       @class = "rai form-control",
+                               @style = "width:44%"
+                           })
+                            }
+                            else
+                            {
+                                @Html.DropDownListFor(model => model.id_domanda_parent, Model.DomandeMasterDisponibili_list, "Seleziona", new
+                           {
+                       @class = "rai form-control",
+                               @style = "width:44%;display:none",
+                               disabled = "disabled",
+                           })
+                            }
+
+                            @Html.ValidationMessageFor(model => model.id_domanda_parent)
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="row push-10">
+                    <div class="col-sm-2">
+
+                        <div id="rm" style="display:@(Model.PrevedeSceltaRisposta ? "block" : "none")"><label class="rai-caption">Possibili risposte</label></div>
+                    </div>
+
+                    <div class="col-sm-10">
+                        <div id="risposte-container" style="display:@(Model.PrevedeSceltaRisposta ? "block" : "none")">
+
+                            <select style="display:@(Model.id_tipologia == 7 ? "block" : "none");width:44%"
+                                    @(Model.id_tipologia != 7 ? "disabled='disabled'" : "")
+                            id="select-precomp" name="risposte" class="rai form-control"></select>
+
+                            <div id="div-sceltarisp" style="display:@(Model.id_tipologia == 7 ? "none" : "block")">
+                                @if (Model.risposte == null || Model.risposte.Count() == 0)
+                                {
+                            <input type="text" class="rai form-control" style="width: 96%; margin-bottom: 6px; display: inline" id="risposta_1" name="risposte" />
+                                }
+                                else
+                                {
+                                    int ind = 0;
+                                    foreach (string r in Model.risposte)
+                                    {
+                                        ind++;
+                                <input value="@r" type="text" class="rai form-control" style="width: 96%; margin-bottom: 6px; display: inline" id="risposta_@ind" name="risposte" />
+                                    }
+                                }
+                                <button class="btn-action-icon" onclick="addResp()"><i class="fa fa-plus"></i></button>
+
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+    }
+
+
+
+
+    <div class="row push-20-t push-20-t">
+        <div class="col-sm-12">
+            @Html.RaiCheckBoxLabelFor(model => model.PermettiAltro, "Permetti 'Altro'", "rai-caption")
+        </div>
+    </div>
+
+
+
+
+
+                <div class="row push-10-t">
+                    <div class="col-sm-12">
+            <button type="submit" class="btn full-width rai-btn-primary">Conferma dati</button>
+                    </div>
+                </div>
+
+            </div>
+
+        }
+    }
+}
+<script>
+    $(".html-editor-small").summernote({
+        height: 200,
+        toolbar: toolBar
+    });
+    checkTipologia();
+    $.validator.unobtrusive.parse("#form-question");
+    JSRai.initHelper('datetimepicker');
+    PermettiAltro();
+
+</script>
+
+
+

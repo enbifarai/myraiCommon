@@ -1,0 +1,353 @@
+﻿@using myRaiCommonManager
+
+@model myRaiCommonModel.ContentRowModel
+
+@{
+    var r = Model.Richiesta;
+    bool avviata = (r.XR_MAT_TASK_IN_CORSO.Any() || Model.OperazioniAvviateAny);
+    var opstati = r.XR_WKF_MATCON_OPERSTATI.ToList();
+    var RichMadreCheComprendeQuesta =
+                               myRaiCommonManager.MaternitaCongediManager.IsRichiestaLavorataAltrove(r);
+    string desc = null;
+    bool IsCollegata = RichMadreCheComprendeQuesta != null && 
+        Model.Richiesta.XR_MAT_TASK_IN_CORSO.Count ()  != Model.Richiesta.XR_MAT_TASK_IN_CORSO.Where(x=>x.BLOCCATA_DATETIME!=null).Count();
+
+    if (RichMadreCheComprendeQuesta != null)
+    {
+        desc = RichMadreCheComprendeQuesta.ECCEZIONE + " ";
+        DateTime D1 = RichMadreCheComprendeQuesta.INIZIO_GIUSTIFICATIVO ?? RichMadreCheComprendeQuesta.DATA_INIZIO_MATERNITA.Value;
+        DateTime D2 = RichMadreCheComprendeQuesta.FINE_GIUSTIFICATIVO ?? RichMadreCheComprendeQuesta.DATA_FINE_MATERNITA.Value;
+        desc += D1.ToString("dd/MM/yyyy") + " - " + D2.ToString("dd/MM/yyyy");
+    }
+}
+
+<tr data-id="@r.ID">
+    @if (Model.NeedCheckbox)
+    {
+        <td>
+            @if (!Model.hideImage)
+            {
+                <div class="rai-checkbox">
+                    <input id="" name="" class="sel-idrichieste" type="checkbox" value="" onclick="CheckSelez()">
+                    <label class="rai-caption" for="">&nbsp;</label>
+                </div>
+            }
+
+        </td>
+    }
+
+        <td @if (Model.hideImage && Model.NeedCheckbox) { @: style="text-align:right"
+            }>
+            @if (Model.hideImage)
+            {
+                if (Model.NeedCheckbox)
+                {
+
+                    <div class="rai-checkbox" style="float:right;position:relative;top:13px;">
+                        <input id="" name="" class="sel-idrichieste" type="checkbox" value="" onclick="CheckSelez()">
+                        <label class="rai-caption" for="">&nbsp;</label>
+                    </div>
+
+                }
+                <div style="visibility:hidden">
+                    @Html.Partial("_profiloimage", new myRaiCommonModel.ProfiloImageModel()
+               {
+                   InServizio = null,
+                   Matricola = r.MATRICOLA,
+                   Row1 = r.NOMINATIVO,
+                   Row2 = "Matricola " + r.MATRICOLA
+
+               })
+                </div>
+
+                if (RichMadreCheComprendeQuesta != null)
+                {
+                <span style="float:right; position:relative; top:-18px" class="text-primary fa fa-external-link"></span>
+                }
+            }
+            else
+            {
+                @Html.Partial("_profiloimage", new myRaiCommonModel.ProfiloImageModel() {
+          InServizio = null,
+          Matricola = r.MATRICOLA,
+          Row1 = r.NOMINATIVO,
+          Row2 = "Matricola " + r.MATRICOLA
+
+        })
+            }
+
+
+        </td>
+    <td>
+        <label style="display:block">@r.XR_MAT_CATEGORIE.TITOLO</label>
+        @if (r.INIZIO_GIUSTIFICATIVO != null)
+        {
+            <label class="rai-font-sm">@r.INIZIO_GIUSTIFICATIVO.Value.ToString("dd/MM/yyyy") - @r.FINE_GIUSTIFICATIVO.Value.ToString("dd/MM/yyyy")</label>
+        }
+        else
+        {
+            <label class="rai-font-sm">@r.DATA_INIZIO_MATERNITA.Value.ToString("dd/MM/yyyy") - @r.DATA_FINE_MATERNITA.Value.ToString("dd/MM/yyyy")</label>
+        }
+        @*<label class="rai-font-md-neutral-bold">@r.DATA_INVIO_RICHIESTA.ToString("dd/MM/yyyy")</label>*@
+
+    </td>
+    <td>
+
+        @if (r.XR_MAT_PROMEMORIA.Any())
+        {
+            <span id="po-@r.ID" data-html="true" style="font-weight:bold" data-promemoria="@r.XR_MAT_PROMEMORIA.First().DATA.ToString("dd/MM/yyyy")" class="promemoria text-warning icons icon-clock" data-idrichiesta="@r.ID"></span>
+        }
+        @if (r.DATA_SCADENZA != null && r.DATA_SCADENZA < DateTime.Now && !r.XR_MAT_TASK_IN_CORSO.Any() && !Model.OperazioniAvviateAny)
+        {
+            <span data-idrichiesta="@r.ID" id="alert-@r.ID" data-html="true" class="scaduta text-danger fa fa-warning"></span>
+        }
+        @if (r.DATA_SCADENZA != null)
+        {
+            <label id="label-scadenza-@r.ID" class="scadenza" data-meseinvio="@r.DATA_INVIO_RICHIESTA.Month" data-annoinvio="@r.DATA_INVIO_RICHIESTA.Year" data-idrichiesta="@r.ID">@(((DateTime)r.DATA_SCADENZA).ToString("dd/MM/yyyy"))</label>
+        }
+    </td>
+    @if (Model.IncaricoAnessuno == false)
+    {
+    <td>
+        @if (Model.OpenByUfficioAmministrazione)
+        {
+            if (Model.SegnalaInterventoRichiesto)
+            {
+                <i class="fa fa-circle circle-orange" aria-hidden="true"></i>
+                <label>Intervento richiesto</label>
+            }
+            else if (Model.Richiesta.PRATICA_SOSPESA_DATETIME != null)
+            {
+                <i class="fa fa-circle circle-orange" aria-hidden="true"></i>
+                <label>Sospesa</label>
+            }
+            else
+            {
+                int idstato = opstati.OrderByDescending(x => x.ID_STATO).Select(x => x.ID_STATO).FirstOrDefault();
+                if (idstato == (int)myRaiCommonManager.MaternitaCongediManager.EnumStatiRichiesta.Approvata)
+                {
+                    <i class="fa fa-circle circle-green" aria-hidden="true"></i>
+                    <label>Approvata</label>
+                }
+                else if (idstato >= 101 && idstato <= 199)
+                {
+                    <i class="fa fa-circle circle-red" aria-hidden="true"></i>
+                    <label>Annullata</label>
+                }
+
+                else if (r.XR_MAT_TASK_IN_CORSO.Any(x => x.ERRORE_BATCH != null))
+                {
+                    <i class="fa fa-circle circle-red" aria-hidden="true"></i>
+                    <label>Errore</label>
+                }
+                else if (r.DATA_AVVIATA!=null || r.XR_MAT_TASK_IN_CORSO.Any() || Model.OperazioniAvviateAny)
+                {
+                    if (RichMadreCheComprendeQuesta == null)
+                    {
+                        <i class="fa fa-circle circle-green" aria-hidden="true"></i>
+                        <label>Avviata</label>
+                    }
+                    else
+                    {
+                        <span style="color:#89E373"
+                              title="Lavorata nella pratica @desc "
+                              data-toggle="tooltip" data-html="true" class="fa fa-circle circle-green">
+                            <label style="color:#0a3247;" data-id-madre="@RichMadreCheComprendeQuesta.ID">Avviata</label>
+                        </span>
+                    }
+
+                }
+                else
+                {
+                    //var RichMadreCheComprendeQuesta =
+                    //        myRaiCommonManager.MaternitaCongediManager.IsRichiestaLavorataAltrove(r);
+                      if (RichMadreCheComprendeQuesta == null)
+                    {
+                        <i class="fa fa-circle circle-orange" aria-hidden="true"></i>
+                        <label>Da avviare</label>
+                    }
+                    else
+                    {
+                        //string desc = RichMadreCheComprendeQuesta.ECCEZIONE + " ";
+                        //DateTime D1 = RichMadreCheComprendeQuesta.INIZIO_GIUSTIFICATIVO ?? RichMadreCheComprendeQuesta.DATA_INIZIO_MATERNITA.Value;
+                        //DateTime D2 = RichMadreCheComprendeQuesta.FINE_GIUSTIFICATIVO ?? RichMadreCheComprendeQuesta.DATA_FINE_MATERNITA.Value;
+                        //desc += D1.ToString("dd/MM/yyyy") + " - " + D2.ToString("dd/MM/yyyy");
+
+
+                        <span style="color:#89E373"
+                              title="Lavorata nella pratica @desc "
+                              data-toggle="tooltip" data-html="true" class="fa fa-circle circle-green">
+                            <label style="color:#0a3247;" data-id-madre="@RichMadreCheComprendeQuesta.ID">Avviata</label>
+                        </span>
+                          
+
+
+
+                    }
+
+
+
+
+                }
+            }
+
+        }
+        else
+        {
+            if (Model.Richiesta.PRATICA_SOSPESA_DATETIME != null)
+            {
+                <i class="fa fa-circle circle-orange" aria-hidden="true"></i>
+                <label>Sospesa</label>
+            }
+            else if (r.XR_MAT_SEGNALAZIONI.Any(x => x.RISOLTA == false))
+            {
+                <i class="fa fa-circle circle-orange" aria-hidden="true"></i>
+                <label>In sospeso</label>
+            }
+            else
+            {
+                <i class="fa fa-circle circle-green" aria-hidden="true"></i>
+                <label>In lavorazione</label>
+            }
+        }
+
+
+    </td>
+    }
+    else
+    {
+        <td>
+            @if (Model.OpenByUfficioAmministrazione && (r.XR_MAT_TASK_IN_CORSO.Any() || Model.OperazioniAvviateAny))
+            {
+                <i class="fa fa-circle circle-green" aria-hidden="true"></i>
+                <label>Avviata</label>
+            }
+        </td>
+
+    }
+
+
+    <td colspan="2" class="text-right">
+        @{
+            int stato = opstati.OrderByDescending(x => x.ID_STATO).Select(x => x.ID_STATO).FirstOrDefault();
+            var statoRow = opstati.OrderByDescending(x => x.ID_STATO).FirstOrDefault();
+        }
+        @if (Model.IDSTATOricercato != null)
+        {
+            if (Model.MyOffice == myRaiHelper.MaternitaCongediHelper.MaternitaCongediUffici.Gestione)
+            {
+                if (Model.IsOpenByApprovazioneResponsabileGestione)
+                {
+                    <button class="btn rai-btn-small" aria-label="Visualizza"
+                            onclick="VisualizzaApprovatoreGestione(@r.ID)"
+                            title="Visualizza" style="min-width:80px;">
+                        Visualizza
+                    </button>
+                }
+                else
+                {
+                    <button class="btn rai-btn-small" aria-label="Visualizza"
+                            onclick="VisualizzaGestione(@r.ID)"
+                            title="Visualizza" style="min-width:80px;">
+                        Visualizza
+                    </button>
+                }
+
+            }
+            if (Model.MyOffice == myRaiHelper.MaternitaCongediHelper.MaternitaCongediUffici.Personale)
+            {
+                <button class="btn rai-btn-small" aria-label="Visualizza"
+                        onclick="VisualizzaUffPersonale(@r.ID)"
+                        title="Visualizza" style="min-width:80px;">
+                    Visualizza
+                </button>
+            }
+            if (Model.MyOffice == myRaiHelper.MaternitaCongediHelper.MaternitaCongediUffici.Amministrazione)
+            {
+
+
+                <button class="btn rai-btn-small" aria-label="Visualizza"
+                        onclick="VisualizzaAmm('@r.XR_MAT_CATEGORIE.TITOLO', @r.ID, @avviata.ToString().ToLower(), @(IsCollegata.ToString().ToLower() ))"
+                        title="Visualizza" style="min-width:80px;">
+                    Visualizza
+                </button>
+            }
+        }
+        else
+        {
+
+            if (Model.MyOffice == myRaiHelper.MaternitaCongediHelper.MaternitaCongediUffici.Gestione)
+            {
+                if (Model.IsOpenByApprovazioneResponsabileGestione)
+                {
+                    <button class="btn rai-btn-small" aria-label="Visualizza"
+                            onclick="VisualizzaApprovatoreGestione(@r.ID)"
+                            title="Visualizza" style="min-width:80px;">
+                        Visualizza
+                    </button>
+                }
+                else
+                {
+                    <button class="btn rai-btn-small" aria-label="Visualizza"
+                            onclick="VisualizzaGestione(@r.ID)"
+                            title="Visualizza" style="min-width:80px;">
+                        Visualizza
+                    </button>
+                }
+
+            }
+            if (Model.MyOffice == myRaiHelper.MaternitaCongediHelper.MaternitaCongediUffici.Personale)
+            {
+                <button class="btn rai-btn-small" aria-label="Visualizza"
+                        onclick="VisualizzaUffPersonale(@r.ID)"
+                        title="Visualizza" style="min-width:80px;">
+                    Visualizza
+                </button>
+            }
+            if (Model.MyOffice == myRaiHelper.MaternitaCongediHelper.MaternitaCongediUffici.Amministrazione)
+            {
+                <button class="btn rai-btn-small" aria-label="Visualizza"
+                        onclick="VisualizzaAmm('@r.XR_MAT_CATEGORIE.TITOLO', @r.ID, @avviata.ToString().ToLower(), @(IsCollegata.ToString().ToLower()))"
+                        title="Visualizza" style="min-width:80px;">
+                    Visualizza
+                </button>
+            }
+
+
+
+
+            @*if (stato == (int)MaternitaCongediManager.EnumStatiRichiesta.Inviata
+                || stato == (int)MaternitaCongediManager.EnumStatiRichiesta.InCaricoGestione)
+                 {
+                     <button class="btn rai-btn-small" aria-label="Visualizza"
+                             onclick="VisualizzaGestione(@r.ID)"
+                             title="Visualizza" style="min-width:80px;">
+                         Visualizza
+                     </button>
+                 }
+                 if (stato == (int)MaternitaCongediManager.EnumStatiRichiesta.ApprovataGestione
+                     || stato == (int)MaternitaCongediManager.EnumStatiRichiesta.InCaricoUffPers
+                     || (stato == (int)MaternitaCongediManager.EnumStatiRichiesta.ApprovataUffPers && statoRow.UFFPERS_PRESA_VISIONE == false)
+                     )
+                 {
+                     <button class="btn rai-btn-small" aria-label="Visualizza"
+                             onclick="VisualizzaUffPersonale(@r.ID)"
+                             title="Visualizza" style="min-width:80px;">
+                         Visualizza
+                     </button>
+                 }
+                 if (Model.OpenByUfficioPersonale == false && (stato == (int)MaternitaCongediManager.EnumStatiRichiesta.ApprovataUffPers
+                     || stato == (int)MaternitaCongediManager.EnumStatiRichiesta.InCaricoAmmin
+                     || stato == (int)MaternitaCongediManager.EnumStatiRichiesta.ApprovataAmmin
+                     ))
+                 {
+                     <button class="btn rai-btn-small" aria-label="Visualizza"
+                             onclick="VisualizzaAmm('@r.XR_MAT_CATEGORIE.TITOLO', @r.ID)"
+                             title="Visualizza" style="min-width:80px;">
+                         Visualizza
+                     </button>
+                 }*@
+        }
+
+    </td>
+</tr>

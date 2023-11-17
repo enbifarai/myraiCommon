@@ -1,0 +1,191 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiHelper
+@using myRaiCommonModel
+@using myRaiCommonManager
+@model EsperienzeLavorativeViewModel
+
+@using (Html.BeginModal("Esperienze Lavorative"))
+{
+    <div class="row">
+        <div class="col-md-12">
+            @using (Html.BeginPanel(PanelType.Panel, "Esperienze lavorative", false))
+            {
+                <form id="esperienzeLavorative">
+                    @Html.HiddenFor(m => m.Matricola)
+                    @Html.HiddenFor(m => m.IdPersona)
+                    <div class="form-group">
+                        @using (Html.BeginBlock(BlockType.ContentTable, ""))
+                        {
+                            <div class="dip">
+                                <div class="row">
+                                    <div class="col-sm-12 push-10">
+                                        @Html.LabelFor(m => m.Attivita, "Attività", new { @class = "rai-caption" })
+                                        @Html.TextBoxFor(m => m.Attivita, new { @class = "form-control", maxlength = "250" })
+                                        @Html.ValidationMessageFor(m => m.Attivita)
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-xs-12">
+                                        @Html.LabelFor(m => m.Azienda, "Azienda", new { @class = "rai-caption" })
+                                        @Html.TextBoxFor(m => m.Azienda, new { @class = "form-control", maxlength = "250" })
+                                        @Html.ValidationMessageFor(m => m.Azienda)
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-xs-12 push-10">
+                                        @Html.LabelFor(m => m.CodiceCitta, "Città", new { @class = "rai-caption" })
+                                        @Html.RaiAsyncSelectFor(m => m.CodiceCitta, Url.Action("GetComuni", "Anagrafica"), tipoFiltro: myRaiHelper.SelectFilterType.StartsWith)
+                                        @Html.ValidationMessageFor(m => m.CodiceCitta)
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-xs-12 col-sm-6 push-10">
+                                        @Html.LabelForRequiredObbl(m => m.DataInizioStrEL, "Data di inizio", new { @class = "rai-caption" })
+                                        <div class="input-group">
+                                            <span class="input-group-addon" style="cursor: pointer" onclick="$('#DataInizioStrEL').datetimepicker('show')">
+                                                <i class="fa fa-calendar"></i>
+                                            </span>
+                                            @Html.TextBoxFor(m => m.DataInizioStrEL, new { @onchange = "UpdateMinDateEndel()", @class = "form-control js-datetimepicker", data_format = "MM/YYYY", data_locale = "it" })
+                                        </div>
+                                        @Html.ValidationMessageFor(m => m.DataInizioStrEL)
+                                    </div>
+                                    <div class="col-xs-12 col-sm-6 push-10">
+                                        @Html.LabelForRequiredObbl(m => m.DataFineStrEL, "Data di fine", new { @class = "rai-caption" })
+                                        <div class="input-group">
+                                            <span class="input-group-addon" style="cursor: pointer" onclick="$('#DataFineStrEL').datetimepicker('show')">
+                                                <i class="fa fa-calendar"></i>
+                                            </span>
+                                            @Html.TextBoxFor(m => m.DataFineStrEL, new { @class = "form-control js-datetimepicker", data_format = "MM/YYYY", data_locale = "it", required = "required" })
+                                        </div>
+                                        @Html.ValidationMessageFor(m => m.DataFineStrEL)
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        @Html.LabelFor(m => m.Apprendistato, "Apprendistato", new { @class = "rai-caption" })
+                                        @Html.RaiRadioButtonLabelFor(m => m.Apprendistato, true, "Si", "rai-radio-box-icon", new { @onclick = "buttonValue('True')"@*, id ="ApprendistatoSi"*@})
+                                        @Html.RaiRadioButtonLabelFor(m => m.Apprendistato, false, "No", "rai-radio-box-icon" , new { @onclick = "buttonValue('False')"@*, id = "ApprendistatoNo"*@})
+                                        @*      @Html.RaiCheckBoxLabelFor(m => m.Apprendistato, "Si", "")
+                                            @Html.RaiCheckBoxLabelFor(m => m.Apprendistato, "No", "")*@
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <div class="row push-20-t">
+                        <div class="col-sm-12">
+                            <div class="rai-btn-fill">
+                                <button class="btn rai-btn-secondary" type="button" onclick="annullaInserimentoEsperienzaLavorativa()">Annulla</button>
+                                <button class="btn rai-btn-primary" type="button" onclick="saveDatiEsperienzeLavorative('@Model.IdPersona')">Salva</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            }
+        </div>
+        @*<div class="col-md-5">
+                @Html.RenderWidget(WidgetType.Normal, "Documenti", "fa fa-upload", "Aggiungi un documento", "Formati .jpg, .pdf", action: new ActionTemplate() { Text = "Aggiungi documento" })
+                <div class="rai-btn-fill">
+                    <button class="btn rai-btn-primary" onclick="Save_DatiStudio(this, '@Model.Matricola')">@buttonText</button>
+                </div>
+            </div>*@
+    </div>
+}
+@section afterjs{
+    <script>
+    InitDatePicker();
+
+    buttonValue('@Model.Apprendistato');
+
+
+     function annullaInserimentoEsperienzaLavorativa() {
+        $('#modal-esperienzeLavorative').modal('toggle');
+    }
+    function saveDatiEsperienzeLavorative(id) {
+
+        var $form = $('form#esperienzeLavorative');
+        if (!$form.valid()) { return }
+        var espLavorativa = {};
+        if (idEsperienzaLavorativaSelected) {
+            espLavorativa = {
+                idEsperienzaLavorativaLocal: idEsperienzaLavorativaSelected,
+                Attivita: $('#Attivita').val(),
+                Azienda: $('#Azienda').val(),
+                DataInizioStrEL: $('#DataInizioStrEL').val(),
+                DataFineStrEL: $('#DataFineStrEL').val(),
+                IdPersona: id,
+                CodiceCitta: $('#CodiceCitta').val(),
+                DescrizioneCitta: $('#CodiceCitta').text(),
+                Apprendistato: $('[name="Apprendistato"]').val()
+            }
+                ;
+            const indexToRemove = esperienzeLavorative.findIndex(function (el) { return el.idEsperienzaLavorativaLocal == idEsperienzaLavorativaSelected });
+            esperienzeLavorative.splice(indexToRemove, 1, espLavorativa);
+        } else {
+            espLavorativa = {
+                idEsperienzaLavorativaLocal: generateGuid(),
+                Attivita: $('#Attivita').val(),
+                Azienda: $('#Azienda').val(),
+                DataInizioStrEL: $('#DataInizioStrEL').val(),
+                DataFineStrEL: $('#DataFineStrEL').val(),
+                IdPersona: id,
+                CodiceCitta: $('#CodiceCitta').val(),
+                DescrizioneCitta: $('#CodiceCitta').text(),
+                Apprendistato: $('[name="Apprendistato"]').val()
+            }
+            esperienzeLavorative.push(espLavorativa);
+        }
+        reloadTableEsperienzeLavorative();
+        $('#modal-esperienzeLavorative').modal('toggle');
+    }
+
+    function createHtmlBodyEsperienzeLavorative(element) {
+
+        var html = '<tr>'
+            + '<td class="rai-font-md-bold" id="dataInizio">'
+            + element.Azienda
+            + '</td>'
+            + '<td class="" id = "desTitoloDiStudio">'
+            + element.Attivita
+            + '</td>'
+            + '<td class="" id = "desTitoloDiStudio">'
+            + element.DescrizioneCitta
+            + '</td>'
+            + '<td>'
+            + ((element.Apprendistato == "True") ? 'Apprendistato' : "")
+            + '</td>'
+            + '<td style="width:100px;" class="text-right">'
+            + '<button id="modifica" class="btn btn-action-icon modifica" onclick="modificaEsperienza( \'' + element.idEsperienzaLavorativaLocal + '\') "><i class="fa fa-pencil"></i></button>'
+            + '<button id="eliminazione" class="btn btn-action-icon eliminazione" onclick="eliminaEsperienza( \'' + element.idEsperienzaLavorativaLocal + '\')"><i class="fa fa-trash-o" ></i></button>'
+            + '</td>'
+            + '</tr> '
+        return html;
+    }
+    function modificaEsperienza(idEsperienzaLavorativaLocal) {
+
+        const esperienzaLavorativa = esperienzeLavorative.find(function (obj) {
+            return obj.idEsperienzaLavorativaLocal == idEsperienzaLavorativaLocal
+        });
+        idEsperienzaLavorativaSelected = idEsperienzaLavorativaLocal
+        RaiOpenAsyncModal("modal-esperienzeLavorative", "/PianoFormativo/ModalDettaglioEsperienzaLavorativa", esperienzaLavorativa, null, "POST", false)
+    }
+    function eliminaEsperienza(idEsperienzaLavorativaSelected) {
+        const indexToRemove = esperienzeLavorative.findIndex(function (el) { return el.idEsperienzaLavorativaLocal == idEsperienzaLavorativaSelected });
+        esperienzeLavorative.splice(indexToRemove, 1);
+        reloadTableEsperienzeLavorative();
+
+    }
+    function buttonValue(e) {
+
+        $('[name="Apprendistato"]').val(e);
+           }
+    function UpdateMinDateEndel() {
+
+        var value = $('#DataInizioStrEL').val();
+        $('#DataFineStrEL').data('DateTimePicker').minDate(value);
+        if (value > $('#DataFineStrEL').val()) {
+            $('#DataFineStrEL').val(value);
+        }
+    }
+    </script>
+}

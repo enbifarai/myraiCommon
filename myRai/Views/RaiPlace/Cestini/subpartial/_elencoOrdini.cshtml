@@ -1,0 +1,105 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonModel.raiplace;
+@using MVCProject.Custom_Helpers;
+@using myRaiCommonManager;
+
+@{
+    Layout = null;
+}
+
+<header class="panel-heading">
+    <div class="row">
+        <div class="col-md-10">
+            <h2 class="panel-title">Elenco pasti in catering</h2>
+        </div>
+    </div>
+</header>
+
+<div class="panel-body">
+    @if ( Model.Count == 0 )
+    {
+        <div class="row">
+            @Html.Partial( "~/Views/Shared/_NoDatidiv.cshtml" )
+        </div>
+    }
+    else
+    {
+        <table class="js-table-sections table table-hover table-responsive">
+            <thead>
+            </thead>
+            <tbody>
+                @foreach ( var cestino in Model )
+                {
+                    <tr id="trOrdine_@(cestino.ordine.idOrdine)">
+                        <td style="cursor:default;" title="Data consegna cestini">@cestino.ordine.dataOraPasto.ToString( "dd/MM/yyyy" )</td>
+                        <td>
+                            <span class="font-w600">@cestino.ordine.motivoOrdine</span>
+                            <div>presso: @cestino.ordine.luogoConsegna</div>
+                        </td>
+                        <td>
+                            @{
+                                if ( cestino.CountRichieste == 1 )
+                                {
+                                    @("1 cestino")
+                                }
+                                else
+                                {
+                                    @String.Format( "{0} cestini" , cestino.CountRichieste )
+                                }
+                            }
+                        </td>
+                        <td class=" hidden-xs">
+                            @{
+                                StatusOrdiniEnum item = cestino.ordine.statusOrdine;
+                            }
+                            @Html.DisplayFor( c => item , "StatusOrdine" )
+                        </td>
+
+                        @{
+                            if ( ( int ) cestino.ordine.statusOrdine == ( int ) StatusOrdiniEnum.Bozza ||
+                                ( int ) cestino.ordine.statusOrdine == ( int ) StatusOrdiniEnum.AttesaConvalida ||
+                                ( int ) cestino.ordine.statusOrdine == ( int ) StatusOrdiniEnum.Convalidata )
+                            {
+                                <td style="cursor:pointer;" title="Elimina ordine">
+                                    <a class="icon-trash h4 panel-action remove-padding decorationnone" href="#" onclick="ConfermaCancellazione_Ordine('@cestino.ordine.idOrdine')" />
+                                    <a href="#" title="Modifica ordine" data-toggle="modal" data-target="#modal-cestino" class="icon-pencil h4 panel-action remove-padding decorationnone" onclick="DettaglioOrdine('@cestino.ordine.idOrdine');"></a>
+
+                                    <a href="#" title="Visualizza riepilogo ordine" data-toggle="modal" data-target="#modal-cestino" class="icon-eye h4 panel-action remove-padding decorationnone" onclick="DettaglioOrdineReadOnly('@cestino.ordine.idOrdine');"></a>
+
+                                </td>
+                                <td class="text-center">
+
+                                    <div class="btn-group flex-wrap">
+                                        <button type="button" class="btn btn-default btn-scriv text-uppercase bg-puls_dash dropdown-toggle" data-toggle="dropdown" aria-expanded="false" style="width: 100px;"> @("  Duplica  ") <span class="caret"></span></button>
+                                        <div class="dropdown-menu" role="menu" x-placement="bottom-start" style="position: absolute; transform: translate3d(0px, 42px, 0px); top: 0px; left: 0px; will-change: transform; background: #f3f3f3!important; color:black; font-weight: 700;">
+                                            <a class="dropdown-item btn-default btn-scriv text-uppercase bg-puls_dash" data-toggle="modal" style="display: inherit; margin: 4px 2px; height: 14px;" data-target="#modal-cestino" href="#" onclick="DuplicaCestino('@cestino.ordine.idOrdine', 1);"> @(" Con destinatari ") </a>
+                                            <a class="dropdown-item btn-default btn-scriv text-uppercase bg-puls_dash" data-toggle="modal" style="display: inherit; margin: 4px 2px; height: 14px;" data-target="#modal-cestino" href="#" onclick="DuplicaCestino('@cestino.ordine.idOrdine', 0);"> @(" Senza destinatari ") </a>
+                                        </div>
+                                    </div>
+                                </td>
+                            }
+                            else
+                            {
+                                <td class="text-center" colspan="2" style="cursor:pointer;">
+
+                                    <a href="#" title="Visualizza riepilogo ordine" data-toggle="modal" data-target="#modal-cestino" class="icon-eye h4" onclick="DettaglioOrdineReadOnly('@cestino.ordine.idOrdine');"></a>
+
+                                    <div class="btn-group flex-wrap">
+                                        <button type="button" class="btn btn-default btn-scriv text-uppercase bg-puls_dash dropdown-toggle" data-toggle="dropdown" aria-expanded="false" style="width: 100px;"> @("  Duplica  ") <span class="caret"></span></button>
+                                        <div class="dropdown-menu" role="menu" x-placement="bottom-start" style="position: absolute; transform: translate3d(0px, 42px, 0px); top: 0px; left: 0px; will-change: transform; background: #f3f3f3!important; color:black; font-weight: 700;">
+                                            <a class="dropdown-item btn-default btn-scriv text-uppercase bg-puls_dash" data-toggle="modal" style="display: inherit; margin: 4px 2px; height: 14px;" data-target="#modal-cestino" href="#" onclick="DuplicaCestino('@cestino.ordine.idOrdine', 1);"> @(" Con destinatari ") </a>
+                                            <a class="dropdown-item btn-default btn-scriv text-uppercase bg-puls_dash" data-toggle="modal" style="display: inherit; margin: 4px 2px; height: 14px;" data-target="#modal-cestino" href="#" onclick="DuplicaCestino('@cestino.ordine.idOrdine', 0);"> @(" Senza destinatari ") </a>
+                                        </div>
+                                    </div>
+                                </td>
+                            }
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

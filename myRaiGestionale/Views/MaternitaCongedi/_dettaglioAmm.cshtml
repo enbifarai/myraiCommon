@@ -1,0 +1,600 @@
+﻿
+@model myRaiCommonModel.DettaglioAmministrazioneModel
+
+<section class="rai panel">
+    <header class="panel-heading">
+        <div class="row" style="width:100%">
+            <div class="col-sm-8">
+                <h2 id="cat-domanda" class="panel-title">@Model.Richiesta.XR_MAT_CATEGORIE.TITOLO</h2>
+            </div>
+            <div class="col-sm-4" style="text-align:right;padding-right:0px">
+                <div class="rai-panel-actions">
+
+                    <a id="refresh-operazioni" class="btn-action-icon" style="cursor:pointer" onclick="AmmPage(3)">
+                        <i class="fa fa-refresh"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+
+    </header>
+
+    <div class="panel-body">
+        @{ 
+            //aggiuntiforzati
+            List<DateTime> LD = new List<DateTime>();
+            foreach (var m in Model.ElencoGiorniPerMese)
+            {
+                LD.AddRange(m.ElencoGiorni.Where(x => x.AggiuntoForzato == true).Select(x => x.DataDa));
+            }
+             
+        }
+        <input id="giorni-forzati" type="hidden" name="GiorniForzati"
+               value="@(String.Join(",", LD.Select(x=>x.Date.ToString("dd/MM/yyyy")) .ToArray()))" />
+        <div id="newwizard-mat" data-view="_statiVisualizzazione" style="margin-top:0px" class="rai wizard-progress wizard-progress-llg wiznew remove-margin-t" role="tablist">
+
+            <ul class="wizard-steps">
+
+
+                <li class="tabhead tabheadrich active disable" id="tab-mat-3" role="presentation">
+                    <a style="color:#516c7b" role="tab" tabindex="-1" aria-label="Inserisci i documenti" aria-controls="validation-classic-step3" id="tab3" onclick="" href="#validation-classic-step3" data-toggle="tab" aria-selected="false">
+                        @*<span id="amm1-ok" class="fa fa-check" style="display:none;color:#fff;background-color:#008A09!important"></span>
+                        <span id="amm1-cur" style="background-color:#999!important">1</span>
+                        <span id="amm1-todo" style="display:none">1</span>*@
+                        <span>1</span>DETTAGLI CEDOLINO
+                    </a>
+                </li>
+                <li class="tabhead tabheadrich disable" id="tab-mat-4" role="presentation">
+                    <a style="color:#516c7b" role="tab" tabindex="-1" aria-label="Vedi riepilogo" aria-controls="validation-classic-step3" id="tab3" onclick="" href="#validation-classic-step3" data-toggle="tab" aria-selected="false">
+                        @*<span id="amm2-ok" class="fa fa-check" style="display:none;color:#fff;background-color:#008A09!important"></span>
+                        <span id="amm2-cur" style="background-color:#999!important;display:none">2</span>
+                        <span id="amm2-todo">2</span>*@
+                        <span>2</span>OPERAZIONI AUTOMATICHE
+                    </a>
+                </li>
+
+
+                <li class="tabhead tabheadrich disable" id="tab-mat-4" role="presentation">
+                    <a style="color:#516c7b" role="tab" tabindex="-1" aria-label="Vedi riepilogo" aria-controls="validation-classic-step3" id="tab3" onclick="" href="#validation-classic-step3" data-toggle="tab" aria-selected="false">
+                        @*<span id="amm3-ok" class="fa fa-check" style="display:none;color:#fff;background-color:#008A09!important"></span>
+                        <span id="amm3-cur" style="background-color:#999!important;display:none">3</span>
+                        <span id="amm3-todo">3</span>*@
+                        <span>3</span>RIEPILOGO
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div id="page1-amm" class="panel-row-bordered">
+            <div class="row">
+                <div class="col-sm-12">
+                    @*<div style="background-color: #eee;height: 1px;margin-top: 11px;"></div>*@
+                </div>
+
+            </div>
+
+            <div class="row" style="padding-top:25px;padding-bottom:25px;">
+                <div class="col-sm-4">
+                    <span class="rai-font-md-neutral-bold">Periodo assenza</span>
+                </div>
+                @if (Model.Richiesta.INIZIO_GIUSTIFICATIVO != null)
+                {
+                    <div class="col-sm-8">
+                        <span>@Model.Richiesta.INIZIO_GIUSTIFICATIVO.Value.ToString("dd/MM/yyyy") - @Model.Richiesta.FINE_GIUSTIFICATIVO.Value.ToString("dd/MM/yyyy")</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="col-sm-8">
+                        <span>@Model.Richiesta.DATA_INIZIO_MATERNITA.Value.ToString("dd/MM/yyyy") - @Model.Richiesta.DATA_FINE_MATERNITA.Value.ToString("dd/MM/yyyy")</span>
+                    </div>
+                }
+                @{
+                    DateTime Dend = Model.Richiesta.FINE_GIUSTIFICATIVO ?? Model.Richiesta.DATA_FINE_MATERNITA.Value;
+
+                }
+                @if (Dend < DateTime.Today && !Model.Richiesta.XR_MAT_TASK_IN_CORSO.Any())
+                {
+                    <div class="col-sm-12" style="margin-top:10px">
+                        <div class="alert alert-warning" style="margin-bottom:0px">
+                            <b>Attenzione</b><br>
+                            <span>Il permesso gestito da questa pratica termina nel passato, verificare prima di procedere </span>
+                        </div>
+                    </div>
+                }
+
+
+            </div>
+
+            <div class="row" style="padding-top:25px;padding-bottom:25px;">
+                <div class="col-sm-4" style="padding-top:12px">
+                    <span class="rai-font-md-neutral-bold">Tipo assenza</span>
+                </div>
+                <div class="col-sm-4">
+                    @if (myRaiCommonManager.MaternitaCongediManager.TipoDipendente(Model.Richiesta.MATRICOLA,Model.Richiesta.INIZIO_GIUSTIFICATIVO??Model.Richiesta.DATA_INIZIO_MATERNITA.Value) == "O")
+                    {
+                        <select id="lunga-assenza" class="form-control" onchange="AssenzaLunga()">
+                            <option value="L" selected >Assenza lunga</option>
+                           
+                        </select>
+                    }
+                    else
+                    {
+                        <select id="lunga-assenza" class="form-control" onchange="AssenzaLunga()">
+                            <option value="L" @(Model.Richiesta.ASSENZA_LUNGA == true ? " selected" : "")>Assenza lunga</option>
+                            <option value="B" @(Model.Richiesta.ASSENZA_LUNGA != true ? " selected" : "")>Assenza breve</option>
+                        </select>
+                    }
+
+                </div>
+            </div>
+
+
+            <div class="row" style="display:block;padding-top:25px;padding-bottom:25px;">
+                <div class="col-sm-4" style="padding-top:10px">
+                    <span class="rai-font-md-neutral-bold">Mese di competenza</span>
+                </div>
+                <div class="col-sm-4">
+                    <div class="input-group mb-md">
+                        <span onclick="$('#mese-anno-comp').datetimepicker('show')" class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                        <input class="js-datetimepicker form-control" data-format="MM/YYYY" data-locale="it" type="text" id="mese-anno-comp" placeholder="Mese" onchange="CambiaMeseImportiCedolino(@Model.Richiesta.ID)"
+                               value="@Model.MesePerCalcoloCedolino-@Model.AnnoPerCalcoloCedolino">
+                    </div>
+
+                </div>
+                <div class="col-sm-4">
+                    <span style="display:none" data-mesecomp="@Model.MeseCompetenza"
+                          data-annocomp="@Model.AnnoCompetenza"
+                          id="mese-competenza">@Model.MeseAnnoCompetenza</span>
+
+
+                    </div>
+                </div>
+                @if (myRaiCommonManager.MaternitaCongediManager.IsGM(Model.Richiesta) ||
+                    myRaiCommonManager.MaternitaCongediManager.IsHC(Model.Richiesta))
+                {
+                    var g = myRaiCommonManager.MaternitaCongediManager.GetGiorniHC_GM(Model.Richiesta.MATRICOLA);
+                    <div class="row" style="padding-top:25px;padding-bottom:25px;">
+                        <div class="col-sm-4" >
+                            <span class="rai-font-md-neutral-bold">Numero giorni di assenza (HC + GM)</span>
+                        </div>
+                        <div class="col-sm-4">
+                            @g
+                        </div>
+                    </div>
+                }
+                @{
+                    string dis = "none";
+                     
+                    if (Model.FormaContratto != null && Model.FormaContratto.Trim().ToUpper() == "K")
+                    {
+                        dis = "block";
+                    }
+                }
+                <div class="row" style="display:@dis;padding-top:25px;padding-bottom:25px;">
+                    <div class="col-sm-4" style="padding-top:10px">
+                        <span class="rai-font-md-neutral-bold">Limite giorni</span>
+                    </div>
+                    <div class="col-sm-4">
+
+                        <select id="limite-giorni" data-salvati26="@Model.Richiesta.GIORNI_DEFAULT26" class="form-control" 
+                                onchange="Change26(@Model.Richiesta.ID)" style="width:50%">
+                            @for (double i = 0; i <= 26; i += (double)0.1)
+                            {
+                                i = Math.Round(i, 2);
+                                <option @if (Model.Richiesta.GIORNI_DEFAULT26 != null && (double)Model.Richiesta.GIORNI_DEFAULT26 == i) { 
+                                    @:selected
+                                        }
+                                else if (Model.Richiesta.GIORNI_DEFAULT26 == null && i == 26) {
+                                    @:selected
+                                        }
+                                        value="@i">
+                                    @i
+                                </option>
+                            }
+                        </select>
+
+                    </div>
+                    <div class="col-sm-4">
+
+                    </div>
+                </div>
+
+
+
+
+
+
+
+
+                <div class="row" style="padding-top:20px;padding-bottom:16px;">
+                    <table class="js-table-sections table  rai-table" role="grid">
+                        <tbody class="js-table-sections-header">
+                            <tr role="row" tabindex="0">
+                                <td colspan="4" class="">
+                                    <div class="row">
+                                        <div class="col-sm-4">
+
+                                            <label class="rai-font-md-bold">Importo finale</label>
+                                        </div>
+                                        <div class="col-sm-8" style="text-align:right">
+                                            <span id="cifre-non-dispo" data-giorni="28" class="text-warning rai-font-sm" style="margin-right: 20px;display:none">Cifre del cedolino non ancora disponibili</span>
+                                            <label id="importo-accordion" class="rai-font-md-bold">@(Model.ImportoFinale)</label>
+                                            euro
+                                        </div>
+                                    </div>
+                                </td>
+                                <td style="padding-top: 9px;width:20px" class="interactive-primary-color text-center">
+                                    <i id="acc-ced" class="fa fa-angle-down" style="font-size:20px"></i>
+                                </td>
+
+                            </tr>
+                        </tbody>
+                        <tbody class="tbodydata">
+                            <tr>
+                                <td colspan="5" class="">
+                                    <div id="ced-cont">
+
+                                    </div>
+                                </td>
+
+                            </tr>
+                        </tbody>
+
+                    </table>
+                </div>
+
+
+
+                @Html.Partial("_capienzacedolino", Model)
+                @{
+                    bool AnyOver26 = false;// Model.ElencoGiorniPerMese.Any(x => x.TotaleGiorni > 26);
+                }
+
+
+
+
+                @*@{
+                string cl = "false";
+                if (Model.InCaricoAMe)
+                {
+                    cl = "true";
+                }
+            }
+            <div class="row" style="margin-top:22px">
+                <div class="col-sm-12">
+                    <button class="full-width btn rai-btn-small" onclick="ShowCedolino(@Model.Richiesta.ID, @cl)" aria-label="Visualizza dettagli cedolino" title="Visualizza dettagli cedolino" style="min-width:80px;">Visualizza dettagli cedolino</button>
+                </div>
+
+            </div>*@
+                @if (Model.InCaricoAMe)
+                {
+                    <div class="row" style="margin-top:30px">
+                        <div class="col-sm-12" style="padding-bottom:16px">
+                            <span style="margin-bottom:18px;display:block" class="rai-font-sm-neutral">Andando avanti potrai selezionare le operazioni automatiche che il sistema deve effettuare per il calcolo del cedolino</span>
+                            <div class="rai-btn-fill">
+                                <button class="btn rai-btn-secondary" type="button" onclick="$('#popupview-amm').modal('hide')">Annulla </button>
+
+                                <button id="conferma-avanti-ced" type="button" class="btn rai-btn-primary @(Model.ImportoFinale<=0|| AnyOver26  ?"disable":"")" onclick="ConfermaModificheCedolino(@Model.Richiesta.ID)">Avanti</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+
+            <div id="page2-amm" style="display:none;padding-top:16px">
+                <div id="task-container">
+
+                </div>
+
+                @{
+                    int inco = 99;
+                    string sosp = "";
+                    if (Model.Richiesta.PRATICA_SOSPESA_DATETIME != null)
+                    {
+                        sosp = "disable";
+                    }
+                }
+
+
+
+
+                <div class="row" style="margin-top:30px">
+                    <div class="col-sm-12" style="padding-bottom:16px">
+                        <span style="margin-bottom:18px;display:block" class="rai-font-sm-neutral">Una volta avviate le operazioni automatiche non sarà più possibile bloccarle o modificare i dettagli del cedolino</span>
+                        <div class="rai-btn-fill">
+                            <button class="btn rai-btn-secondary " type="button" onclick="AmmPage(1)">Indietro </button>
+                            <button id="avvia-pratica" type="button"
+                                    class="@sosp btn rai-btn-primary" onclick="SendFormTask()">
+                                Avvia operazioni
+                            </button>
+                            <button id="button-chiudi" type="button" style="display:none"
+                                    class="btn rai-btn-primary" onclick="ConcludiPratica(@Model.Richiesta.ID)">
+                                Concludi pratica
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div id="page3-amm" style="display:none">
+
+                <div id="task-recap-container">
+
+                </div>
+
+
+               
+
+                <div class="row" style="margin-top:20px" id="div-buttons">
+                    <div class="col-sm-12">
+                        <div class="rai-btn-fill">
+
+                            <button id="indietro-concludi-pratica" class="btn rai-btn-secondary @(Model.InCaricoAMe==false?"disable":"")" type="button" onclick="AmmPage(1)">Indietro </button>
+
+                            <button id="concludi-pratica" type="button" class="btn rai-btn-primary disable" onclick="ConcludiPratica(@Model.Richiesta.ID)">Concludi la pratica</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @if (Model.OperazioniAvviate)
+        {
+            <input type="hidden" id="operazioni-avviate" />
+        }
+    </section>
+
+    <script>
+        function GetGiorniLimiteFloat() {
+            var giorni = parseFloat($("#limite-giorni").val().replace(",", "."));
+            return giorni;
+        }
+        function Change26(idrich) {
+            var giorni = parseFloat($("#limite-giorni").val().replace(",", "."));
+            debugger
+            $.ajax({
+                url: "/maternitacongedi/cambiagiorni",
+                type: 'POST',
+
+                dataType: "json",
+                data: { idrichiesta: idrich, giorni: giorni },
+                success: function (data) {
+                    CalcolaCifre();
+                    $(".tot-giorni").each(function () {
+                        debugger
+                        var t = $(this).text();
+                        var parti = t.split('/');
+                        parti[1] = $("#limite-giorni").val();
+                        $(this).text(parti[0] + "/" + parti[1]);
+                        // id="limite-giorni" data-salvati26=
+                        $("#limite-giorni").attr("data-salvati26", $("#limite-giorni").val());
+                    });
+                }
+            });
+        }
+        function AssenzaLunga() {
+            
+            var counter = 0;
+          //$("label[data-labelgiornosett=Saturday]").not("[data-test]").length
+            var sel = $("#lunga-assenza").val();
+            if (sel == "L") {
+                $("label[data-labelgiornosett=Saturday]").not("[data-over26]").each(function () {
+                  
+                    if ($(this).attr("data-codiceorario").indexOf("9") == 0 || $(this).attr("data-codiceorario")=="") $(this).text("1");
+
+                    InputKeyUp($(this), false);
+                });
+                $("input.voci-giorni").each(function () {
+                    counter++;
+                    debugger
+                    var ptable = $(this).closest("table");
+                    var giorniN = ContaGiorni($(this));
+                    console.log(counter+ " . " + $(ptable).attr("id") +  " ora ci sono giorni " + giorniN);
+
+                    var valueChanged = false;
+
+                    var c = $(this).val();
+
+                    if (c == "1,2") {
+                            $(this).val("1");
+                            valueChanged = true;
+                    }
+                    
+                    var dayofweek = $(this).attr("data-giornosett");
+                    var codiceorario = $(this).attr("data-codiceorario");
+
+                    if (dayofweek == "Saturday" && codiceorario.indexOf("9")==0 && $(this).val() != "1") {
+                        if ($(this).attr("data-over26") != "1") {
+                            $(this).val("1");
+                            valueChanged = true;
+                        }
+                        
+                    }
+                    if (dayofweek == "Sunday" && codiceorario.indexOf("9") == 0  && $(this).val() != "0") {
+                     
+                            $(this).val("0");
+                        valueChanged = true;
+                    }
+                   
+                    if (valueChanged) {
+                       
+                        InputKeyUp($(this), false);
+                    }
+                    
+                   //$(this).keyup();
+                });
+            }
+            if (sel == "B") {
+                $("label[data-labelgiornosett=Saturday]").not("[data-over26]").each(function () {
+                    if ($(this).attr("data-codiceorario").indexOf("9") == 0 || $(this).attr("data-codiceorario") == "") $(this).text("0");
+
+                    
+                    InputKeyUp($(this), false);
+                });
+                $("input.voci-giorni").each(function () {
+                    debugger
+                    var c = $(this).val();
+                    if (c == "1") $(this).val("1,2");
+                    var dayofweek = $(this).attr("data-giornosett");
+                    var codiceorario = $(this).attr("data-codiceorario");
+
+                    if (dayofweek == "Saturday" && codiceorario.indexOf("9") == 0 ) {
+                        $(this).val("0");
+                    }
+                    if (dayofweek == "Sunday" && codiceorario.indexOf("9") == 0 ) {
+                        $(this).val("0");
+                    }
+                    debugger
+                    InputKeyUp($(this), false);
+                    //$(this).keyup();
+                });
+            }
+           
+            $("table.cap-ced").each(function () {
+                var lim = GetGiorniLimiteFloat();
+                var parentTable = $(this);
+                var totalegiorni = 0;
+
+                $(parentTable).find(".voci-giorni").each(function () {
+                    if ($(this).val().trim() == "") return;
+                    totalegiorni += parseFloat($(this).val().replace(",", "."));
+                });
+                $(parentTable).find(".num-giorni").each(function () {
+
+                    var attributo_sospesa = $(this).closest(".row-cedo").attr("data-sospesa");
+                    if (attributo_sospesa != "1") {
+                        totalegiorni += parseFloat($(this).text().replace(",", "."));
+                    }
+
+                });
+                
+                 
+                if (totalegiorni > lim) {
+                    
+                    var diffe = totalegiorni - lim;
+
+                    $($(parentTable).find(".num-giorni,.voci-giorni").get().reverse()).each(function () {
+                        
+                        if ($(this).is("input")) {
+                            var valore = $(this).val();
+                            if (valore == "1,2" || valore == "1") {
+                                $(this).val("0");
+                                $(this).attr("data-over26", "1");
+                                console.log("input messo a 0");
+                                AssenzaLunga();
+                                InputKeyUp($(this), false);
+                                return false;
+                            }
+                        }
+                        if ($(this).is("label")) {
+                            var valore = $(this).text();
+                            if (valore == "1,2" || valore == "1") {
+                                $(this).text("0");
+                                $(this).attr("data-over26", "1");
+                                console.log("label messo a 0");
+                                InputKeyUp($(this), false);
+                                AssenzaLunga();
+                                return false;
+                            }
+                        }
+                    });
+                }
+            });
+            
+        }
+
+
+        InitDatePicker();
+        function ConcludiPraticaInternal(idrichiesta, AncheComprese) {
+
+           
+
+            $.ajax({
+                url: "/maternitacongedi/concludipratica",
+                type: 'POST',
+
+                dataType: "json",
+                data: { idrichiesta: idrichiesta, AncheComprese: AncheComprese },
+                success: function (data) {
+                    if (data.esito == true) {
+
+                        swal({
+                            title: 'Pratica conclusa correttamente',
+                            type: "success",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        }).then(function () {
+                            $('#popupview-amm').modal('hide');
+                            search();
+                        });
+                    }
+                    else {
+                        swal({
+                            title: data.errore,
+                            type: "error",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                    }
+                }
+            });
+        }
+        function ConcludiPratica(idrichiesta) {
+            $.ajax({
+                url: "/maternitacongedi/ConcludiPraticaCheckStessoMese",
+                type: 'GET',
+
+                dataType: "json",
+                data: { idrichiesta: idrichiesta },
+                success: function (data) {
+                    debugger
+                    var b1 = '<button type="button" class="swal2-cancel swal2-styled" style="display: inline-block; background-color: rgb(170, 170, 170);"><i class="fa fa-times"></i> prova</button>';
+                    if (data.data != "") {
+                        swal({
+                            title: "Concludi pratica",
+                            type: 'question',
+                            html: "Per la matricola selezionata risultano ulteriori periodi che verranno chiusi automaticamente: " + data.data + 
+                            "<br /><br /><input type='checkbox' id='solo-corrente' /> Chiudi solo la richiesta corrente",
+                            showCancelButton: true,
+                            confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+                            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+                            reverseButtons: true,
+                            customClass: 'rai rai-confirm-cancel'
+                        }).then(function () {
+                            ConcludiPraticaInternal(idrichiesta, ! $("#solo-corrente").prop("checked"));
+                        });
+                    }
+                    else {
+                        ConcludiPraticaInternal(idrichiesta, true);
+                    }
+                }
+            });
+
+            return; ////////////////////////////////////////////////////////////////////
+
+            //var RichiesteComprese = parseInt($("#richieste-comprese").val());
+            //if (RichiesteComprese > 0) {
+            //    swal({
+            //        title: "Concludi pratica",
+            //        type: 'question',
+            //        html: "Vuoi concludere anche le altre pratiche COMPRESE nel periodo ?",
+            //        showCancelButton: true,
+            //        confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+            //        cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            //        reverseButtons: true,
+            //        customClass: 'rai rai-confirm-cancel'
+            //    }).then(function () {
+            //        ConcludiPraticaInternal(idrichiesta, true);
+            //    });
+
+            //}
+            //else {
+            //    ConcludiPraticaInternal(idrichiesta, false);
+            //}
+        }
+
+
+    </script>

@@ -1,0 +1,310 @@
+﻿@model myRaiCommonModel.Gestionale.GestioneIncaricoModel
+
+<div class="block block-transparent no-margin-bottom">
+    <div class="block-header">
+
+        @if (Model.Incarico.id_incarico > 0)
+        {
+            <label class="rai-font-modal-heading">
+                Modifica Incarico
+            </label>
+        }
+        else
+        {
+            <label class="rai-font-modal-heading">
+                Nuovo Incarico
+            </label>
+        }
+
+
+        <div class="block-options">
+            <button data-dismiss="modal" class="btn btn-action-icon"><i class="glyphicon glyphicon-remove"></i></button>
+        </div>
+
+    </div>
+    <div class="block-content">
+        <div class="row">
+            <div class="col-sm-12">
+                <section class="panel">
+                    <header class="panel-heading">
+                        <h2 class="panel-title">@Model.Incarico.nominativo</h2>
+                    </header>
+                    <div class="panel-body strutt">
+
+
+
+                        <div class="block block-content-table block-transparent ">
+
+
+                            <!--contenuto-->
+                            <div class="block-content block-content-mini">
+
+                                <form action="/StrutturaOrganizzativa/SaveIncarico" id="form-modal-incarico" method="post">
+
+                                    @Html.HiddenFor(model => model.Incarico.id_incarico)
+                                    @Html.HiddenFor(model => model.Incarico.id_sezione)
+
+                                    <div class="form-group">
+                                        <div class="row">
+                                            <div class="col-sm-12">
+                                                <label class="required rai-caption" for="Name">Matricola</label>
+                                                @Html.TextBoxFor(x=>x.Incarico.matricola, new  {
+                                                     @class = "form-control grayed-imp" , required = "required", @readonly="readonly" })
+
+                                            </div>
+                                        </div>
+
+
+                                        <div class="row">
+                                            <div class="col-sm-12">
+                                                <label class="required rai-caption" for="Description">Nominativo</label>
+                                                @Html.TextBoxFor(x => x.Incarico.nominativo, new { @class = "form-control grayed-imp", required = "required", @readonly = "readonly" })
+                                            </div>
+                                        </div>
+
+
+                                        <div class="row">
+                                            <div class="col-sm-6">
+                                                <label class="required rai-caption" for="DateStart">Data inizio validità</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-addon" style="cursor: pointer" onclick="$('#_dataStart').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+
+                                                    <input autocomplete="off" class="js-datetimepicker  form-control required-min " data-format="DD/MM/YYYY" data-locale="it"
+                                                           id="Incarico_data_inizio_validita"
+                                                           name="Incarico.data_inizio_validita"
+                                                           placeholder="Selezionare una data" type="text"
+                                                           value="@(myRaiHelper.IncarichiHelper.GetDateFrom_yyMMdd(Model.Incarico.data_inizio_validita).ToString("dd/MM/yyyy"))">
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-6">
+                                                <label class="required rai-caption" for="DateEnd">Data fine validità</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-addon" style="cursor: pointer" onclick="$('#_dataEnd').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                                                    <input autocomplete="off" class="js-datetimepicker  form-control required-min " data-format="DD/MM/YYYY" data-locale="it"
+                                                           id="Incarico_data_fine_validita"
+                                                           name="Incarico.data_fine_validita"
+                                                           placeholder="Selezionare una data" type="text"
+                                                           value="@(myRaiHelper.IncarichiHelper.GetDateFrom_yyMMdd(Model.Incarico.data_fine_validita).ToString("dd/MM/yyyy"))">
+                                                </div>
+                                            </div>
+                                        </div>
+
+
+
+                                        <div class="row">
+                                            <div class="col-sm-12">
+                                                <label class="rai-caption" for="sedecontabile">Incarico</label>
+                                                <select onchange="CheckIncaricoChiuso(@Model.Incarico.id_sezione)" id="Incarico_cod_incarico" name="Incarico.cod_incarico" class="form-control">
+                                                    @foreach (var item in Model.IncarichiAll)
+                                                    {
+                                                        <option @if (Model.Incarico.cod_incarico == item.COD_INCARICO) { @: selected
+                                                                }
+                                                                value="@item.COD_INCARICO">
+                                                            @item.DES_INCARICO
+                                                        </option>
+
+                                                    }
+
+                                                </select>
+
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-sm-12">
+                                                <label class="rai-caption" for="sedecontabile">Responsabile</label>
+                                                <div class="rai-checkbox push-5 push-5-t">
+                                                    <input id="Incarico_flag_resp" name="Incarico.flag_resp"
+                                                           @if (Model.Incarico.flag_resp == "1") { @: checked="checked"
+                                                           }
+                                                           type="checkbox">
+
+
+                                                    <label class="rai-caption" for="Incarico_flag_resp">&nbsp;</label>
+                                                </div>
+
+                                            </div>
+                                        </div>
+
+
+                                        <div class="row">
+                                            <div class="col-sm-12">
+                                                <label class=" rai-caption" for="Description">Descrizione incarico</label>
+                                                @Html.TextAreaFor(x => x.Incarico.note_incarico, new { @class = "form-control " })
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                    <div class="row">
+
+
+                                        <div class="col-sm-12">
+                                            <div class="rai-btn-fill">
+                                                @if (Model.Incarico.id_incarico > 0)
+                                                {
+                                                    <button class="btn rai-btn-primary" onclick="">Salva modifiche</button>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn rai-btn-primary" onclick="">Aggiungi incarico</button>
+                                                }
+
+                                            </div>
+                                        </div>
+
+
+
+
+                                    </div>
+                                    <input type="hidden" name="respcanc" id="respcanc" />
+                                </form>
+                            </div>
+                            <!--fine contenuto-->
+                        </div>
+
+
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+   
+</div>
+<script>
+    function CheckIncaricoChiuso(idsezione) {
+        var incarico = $("#Incarico_cod_incarico").val();
+        $.ajax({
+            url: '/StrutturaOrganizzativa/getdataincarico',
+            type: "POST",
+            data: {  idsezione:idsezione, incarico:incarico },
+            dataType: "json",
+            complete: function () { },
+            success: function (data) {
+                if (data.esito == true) {
+                    $("#Incarico_data_inizio_validita").val(data.info);
+                }
+            }
+        });
+    }
+    InitDatePicker();
+
+    $("#form-modal-incarico").submit(function (event) {
+
+        var form = this;
+        $("#respcanc").val("");
+        event.stopPropagation();
+        event.preventDefault();
+
+        if ($("#Incarico_matricola").val().trim() == "") {
+            swal("Errore di validazione", "Il campo MATRICOLA non puo essere vuoto", "error");
+            return;
+        }
+
+        if ($("#Incarico_nominativo").val().trim() == "") {
+            swal("Errore di validazione", "Il campo NOMINATIVO non puo essere vuoto", "error");
+            return;
+        }
+        if ($("#Incarico_data_inizio_validita").val().trim() == "") {
+            swal("Errore di validazione", "Il campo DATA INIZIO VALIDITA non puo essere vuoto", "error");
+            return;
+        }
+        if ($("#Incarico_data_fine_validita").val().trim() == "") {
+            swal("Errore di validazione", "Il campo DATA FINE VALIDITA non puo essere vuoto", "error");
+            return;
+        }
+        var IsNewIncarico = $("#Incarico_id_incarico").val() == "0";
+        var msg = "Confermi di modificare questo incarico ?";
+
+        if (IsNewIncarico)  msg = "Confermi di aggiungere questo incarico ?";
+
+        var idIncarico = $("#Incarico_id_incarico").val();
+
+        swal({
+    title: msg,
+            html: "",
+            type: 'question',
+            showCloseButton: true,
+            showCancelButton: true,
+            confirmButtonText: ' OK'
+           })
+            .then(function () {
+
+                if ($("#Incarico_flag_resp").prop("checked") == false) {
+                    SaveEx(IsNewIncarico, form);
+                }
+                else {
+                    $.ajax({
+                        url: '/StrutturaOrganizzativa/RespSaturi',
+                        type: "POST",
+                        data: { sezione: $("#Incarico_id_sezione").val(), idinc: idIncarico },
+                        dataType: "json",
+                        complete: function () { },
+                        success: function (data) {
+                            if (data.esito == "OK") {
+                                SaveEx(IsNewIncarico, form);
+                            } else {
+                                var h = 'Il numero massimo di responsabili per questa sezione è stato già raggiunto. Seleziona          il responsabile che vuoi sostituire. <br /><br />';
+
+                                for (var i = 0; i < data.respnow.length; i++) {
+                                    h += "<input "+(i==0?"checked='checked'" :"") +" name='rs' type='radio' value='" + data.respnow[i].id + "' />  " + data.respnow[i].nome + " <br />";
+                                }
+
+                                swal({
+                                    title: '<strong>Attenzione</strong>',
+                                    icon: 'info',
+                                    html: h,
+                                    showCloseButton: true,
+                                    showCancelButton: true,
+                                    focusConfirm: false,
+                                    confirmButtonText: 'OK',
+                                    cancelButtonText: 'Annulla'
+                                }).then(function () {
+                                    debugger
+                                        var radioValue = $("input[name='rs']:checked").val();
+                                        $("#respcanc").val(radioValue);
+                                        SaveEx(IsNewIncarico, form);
+                                    });
+
+                            }
+                        }
+                    });
+                }
+              
+    });
+    });
+
+
+    function SaveEx(IsNewIncarico, form) {
+
+        var serializedForm = $(form).serialize();
+        debugger
+        $.ajax({
+            url: '/StrutturaOrganizzativa/saveIncarico',
+            type: "POST",
+            data: serializedForm,
+            dataType: "json",
+            complete: function () { },
+            success: function (data) {
+
+                debugger
+                if (data.error != "") {
+                    swal(data.error);
+                }
+                else {
+                    swal("Modifiche eseguite con successo", "", "success").then(function () {
+                        $("#modal-incarichi").modal("hide");
+                        if (IsNewIncarico)
+                            $("a.jstree-clicked").click();
+                        else
+                            $("#sh-inc").click();
+
+                    });
+                }
+            },
+            error: function (a, b, c) {
+                debugger
+                alert(a + b + c);
+            }
+        });
+    }
+
+</script>

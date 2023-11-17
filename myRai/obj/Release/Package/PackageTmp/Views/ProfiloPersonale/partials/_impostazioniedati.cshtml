@@ -1,0 +1,2345 @@
+﻿
+@model myRaiCommonModel.ProfiloPersonaleModel
+
+@using (Html.BeginPanel(myRaiHelper.PanelType.PanelNoPadding, "Dati personali", true))
+{
+    <div class="block " style="margin-bottom:0px;">
+        <ul class="nav nav-tabs nav-tabs-alt nav-justified" id="tabContent">
+            <li class="active"><a href="#ANAGRAFICA" data-toggle="tab">Anagrafica</a></li>
+            <li><a href="#DATIBANCARI" data-toggle="tab">Dati bancari</a></li>
+        </ul>
+
+        @{
+
+            var flagdb = myRai.Business.CommonManager.GetParametri<string>(myRaiHelper.EnumParametriSistema.AbilitatiIban);
+            var abilitatiTutti = false;
+            var listaAbilitati = flagdb[1];
+            var utenteabilitato = false;
+            var corrispondente = false;
+            var res_dom = false;
+
+            if (flagdb[0].Equals("1"))
+            {
+                abilitatiTutti = true;
+            }
+            if (!String.IsNullOrWhiteSpace(listaAbilitati) && !String.IsNullOrWhiteSpace(myRai.Business.CommonManager.GetCurrentUserMatricola()))
+            {
+                if (listaAbilitati.ToUpper().Split(',').Contains(myRai.Business.CommonManager.GetCurrentUserMatricola().ToUpper()))
+                {
+                    utenteabilitato = true;
+                }
+            }
+
+
+            var flagdbcell = myRai.Business.CommonManager.GetParametri<string>(myRaiHelper.EnumParametriSistema.AbilitatiCell);
+            var abilitatiTuttiCell = false;
+            var listaAbilitatiCell = flagdbcell[1];
+            var utenteabilitatoCell = false;
+
+
+            var flagDomicilio = myRai.Business.CommonManager.GetParametri<string>(myRaiHelper.EnumParametriSistema.AbilitatiDomicilio);
+            var abilitatiTuttiDom = false;
+            var listaAbilitatiDom = flagDomicilio[1];
+            var utenteabilitatoDom = false;
+
+
+            if (flagdbcell[0].Equals("1"))
+            {
+                abilitatiTuttiCell = true;
+            }
+            if (!String.IsNullOrWhiteSpace(listaAbilitatiCell) && !String.IsNullOrWhiteSpace(myRai.Business.CommonManager.GetCurrentUserMatricola()))
+            {
+                if (listaAbilitatiCell.ToUpper().Split(',').Contains(myRai.Business.CommonManager.GetCurrentUserMatricola().ToUpper()))
+                {
+                    utenteabilitatoCell = true;
+                }
+            }
+
+            if (flagDomicilio[0].Equals("1"))
+            {
+                abilitatiTuttiDom = true;
+            }
+            if (!String.IsNullOrWhiteSpace(listaAbilitatiDom) && !String.IsNullOrWhiteSpace(myRai.Business.CommonManager.GetCurrentUserMatricola()))
+            {
+                if (listaAbilitatiDom.ToUpper().Split(',').Contains(myRai.Business.CommonManager.GetCurrentUserMatricola().ToUpper()))
+                {
+                    utenteabilitatoDom = true;
+                }
+            }
+
+            int[] array = new int[3];
+            array[0] = 0;
+            array[1] = 0;
+            array[2] = 0;
+
+            int[] array2 = new int[3];
+            array2[0] = 0;
+            array2[1] = 0;
+            array2[2] = 0;
+
+            Boolean abilitaAggiunta = true;
+            Boolean abilitaAggiunta2 = true;
+            myRaiCommonModel.ContoCorrente accreditoStipendio = null;
+            myRaiCommonModel.ContoCorrente anticipoTrasferte = null;
+            myRaiCommonModel.ContoCorrente anticipoSpeseProd = null;
+
+
+            bool abilitaModifiche = Model.conticorrentidaconv != null && Model.conticorrentidaconv.Any();
+
+        }
+
+        @if (Model.ContiCorrente != null)
+
+        {
+            foreach (var item in Model.ContiCorrente)
+            {
+                if (myRai.Business.CommonManager.ToTitleCase(item.Tipologia).Equals("Accredito Stipendio"))
+                {
+                    array[0] = 1;
+                    array2[0] = 1;
+                    accreditoStipendio = item;
+
+                }
+                else
+
+                if (myRai.Business.CommonManager.ToTitleCase(item.Tipologia).Equals("Anticipo Trasferte"))
+
+                {
+                    array[1] = 1;
+                    array2[1] = 1;
+                    anticipoTrasferte = item;
+                }
+                else
+
+                if (myRai.Business.CommonManager.ToTitleCase(item.Tipologia).Equals("Anticipo Spese Di Produzione"))
+
+                {
+                    array[2] = 1;
+                    array2[2] = 1;
+                    anticipoSpeseProd = item;
+
+                }
+
+            }
+
+            if (array[0] == 1 && array[1] == 1 && array[2] == 1)
+            {
+                abilitaAggiunta = false;
+            }
+
+            if (array2[0] == 0 && array2[1] == 0 && array[2] == 0)
+            {
+                abilitaAggiunta2 = false;
+            }
+
+            if (accreditoStipendio != null)
+            {
+                if (accreditoStipendio.Iban.Equals("00000CCCCCCCCCCCCCCCCCCCCCC"))
+                {
+                    corrispondente = true;
+                }
+            }
+        }
+
+
+        <div class="tab-content">
+            <div class="tab-pane active bg-neutrals-xl-10" style="margin:-15px;padding:15px;" id="ANAGRAFICA">
+
+                @if (Model.ModificaDomSospesa)
+                {
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <label class="rai-font-sm text-italic"> La modifica di domicilio effettuata sarà effettiva a partire dalle ore 00:00 </label>
+                        </div>
+                    </div>
+
+                }
+
+                @if ((Model.residenzadaconv != null && Model.residenzadaconv.Count() > 0))
+                {
+                    var labelTitolo = "Residenza";
+                    foreach (var item in Model.residenzadaconv)
+                    {
+                        if (item.anchedom == "S")
+                        {
+                            res_dom = true;
+                            labelTitolo = "Residenza e Domicilio";
+
+                        }
+
+
+                        <div class="row">
+                            <div class="col-sm-12">
+                                @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, ""))
+                                {
+                                    var labelTipoOperazione = "Annulla Modifica";
+
+                                    string residenza_composta = String.Format("{0} {1} ({2}) {3}", item.cap, myRai.Business.CommonManager.ToTitleCase(item.citta), item.prov.ToUpper(), item.stato.ToUpper());
+
+                                    <div class="row push-10" tabindex="0">
+                                        <div class="col-sm-8 col-lg-6">
+                                            <label class="rai-font-md-bold">@labelTitolo</label>
+                                        </div>
+
+                                        <div class="col-sm-4 col-lg-6 text-right hidden-xs">
+
+
+                                            <button class="btn btn-action-icon btn-action-icon-text feedback-error-color" id="del-mod-res" onclick="DeleteModRes()" data-id-evento="@item.ID_EVENTO"><i class="fa fa-fw fa-times"></i>&nbsp;@labelTipoOperazione</button>
+                                            @*<button class="btn btn-action-icon btn-action-icon-text text-success" id="conv-mod-cell" data-toggle="modal" data-target="#modal-convalida-iban" onclick="ConvalidaCellCodice()" data-id-evento-conv="@item.ID_EVENTO"><i class="fa fa-fw fa-check"></i>&nbsp;Convalida</button>*@
+                                        </div>
+                                    </div>
+
+
+
+
+                                    <div class="rai-table-info">
+
+                                        <div class="row push-xs-10">
+                                            <div class="col-xs-3 col-sm-4 col-xl-2"><span>Status </span></div>
+                                            <div class="col-xs-9 col-sm-8 col-xl-10"><i class="fa fa-circle feedback-warning-color"></i>&nbsp;<label class="rai-font-md-bold"><b>In attesa di convalida</b></label></div>
+                                        </div>
+                                        <div class="row push-xs-10" tabindex="0">
+                                            <div class="col-xs-12 col-sm-4 col-xl-2"><span>Indirizzo: </span></div>
+                                            <div class="col-xs-12 col-sm-8 col-xl-10"><label>@myRai.Business.CommonManager.ToTitleCase(item.Indirizzo)</label></div>
+                                        </div>
+                                        <div class="row push-xs-10" tabindex="0">
+
+                                            <div class="col-xs-12 col-sm-4 col-xl-2"><span>Città: </span></div>
+                                            <div class="col-xs-12 col-sm-8 col-xl-10"><label>@residenza_composta</label></div>
+                                        </div>
+
+                                    </div>
+
+                                    <div class="row push-10-t visible-xs">
+                                        <div class="col-xs-12 text-right">
+                                            <div class="btn-action-icon-text-container">
+                                                <button class="btn btn-action-icon btn-action-icon-text feedback-error-color  " id="del-mod-res" onclick="DeleteModRes()" data-id-evento="@item.ID_EVENTO"><i class="fa fa-fw fa-times"></i>&nbsp;@labelTipoOperazione</button>
+                                                @*<button class="btn btn-action-icon btn-action-icon-text text-success" id="conv-mod-cell" data-toggle="modal" data-target="#modal-convalida-iban" onclick="ConvalidaCellCodice()" data-id-evento-conv="@item.ID_EVENTO"><i class="fa fa-fw fa-check"></i>&nbsp;Convalida</button>*@
+                                            </div>
+                                        </div>
+                                    </div>
+
+
+                                }
+
+                            </div>
+                        </div>
+
+                    }
+
+                }
+
+
+                @if ((Model.domiciliodaconv != null && Model.domiciliodaconv.Count() > 0) && (utenteabilitatoDom || abilitatiTuttiDom))
+                {
+                    var labelTitolo = "Domicilio";
+                    foreach (var item in Model.domiciliodaconv)
+                    {
+
+
+                        <div class="row">
+                            <div class="col-sm-12">
+                                @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, ""))
+                                {
+                                    var labelTipoOperazione = "Annulla Modifica";
+
+                                    string domicilio_composto = String.Format("{0} {1} ({2}) {3}", item.cap, myRai.Business.CommonManager.ToTitleCase(item.citta), item.prov.ToUpper(), item.stato.ToUpper());
+
+                                    <div class="row push-10" tabindex="0">
+                                        <div class="col-sm-8 col-lg-6">
+                                            <label class="rai-font-md-bold">@labelTitolo</label>
+                                        </div>
+
+                                        <div class="col-sm-4 col-lg-6 text-right hidden-xs">
+
+
+                                            <button class="btn btn-action-icon btn-action-icon-text feedback-error-color" id="del-mod-dom" onclick="DeleteModDom()" data-id-evento="@item.ID_EVENTO"><i class="fa fa-fw fa-times"></i>&nbsp;@labelTipoOperazione</button>
+                                            <button class="btn btn-action-icon btn-action-icon-text text-success" id="conv-mod-dom" data-toggle="modal" data-target="#modal-convalida-iban" onclick="ConvalidaDomicilioCodice()" data-id-evento-conv="@item.ID_EVENTO"><i class="fa fa-fw fa-check"></i>&nbsp;Convalida</button>
+                                        </div>
+                                    </div>
+
+
+
+
+                                    <div class="rai-table-info">
+
+                                        <div class="row push-xs-10">
+                                            <div class="col-xs-3 col-sm-4 col-xl-2"><span>Status </span></div>
+                                            <div class="col-xs-9 col-sm-8 col-xl-10"><i class="fa fa-circle feedback-warning-color"></i>&nbsp;<label class="rai-font-md-bold"><b>In attesa di convalida</b></label></div>
+                                        </div>
+                                        <div class="row push-xs-10" tabindex="0">
+                                            <div class="col-xs-12 col-sm-4 col-xl-2"><span>Indirizzo: </span></div>
+                                            <div class="col-xs-12 col-sm-8 col-xl-10"><label>@myRai.Business.CommonManager.ToTitleCase(item.Indirizzo)</label></div>
+                                        </div>
+                                        <div class="row push-xs-10" tabindex="0">
+
+                                            <div class="col-xs-12 col-sm-4 col-xl-2"><span>Città: </span></div>
+                                            <div class="col-xs-12 col-sm-8 col-xl-10"><label>@domicilio_composto</label></div>
+                                        </div>
+
+                                    </div>
+
+                                    <div class="row push-10-t visible-xs">
+                                        <div class="col-xs-12 text-right">
+                                            <div class="btn-action-icon-text-container">
+                                                <button class="btn btn-action-icon btn-action-icon-text feedback-error-color  " id="del-mod-dom" onclick="DeleteModDom()" data-id-evento="@item.ID_EVENTO"><i class="fa fa-fw fa-times"></i>&nbsp;@labelTipoOperazione</button>
+                                                
+                                                <button class="btn btn-action-icon btn-action-icon-text text-success" id="conv-mod-dom" data-toggle="modal" data-target="#modal-convalida-iban" onclick="ConvalidaDomicilioCodice()" data-id-evento-conv="@item.ID_EVENTO"><i class="fa fa-fw fa-check"></i>&nbsp;Convalida</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+
+                                }
+
+                            </div>
+                        </div>
+
+                    }
+
+                }
+
+
+
+                @if ((Model.cellularedaconv != null && Model.cellularedaconv.Count() > 0) && (utenteabilitatoCell || abilitatiTuttiCell))
+                {
+                    foreach (var item in Model.cellularedaconv)
+                    {
+                        <div class="row">
+                            <div class="col-sm-12">
+                                @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, ""))
+                                {
+                                    var labelTipoOperazione = "";
+
+                                    switch (item.COD_CMEVENTO)
+                                    {
+                                        case "INSCEL":
+                                            labelTipoOperazione = "Elimina";
+                                            break;
+                                        case "MODCEL":
+                                            labelTipoOperazione = "Annulla Modifica";
+                                            break;
+                                        case "DELCEL":
+                                            labelTipoOperazione = "Annulla";
+                                            break;
+                                        default:
+                                            break;
+                                    }
+
+                                    <div class="row push-10" tabindex="0">
+                                        <div class="col-sm-8 col-lg-6">
+                                            <label class="rai-font-md-bold">Cellulare</label>
+                                        </div>
+
+                                        <div class="col-sm-4 col-lg-6 text-right hidden-xs">
+
+
+                                            <button class="btn btn-action-icon btn-action-icon-text feedback-error-color" id="del-mod-cell" onclick="DeleteModCell()" data-id-evento="@item.ID_EVENTO"><i class="fa fa-fw fa-times"></i>&nbsp;@labelTipoOperazione</button>
+                                            <button class="btn btn-action-icon btn-action-icon-text text-success" id="conv-mod-cell" data-toggle="modal" data-target="#modal-convalida-iban" onclick="ConvalidaCellCodice()" data-id-evento-conv="@item.ID_EVENTO"><i class="fa fa-fw fa-check"></i>&nbsp;Convalida</button>
+                                        </div>
+                                    </div>
+
+
+                                    <div class="rai-table-info">
+
+                                        <div class="row push-xs-10">
+                                            <div class="col-xs-3 col-sm-4 col-xl-2"><span>Status </span></div>
+                                            <div class="col-xs-9 col-sm-8 col-xl-10"><i class="fa fa-circle feedback-warning-color"></i>&nbsp;<label class="rai-font-md-bold"><b>Da convalidare</b></label></div>
+                                        </div>
+                                        <div class="row push-xs-10" tabindex="0">
+                                            <div class="col-xs-12 col-sm-4 col-xl-2"><span>Numero: </span></div>
+                                            <div class="col-xs-12 col-sm-8 col-xl-10"><label>@myRai.Business.CommonManager.ToTitleCase(item.DES_PREFISSO)  @myRai.Business.CommonManager.ToTitleCase(item.DES_CELLULARE)</label></div>
+                                        </div>
+                                        <div class="row push-xs-10" tabindex="0">
+
+                                            <div class="col-xs-12 col-sm-4 col-xl-2"><span>Tipologia: </span></div>
+                                            <div class="col-xs-12 col-sm-8 col-xl-10"><label>@myRai.Business.CommonManager.ToTitleCase(item.TIPO_RECAPITO)</label></div>
+                                        </div>
+
+                                    </div>
+
+                                    <div class="row push-10-t visible-xs">
+                                        <div class="col-xs-12 text-right">
+                                            <div class="btn-action-icon-text-container">
+                                                <button class="btn btn-action-icon btn-action-icon-text feedback-error-color  " id="del-mod-cell" onclick="DeleteModCell()" data-id-evento="@item.ID_EVENTO"><i class="fa fa-fw fa-times"></i>&nbsp;@labelTipoOperazione</button>
+                                                <button class="btn btn-action-icon btn-action-icon-text text-success" id="conv-mod-cell" data-toggle="modal" data-target="#modal-convalida-iban" onclick="ConvalidaCellCodice()" data-id-evento-conv="@item.ID_EVENTO"><i class="fa fa-fw fa-check"></i>&nbsp;Convalida</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+
+                                }
+
+                            </div>
+                        </div>
+                    }
+
+                }
+
+
+                @if (!(Model.residenzadaconv != null && Model.residenzadaconv.Count() > 0))
+                {
+                    if (Model.Residenza != null)
+                    {
+                        string tx2 = String.Format("{0} {1} ({2}) {3}", Model.Residenza.cap, myRai.Business.CommonManager.ToTitleCase(Model.Residenza.citta), Model.Residenza.prov.ToUpper(), Model.Residenza.stato.ToUpper());
+                        <div class="row">
+                            <div class="col-sm-12">
+                                @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, ""))
+                                {
+                                    <div class="row push-10" tabindex="0">
+                                        <div class="col-sm-8 col-lg-6">
+                                            <label class="rai-font-md-bold">Residenza</label>
+                                        </div>
+                                        @*<div class="col-sm-6 col-lg-6 text-right hidden-xs">
+                                            <button class="btn rai-btn-small" id="mod-res" data-toggle="modal" data-target="#modal-profilopersonale" onclick="ModificaResidenza()">Modifica</button>
+
+                                        </div>*@
+                                    </div>
+
+
+                                    <div class="rai-table-info">
+                                        <div class="row push-xs-10" tabindex="0">
+                                            <div class="col-xs-12 col-sm-4 col-xl-2"><span>Indirizzo: </span></div>
+                                            <div class="col-xs-12 col-sm-8 col-xl-10"><label>@myRai.Business.CommonManager.ToTitleCase(Model.Residenza.Indirizzo)</label></div>
+                                        </div>
+                                        <div class="row push-xs-10" tabindex="0">
+
+                                            <div class="col-xs-12 col-sm-4 col-xl-2"><span>Città: </span></div>
+                                            <div class="col-xs-12 col-sm-8 col-xl-10"><label>@tx2</label></div>
+                                        </div>
+
+                                    </div>
+
+                                    @*<div class="row visible-xs push-10-t">
+                                        <div class="col-sm-6 text-right">
+
+                                            <button class="btn rai-btn-small" id="mod-res" data-toggle="modal" data-target="#modal-profilopersonale" onclick="ModificaResidenza()">Modifica</button>
+
+                                        </div>
+                                    </div>*@
+
+                                }
+
+                            </div>
+                        </div>
+
+                    }
+
+                }
+
+
+                @if (!(Model.domiciliodaconv != null && Model.domiciliodaconv.Count() > 0) && !res_dom)
+                {
+                if (Model.Domicilio != null)
+                {
+                    string tx3 = String.Format("{0} {1} ({2}) {3}", Model.Domicilio.cap, myRai.Business.CommonManager.ToTitleCase(Model.Domicilio.citta), Model.Domicilio.prov.ToUpper(), Model.Domicilio.stato.ToUpper());
+                        <div class="row">
+                            <div class="col-sm-12">
+                                @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, ""))
+                                {
+                                    <div class="row push-10" tabindex="0">
+                                        <div class="col-sm-8 col-lg-6">
+                                            <label class="rai-font-md-bold">Domicilio</label>
+                                        </div>
+                                        @if (utenteabilitatoDom || abilitatiTuttiDom)
+                                        {
+                                            <div class="col-sm-4 col-lg-6 text-right hidden-xs">
+                                                <button class="btn rai-btn-small" id="mod-dom" data-toggle="modal" data-target="#modal-profilopersonale" onclick="ModificaDomicilio()">Modifica</button>
+
+                                            </div>
+                                        }
+
+
+                                    </div>
+
+
+                                    <div class="rai-table-info">
+                                        <div class="row push-xs-10" tabindex="0">
+                                            <div class="col-xs-12 col-sm-4 col-xl-2"><span>Indirizzo: </span></div>
+                                            <div class="col-xs-12 col-sm-8 col-xl-10"><label>@myRai.Business.CommonManager.ToTitleCase(Model.Domicilio.Indirizzo)</label></div>
+                                        </div>
+                                        <div class="row push-xs-10" tabindex="0">
+
+                                            <div class="col-xs-12 col-sm-4 col-xl-2"><span>Città: </span></div>
+                                            <div class="col-xs-12 col-sm-8 col-xl-10"><label>@tx3</label></div>
+                                        </div>
+
+                                    </div>
+
+                                    if (utenteabilitatoDom || abilitatiTuttiDom)
+
+                                    {
+                                    <div class="row visible-xs push-10-t">
+
+                                        <div class="col-sm-6 text-right">
+
+                                            <button class="btn rai-btn-small" id="mod-dom" data-toggle="modal" data-target="#modal-profilopersonale" onclick="ModificaDomicilio()">Modifica</button>
+
+                                        </div>
+                                    </div>
+                                    }
+                            
+
+                                    }
+                            
+
+                            </div>
+                        </div>
+                    }
+                }
+
+
+                    @if (!(Model.cellularedaconv != null && Model.cellularedaconv.Count() > 0) && (utenteabilitatoCell || abilitatiTuttiCell))
+                    {
+
+                        if (Model.Cellulare != null)
+                        {
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, ""))
+                                    {
+                                        <div class="row push-10" tabindex="0">
+                                            <div class="col-sm-6 col-lg-6">
+                                                <label class="rai-font-md-bold">Cellulare</label>
+                                            </div>
+                                            <div class="col-sm-6 col-lg-6 text-right hidden-xs">
+                                                <button class="btn rai-btn-small" id="mod-cell" data-toggle="modal" data-target="#modal-profilopersonale" onclick="ModificaCellulare()">Modifica</button>
+                                                <button class="btn btn-action-icon" id="del-cell" onclick="DeleteCellulare()" data-prefisso="@Model.Cellulare.prefisso" data-numero="@Model.Cellulare.numero" data-tipo-cell="@Model.Cellulare.tipologia"><i class="fa fa-trash-o"></i></button>
+                                            </div>
+                                        </div>
+
+
+                                        <div class="rai-table-info">
+                                            <div class="row push-xs-10" tabindex="0">
+                                                <div class="col-xs-12 col-sm-4 col-xl-2"><span>Numero: </span></div>
+                                                <div class="col-xs-12 col-sm-8 col-xl-10"><label>@myRai.Business.CommonManager.ToTitleCase(Model.Cellulare.prefisso)  @myRai.Business.CommonManager.ToTitleCase(Model.Cellulare.numero)</label></div>
+                                            </div>
+                                            <div class="row push-xs-10" tabindex="0">
+
+                                                <div class="col-xs-12 col-sm-4 col-xl-2"><span>Tipologia: </span></div>
+                                                <div class="col-xs-12 col-sm-8 col-xl-10"><label>@myRai.Business.CommonManager.ToTitleCase(Model.Cellulare.tipologia)</label></div>
+                                            </div>
+
+                                        </div>
+
+                                        <div class="row visible-xs push-10-t">
+                                            <div class="col-sm-6 text-right">
+
+                                                <button class="btn rai-btn-small" id="mod-cell" data-toggle="modal" data-target="#modal-profilopersonale" onclick="ModificaCellulare()">Modifica</button>
+                                                <button class="btn btn-action-icon" id="del-cell" onclick="DeleteCellulare()" data-prefisso="@Model.Cellulare.prefisso" data-numero="@Model.Cellulare.numero" data-tipo-cell="@Model.Cellulare.tipologia"><i class="fa fa-trash-o"></i></button>
+                                            </div>
+                                        </div>
+
+
+                                    }
+
+                                </div>
+                            </div>
+
+                        }
+                        else
+                        {
+
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, ""))
+                                    {
+                                        <div class="row push-10" tabindex="0">
+                                            <div class="col-sm-6 col-lg-6">
+                                                <label class="rai-font-md-bold">Cellulare</label>
+                                            </div>
+                                            <div class="col-sm-6 col-lg-6 text-right hidden-xs">
+                                                <button class="btn rai-btn-primary" id="add-cell" data-toggle="modal" data-target="#modal-profilopersonale" onclick="AggiungiCellulare()">Aggiungi</button>
+
+                                            </div>
+                                        </div>
+
+
+                                        <div class="rai-table-info">
+                                            <div class="row push-xs-10" tabindex="0">
+                                                <div class="col-xs-12 col-sm-4 col-xl-2"><span>Numero: </span></div>
+                                                <div class="col-xs-12 col-sm-8 col-xl-10"><label> - </label></div>
+                                            </div>
+                                            <div class="row push-xs-10" tabindex="0">
+
+                                                <div class="col-xs-12 col-sm-4 col-xl-2"><span>Tipologia: </span></div>
+                                                <div class="col-xs-12 col-sm-8 col-xl-10"><label> - </label></div>
+                                            </div>
+
+                                        </div>
+
+                                        <div class="row visible-xs push-10-t">
+                                            <div class="col-sm-6 text-right">
+
+                                                <button class="btn rai-btn-primary" id="add-cell" data-toggle="modal" data-target="#modal-profilopersonale" onclick="AggiungiCellulare()">Aggiungi</button>
+
+                                            </div>
+                                        </div>
+
+
+                                    }
+
+                                </div>
+                            </div>
+
+                        }
+
+
+
+                    }
+
+
+                    @*<div class="control-group">
+                <div class="block block-content-table ">
+                    <div class="block-header">
+                        <label class="rai-font-table-heading">Dati Residenza</label>
+                    </div>
+                    <div class="block-content ">
+                        <div class="rai-table-info">
+                            <div class="row push-10-t" tabindex="0">
+                                <div class="col-xs-3 col-sm-3 col-xl-2"><span>Indirizzo: </span></div>
+                                <div class="col-xs-9 col-sm-9 col-xl-10">
+                                    @{
+                                        if (Model.Residenza != null)
+                                        {
+                                            <label>
+                                                @myRai.Business.CommonManager.ToTitleCase(Model.Residenza.Indirizzo)
+                                            </label>
+                                        }
+                                        else
+                                        {
+                                            <label></label>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                            <div class="row push-10-t" tabindex="0">
+                                <div class="col-xs-3 col-sm-3 col-xl-2"><span>Città: </span></div>
+                                <div class="col-xs-9 col-sm-9 col-xl-10">
+                                    @{
+                                        if (Model.Residenza != null)
+                                        {
+                                            string tx = String.Format("{0} {1} ({2}) {3}", Model.Residenza.cap, myRai.Business.CommonManager.ToTitleCase(Model.Residenza.citta), Model.Residenza.prov.ToUpper(), myRai.Business.CommonManager.ToTitleCase(Model.Residenza.stato));
+                                            <label>@tx</label>
+                                        }
+                                        else
+                                        {
+                                            <label></label>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="block block-content-table">
+                    <div class="block-header block-content-mini" tabindex="0">
+                        <label class="rai-font-table-heading">Dati Domicilio</label>
+                    </div>
+                    <div class="block-content">
+                        <div class="rai-table-info">
+                            <div class="row push-10-t" tabindex="0">
+                                <div class="col-xs-3 col-sm-3 col-xl-2"><span>Indirizzo: </span></div>
+                                <div class="col-xs-9 col-sm-9 col-xl-10">
+                                    @{
+                                        if (Model.Domicilio != null)
+                                        {
+                                            <label>@myRai.Business.CommonManager.ToTitleCase(Model.Domicilio.Indirizzo)</label>
+                                        }
+                                        else
+                                        {
+                                            <label></label>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                            <div class="row push-10-t" tabindex="0">
+                                <div class="col-xs-3 col-sm-3 col-xl-2"><span>Città: </span></div>
+                                <div class="col-xs-9 col-sm-9 col-xl-10">
+                                    @{
+                                        if (Model.Domicilio != null)
+                                        {
+                                            string tx = String.Format("{0} {1} ({2}) {3}", Model.Domicilio.cap, myRai.Business.CommonManager.ToTitleCase(Model.Domicilio.citta), Model.Domicilio.prov.ToUpper(), myRai.Business.CommonManager.ToTitleCase(Model.Domicilio.stato));
+                                            <label>@tx</label>
+                                        }
+                                        else
+                                        {
+                                            <label></label>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>*@
+                </div>
+            <div id="DATIBANCARI" class="tab-pane bg-neutrals-xl-10" style="margin:-15px;padding:15px;">
+                @if (Model.conticorrentidaconv != null && Model.conticorrentidaconv.Count() > 0)
+                {
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <label class="rai-font-sm text-italic"> Hai una modifica in sospeso: convalida o annulla per richiedere una nuova modifica </label>
+                        </div>
+                    </div>
+
+                }
+                else
+                {
+
+                }
+
+                @if (abilitaAggiunta2 || Model.conticorrentidaconv.Count() > 0)
+                {<div class="rai-table-info">
+
+                        @if (Model.conticorrentidaconv != null && Model.conticorrentidaconv.Count() > 0)
+                        {
+                            foreach (var item in Model.conticorrentidaconv.OrderBy(x => x.contocDB.COD_UTILIZZO))
+                            {
+                                <div class="row">
+                                    <div class="col-sm-12">
+
+                                        @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, ""))
+                                        {
+                                            var labelTipoConto = "";
+                                            var labelTipoOperazione = "";
+                                            switch (item.contocDB.COD_UTILIZZO)
+                                            {
+                                                case "01":
+                                                    labelTipoConto = "Accredito Stipendio";
+                                                    break;
+                                                case "02":
+                                                    labelTipoConto = "Anticipo Trasferte";
+                                                    break;
+                                                case "03":
+                                                    labelTipoConto = "Anticipo Spese Di Produzione";
+                                                    break;
+                                                default:
+                                                    break;
+                                            }
+
+                                            switch (item.contocDB.COD_CMEVENTO)
+                                            {
+                                                case "INSCC":
+                                                    labelTipoOperazione = "Elimina";
+                                                    break;
+                                                case "MODCC":
+                                                    labelTipoOperazione = "Annulla Modifica";
+                                                    break;
+                                                case "DELCC":
+                                                    labelTipoOperazione = "Annulla Chiusura";
+                                                    break;
+                                                default:
+                                                    break;
+                                            }
+
+                                            var itemCurrent = Model.ContiCorrente.FirstOrDefault(x => x.Codice_Utilizzo == item.contocDB.COD_TIPOCONTO);
+
+
+                                            <div class="row push-10" tabindex="0">
+                                                @if (item.contocDB.COD_UTILIZZO != "04")
+                                                {
+                                                    <div class="col-sm-8 col-lg-6">
+                                                        <label class="rai-font-md-bold">@labelTipoConto</label>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <div class="col-sm-8 col-lg-6">
+                                                        <label class="rai-font-md-bold">Anticipo Trasferte</label><br />
+                                                        <label class="rai-font-md-bold">Anticipo Spese Di Produzione</label>
+                                                    </div>
+                                                }
+
+
+
+                                                <div class="col-sm-4 col-lg-6 text-right hidden-xs">
+
+
+                                                    <button class="btn btn-action-icon btn-action-icon-text feedback-error-color" id="del-mod-iban" onclick="DeleteModIban()" data-id-evento="@item.contocDB.ID_EVENTO"><i class="fa fa-fw fa-times"></i>&nbsp;@labelTipoOperazione</button>
+                                                    <button class="btn btn-action-icon btn-action-icon-text text-success" id="conv-mod-iban" data-toggle="modal" data-target="#modal-convalida-iban" onclick="ConvalidaIbanCodice()" data-id-evento-conv="@item.contocDB.ID_EVENTO"><i class="fa fa-fw fa-check"></i>&nbsp;Convalida</button>
+                                                </div>
+                                            </div>
+                                            @*@if (itemCurrent != null)
+                                                {
+                                                    <div class="row push-10-t">
+                                                        <div class="col-sm-12">
+                                                            <label class="rai-font-md text-italic">Dati correnti:</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="rai-table-info">
+                                                        <div class="row" tabindex="0">
+                                                            <div class="col-xs-3 col-sm-3 col-xl-2"><span>Iban: </span></div>
+                                                            <div class="col-xs-9 col-sm-9 col-xl-10"><label>@accreditoStipendio.Iban</label></div>
+                                                        </div>
+                                                        <div class="row" tabindex="0">
+                                                            <div class="col-xs-3 col-sm-3 col-xl-2"><span>Agenzia: </span></div>
+                                                            <div class="col-xs-9 col-sm-9 col-xl-10"><label>@myRai.Business.CommonManager.ToTitleCase(accreditoStipendio.Agenzia)</label></div>
+                                                        </div>
+                                                        <div class="row" tabindex="0">
+                                                            <div class="col-xs-3 col-sm-3 col-xl-2"><span>Indirizzo Agenzia: </span></div>
+                                                            <div class="col-xs-9 col-sm-9 col-xl-10"><label>@myRai.Business.CommonManager.ToTitleCase(accreditoStipendio.Indirizzo_Agenzia) - @myRai.Business.CommonManager.ToTitleCase(accreditoStipendio.Citta_Agenzia)</label></div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row push-10-t">
+                                                        <div class="col-sm-12">
+                                                            <label class="rai-font-md text-italic">Modifiche richieste:</label>
+                                                        </div>
+                                                    </div>
+                                                }*@
+                                            <div class="rai-table-info">
+                                                <div class="row push-xs-10">
+                                                    <div class="col-xs-3 col-sm-4 col-xl-2"><span>Status </span></div>
+                                                    <div class="col-xs-9 col-sm-8 col-xl-10"><i class="fa fa-circle feedback-warning-color"></i>&nbsp;<label class="rai-font-md-bold"><b>Da convalidare</b></label></div>
+                                                </div>
+                                                <div class="row push-xs-10" tabindex="0">
+                                                    <div class="col-xs-12 col-sm-4 col-xl-2"><span>Iban: </span></div>
+                                                    <div class="col-xs-12 col-sm-8 col-xl-10"><label>@item.contocDB.COD_IBAN</label></div>
+                                                </div>
+                                                <div class="row push-xs-10" tabindex="0">
+                                                    <div class="col-xs-12 col-sm-4 col-xl-2"><span>Agenzia: </span></div>
+                                                    <div class="col-xs-12 col-sm-8 col-xl-10"><label>@myRai.Business.CommonManager.ToTitleCase(item.ccVis.Agenzia)</label></div>
+                                                </div>
+                                                <div class="row" tabindex="0">
+                                                    <div class="col-xs-12 col-sm-4 col-xl-2"><span>Indirizzo Agenzia: </span></div>
+                                                    <div class="col-xs-12 col-sm-8 col-xl-10"><label>@myRai.Business.CommonManager.ToTitleCase(item.ccVis.Indirizzo_Agenzia) - @myRai.Business.CommonManager.ToTitleCase(item.ccVis.Citta_Agenzia)</label></div>
+                                                </div>
+                                            </div>
+                                            <div class="row push-10-t visible-xs">
+                                                <div class="col-xs-12 text-right">
+                                                    <div class="btn-action-icon-text-container">
+                                                        <button class="btn btn-action-icon btn-action-icon-text feedback-error-color  " id="del-mod-iban" onclick="DeleteModIban()" data-id-evento="@item.contocDB.ID_EVENTO"><i class="fa fa-fw fa-times"></i>&nbsp;@labelTipoOperazione</button>
+                                                        <button class="btn btn-action-icon btn-action-icon-text text-success" id="conv-mod-iban" data-toggle="modal" data-target="#modal-convalida-iban" onclick="ConvalidaIbanCodice()" data-id-evento-conv="@item.contocDB.ID_EVENTO"><i class="fa fa-fw fa-check"></i>&nbsp;Convalida</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+
+                                    </div>
+                                </div>
+                            }
+
+
+                        }
+
+
+                        @if (Model.ContiCorrente != null)
+                        {
+                            foreach (var item in Model.ContiCorrente.Where(x => !Model.conticorrentidaconv.Any(y => y.contocDB.COD_UTILIZZO == x.Codice_Utilizzo)).OrderBy(x => x.Codice_Utilizzo))
+                            {
+
+                                <div class="row push-10-t">
+                                    <div class="col-sm-12">
+                                        @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, ""))
+                                        {
+                                            if (myRai.Business.CommonManager.ToTitleCase(item.Tipologia).Equals("Accredito Stipendio"))
+                                            {
+
+
+                                                if (array2[0] == 1)
+                                                {
+                                                    <div class="row push-10">
+                                                        <div class="col-sm-6 col-xs-12">
+                                                            <label class="rai-font-md-bold">@myRai.Business.CommonManager.ToTitleCase(accreditoStipendio.Tipologia)</label>
+                                                        </div>
+
+                                                        @if (utenteabilitato || abilitatiTutti)
+                                                        {
+                                                            <div class="col-sm-6 text-right hidden-xs">
+
+                                                                @if (accreditoStipendio.flag_congelato.Equals("Y") || accreditoStipendio.flag_vincolato.Equals("Y") || corrispondente)
+                                                                {
+                                                                    <i class="icons icon-lock" style="font-size:1.5em;"></i>
+                                                                }
+                                                                else if ((Model.conticorrentidaconv != null && Model.conticorrentidaconv.Count() > 0))
+                                                                {
+
+                                                                    <button class="btn rai-btn-small" id="mod-iban-stipendio" data-toggle="modal" data-target="#modal-profilopersonale" onclick="ModificaIbanStipendio()" disabled="disabled">Modifica</button>
+                                                                }
+
+                                                                else
+                                                                {
+                                                                    <button class="btn rai-btn-small" id="mod-iban-stipendio" data-toggle="modal" data-target="#modal-profilopersonale" onclick="ModificaIbanStipendio()">Modifica</button>
+                                                                }
+                                                            </div>}
+                                                    </div>
+                                                    <div class="rai-table-info">
+                                                        @if (utenteabilitato || abilitatiTutti)
+                                                        {
+                                                            if (accreditoStipendio.flag_congelato.Equals("Y") || accreditoStipendio.flag_vincolato.Equals("Y"))
+                                                            {
+                                                                <div class="row" tabindex="0">
+                                                                    <div class="col-xs-3 col-sm-3 col-xl-2"><span>Vincoli: </span></div>
+                                                                    <div class="col-xs-9 col-sm-9 col-xl-10">
+                                                                        <label>
+                                                                            <i class="icons icon-lock"></i>&nbsp;
+                                                                            @if (accreditoStipendio.flag_congelato.Equals("Y"))
+                                                                            {
+                                                                                <span class="rai-font-md-bold">Conto congelato</span>
+                                                                            }
+                                                                            else if (accreditoStipendio.flag_vincolato.Equals("Y"))
+                                                                            {
+                                                                                <span class="rai-font-md-bold">
+                                                                                    Conto vincolato
+                                                                                </span>
+                                                                            }
+                                                                        </label>
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        }
+                                                        <div class="row push-xs-10" tabindex="0">
+                                                            <div class="col-xs-12 col-sm-4 col-xl-2"><span>Iban: </span></div>
+                                                            <div class="col-xs-12 col-sm-8 col-xl-10"><label id="ibanStipendio">@accreditoStipendio.Iban</label></div>
+                                                        </div>
+                                                        <div class="row push-xs-10" tabindex="0">
+                                                            <div class="col-xs-12 col-sm-4 col-xl-2"><span>Agenzia: </span></div>
+                                                            <div class="col-xs-12 col-sm-8 col-xl-10"><label>@myRai.Business.CommonManager.ToTitleCase(accreditoStipendio.Agenzia)</label></div>
+                                                        </div>
+                                                        <div class="row" tabindex="0">
+                                                            <div class="col-xs-12 col-sm-4 col-xl-2"><span>Indirizzo Agenzia: </span></div>
+                                                            <div class="col-xs-12 col-sm-8 col-xl-10"><label>@myRai.Business.CommonManager.ToTitleCase(accreditoStipendio.Indirizzo_Agenzia) - @myRai.Business.CommonManager.ToTitleCase(accreditoStipendio.Citta_Agenzia)</label></div>
+                                                        </div>
+                                                        <div class="row visible-xs push-10-t">
+
+                                                            @if (utenteabilitato || abilitatiTutti)
+                                                            {
+                                                                <div class="col-xs-12 text-right ">
+
+                                                                    @if (accreditoStipendio.flag_congelato.Equals("Y") || accreditoStipendio.flag_vincolato.Equals("Y") || corrispondente)
+                                                                    {
+                                                                        <i class="icons icon-lock" style="font-size:1.5em;"></i>
+                                                                    }
+                                                                    else if ((Model.conticorrentidaconv != null && Model.conticorrentidaconv.Count() > 0))
+                                                                    {
+
+                                                                        <button class="btn rai-btn-small" id="mod-iban-stipendio" data-toggle="modal" data-target="#modal-profilopersonale" onclick="ModificaIbanStipendio()" disabled="disabled">Modifica</button>
+                                                                    }
+
+                                                                    else
+                                                                    {
+                                                                        <button class="btn rai-btn-small" id="mod-iban-stipendio" data-toggle="modal" data-target="#modal-profilopersonale" onclick="ModificaIbanStipendio()">Modifica</button>
+                                                                    }
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </div>
+
+                                                    @*<div class="row">
+                                                            <div class="col-sm-6 text-right">
+
+                                                                @if ((Model.conticorrentidaconv != null && Model.conticorrentidaconv.Count() > 0) || accreditoStipendio.flag_congelato.Equals("Y") || accreditoStipendio.flag_vincolato.Equals("Y"))
+                                                                {
+
+                                                                    <button class="btn rai-btn-small" id="mod-iban-stipendio" data-toggle="modal" data-target="#modal-profilopersonale" onclick="ModificaIbanStipendio()" disabled="disabled">Modifica</button>
+                                                                }
+
+                                                                else
+                                                                {
+                                                                    <button class="btn rai-btn-small" id="mod-iban-stipendio" data-toggle="modal" data-target="#modal-profilopersonale" onclick="ModificaIbanStipendio()">Modifica</button>
+                                                                }
+                                                            </div>
+                                                        </div>*@
+
+
+                                                }
+                                            }
+                                            else
+
+                                            if (myRai.Business.CommonManager.ToTitleCase(item.Tipologia).Equals("Anticipo Trasferte"))
+                                            {
+
+
+                                                if (array2[1] == 1)
+                                                {
+                                                    <div class="row push-10">
+                                                        <div class="col-sm-6">
+                                                            <label class="rai-font-md-bold">@myRai.Business.CommonManager.ToTitleCase(anticipoTrasferte.Tipologia)</label>
+                                                        </div>
+
+                                                        @if (utenteabilitato || abilitatiTutti)
+                                                        {
+                                                            <div class="col-sm-6 text-right hidden-xs">
+
+                                                                @if ((Model.conticorrentidaconv != null && Model.conticorrentidaconv.Count() > 0))
+                                                                {
+                                                                    <button class="btn rai-btn-small" id="mod-iban-trasf" data-toggle="modal" data-target="#modal-profilopersonale" onclick="ModificaIbanTrasferte()" disabled="disabled">Modifica</button>
+                                                                    <button class="btn btn-action-icon" id="del-iban-trasf" data-info-ibant="@anticipoTrasferte.Iban" data-tipo-ibant="@anticipoTrasferte.Tipologia" onclick="DeleteIbanTrasferte()" disabled="disabled"><i class="fa fa-trash-o"></i></button>
+
+                                                                }
+                                                                else
+                                                                {
+                                                                    <button class="btn rai-btn-small" id="mod-iban-trasf" data-toggle="modal" data-target="#modal-profilopersonale" onclick="ModificaIbanTrasferte()">Modifica</button>
+                                                                    <button class="btn btn-action-icon" id="del-iban-trasf" data-info-ibant="@anticipoTrasferte.Iban" data-tipo-ibant="@anticipoTrasferte.Tipologia" onclick="DeleteIbanTrasferte()"><i class="fa fa-trash-o"></i></button>
+
+                                                                }
+                                                            </div>}
+                                                    </div>
+                                                    <div class="rai-table-info">
+                                                        <div class="row push-xs-10" tabindex="0">
+                                                            <div class="col-xs-12 col-sm-4 col-xl-2"><span>Iban: </span></div>
+                                                            <div class="col-xs-12 col-sm-8 col-xl-10"><label>@anticipoTrasferte.Iban</label></div>
+                                                        </div>
+                                                        <div class="row push-xs-10" tabindex="0">
+                                                            <div class="col-xs-12 col-sm-4 col-xl-2"><span>Agenzia: </span></div>
+                                                            <div class="col-xs-12 col-sm-8 col-xl-10"><label>@myRai.Business.CommonManager.ToTitleCase(anticipoTrasferte.Agenzia)</label></div>
+                                                        </div>
+                                                        <div class="row" tabindex="0">
+                                                            <div class="col-xs-12 col-sm-4 col-xl-2"><span>Indirizzo Agenzia: </span></div>
+                                                            <div class="col-xs-12 col-sm-8 col-xl-10"><label>@myRai.Business.CommonManager.ToTitleCase(anticipoTrasferte.Indirizzo_Agenzia) - @myRai.Business.CommonManager.ToTitleCase(anticipoTrasferte.Citta_Agenzia)</label></div>
+                                                        </div>
+                                                        <div class="row visible-xs push-10-t">
+
+                                                            @if (utenteabilitato || abilitatiTutti)
+                                                            {
+                                                                <div class="col-xs-12 text-right">
+
+                                                                    @if ((Model.conticorrentidaconv != null && Model.conticorrentidaconv.Count() > 0))
+                                                                    {
+                                                                        <button class="btn rai-btn-small" id="mod-iban-trasf" data-toggle="modal" data-target="#modal-profilopersonale" onclick="ModificaIbanTrasferte()" disabled="disabled">Modifica</button>
+                                                                        <button class="btn btn-action-icon" id="del-iban-trasf" data-info-ibant="@anticipoTrasferte.Iban" data-tipo-ibant="@anticipoTrasferte.Tipologia" onclick="DeleteIbanTrasferte()" disabled="disabled"><i class="fa fa-trash-o"></i></button>
+
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <button class="btn rai-btn-small" id="mod-iban-trasf" data-toggle="modal" data-target="#modal-profilopersonale" onclick="ModificaIbanTrasferte()">Modifica</button>
+                                                                        <button class="btn btn-action-icon" id="del-iban-trasf" data-info-ibant="@anticipoTrasferte.Iban" data-tipo-ibant="@anticipoTrasferte.Tipologia" onclick="DeleteIbanTrasferte()"><i class="fa fa-trash-o"></i></button>
+
+                                                                    }
+                                                                </div>}
+                                                        </div>
+
+                                                    </div>
+
+
+
+
+                                                }
+                                            }
+                                            else
+
+                                            if (myRai.Business.CommonManager.ToTitleCase(item.Tipologia).Equals("Anticipo Spese Di Produzione"))
+                                            {
+
+
+                                                if (array2[2] == 1)
+                                                {
+
+                                                    <div class="row push-10">
+                                                        <div class="col-sm-6">
+                                                            <label class="rai-font-md-bold">@myRai.Business.CommonManager.ToTitleCase(anticipoSpeseProd.Tipologia)</label>
+                                                        </div>
+
+                                                        @if (utenteabilitato || abilitatiTutti)
+                                                        {
+                                                            <div class="col-sm-6 text-right hidden-xs">
+
+                                                                @if ((Model.conticorrentidaconv != null && Model.conticorrentidaconv.Count() > 0))
+                                                                {
+                                                                    <button class="btn rai-btn-small" id="mod-iban-speseprod" data-toggle="modal" data-target="#modal-profilopersonale" onclick="ModificaIbanSpeseProd()" disabled="disabled">Modifica</button>
+                                                                    <button class="btn btn-action-icon" id="del-iban-sp" data-info-ibansp="@anticipoSpeseProd.Iban" data-tipo-ibansp="@anticipoSpeseProd.Tipologia" onclick="DeleteIbanSpeseProd()" disabled="disabled"><i class="fa fa-trash-o"></i></button>
+
+                                                                }
+                                                                else
+                                                                {
+                                                                    <button class="btn rai-btn-small" id="mod-iban-speseprod" data-toggle="modal" data-target="#modal-profilopersonale" onclick="ModificaIbanSpeseProd()">Modifica</button>
+                                                                    <button class="btn btn-action-icon" id="del-iban-sp" data-info-ibansp="@anticipoSpeseProd.Iban" data-tipo-ibansp="@anticipoSpeseProd.Tipologia" onclick="DeleteIbanSpeseProd()"><i class="fa fa-trash-o"></i></button>
+                                                                }
+
+                                                            </div>}
+                                                    </div>
+                                                    <div class="rai-table-info">
+                                                        <div class="row push-xs-10" tabindex="0">
+                                                            <div class="col-xs-12 col-sm-4 col-xl-2"><span>Iban: </span></div>
+                                                            <div class="col-xs-12 col-sm-8 col-xl-10"><label>@anticipoSpeseProd.Iban</label></div>
+                                                        </div>
+                                                        <div class="row push-xs-10" tabindex="0">
+                                                            <div class="col-xs-12 col-sm-4 col-xl-2"><span>Agenzia: </span></div>
+                                                            <div class="col-xs-12 col-sm-8 col-xl-10"><label>@myRai.Business.CommonManager.ToTitleCase(anticipoSpeseProd.Agenzia)</label></div>
+                                                        </div>
+                                                        <div class="row" tabindex="0">
+                                                            <div class="col-xs-12 col-sm-4 col-xl-2"><span>Indirizzo Agenzia: </span></div>
+                                                            <div class="col-xs-12 col-sm-8 col-xl-10"><label>@myRai.Business.CommonManager.ToTitleCase(anticipoSpeseProd.Indirizzo_Agenzia) - @myRai.Business.CommonManager.ToTitleCase(anticipoSpeseProd.Citta_Agenzia)</label></div>
+                                                        </div>
+
+                                                        <div class="row visible-xs push-10-t">
+                                                            @if (utenteabilitato || abilitatiTutti)
+                                                            {
+                                                                <div class="col-sm-12 text-right">
+
+                                                                    @if ((Model.conticorrentidaconv != null && Model.conticorrentidaconv.Count() > 0))
+                                                                    {
+                                                                        <button class="btn rai-btn-small" id="mod-iban-speseprod" data-toggle="modal" data-target="#modal-profilopersonale" onclick="ModificaIbanSpeseProd()" disabled="disabled">Modifica</button>
+                                                                        <button class="btn btn-action-icon" id="del-iban-sp" data-info-ibansp="@anticipoSpeseProd.Iban" data-tipo-ibansp="@anticipoSpeseProd.Tipologia" onclick="DeleteIbanSpeseProd()" disabled="disabled"><i class="fa fa-trash-o"></i></button>
+
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <button class="btn rai-btn-small" id="mod-iban-speseprod" data-toggle="modal" data-target="#modal-profilopersonale" onclick="ModificaIbanSpeseProd()">Modifica</button>
+                                                                        <button class="btn btn-action-icon" id="del-iban-sp" data-info-ibansp="@anticipoSpeseProd.Iban" data-tipo-ibansp="@anticipoSpeseProd.Tipologia" onclick="DeleteIbanSpeseProd()"><i class="fa fa-trash-o"></i></button>
+                                                                    }
+
+                                                                </div>}
+                                                        </div>
+                                                    </div>
+
+
+
+
+                                                }
+                                            }
+
+
+
+
+
+
+                                        }
+                                    </div>
+                                </div>
+
+                            }
+                        }
+
+
+                    </div>}
+                else
+                {
+                    @*<div class="rai-table-info">
+
+                            @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, ""))
+                            {
+                                <label> ATTENZIONE: non hai ancora dichiarato l'iban per l'accredito dello stipendio!</label>
+                            }
+                        </div>*@
+                }
+
+
+                @if (utenteabilitato || abilitatiTutti)
+                {
+
+                    @*Riga con bottone per aggiunta*@
+                    <div class="row">
+                        <div class="col-sm-12">
+                            @if ((Model.conticorrentidaconv != null && Model.conticorrentidaconv.Count() > 0) || !abilitaAggiunta || !abilitaAggiunta2 || corrispondente)
+                            {
+
+                                <button class="btn rai-btn-primary full-width" id="add-iban" data-toggle="modal" data-target="#modal-profilopersonale" onclick="addIban()" disabled="disabled">Aggiungi nuovo iban</button>
+                            }
+                            else
+                            {
+
+                                <button class="btn rai-btn-primary full-width" id="add-iban" data-toggle="modal" data-target="#modal-profilopersonale" onclick="addIban()">Aggiungi nuovo Iban</button>
+                            }
+                        </div>
+                    </div>
+
+                }
+
+
+
+
+            </div>
+        </div>
+    </div>
+}
+
+
+<div id="savedb" class="alert alert-info" style="position:fixed;bottom:10px;right:10px;display:none;z-index:100">
+    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+    <i class="fa fa-refresh fa-spin"></i> Salvataggio impostazioni in corso
+</div>
+
+<script>
+
+    function ConvalidaIbanCodice() {
+
+
+        $("#convalida-iban-content").html("");
+
+        var id = $("#conv-mod-iban").attr("data-id-evento-conv");
+
+        $("#convalida-iban-content").load("/ProfiloPersonale/ConvalidaIbanDialog?id_evento=" + id);
+
+    }
+
+    function ConvalidaCellCodice() {
+
+
+        $("#convalida-iban-content").html("");
+
+        var id = $("#conv-mod-cell").attr("data-id-evento-conv");
+
+        $("#convalida-iban-content").load("/ProfiloPersonale/ConvalidaCellDialog?id_evento=" + id);
+
+    }
+
+    function ConvalidaDomicilioCodice() {
+
+
+        $("#convalida-iban-content").html("");
+
+        var id = $("#conv-mod-dom").attr("data-id-evento-conv");
+
+        $("#convalida-iban-content").load("/ProfiloPersonale/ConvalidaDomicilioDialog?id_evento=" + id);
+
+    }
+
+
+    function addIban() {
+
+        $("#content-profilopersonale").html("");
+        //event.preventDefault();
+        //event.stopPropagation();
+        $("#content-profilopersonale").load("/ProfiloPersonale/NuovoIban");
+    }
+
+    function ModificaIbanStipendio() {
+
+        $("#content-profilopersonale").html("");
+        //event.preventDefault();
+        //event.stopPropagation();
+        $("#content-profilopersonale").load("/ProfiloPersonale/NuovoIbanStipendio");
+
+    }
+
+    function ModificaIbanTrasferte() {
+
+        $("#content-profilopersonale").html("");
+        //event.preventDefault();
+        //event.stopPropagation();
+        $("#content-profilopersonale").load("/ProfiloPersonale/NuovoIbanTrasferte");
+
+    }
+
+    function ModificaIbanSpeseProd() {
+
+        $("#content-profilopersonale").html("");
+        //event.preventDefault();
+        //event.stopPropagation();
+        $("#content-profilopersonale").load("/ProfiloPersonale/NuovoIbanSpeseProd");
+
+    }
+
+    function AggiungiCellulare() {
+
+        $("#content-profilopersonale").html("");
+        //event.preventDefault();
+        //event.stopPropagation();
+        $("#content-profilopersonale").load("/ProfiloPersonale/AggiungiCellulare");
+
+    }
+
+    function AggiungiCellulareDB() {
+        var form = $("#form-aggiungi-cellulare");
+        if (!form.valid()) return;
+
+
+
+        swal({
+            title: 'Sei sicuro?',
+            text: "La richiesta di modifica verrà inserita",
+            type: 'warning',
+            showCancelButton: true,
+      
+            confirmButtonText: '<i class="fa fa-check"></i> Sì',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+
+            AggiungiCellulareDBYes(form);
+        })
+    }
+
+    function AggiungiCellulareDBYes(f) {
+
+
+        $.ajax({
+            url: $(f).attr('action'),
+            type: 'POST',
+            data: $(f).serialize(),
+            success: function (data) {
+                if (data.result.trim() == "ok") {
+                    swal({
+                        title: 'Richiesta inserita',
+                        html: "Riceverai subito una e-mail di conferma. </br> Vuoi modificare anche il numero del Servizio in mobilità?",
+                        type: 'success',
+                        showCancelButton: true,
+
+                        confirmButtonText: '<i class="fa fa-check"></i> Sì',
+                        cancelButtonText: '<i class="fa fa-times"></i> No',
+                        reverseButtons: true,
+                        customClass: 'rai rai-confirm-cancel',
+                        reverseButtons: true
+                    }).then(function () {
+                        RaiUpdateWidget('ANAGRAFICA', "/profilopersonale/index", "replaceId", null, false, function () { $("#ANAGRAFICA").addClass("active"); });
+                        window.open('http://www.raiplace.rai.it/pagine/rai_vasco_iscrizione/', '_blank');
+                    })
+                    $("#modal-profilopersonale").modal("hide");
+                    RaiUpdateWidget('ANAGRAFICA', "/profilopersonale/index", "replaceId", null, false, function () { $("#ANAGRAFICA").addClass("active"); });
+                }
+                else {
+                    swal("Errore", data.result, "error")
+                }
+            }
+        });
+    }
+
+
+    function ModificaCellulare() {
+
+        $("#content-profilopersonale").html("");
+        //event.preventDefault();
+        //event.stopPropagation();
+        $("#content-profilopersonale").load("/ProfiloPersonale/NuovoCellulare");
+
+    }
+
+    function ModificaResidenza() {
+
+        $("#content-profilopersonale").html("");
+        //event.preventDefault();
+        //event.stopPropagation();
+        $("#content-profilopersonale").load("/ProfiloPersonale/NuovaResidenza");
+
+    }
+
+    function ModificaDomicilio() {
+
+        $("#content-profilopersonale").html("");
+        //event.preventDefault();
+        //event.stopPropagation();
+        $("#content-profilopersonale").load("/ProfiloPersonale/NuovoDomicilio");
+
+    }
+
+
+    function ModificaResidenzaDB() {
+        var form = $("#form-nuovo-residenza");
+        if (!form.valid()) return;
+
+
+
+        swal({
+            title: 'Sei sicuro?',
+            text: "La richiesta di modifica verrà inserita",
+            type: 'warning',
+            showCancelButton: true,
+
+            confirmButtonText: '<i class="fa fa-check"></i> Sì',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            customClass: 'rai rai-confirm-cancel',
+            reverseButtons: true
+        }).then(function () {
+
+            ModificaResidenzaDBYes(form);
+        })
+    }
+
+    function ModificaResidenzaDBYes(f) {
+
+
+        $.ajax({
+            url: $(f).attr('action'),
+            type: 'POST',
+            data: $(f).serialize(),
+            success: function (data) {
+                if (data.result.trim() == "ok") {
+                    swal({
+                        title: 'Richiesta inserita',
+                        html: "Riceverai subito una e-mail di conferma.",
+                        type: 'success',
+
+                        confirmButtonColor: '#3085d6',
+                        confirmButtonText: 'Ok',
+                        customClass: 'rai'
+
+                    }).then(function () {
+
+                        $("#modal-profilopersonale").modal("hide");
+                        RaiUpdateWidget('ANAGRAFICA', "/profilopersonale/index", "replaceId", null, false, function () { $("#ANAGRAFICA").addClass("active"); });
+
+
+                    })
+
+                    
+
+                }
+                else {
+                    swal("Errore", data.result, "error")
+                }
+            }
+        });
+    }
+
+
+    function ModificaDomicilioDB() {
+        var form = $("#form-nuovo-domicilio");
+        if (!form.valid()) return;
+
+
+
+        swal({
+            title: 'Sei sicuro?',
+            text: "La richiesta di modifica verrà inserita",
+            type: 'warning',
+            showCancelButton: true,
+
+            confirmButtonText: '<i class="fa fa-check"></i> Sì',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            customClass: 'rai rai-confirm-cancel',
+            reverseButtons: true
+        }).then(function () {
+
+            ModificaDomicilioDBYes(form);
+        })
+    }
+
+    function ModificaDomicilioDBYes(f) {
+
+
+        $.ajax({
+            url: $(f).attr('action'),
+            type: 'POST',
+            data: $(f).serialize(),
+            success: function (data) {
+                if (data.result.trim() == "ok") {
+                    swal({
+                        title: 'Richiesta inserita',
+                        html: "Riceverai subito una e-mail di conferma.",
+                        type: 'success',
+
+                        confirmButtonColor: '#3085d6',
+                        confirmButtonText: 'Ok',
+                        customClass: 'rai'
+
+                    }).then(function () {
+
+                        $("#modal-profilopersonale").modal("hide");
+                        RaiUpdateWidget('ANAGRAFICA', "/profilopersonale/index", "replaceId", null, false, function () { $("#ANAGRAFICA").addClass("active"); });
+                    })
+
+
+                }
+                else {
+                    swal("Errore", data.result, "error")
+                }
+            }
+        });
+    }
+
+
+
+
+    function ModificaCellulareDB() {
+        var form = $("#form-nuovo-cellulare");
+        if (!form.valid()) return;
+
+        
+
+        swal({
+            title: 'Sei sicuro?',
+            text: "La richiesta di modifica verrà inserita",
+            type: 'warning',
+            showCancelButton: true,
+       
+            confirmButtonText: '<i class="fa fa-check"></i> Sì',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            customClass: 'rai rai-confirm-cancel',
+            reverseButtons: true
+        }).then(function () {
+
+            ModificaCellulareDBYes(form);
+        })
+    }
+
+    function ModificaCellulareDBYes(f) {
+
+
+        $.ajax({
+            url: $(f).attr('action'),
+            type: 'POST',
+            data: $(f).serialize(),
+            success: function (data) {
+                if (data.result.trim() == "ok") {
+                    swal({
+                        title: 'Richiesta inserita',
+                        html: "Riceverai subito una e-mail di conferma. </br> Vuoi modificare anche il numero del Servizio in mobilità?",
+                        type: 'success',
+                        showCancelButton: true,
+                       
+                        confirmButtonText: '<i class="fa fa-check"></i> Sì',
+                        cancelButtonText: '<i class="fa fa-times"></i> No',
+                        reverseButtons: true,
+                        customClass: 'rai rai-confirm-cancel',
+                        
+                    }).then(function () {
+
+                        RaiUpdateWidget('ANAGRAFICA', "/profilopersonale/index", "replaceId", null, false, function () { $("#ANAGRAFICA").addClass("active"); });
+                        window.open('http://www.raiplace.rai.it/pagine/rai_vasco_iscrizione/', '_blank');
+                    })
+
+                    $("#modal-profilopersonale").modal("hide");
+                    RaiUpdateWidget('ANAGRAFICA', "/profilopersonale/index", "replaceId", null, false, function () { $("#ANAGRAFICA").addClass("active"); });
+                }
+                else {
+                    swal("Errore", data.result, "error")
+                }
+            }
+        });
+    }
+
+    function AggiungiIbanDB() {
+        var form = $("#form-nuovo-iban");
+
+
+
+        if (!form.valid()) {
+
+
+
+            if ($("#flag-anticipo-spprod").prop("checked") == false &&
+                $("#flag-anticipo-trasferte").prop("checked") == false && $("#flag-accredito-stipendio").prop("checked") == false) {
+                $("#tipologiaerror").text("Campo obbligatorio");
+                return;
+
+            }
+
+
+
+
+            return;
+        }
+
+
+        if ($("#flag-anticipo-spprod").prop("checked") == false &&
+            $("#flag-anticipo-trasferte").prop("checked") == false && $("#flag-accredito-stipendio").prop("checked") == false) {
+            $("#tipologiaerror").text("Campo obbligatorio");
+            return;
+        }
+
+        if ($("#inputiban").val() == $("#stipendio").text()) {
+            $('#ugualestipendio').show();
+            return;
+        }
+
+
+        swal({
+            title: 'Sei sicuro?',
+            text: "La richiesta di modifica verrà inserita",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sì',
+            cancelButtonText: 'Annulla'
+        }).then(function () {
+
+            AggiungiIbanDBYes(form);
+        })
+    }
+
+
+
+    function AggiungiIbanDBYes(f) {
+
+
+                $.ajax({
+                    url: $(f).attr('action'),
+                    type: 'POST',
+                    data: $(f).serialize(),
+                    success: function (data) {
+                        if (data.result.trim() == "ok") {
+                            swal("Richiesta  inserita", "Riceverai subito una e-mail di conferma", "success");
+                            $("#modal-profilopersonale").modal("hide");
+                            RaiUpdateWidget('DATIBANCARI', "/profilopersonale/index", "replaceId", null, false, function () { $("#DATIBANCARI").addClass("active"); });
+                        }
+                        else {
+                            swal("Errore", data.result, "error")
+                        }
+                    }
+                });
+
+    }
+
+    function ModificaIbanStipendioDB() {
+        var form = $("#form-nuovo-iban-stipendio");
+        if (!form.valid()) return;
+
+        if ($("#inputiban").val() == $("#stipendio").text()) { return; }
+
+        swal({
+            title: 'Sei sicuro?',
+            text: "La richiesta di modifica verrà inserita",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sì',
+            cancelButtonText: 'Annulla'
+        }).then(function () {
+
+            ModificaIbanStipendioDBYes(form);
+        })
+    }
+
+    function ModificaIbanStipendioDBYes(f) {
+
+
+        $.ajax({
+            url: $(f).attr('action'),
+            type: 'POST',
+            data: $(f).serialize(),
+            success: function (data) {
+                if (data.result.trim() == "ok") {
+                    swal("Richiesta inserita", "Riceverai subito una e-mail di conferma", "success");
+                    $("#modal-profilopersonale").modal("hide");
+                    RaiUpdateWidget('DATIBANCARI', "/profilopersonale/index", "replaceId", null, false, function () { $("#DATIBANCARI").addClass("active"); });
+                }
+                else {
+                    swal("Errore", data.result, "error")
+                }
+            }
+        });
+    }
+
+    function ConvalidaIbanCodiceYes() {
+        event.preventDefault();
+        var form = $("#form-convalida-iban-codice");
+        if (!form.valid()) return;
+
+
+        $('#convalida-iban-codice').enable(false);
+
+        $.ajax({
+            url: $(form).attr('action'),
+            type: 'POST',
+            data: $(form).serialize(),
+            success: function (data) {
+                if (data.result.trim() == "ok") {
+                    swal("Richiesta convalidata", " ", "success");
+
+                    $("#modal-convalida-iban").modal("hide");
+
+                    RaiUpdateWidget('DATIBANCARI', "/profilopersonale/index", "replaceId", null, false, function () { $("#DATIBANCARI").addClass("active"); });
+                }
+                else {
+                    swal("Errore", data.result, "error")
+                    $('#convalida-iban-codice').enable(true);
+                }
+            }
+        });
+    }
+
+    function ConvalidaCellCodiceYes() {
+        event.preventDefault();
+        var form = $("#form-convalida-cell-codice");
+        if (!form.valid()) return;
+
+
+        $('#convalida-cell-codice').enable(false);
+
+        $.ajax({
+            url: $(form).attr('action'),
+            type: 'POST',
+            data: $(form).serialize(),
+            success: function (data) {
+                if (data.result.trim() == "ok") {
+                    swal({ title: "Richiesta convalidata", type: "success", confirmButtonText: 'Ok', confirmButtonColor: '#3085d6', customClass: 'rai' });
+
+                    $("#modal-convalida-iban").modal("hide");
+
+                    RaiUpdateWidget('ANAGRAFICA', "/profilopersonale/index", "replaceId", null, false, function () { $("#ANAGRAFICA").addClass("active"); });
+                }
+                else {
+                    swal("Errore", data.result, "error")
+                    $('#convalida-cell-codice').enable(true);
+                }
+            }
+        });
+    }
+
+    function ConvalidaDomicilioCodiceYes() {
+        event.preventDefault();
+        var form = $("#form-convalida-domicilio-codice");
+        if (!form.valid()) return;
+
+
+        $('#convalida-domicilio-codice').enable(false);
+
+        $.ajax({
+            url: $(form).attr('action'),
+            type: 'POST',
+            data: $(form).serialize(),
+            success: function (data) {
+                if (data.result.trim() == "ok") {
+                    swal({ title: "Richiesta convalidata", type: "success", confirmButtonText: 'Ok', confirmButtonColor: '#3085d6', customClass: 'rai' });
+
+                    $("#modal-convalida-iban").modal("hide");
+
+                    RaiUpdateWidget('ANAGRAFICA', "/profilopersonale/index", "replaceId", null, false, function () { $("#ANAGRAFICA").addClass("active"); });
+                }
+                else {
+                    swal("Errore", data.result, "error")
+                    $('#convalida-domicilio-codice').enable(true);
+                }
+            }
+        });
+    }
+
+
+    function ModificaIbanTrasferteDB() {
+        var form = $("#form-nuovo-iban-trasferte");
+
+
+        if (!form.valid()) return;
+        if ($("#inputiban").val() == $("#stipendio").text()) { return; }
+
+
+
+
+
+
+        swal({
+            title: 'Sei sicuro?',
+            text: "La richiesta di modifica verrà inserita",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sì',
+            cancelButtonText: 'Annulla'
+        }).then(function () {
+
+            ModificaIbanTrasferteDBYes(form);
+        })
+
+    }
+
+
+    function ModificaIbanTrasferteDBYes(f) {
+
+
+        $.ajax({
+            url: $(f).attr('action'),
+            type: 'POST',
+            data: $(f).serialize(),
+            success: function (data) {
+                if (data.result.trim() == "ok") {
+                    swal("Richiesta inserita", "Riceverai subito una e-mail di conferma", "success");
+                    $("#modal-profilopersonale").modal("hide");
+                    RaiUpdateWidget('DATIBANCARI', "/profilopersonale/index", "replaceId", null, false, function () { $("#DATIBANCARI").addClass("active"); });
+
+                }
+                else {
+                    swal("Errore", data.result, "error")
+                }
+            }
+        });
+    }
+
+
+    function ModificaIbanSpeseProdDB() {
+        var form = $("#form-nuovo-iban-speseprod");
+
+        if (!form.valid()) return;
+        if ($("#inputiban").val() == $("#stipendio").text()) { return; }
+
+
+
+        swal({
+            title: 'Sei sicuro?',
+            text: "La richiesta di modifica verrà inserita",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sì',
+            cancelButtonText: 'Annulla'
+        }).then(function () {
+
+            ModificaIbanSpeseProdDBYes(form);
+        })
+    }
+
+
+
+
+    function ModificaIbanSpeseProdDBYes(f) {
+
+
+        $.ajax({
+            url: $(f).attr('action'),
+            type: 'POST',
+            data: $(f).serialize(),
+            success: function (data) {
+                if (data.result.trim() == "ok") {
+                    swal("Richiesta inserita", "Riceverai subito una e-mail di conferma", "success");
+                    $("#modal-profilopersonale").modal("hide");
+                    RaiUpdateWidget('DATIBANCARI', "/profilopersonale/index", "replaceId", null, false, function () { $("#DATIBANCARI").addClass("active"); });
+                }
+                else {
+                    swal("Errore", data.result, "error")
+                }
+            }
+        });
+    }
+
+    function DeleteModIban() {
+        swal({
+            title: 'Sei sicuro?',
+            text: "La richiesta verrà cancellata",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sì, cancella!',
+            cancelButtonText: 'Annulla'
+        }).then(function () {
+
+            DeleteModIbanYes();
+        })
+    }
+
+    function DeleteModIbanYes() {
+        var id = $("#del-mod-iban").attr("data-id-evento");
+        if (id == null) {
+            return;
+        }
+        else {
+            $.ajax({
+
+                type: 'GET',
+                url: "/profilopersonale/deletemodiban",
+                datatype: "json",
+
+                data: { idev: id },
+                success: function (data) {
+                    if (data.result.trim() == "ok") {
+                        swal("Richiesta eliminata","", "success");
+                        RaiUpdateWidget('DATIBANCARI', "/profilopersonale/index", "replaceId", null, false, function () { $("#DATIBANCARI").addClass("active"); });
+                    }
+                    else {
+                        swal("Errore", data.result, "error")
+                    }
+                }
+            });
+        }
+    }
+
+    function DeleteModRes() {
+        swal({
+            title: 'Sei sicuro?',
+            text: "La richiesta verrà cancellata",
+            type: 'warning',
+            showCancelButton: true,
+
+            confirmButtonText: '<i class="fa fa-check"></i> Sì, cancella!',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+
+            DeleteModResYes();
+        })
+    }
+
+    function DeleteModResYes() {
+        var id = $("#del-mod-res").attr("data-id-evento");
+        if (id == null) {
+            return;
+        }
+        else {
+            $.ajax({
+
+                type: 'GET',
+                url: "/profilopersonale/deletemodiban",
+                datatype: "json",
+
+                data: { idev: id },
+                success: function (data) {
+                    if (data.result.trim() == "ok") {
+                        swal({
+                            title: 'Richiesta eliminata',
+
+                            type: 'success',
+                            confirmButtonColor: '#3085d6',
+                            confirmButtonText: 'Ok',
+                            customClass: 'rai'
+                        });
+                        RaiUpdateWidget('ANAGRAFICA', "/profilopersonale/index", "replaceId", null, false, function () { $("#ANAGRAFICA").addClass("active"); });
+                    }
+                    else {
+                        swal("Errore", data.result, "error")
+                    }
+                }
+            });
+        }
+    }
+
+    function DeleteModDom() {
+        swal({
+            title: 'Sei sicuro?',
+            text: "La richiesta verrà cancellata",
+            type: 'warning',
+            showCancelButton: true,
+
+            confirmButtonText: '<i class="fa fa-check"></i> Sì, cancella!',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+
+            DeleteModDomYes();
+        })
+    }
+
+    function DeleteModDomYes() {
+        var id = $("#del-mod-dom").attr("data-id-evento");
+        if (id == null) {
+            return;
+        }
+        else {
+            $.ajax({
+
+                type: 'GET',
+                url: "/profilopersonale/deletemodiban",
+                datatype: "json",
+
+                data: { idev: id },
+                success: function (data) {
+                    if (data.result.trim() == "ok") {
+                        swal({
+                            title: 'Richiesta eliminata',
+
+                            type: 'success',
+                            confirmButtonColor: '#3085d6',
+                            confirmButtonText: 'Ok',
+                            customClass: 'rai'
+                        });
+                        RaiUpdateWidget('ANAGRAFICA', "/profilopersonale/index", "replaceId", null, false, function () { $("#ANAGRAFICA").addClass("active"); });
+                    }
+                    else {
+                        swal("Errore", data.result, "error")
+                    }
+                }
+            });
+        }
+    }
+
+
+    function DeleteModCell() {
+        swal({
+            title: 'Sei sicuro?',
+            text: "La richiesta verrà cancellata",
+            type: 'warning',
+            showCancelButton: true,
+
+            confirmButtonText: '<i class="fa fa-check"></i> Sì, cancella!',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+
+            DeleteModCellYes();
+        })
+    }
+
+    function DeleteModCellYes() {
+        var id = $("#del-mod-cell").attr("data-id-evento");
+        if (id == null) {
+            return;
+        }
+        else {
+            $.ajax({
+
+                type: 'GET',
+                url: "/profilopersonale/deletemodiban",
+                datatype: "json",
+
+                data: { idev: id },
+                success: function (data) {
+                    if (data.result.trim() == "ok") {
+                        swal({
+                            title: 'Richiesta eliminata',
+                            
+                            type:'success',
+                            confirmButtonColor: '#3085d6',
+                            confirmButtonText: 'Ok',
+                            customClass: 'rai'
+                        });
+                        RaiUpdateWidget('ANAGRAFICA', "/profilopersonale/index", "replaceId", null, false, function () { $("#ANAGRAFICA").addClass("active"); });
+                    }
+                    else {
+                        swal("Errore", data.result, "error")
+                    }
+                }
+            });
+        }
+    }
+
+    function DeleteCellulare() {
+
+        swal({
+            title: 'Sei sicuro?',
+            text: "Il numero di cellulare verrà eliminato ",
+            type: 'warning',
+            showCancelButton: true,
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel',
+
+            confirmButtonText: '<i class="fa fa-check"></i>Sì, cancella!',
+            cancelButtonText: '<i class="fa fa-times"></i>Annulla'
+        }).then(function () {
+
+            DeleteCellulareYes();
+        })
+    }
+
+    function DeleteCellulareYes() {
+        var prefisso = $("#del-cell").attr("data-prefisso");
+        var numero = $("#del-cell").attr("data-numero");
+        var tipo = $("#del-cell").attr("data-tipo-cell");
+        if (prefisso == null || numero == null || tipo == null) {
+            return;
+        }
+        else {
+            $.ajax({
+
+                type: 'GET',
+                url: "/profilopersonale/deletecellulare",
+                datatype: "json",
+
+                data: { prefix: prefisso, num: numero, tipologia: tipo },
+                success: function (data) {
+                    if (data.result.trim() == "ok") {
+                        swal({ title: "Richiesta inserita", text: "Riceverai subito una e-mail di conferma", type: "success", confirmButtonText: 'Ok', confirmButtonColor: '#3085d6', customClass: 'rai' });
+                        RaiUpdateWidget('ANAGRAFICA', "/profilopersonale/index", "replaceId", null, false, function () { $("#ANAGRAFICA").addClass("active"); });
+                    }
+                    else {
+                        swal("Errore", data.result, "error")
+                    }
+                }
+            });
+        }
+    }
+
+    function DeleteIbanTrasferte() {
+
+        swal({
+            title: 'Sei sicuro?',
+            text: "La tipologia di dati bancari verrà chiusa e per questa tipologia di anticipi verranno utilizzate le medesime coordinate comunicate per l'accredito dello stipendio. ",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sì, cancella!',
+            cancelButtonText: 'Annulla'
+        }).then(function () {
+
+            DeleteIbanTrasferteYes();
+        })
+    }
+
+    function DeleteIbanTrasferteYes() {
+        var iban = $("#del-iban-trasf").attr("data-info-ibant");
+        var tipologia = $("#del-iban-trasf").attr("data-tipo-ibant");
+        if (iban == null || tipologia == null) {
+            return;
+        }
+        else {
+            $.ajax({
+
+                type: 'GET',
+                url: "/profilopersonale/deleteibantrasf",
+                datatype: "json",
+
+                data: { infoiban: iban, tipoiban: tipologia },
+                success: function (data) {
+                    if (data.result.trim() == "ok") {
+                        swal("Richiesta inserita", "Riceverai subito una e-mail di conferma", "success");
+                        RaiUpdateWidget('DATIBANCARI', "/profilopersonale/index", "replaceId", null, false, function () { $("#DATIBANCARI").addClass("active"); });
+                    }
+                    else {
+                        swal("Errore", data.result, "error")
+                    }
+                }
+            });
+        }
+    }
+
+
+    function DeleteIbanSpeseProd() {
+        swal({
+            title: 'Sei sicuro?',
+            text: "La tipologia di dati bancari verrà chiusa e per questa tipologia di anticipi verranno utilizzate le medesime coordinate comunicate per l'accredito dello stipendio.",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sì, cancella!',
+            cancelButtonText: 'Annulla'
+        }).then(function () {
+
+            DeleteIbanSpeseProdYes();
+        })
+    }
+
+
+    function DeleteIbanSpeseProdYes() {
+        var iban = $("#del-iban-sp").attr("data-info-ibansp");
+        var tipologia = $("#del-iban-sp").attr("data-tipo-ibansp");
+        if (iban == null || tipologia == null) {
+            return;
+        }
+        else {
+            $.ajax({
+
+                type: 'GET',
+                url: "/profilopersonale/deleteibanspeseprod",
+                datatype: "json",
+
+                data: { infoiban: iban, tipoiban: tipologia },
+                success: function (data) {
+                    if (data.result.trim() == "ok") {
+                        swal("Richiesta inserita", "Riceverai subito una e-mail di conferma", "success");
+                        RaiUpdateWidget('DATIBANCARI', "/profilopersonale/index", "replaceId", null, false, function () { $("#DATIBANCARI").addClass("active"); });
+
+                    }
+                    else {
+                        swal("Errore", data.result, "error")
+                    }
+                }
+            });
+        }
+    }
+
+    function FinestraErrore(verifica) {
+        if (verifica==false) {
+
+            swal("Attenzione", "La richiesta da convalidare non è stata trovata", "warning").then(function () {
+
+                //window.location.href= '../profilopersonale';
+
+        });
+        }
+    }
+
+    function FinestraConvalidaOK(verifica) {
+        if (verifica == true) {
+
+            swal("Richiesta convalidata", " ", "success").then(function () {
+
+                window.location.href = '../profilopersonale';
+
+            });
+        }
+    }
+
+
+    window.addEventListener('load', function () {
+        FinestraErrore(@(Model.RichiestaDaConvalidareFound?"true":"false"));
+    })
+
+     window.addEventListener('load', function () {
+        FinestraConvalidaOK(@(Model.RichiestaConvalidata?"true":"false"));
+    })
+
+
+    function checkInputValue(checkRadio) {
+        $('#ugualestipendio').hide();
+        $('#ibanestero').hide();
+
+        var iban = $('#inputiban').val();
+        var intestatario = $('#Contocorrentedb.DES_INTESTATARIO').val();
+        var estero = iban.substring(0, 2);
+        $('#ugualestipendio').attr("data", estero);
+
+        if (estero == "IT" || estero == "it" || estero=="") {
+            $('#ibanestero').hide();
+        }
+        else
+        {
+            $('#ibanestero').show();
+        }
+
+        var validRadioValue = true;
+        if (checkRadio) {
+            validRadioValue = $("#flag-anticipo-spprod").prop("checked") == true ||
+                 $("#flag-anticipo-trasferte").prop("checked") == true || $("#flag-accredito-stipendio").prop("checked") == true;
+        }
+
+        if (iban != '' && intestatario != '' && validRadioValue) {
+            $('#submitIban').enable(true);
+        }
+        else {
+            $('#submitIban').enable(false);
+        }
+    }
+
+    function checkInputCell()
+    {   
+        var pref = $('#cellprefix').val();
+        var numero = $('#cellnum').val();
+
+        if (pref != '' && numero != '') { $('#submitIban').enable(true); }
+
+        
+        
+        var cellold = $('#cellulareform').attr("cell");
+
+        if (numero == cellold) {
+            $('#ugualecellulare').show();
+            $('#submitIban').enable(false);
+        }
+        else
+        {
+            $('#ugualecellulare').hide();
+            $('#submitIban').enable(true);
+        }
+        
+    }
+
+
+    function checkInputRes() {
+        var ind = $('#ind-res').val();
+        var cap = $('#cap-res').val();
+        var comune = $('#comune-res').val();
+        var data2 = $('#cambio-data').val();
+
+        var today = new Date();
+        var today_y = String(today.getFullYear());
+        
+
+        $('#annoprecedente').attr("data", today_y);
+        $('#annoprecedente').attr("data-x", data2);
+        $('#annoprecedente').attr("cap", cap);
+        $('#annoprecedente').attr("ind", ind);
+        $('#annoprecedente').attr("comune", comune);
+
+        
+
+        
+
+        if (data2 != "" && ind != "" && cap != "" && comune != "")
+        {
+            $('#submitDatiRes').removeAttr('disabled');
+
+   
+            $('#annoprecedente').attr("test", test);
+ 
+        }
+
+
+
+    
+
+        if (data2 != '') {
+
+            var data_anno = String(data2.substring(6, 10));
+            var test = data_anno.localeCompare(today_y);
+
+        if (test == 0) {
+            $('#annoprecedente').hide();
+            $('#submitDatiRes').removeAttr('disabled');
+        }
+        else
+        {
+
+
+            $('#annoprecedente').show();
+            $('#submitDatiRes').attr('disabled', 'disabled');
+        }
+        }
+
+    }
+
+
+    function checkInputDom() {
+        var ind = $('#ind-dom').val();
+        var cap = $('#cap-dom').val();
+        var comune = $('#comune-dom').val();
+        var civico = $('#civico-dom').val();
+
+
+        if (ind != "" && cap != "" && comune != "" && civico != "") {
+            $('#submitDatiRes').removeAttr('disabled');
+
+
+          
+
+        }
+
+
+
+    }
+
+  
+
+    function updateValue(e) {
+        var ibanvalue = e.target.value;
+
+        var ibanStip = $('#stipendio').text();
+        
+
+        if (ibanvalue == ibanStip) {
+           
+            $('#ugualestipendio').show();
+
+        }
+    else
+        {
+            $('#ugualestipendio').hide();
+            $.ajax({
+
+                type: 'GET',
+                url: "/profilopersonale/getanagbancaonline",
+                datatype: "json",
+
+                data: { iban: ibanvalue },
+                success: function (data) {
+                    if (data.result.trim() == "ok") {
+
+                        var agenzia = data.agenzia;
+                        var indirizzo = data.indirizzo;
+                        if (data.citta != '') {
+                            indirizzo += " - " + data.citta;
+                        }
+
+                        var citta = data.citta;
+
+                        //$("#datibanca").html("<label>Agenzia:</label><span>" + agenzia + "</span><label>Indirizzo agenzia:</label><span>" + indirizzo + "</span><label>Città agenzia:</label><span>" + citta + "</span>"
+                        //);
+
+                        $('#datibanca_agenzia').text(agenzia);
+                        $('#datibanca_indirizzo').text(indirizzo);
+                        $('#datibanca').show();
+                    }
+                    else {
+
+                        $('#datibanca_agenzia').text('');
+                        $('#datibanca_indirizzo').text('');
+                        $('#datibanca').hide();
+                    }
+
+
+                }
+            });
+        }
+
+
+    }
+
+
+
+
+    function disabilitaEnter(event) {
+
+        if (event.keyCode == 13) {
+            event.preventDefault();
+            return false;
+        }
+    }
+
+</script>

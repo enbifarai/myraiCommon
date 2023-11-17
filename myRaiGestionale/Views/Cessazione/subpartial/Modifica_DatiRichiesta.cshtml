@@ -1,0 +1,627 @@
+﻿@using myRaiCommonModel.Gestionale
+@using myRaiCommonManager.Cessazione
+@using myRaiHelper
+@model CessazioneModel
+
+@{
+    bool hasErrorAlert = false;
+    string errorAlertText = "";
+    bool showExpireDate = false;
+    string expireText = "";
+
+    //int limitDataArrivo = 15;
+    //int limitDataArrivoInt = 7;
+
+    var parLimiti = HrisHelper.GetParametriJson<myRaiData.Incentivi.XR_HRIS_PARAM>(HrisParam.IncentiviParametri);
+    var parDataArrivo = parLimiti.FirstOrDefault(x => x.COD_PARAM == "LimiteConsegnaEstratti");
+    var parDataArrivoInt = parLimiti.FirstOrDefault(x => x.COD_PARAM == "LimiteRichiestaIntegrazione");
+    int limitDataArrivo = Convert.ToInt32(parDataArrivo.COD_VALUE1);
+    int limitDataArrivoInt = Convert.ToInt32(parDataArrivoInt.COD_VALUE1);
+
+    DateTime limitQuota100 = new DateTime(2021, 12, 31);
+
+
+    if (Model.Pratica.ID_TIPOLOGIA == (int)CessazioneTipo.Incentivazione && Model.Pratica.DTA_RICHIESTA.HasValue)
+    {
+        if (!Model.Pratica.DATA_ARRIVO_DOC.HasValue)
+        {
+            var dataScadenza = Model.Pratica.GetField<DateTime>("LimiteConsegnaEstratti", Model.Pratica.DTA_RICHIESTA.Value.AddDays(limitDataArrivo));
+            if (dataScadenza < DateTime.Today)
+            {
+                hasErrorAlert = true;
+                errorAlertText = parDataArrivo.COD_VALUE3;
+            }
+            else
+            {
+                showExpireDate = true;
+                expireText = String.Format(parDataArrivo.COD_VALUE2, dataScadenza);
+            }
+        }
+        else if (Model.Pratica.DATA_RICH_INT.HasValue && !Model.Pratica.DATA_ARRIVO_INT.HasValue)
+        {
+            var dataScadenza = Model.Pratica.GetField<DateTime>("LimiteRichiestaIntegrazione", Model.Pratica.DATA_RICH_INT.Value.AddDays(limitDataArrivoInt));
+            if (dataScadenza < DateTime.Today)
+            {
+                hasErrorAlert = true;
+                errorAlertText = parDataArrivoInt.COD_VALUE3;
+            }
+            else
+            {
+                showExpireDate = true;
+                expireText = String.Format(parDataArrivoInt.COD_VALUE2, dataScadenza);
+            }
+        }
+    }
+
+    var tipologieList = CessazioneManager.GetTipologiaUscita();
+
+    var decodScelta = CessazioneManager.DecodTipologiaUscita(Model.Pratica.NOT_TIP_SCELTA);
+
+    var matObiettivi = myRaiGestionale.Controllers.CessazioneController.GetDateMaturazioneRequisiti();
+}
+
+<div id="modRichIns">
+    @if (hasErrorAlert)
+    {
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="alert alert-danger">
+                    <span class="text-bold">Scadenza termine</span><br />
+                    <span>@errorAlertText</span>
+                </div>
+            </div>
+        </div>
+
+    }
+    @if (showExpireDate)
+    {
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="alert alert-warning">
+                    <span class="text-bold">In scadenza</span><br />
+                    <span>@expireText</span>
+                </div>
+            </div>
+        </div>
+    }
+    @if (Model.NotificaSollecito.HasValue)
+    {
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="alert alert-info">
+                    <span class="text-bold">Notifica sollecito</span><br />
+                    <span>Inviata il @Model.NotificaSollecito.Value.ToString("dd/MM/yyyy")</span>
+                </div>
+            </div>
+        </div>
+    }
+    @if (!Model.NotificaSollecito.HasValue && showExpireDate)
+    {
+        <div class="row">
+            <div class="col-sm-12">
+                <a href="#" class="btn rai-btn-small full-width" onclick="IncGestioneSollecito(@Model.Pratica.ID_DIPENDENTE, 'SollecitoEstratti');">Invia sollecito</a>
+            </div>
+        </div>
+    }
+    else if (Model.NotificaSollecito.HasValue && hasErrorAlert)
+    {
+        <div class="row">
+            <div class="col-sm-12">
+                <a href="#" class="btn rai-btn-small full-width" onclick="IncGestioneSollecito(@Model.Pratica.ID_DIPENDENTE, 'DecadenzaEstratti');">Notifica decadenza</a>
+            </div>
+        </div>
+    }
+
+
+    @if (Model.DatiQuota100 != null && Model.DatiQuota100.data_compimento_62_anni_eta < limitQuota100 && Model.DatiQuota100.data_38_anni_anzianita_servizio < limitQuota100)
+    {
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="alert alert-info">
+                    <label class="text-bold">Quota 100</label><br />
+                    <span>
+                        Il dipendente ha raggiunto i requisiti per la "Quota 100" in data
+                        @if (Model.DatiQuota100.data_compimento_62_anni_eta > Model.DatiQuota100.data_38_anni_anzianita_servizio)
+                        {
+                            <span>@(Model.DatiQuota100.data_compimento_62_anni_eta.ToString("dd/MM/yyyy")).</span>
+                        }
+                        else
+                        {
+                            <span>@(Model.DatiQuota100.data_38_anni_anzianita_servizio.ToString("dd/MM/yyyy")).</span>
+                        }
+                    </span>
+                </div>
+            </div>
+        </div>
+    }
+
+    <form id="form-accettazioneRichiesta" novalidate="novalidate" method="post">
+        @Html.HiddenFor(x => x.Pratica.ID_DIPENDENTE)
+        <div class="form-group">
+            @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Dati richiesta"))
+            {
+                <div class="rai-table-info">
+                    @if (Model.Pratica.PROGR_RICHIESTA.HasValue)
+                    {
+                        <div class="row push-5">
+                            <div class="col-sm-4">
+                                <label>Progressivo</label>
+                            </div>
+                            <div class="col-sm-8">
+                                <span>@Model.Pratica.PROGR_RICHIESTA</span>
+                            </div>
+                        </div>
+                    }
+                    @if (Model.Pratica.DTA_RICHIESTA.HasValue)
+                    {
+                        <div class="row push-5">
+                            <div class="col-sm-4">
+                                @Html.LabelFor(m => m.Pratica.DTA_RICHIESTA, "Data inserimento")
+                            </div>
+                            <div class="col-sm-8">
+                                <span>@Model.Pratica.DTA_RICHIESTA.Value.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                            </div>
+                        </div>
+                    }
+                    <div class="row push-5">
+                        <div class="col-sm-4">
+                            @Html.LabelFor(m => m.Pratica.DATA_USCITA_RICH, "Data uscita richiesta")
+                        </div>
+                        <div class="col-sm-8">
+                            @if (Model.Pratica.DATA_USCITA_RICH.HasValue)
+                            {
+                                <span>@Model.Pratica.DATA_USCITA_RICH.Value.ToString("dd/MM/yyyy")</span>
+                            }
+                            else
+                            {
+                                <span>-</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="row push-5">
+                        <div class="col-sm-4">
+                            @Html.LabelFor(m => m.Pratica.NOT_TIP_SCELTA, "Tipologia scelta")
+                        </div>
+                        <div class="col-sm-8">
+                            <span>@decodScelta</span>
+                        </div>
+                    </div>
+                    <div class="row push-5">
+                        <div class="col-sm-4">
+                            <label>In servizio a TI il 20/05/78</label>
+                        </div>
+                        <div class="col-sm-8">
+                            @(Model.TempoInd_19780520 ? "Sì" : "No")
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <a href="@Url.Action("GetModuloRich","Cessazione", new { idDip = Model.Pratica.ID_DIPENDENTE })" target="_blank"><i class="fa fa-download"></i>&nbsp; Modulo di richiesta</a>
+                        </div>
+                    </div>
+                </div>
+            }
+
+
+            <style>
+                a[href="#quota100Info"]:not(.collapsed) span.fa-chevron-down {
+                    transform: rotate(180deg);
+                }
+            </style>
+            <div class="row push-10">
+                <div class="col-sm-12">
+                    @Html.LabelForRequiredObbl(m => m.Pratica.NOT_TIP_ACCERT, "Tipologia accertata", new { @class = "rai-caption" })
+                    @Html.RaiSelectFor(m => m.Pratica.NOT_TIP_ACCERT, tipologieList, onSelectchange: "IncCheckTipologia()", attributes: new { required = "required" }, hideSearch: true)
+                    @Html.ValidationMessageFor(m => m.Pratica.NOT_TIP_ACCERT)
+                    <a data-toggle="collapse" class="collapsed rai-font-sm-neutral-bold interactive-primary-color" aria-expanded="false" href="#quota100Info" style="display:block">Informazioni Quota 100 <span class="fa fa-chevron-down"></span></a>
+                </div>
+            </div>
+            <div class="row collapse " id="quota100Info">
+                <div class="col-sm-12">
+                    @if (Model.DatiQuota100 != null)
+                    {
+                        <div class="rai-table-info rounded bg-neutrals-xl-10" style="padding-top:5px;padding-bottom:5px;">
+                            <div class="row push-10-t">
+                                <div class="col-sm-8"><span>Compimento 62° anno età</span></div>
+                                <div class="col-sm-4"><span>@Model.DatiQuota100.data_compimento_62_anni_eta.ToString("dd/MM/yyyy")</span></div>
+                            </div>
+                            <div class="row push-10-t push-10">
+                                <div class="col-sm-8"><span>Raggiungimento 38 anni anzianità servizio</span></div>
+                                <div class="col-sm-4"><span>@Model.DatiQuota100.data_38_anni_anzianita_servizio.ToString("dd/MM/yyyy")</span></div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="row">
+                            <div class="col-sm-12 text-center">
+                                <label class="rai-font-md">Dati non disponibili</label>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="row push-10">
+                <div class="col-sm-12">
+                    @Html.LabelForRequiredObbl(m => m.Pratica.NOT_REQ_MATURATO, "Maturazione requisiti", new { @class = "rai-caption", id = "lblReqMa" })
+                    @Html.RaiSelectFor(m => m.Pratica.NOT_REQ_MATURATO, matObiettivi, hideSearch: true, attributes: new { required = "required" })
+                    @Html.ValidationMessageFor(m => m.Pratica.NOT_REQ_MATURATO)
+                </div>
+            </div>
+            @*<div class="row push-10">
+                    <div class="col-sm-12">
+                        @Html.LabelForRequiredObbl(m => m.Pratica.DATA_PENSIONE_ANTICIPATA, "Data pensione anticipata", new { @class = "rai-caption", id = "lblPensAnticipata" })
+                        <div class="input-group">
+                            <div class="input-group-addon" onclick="$('#Pratica_DATA_PENSIONE_ANTICIPATA').datetimepicker('show')"><i class="fa fa-calendar"></i></div>
+                            @Html.TextBoxFor(m => m.Pratica.DATA_PENSIONE_ANTICIPATA, new { @class = "form-control js-datetimepicker", required = "required", data_format = "DD/MM/YYYY" })
+                        </div>
+                    </div>
+                </div>*@
+            <div class="row push-10">
+                <div class="col-sm-12">
+                    @Html.LabelFor(m => m.Pratica.DATA_ARRIVO_DOC, "Data arrivo estratti", new { @class = "rai-caption" })
+                    <div class="input-group">
+                        <div class="input-group-addon" onclick="$('#Pratica_DATA_ARRIVO_DOC').datetimepicker('show')"><i class="fa fa-calendar"></i></div>
+                        @Html.TextBoxFor(m => m.Pratica.DATA_ARRIVO_DOC, new { @class = "form-control js-datetimepicker", autocomplete = "off", data_format = "DD/MM/YYYY", onchange = "IncArrivoLimit()" })
+                    </div>
+                </div>
+            </div>
+            <div class="row push-10 push-20-t">
+                <div class="col-sm-12">
+                    @Html.RaiCheckBoxLabelFor(m => m.PercipientePensioneInvalidita, "Percipiente pensione di invalidità", "")
+                </div>
+            </div>
+
+            <div class="block block-content-table">
+                <div class="block-header">
+                    <label class="block-title">Richiesta approfondimenti all'amministrazione</label>
+                </div>
+                <div class="block-content">
+                    <div id="richDoneTessContr" style="@(!Model.Pratica.DATA_RICH_TESS_CONTR.HasValue?"display:none;":"")">
+                        <div class="row">
+                            <div class="col-sm-12">
+                                @Html.LabelFor(m => m.Pratica.DATA_RICH_TESS_CONTR, "Data richiesta", new { @class = "text-italic" })
+                                <div class="input-group">
+                                    @Html.TextBoxFor(m => m.Pratica.DATA_RICH_TESS_CONTR, new { @class = "form-control", @readonly = "readonly" })
+                                    <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12">
+                                @Html.LabelFor(m => m.Pratica.NOT_RICH_TESS_CONTR, "Motivazione", new { @class = "text-italic" })
+                                @Html.TextAreaFor(m => m.Pratica.NOT_RICH_TESS_CONTR, new { @class = "form-control", rows = 5 })
+                            </div>
+                        </div>
+                        <div class="row push-10-t">
+                            <div class="col-sm-12">
+                                <div class="rai-btn-fill">
+                                    <button class="btn rai-btn-small" onclick="IncApprovazioneRich(@Model.Pratica.ID_DIPENDENTE, false, true,'update_tesscontr')">Aggiorna nota</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @if (!Model.Pratica.DATA_RICH_TESS_CONTR.HasValue)
+                    {
+                        <div id="richTessContr">
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <div class="rai-checkbox">
+                                        <input type="checkbox" id="cbRichTessContr" data-toggle="collapse" data-target="#div-notRichTessContr" aria-expanded="false" />
+                                        <label for="cbRichTessContr">Richiedi approfondimenti</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="div-notRichTessContr" class="collapse @(Model.Pratica.DATA_RICH_TESS_CONTR.HasValue ? "in" : "")">
+                                <div class="row">
+                                    <div class="col-sm-12 push-10">
+                                        <label class="rai-caption">Motivo<font color="#d2322d">*</font></label>
+                                        <textarea class="form-control" rows="5" id="notaRichTessContr"></textarea>
+                                    </div>
+                                    <div class="col-sm-12">
+                                        <div class="rai-btn-fill">
+                                            <button class="btn rai-btn-small" onclick="IncApprovazioneRich(@Model.Pratica.ID_DIPENDENTE, false, true,'tesscontr')">Richiedi</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+
+            @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Richiesta integrazione al dipendente"))
+            {
+                <div class="row" style="@(Model.Pratica.DATA_RICH_INT.HasValue ? "display:block;" : "display:none;")" id="boxRichInt">
+                    <div class="col-sm-6 push-10">
+                        @Html.LabelFor(m => m.Pratica.DATA_RICH_INT, "Data richiesta", new { @class = "text-italic" })
+                        <div class="input-group">
+                            @Html.TextBoxFor(m => m.Pratica.DATA_RICH_INT, new { @class = "form-control", autocomplete = "off", data_format = "DD/MM/YYYY", @readonly = "readonly" })
+                            <div class="input-group-addon">
+                                <i class="fa fa-lock"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 push-10">
+                        @Html.LabelFor(m => m.Pratica.DATA_ARRIVO_INT, "Data arrivo", new { @class = "text-italic", id = "lblArrivoInt" })
+                        <div class="input-group">
+                            @Html.TextBoxFor(m => m.Pratica.DATA_ARRIVO_INT, new { @class = "form-control ", autocomplete = "off", data_format = "DD/MM/YYYY", @readonly = "readonly" })
+                            <div class="input-group-addon">
+                                <i class="fa fa-lock"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                if (!Model.Pratica.DATA_RICH_INT.HasValue)
+                {
+                    <div class="row push-10" id="btnRichInt">
+                        <div class="col-sm-12 push-10">
+                            <button class="btn rai-btn-small full-width" onclick="IncRichiediIntegrazione(@Model.Pratica.ID_DIPENDENTE)">Richiedi integrazione al dipendente</button>
+                        </div>
+                    </div>
+                }
+            }
+
+            @if (false && Model.HasDocPraticaPrecedente)
+            {
+                using (Html.BeginBlock(BlockType.ContentTable, "Pratiche precedenti"))
+                {
+                    foreach (var item in Model.PratichePrecedenti)
+                    {
+                        <div class="row">
+                            <div class="col-xs-6">
+                                @item.Value
+                            </div>
+                            <div class="col-xs-6 text-right">
+                                <button class="btn rai-btn-small" onclick="IncDuplicaDoc(@item.Key, @Model.Pratica.ID_DIPENDENTE, @((int)IncStato.TempFileEstratti), @((int)IncStato.TempFileEstratti))">Duplica documenti</button>
+                            </div>
+                        </div>
+                    }
+                }
+            }
+
+            <div class="row">
+                <div class="col-sm-12">
+                    <label class="as-block-title">Allegati</label>
+                </div>
+            </div>
+
+            <div id="wdgt-allegati@((int)IncStato.TempFileEstratti)" class="bg-neutrals-xl-10" style="margin-left:-15px; margin-right:-15px; padding:10px 25px; margin-bottom:20px">
+                @if (Model.Allegati != null)
+                {
+                    @Html.Partial("subpartial/widget_allegati", Model.Allegati)
+                }
+            </div>
+
+
+            <div class="row form-button">
+                <div class="col-sm-12 push-10 rai-btn-fill">
+                    <button class="btn rai-btn-small" onclick="IncApprovazioneRich(@Model.Pratica.ID_DIPENDENTE, false, true,'')">Salva</button>
+                </div>
+                <div class="col-sm-12 rai-btn-fill">
+                    <button class="btn btn-action-icon btn-action-icon-text feedback-warning-color" onclick="IncApprovazioneRich(@Model.Pratica.ID_DIPENDENTE, true, false, 'd')">
+                        <i class="fa fa-clock-o"></i>
+                        Decaduta
+                    </button>
+                    <button class="btn btn-action-icon btn-action-icon-text feedback-error-color" onclick="IncApprovazioneRich(@Model.Pratica.ID_DIPENDENTE, true, false, 'r')">
+                        <i class="fa fa-times"></i>
+                        Rifiuta
+                    </button>
+                    <button class="btn btn-action-icon btn-action-icon-text feedback-success-color" onclick="IncApprovazioneRich(@Model.Pratica.ID_DIPENDENTE, true, true,'')">
+                        <i class="fa fa-check"></i>
+                        Convalida
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+<script>
+    InitDatePicker();
+
+    function IncCheckTipologia() {
+        //var scelta = $('#Pratica_NOT_TIP_ACCERT').val();
+        //if (scelta == 'NoQuota100;PensioneAnticipata') {
+        //    $('#Pratica_DATA_PENSIONE_ANTICIPATA').attr('required', 'required');
+        //    if ($('#lblPensAnticipata').html().indexOf('*') < 0) {
+        //        $('#lblPensAnticipata').append('<font color="#d2322d">*</font>');
+        //    }
+
+        //    $('#lblReqMa').html($('#lblReqMa').html().replace('<font color="#d2322d">*</font>', ''));
+        //    $('#Pratica_NOT_REQ_MATURATO').removeAttr('required');
+        //} else if (scelta == "Quota100") {
+        //    $('#Pratica_NOT_REQ_MATURATO').attr('required', 'required');
+        //    if ($('#lblReqMa').html().indexOf('*') < 0) {
+        //        $('#lblReqMa').append('<font color="#d2322d">*</font>');
+        //    }
+
+        //    $('#lblPensAnticipata').html($('#lblPensAnticipata').html().replace('<font color="#d2322d">*</font>', ''));
+        //    $('#Pratica_DATA_PENSIONE_ANTICIPATA').removeAttr('required');
+        //} else {
+        //    $('#lblReqMa').html($('#lblReqMa').html().replace('<font color="#d2322d">*</font>', ''));
+        //    $('#Pratica_NOT_REQ_MATURATO').removeAttr('required');
+
+        //    $('#lblPensAnticipata').html($('#lblPensAnticipata').html().replace('<font color="#d2322d">*</font>', ''));
+        //    $('#Pratica_DATA_PENSIONE_ANTICIPATA').removeAttr('required');
+        //}
+    }
+
+    function IncArrivoLimit() {
+        var arrivoEstr = $('#Pratica_DATA_ARRIVO_DOC');
+        $(arrivoEstr).data('DateTimePicker').minDate('@Model.Pratica.DTA_RICHIESTA.GetValueOrDefault().ToString("dd/MM/yyyy")');
+        $(arrivoEstr).data('DateTimePicker').maxDate('@Model.Pratica.DTA_RICHIESTA.GetValueOrDefault().AddDays(limitDataArrivo).ToString("dd/MM/yyyy")');
+
+        var valArrivo = $(arrivoEstr).val();
+        if (valArrivo != '') {
+            $(Pratica_DATA_RICH_INT).data('DateTimePicker').minDate(moment(valArrivo, 'DD/MM/YYYY').add(1, 'days').format('DD/MM/YYYY'));
+        }
+
+        var richInt = $('#Pratica_DATA_RICH_INT');
+        var valRich = $(richInt).val();
+        if (valRich != '') {
+            if ($('#lblArrivoInt').html().indexOf('*') < 0) {
+                $('#lblArrivoInt').append('<font color="#d2322d">*</font>');
+            }
+            $('#Pratica_DATA_ARRIVO_INT').attr('required', 'required');
+
+
+            var arrivoInt = $('#Pratica_DATA_ARRIVO_INT');
+            $(arrivoInt).data('DateTimePicker').minDate(moment(valRich, 'DD/MM/YYYY').format('DD/MM/YYYY'));
+            $(arrivoInt).data('DateTimePicker').maxDate(moment(valRich, 'DD/MM/YYYY').add(@limitDataArrivoInt, 'days').format('DD/MM/YYYY'));
+        } else {
+            $('#lblArrivoInt').html($('#lblArrivoInt').html().replace('<font color="#d2322d">*</font>', ''));
+            $('#Pratica_DATA_ARRIVO_INT').removeAttr('required');
+        }
+    }
+
+    function IncFileUpload() {
+        var nomefile = ($("#extractUpload").val().split("\\").pop())
+        var idDip = $('')
+
+        $("#extractUploadRow").show();
+        var formdata = new FormData();
+
+        formdata.append('_file', $('#extractUpload')[0].files[0]);
+        formdata.append("fileName", nomefile);
+        formdata.append()
+
+        //if ($("#titolodoc" + i).length > 0) {
+        //    formdata.append("titolo", $("#titolodoc" + i).val());
+        //}
+        //if ($("#descrizionedoc" + i).length > 0) {
+        //    formdata.append("desc", $("#descrizionedoc" + i).val());
+        //}
+
+        var request = new XMLHttpRequest();
+        request.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+                if (this.responseText.indexOf("E") >= 0)
+                    swal(this.responseText);
+                else {
+                    $("#id-allegato").val(this.responseText);
+                    //$("#button-allegato-" + i).addClass("disable");
+                    $("#ext-nome-file").text(nomefile);
+                    $.ajax({
+                        type: 'POST',
+                        url: "/Cessazione/getallegato",
+                        dataType: "html",
+                        data: { indice: i },
+                        cache: false,
+                        success: function (data) {
+                            $(data).insertAfter($("#allegato" + i));
+                            //$("#allegato" + i).insertAfter(data);
+                        }
+                    });
+                }
+            }
+        };
+        request.upload.addEventListener('progress', function (e) {
+
+            var filesize = $('#extractUpload')[0].files[0].size;
+            $("#ext-total").text(parseInt(filesize / 1000) + " KB");
+            $("#ext-loaded").text(parseInt(e.loaded / 1000) + " KB");
+            var percent = Math.round(e.loaded / filesize * 100);
+            $("#ext-progress-bar").css("width", percent + "%");
+
+            if (e.loaded >= filesize) {
+                $("#ext-rimuovi").show();
+            }
+            else
+                $("#ext-rimuovi").hide();
+
+        });
+
+        request.open('post', '/Cessazione/UploadFile');
+        request.timeout = 45000;
+        request.send(formdata);
+    }
+
+
+    IncArrivoLimit();
+    IncCheckTipologia();
+
+    function IncRichiediIntegrazione(idDip) {
+        event.preventDefault();
+        swal({
+            title: 'Attenzione',
+            html: 'Vuoi richiedere approfondimenti al dipendente?',
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Conferma',
+            cancelButtonText: 'Annulla',
+            reverseButtons: 'true'
+        }).then(function () {
+            let dataRich = moment().format("DD/MM/YYYY HH:mm:ss");
+            $.ajax({
+                url: "/Cessazione/RichiestaIntegrazioneEstratti",
+                type: "POST",
+                dataType: "html",
+                data: { idDip: idDip, dataRich:dataRich },
+                success: function (data) {
+                    switch (data) {
+                        case "OK":
+                            swal({
+                                title: 'OK',
+                                text: "Operazione effettuata con successo",
+                                type: 'success',
+                            });
+                            $('#boxRichInt').show();
+                            $('#Pratica_DATA_RICH_INT').val(dataRich);
+                            $('#btnRichInt').hide();
+                            break;
+                        default:
+                            swal("Oops...", data, 'error');
+                    }
+                },
+                error: function (a, b, c) {
+                    swal("Oops...", c, 'error');
+                }
+            });
+        })
+    }
+</script>
+
+@if (false && Model.HasDocPraticaPrecedente)
+{
+    <script>
+        function IncDuplicaDoc(idDipOrig, idDipDest, idStatoOrig, idStatoDest) {
+            event.preventDefault();
+            swal({
+                title: 'Sei sicuro?',
+                text: "Vuoi duplicare i file dalla pratica precedente?",
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Confermo',
+                cancelButtonText: 'Annulla',
+                customClass: 'rai',
+                reverseButtons: 'true'
+            }).then(function () {
+                $.ajax({
+                    url: "/Cessazione/DuplicaDocumenti",
+                    type: "POST",
+                    data: { idDipOrig: idDipOrig, idDipDest: idDipDest, idStatoOrig: idStatoOrig, idStatoDest: idStatoDest },
+                    async: false,
+                    success: function (data) {
+                        switch (data) {
+                            case "OK":
+                                swal('Duplicazione documenti', "Documenti duplicati con successo", "success");
+                                RaiUpdateWidget('wdgt-allegati' + idStatoDest, '/Cessazione/Widget_allegati', 'html', { idDip: $('#Pratica_ID_DIPENDENTE').val(), stato: idStatoDest });
+                                break;
+                            default:
+                                swal("Errore: ", data, 'error');
+                                break;
+                        }
+                    },
+                    error: function (result) {
+                        swal("Errore: " + result);
+                    }
+                });
+            })
+        }
+    </script>
+}

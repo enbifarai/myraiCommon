@@ -1,0 +1,156 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonModel.raiplace;
+@using MVCProject.Custom_Helpers;
+@using myRaiCommonManager;
+
+@model TotalAbbonamnetiModel
+
+@{
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    var oggi = DateTime.Today.ToString("dd/MM/yyyy");
+    ViewBag.Title = "Gestione Abbonamenti";
+}
+
+@using (Html.BeginForm("Esporta", "CampagnaAbbonamenti", FormMethod.Post, new { id = "form-abbonamenti" }))
+{
+
+    <section role="main" class="content-body">
+
+
+        <!-- start: page -->
+        <!-- Main Container -->
+
+        <main id="main-container">
+
+            <div class="row">
+                <div class="col-md-8">
+                    @Html.RenderPanel(PanelType.Panel, "Elenco campagna abbonamenti", "../RaiPlace/CampagnaAbbonamenti/subpartial/_elencoCampagnaAbbonamenti", Model, contentId: "elencoordini")
+                    @Html.RenderPanel(PanelType.Panel, "Elenco abbonamenti", "../RaiPlace/RicercaAbbonamenti/subpartial/_elencoAbbonamenti", Model, contentId: "elencoabbonamenti")
+                </div>
+                <div class="col-md-4">
+                    @Html.RenderWidget(WidgetType.Normal, "Campagna abbonamento", "icons icon-map", "Inserisci una nuova campagna", action: new ActionTemplate()
+                    {
+                        OnClick = "ShowGestisciCampagna('i','0');",
+                        Text="Aggiungi campagna"
+                    })
+
+                    <section class="panel" id="panelInserisciAbbonamento">
+                        <header class="panel-heading">
+                            <h2 class="panel-title">Inserisci Abbonamenti Extra</h2>
+                            <div class="panel-actions rai-panel-actions">
+                                <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" aria-labelledby="lblRightBox" aria-expanded="true"></a>
+                            </div>
+                        </header>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <div class="row push-10">
+                                    <div class="col-sm-12">
+                                        <label class="rai-caption">Città abbonamento</label>
+                                        @Html.DropDownList("CittaAbbonamentoExtra", new SelectList(@myRai.Controllers.AbbonamentiController.getCittaAbbonamento(), "Value", "Text", null), "Città Abbonamento", new { @class = "form-control", onchange = "CtrInput($(this));" })
+                                    </div>
+                                </div>
+                                <div class="row push-10">
+                                    <div class="params col-md-12">
+                                        <label for="Matricola" class="rai-caption">Matricola</label>
+                                        <input class="form-control" id="matricola" name="matricola" type="text" value="">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="params col-md-12">
+                                        <div class="rai-checkbox">
+                                            <label for="checkbox-email">Invia Mail</label>
+                                            <input type="checkbox" id="checkbox-email" name="checkbox-email" value=""
+                                                   class="checkbox-altro">
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <div class="rai-btn-fill">
+                                        <a href="#" data-toggle="modal" data-target="#modal-abbonamento" class="btn rai-btn-primary" onclick="ShowGestisciAbbonamentoExtra();">Inserisci</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="panel" id="panelRicercaAbbonamenti">
+                        <header class="panel-heading">
+                            <h2 class="panel-title">Ricerca Abbonamenti</h2>
+                            <div class="panel-actions rai-panel-actions">
+                                <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" aria-labelledby="lblRightBox" aria-expanded="true"></a>
+                            </div>
+                        </header>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <div class="row push-5">
+                                    <div class="col-sm-12">
+                                        <label class="rai-caption">Città abbonamento</label>
+                                        @Html.DropDownList("CittaAbbonamento", new SelectList(@myRai.Controllers.AbbonamentiController.getCittaAbbonamento(), "Value", "Text", null), "Città Abbonamento", new { @class = "form-control ", onchange = "CtrInput($(this));" })
+                                    </div>
+                                </div>
+                                <div class="row push-5">
+                                    <div class="col-sm-12">
+                                        <label class="rai-caption">Vettore abbonamento</label>
+                                        @Html.DropDownList("VettoreAbbonamento", new SelectList(@myRai.Controllers.AbbonamentiController.getVettoreAbbonamento(), "Value", "Text", null), "Vettore Abbonamento", new { @class = "form-control  disable" })
+                                    </div>
+                                </div>
+                                <div class="row push-5">
+                                    <div class="col-sm-12">
+                                        <label class="rai-caption">Giorno inizio abbonamento</label>
+                                        <div class="input-group mb-md">
+                                            <span onclick="$('#datada').datetimepicker('show')" class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                                            <input class="js-datetimepicker form-control" data-format="DD/MM/YYYY" data-locale="it" type="text" id="datada" name="datada" placeholder="Giorno Inizio Abbonamento Dal">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row push-5">
+                                    <div class="col-sm-12">
+                                        <label class="rai-caption">Giorno fine abbonamento</label>
+                                        <div class="input-group mb-md">
+                                            <span onclick="$('#dataal').datetimepicker('show')" class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                                            <input class="js-datetimepicker form-control" data-format="DD/MM/YYYY" data-locale="it" type="text" id="dataal" name="dataal" placeholder="Al">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row push-5">
+                                    <div class="params col-md-6">
+                                        <label for="Valore" class="rai-caption">Nome</label>
+                                        <input class="form-control" id="nome" name="nome" type="text" value="">
+                                    </div>
+                                    <div class="params col-md-6">
+                                        <label for="Valore" class="rai-caption">Cognome</label>
+                                        <input class="form-control" id="cognome" name="cognome" type="text" value="">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-sm-12 text-right">
+                                    <div class="rai-btn-fill">
+                                        <input type="button" id="btnCercaAbbonamenti" class="btn rai-btn-primary" title="Cerca" value="Cerca" onclick="cercaAbbonamenti();" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+
+        <!-- end: page -->
+    </section>
+
+
+}
+
+@Html.RenderModal("campagna", ModalPosition.Right, ModalSize.Half)
+@Html.RenderModal("abbonamento")
+
+
+

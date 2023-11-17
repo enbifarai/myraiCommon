@@ -1,0 +1,166 @@
+﻿@model myRaiCommonModel.DematerializzazioneDocumentiVM
+
+<div class="block" style="margin-bottom:0px;">
+    <div class="block-content tab-content" style="padding:23px 5px 1px;overflow:unset;">
+        <div class="tab-pane active" id="tab1" role="tabpanel">
+            <div id="">
+                @if (Model.ApprovazioneEnabled)
+                {
+                    <div class="table-responsive" id="dem-buttons-container" style="display:none;">
+                        <table class="rai-table  @(Model.IsPreview ?"rai-loader":"" ) table rai-table-vcenter" id="">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        <div class="col-xs-12">
+                                            <label class="rai-font-sm-bold" id="contatore-selezionati"></label>
+                                        </div>
+                                    </th>
+                                    <th class="text-right">
+                                        <div class="row">
+                                            <div class="col-xs-12 text-right">
+                                                <button class="btn rai-btn-small" aria-label="Rifiuta tutti" onclick="Dematerializzazione_RifiutaDocumenti('@Model.Matricola', 0)" title="Rifiuta selezionati" style="min-width:80px;">
+                                                    Rifiuta selezionati
+                                                </button>
+                                                <button class="btn rai-btn-small" aria-label="Approva tutti" onclick="Dematerializzazione_ApprovaDocumenti('@Model.Matricola', 0)" title="Approva selezionati" style="min-width:80px;">
+                                                    Approva selezionati
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                }
+                @if (Model.PrendiInCaricoEnabled)
+                {
+                    <div class="table-responsive" id="dem-buttons-container" style="display:none;">
+                        <table class="rai-table  @(Model.IsPreview ?"rai-loader":"" ) table rai-table-vcenter" id="">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        <div class="col-xs-12">
+                                            <label class="rai-font-sm-bold" id="contatore-selezionati"></label>
+                                        </div>
+                                    </th>
+                                    <th class="text-right">
+                                        <div class="row">
+                                            <div class="col-xs-12 text-right">
+                                                <button class="btn rai-btn-small" aria-label="Prendi in carico i selezionati" onclick="Dematerializzazione_PrendiInCaricoAll('@Model.Matricola', 0)" title="Prendi in carico i selezionati" style="min-width:80px;">
+                                                    Prendi in carico i selezionati
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                }
+                <div class="panel-body panel-body-nopadding" id="">
+                    <div id="">
+                        <div class="table-responsive">
+                            <table class="rai-table  @(Model.IsPreview ?"rai-loader":"" ) table rai-table-vcenter" id="">
+                                <thead>
+                                    <tr>
+                                        @if (Model.ApprovazioneEnabled || Model.PrendiInCaricoEnabled)
+                                        {
+                                            <th>
+                                                <div class="col-sm-12">
+                                                    <label class="rai-caption" for=""></label>
+                                                    <div class="rai-checkbox">
+                                                        <input id="dem-check-all" name="dem-check" type="checkbox">
+                                                        <label class="rai-caption" for="">&nbsp;</label>
+                                                    </div>
+                                                </div>
+                                            </th>
+                                        }
+                                        <th class="text-left">Dipendente</th>
+                                        <th class="text-left">Documento e data richiesta</th>
+                                        <th class="text-right">Azioni</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (Model.Documenti == null || Model.Documenti.Any() == false)
+                                    {
+                                        <tr>
+                                            <td class="text-center no-border" colspan="100"><span class="rai-font-md-neutral">Non ci sono dati da visualizzare</span></td>
+                                        </tr>
+                                    }
+                                    else
+                                    {
+                                        foreach (var r in Model.Documenti)
+                                        {
+                                            if (Model.ApprovazioneEnabled)
+                                            {
+                                                @Html.Partial("~/Views/Dematerializzazione/subpartial/_contentRowAPPR.cshtml", r)
+                                            }
+                                            else if (Model.PrendiInCaricoEnabled)
+                                            {
+                                                @Html.Partial("~/Views/Dematerializzazione/subpartial/_contentRowInCarico.cshtml", r)
+                                            }
+                                            else
+                                            {
+                                                @Html.Partial("~/Views/Dematerializzazione/subpartial/_contentRow.cshtml", r)
+                                            }
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script type="text/javascript">
+    $(function () {
+        $('#dem-check-all').on('click', function () {
+            var isChecked = $(this).prop('checked');
+            $('input[type="checkbox"][id^="dem-check-"]').each(function () {
+                $(this).prop('checked', isChecked);
+            });
+
+            var contaSelezionati = $('input[type="checkbox"][id^="dem-check-"]:not("#dem-check-all"):checked').length;
+
+            if (isChecked) {
+                $('#dem-buttons-container').show();
+                $('#contatore-selezionati').html(contaSelezionati + ' richieste selezionate');
+            }
+            else {
+                $('#dem-buttons-container').hide();
+                $('#contatore-selezionati').html('');
+            }
+        });
+
+        $('input[type="checkbox"][id^="dem-check-"]').on('click', function () {
+            var isChecked = $(this).prop('checked');
+
+            if (!isChecked) {
+                var almenoUna = false;
+                almenoUna = $('input[type="checkbox"][id^="dem-check-"]:not("#dem-check-all"):checked').length > 0;
+                if (!almenoUna) {
+                    $('#dem-check-all').prop('checked', almenoUna);
+                }
+            }
+
+            var contaSelezionati = $('input[type="checkbox"][id^="dem-check-"]:not("#dem-check-all"):checked').length;
+            var contaTutti = $('input[type="checkbox"][id^="dem-check-"]:not("#dem-check-all")').length;
+            if (contaSelezionati == contaTutti) {
+                $('#dem-check-all').prop('checked', true);
+            }
+
+            if (contaSelezionati >= 1) {
+                $('#dem-buttons-container').show();
+                $('#contatore-selezionati').html(contaSelezionati + ' richieste selezionate');
+            }
+            else {
+                $('#dem-buttons-container').hide();
+                $('#contatore-selezionati').html('');
+            }
+        });
+    });
+</script>

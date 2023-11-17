@@ -1,0 +1,273 @@
+﻿@model myRaiCommonModel.cvModels.cvModel.Studies
+
+@{
+    myRai.Data.CurriculumVitae.cv_ModelEntities cvEnt = new myRai.Data.CurriculumVitae.cv_ModelEntities();
+}
+
+  <div class="modal-dialog modal-lg">
+       <div class="modal-content">
+    <form class="form-horizontal mb-lg form-modificacv" id="editLaurea" action="/CV_Online/ModificaCV" method="post" >
+        @Html.HiddenFor(m => m._matricola)
+        @Html.HiddenFor(m => m._tableTarget)
+        <input type="hidden" name="_titoloSpecializ" value="-1" />
+   
+             <div class="block-header bg-cdf" style="height: 58px;">
+                        <ul class="block-options visible-xs">
+                            <li>
+                                <button data-dismiss="modal" type="button"><span aria-hidden="true">×</span></button>
+                            </li>
+                        </ul>
+                        <h4 class="lead" style="float: left; margin: -3px 0 0 0px; font-size: 2.1rem; color: #fff;">Modifica Laurea
+                        </h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+
+              </div>
+              <div class="modal-body row height100" id="edit-content">
+
+    <div class="rai form-group" ">
+        <div class="col-sm-12 no-pad-left no-pad-right border-right"> @*col-md-8 col-sm-offset-2*@
+            <div class="col-md-1"></div>
+            <div class="col-md-10">
+                    <div class="stile-anno col-md-12 push-10">
+                        @Html.LabelForRequiredObbl(x => x._dataInizio, "Periodo", new { @class="titleElements rai-caption requiredobbl" })
+                        @*<label class="col-md-12 titleElements rai-caption">Periodo</label>*@
+            </div>
+                        <div class="col-md-6 push-10">
+@*                          <label for="_dataInizio" class="frk_dataInizio"></label>
+                            <input class="rai form-control" type="text" id="_dataInizio" name="_dataInizio" placeholder="Selezionare una data" />*@
+                             @*<label class="frk_dataInizio titleElements rai-caption" id="label-data-eccez" for="example-datetimepicker6">Anno di Inizio</label>                               *@
+                             <div class="input-group date" style="position: relative">
+                                <span class="input-group-addon" onclick="$('.annoinizio').datetimepicker('show')"><i class="icons icon-calendar"></i></span>
+                                @*<input class="js-datetimepicker rai form-control annoinizio" data-format="YYYY" data-locale="it" type="text" id="" name="" placeholder="Scegli una data">*@
+                                @Html.TextBoxFor(m => m._dataInizio, new { @class="js-datetimepicker rai form-control annoinizio ", data_format="YYYY", placeholder="Dal", id="_dataInizio"})
+                             </div>
+                                @Html.ValidationMessageFor(m => m._dataInizio)                                
+                        </div>
+                        <div class="col-md-6 push-10">
+@*                          <label for="_dataFine" class="frk_dataFine"></label>
+                            <input class="rai form-control" type="text" id="_dataFine" name="_dataFine" placeholder="Selezionare una data" />*@
+                             @*<label class="frk_dataFine titleElements rai-caption" id="label-data-eccez" for="example-datetimepicker6">Anno Conseguimento</label>*@
+                             <div class="input-group date" style="position: relative">
+                                 @*<input class="js-datetimepicker rai form-control annofine" data-format="YYYY" data-locale="it" type="text" id="" name="" placeholder="Scegli una data">*@
+                                  <span class="input-group-addon" onclick="$('.annofine').datetimepicker('show')"><i class="icons icon-calendar"></i></span>
+                                  @Html.TextBoxFor(m => m._dataFine, new { @class="js-datetimepicker rai form-control annofine ", data_format="YYYY", placeholder="Al", id="_dataFine"})
+                             </div>
+                             @Html.ValidationMessageFor(m => m._dataFine)
+                        </div>
+                        <div class="col-md-3"></div>
+                        <div class="col-md-3"></div>
+                    <span class="col-md-12 push-10 _customDataInizioFineError field-validation-error">La data di inizio deve essere minore della data di conseguimento</span>    
+                    
+                    <div class="">
+                        <div class="col-md-12 frk_codTipoTitolo push-10">
+                            <input type="hidden" name="PKvalueOLD" value="@Model._codTitolo" />
+                        @Html.LabelForRequiredObbl(x => x._codTipoTitolo, "Tipo Laurea", new { @class="frk_codTipoTitolo_text titleElements rai-caption requiredobbl" })
+                        @*<label  for="_codTipoTitolo" class="frk_codTipoTitolo_text titleElements rai-caption"></label>*@
+                        <select class="js-select2 rai form-control input-validation-error" data-val="true" data-val-required="Campo obbligatorio" id="_codTipoTitolo" name="_codTipoTitolo" style="width: 100%;"  onchange='FillDTitoloByCodTipoTitolo($("#editLaurea #_codTipoTitolo option:selected").val(), "editLaurea #_codTitolo");'> @*data-placeholder="Seleziona"*@
+                            <option value="00" id="tmp_val"></option><!-- necessario per il placeholder con Select2 plugin -->
+                            @{
+                                //myRai.Data.CurriculumVitae.cv_ModelEntities cvEntLaurea = new myRai.Data.CurriculumVitae.cv_ModelEntities();
+                                //var prova = new List<myRai.Data.CurriculumVitae.DTipoTitolo>();
+                                var tt = (from tipotitolo in cvEnt.DTipoTitolo
+                                            select tipotitolo).ToList();
+                                tt = tt.Where(m => Convert.ToInt32(m.Livello) > 40 && Convert.ToInt32(m.Livello) < 90).ToList();
+
+                                string checktipo="";                                                
+                            }
+                            
+                            @foreach (var elem in tt)
+                            {
+                                @*<option value="@elem.CodTipoTitolo">@elem.DescTipoTitolo</option>*@
+                                if (elem.CodTipoTitolo == Model._codTipoTitolo)
+                                {
+                                    checktipo = "selected=\"selected\"";
+                                }
+                                <option value="@elem.CodTipoTitolo" @checktipo>@elem.DescTipoTitolo</option>
+                            }
+                        </select>
+                            @Html.ValidationMessageFor(m => m._codTipoTitolo)
+                        </div>
+                        <div class="col-md-12 frk_codTitolo push-10">
+                        <input type="hidden" name="PKvalueOLD" value="@Model._codTitolo" />
+                            @Html.LabelForRequiredObbl(x => x._codTitolo, "Classe di Laurea", new { @class="titleElements rai-caption requiredobbl" })
+                        <select class="js-select2 rai form-control input-validation-error" data-val="true" data-val-required="Campo obbligatorio"  id="_codTitolo" name="_codTitolo" style="width: 100%;" > @*data-placeholder="Seleziona"*@
+                            <option></option><!-- necessario per il placeholder con Select2 plugin -->
+
+                        </select>
+                            @Html.ValidationMessageFor(m => m._codTitolo)
+                        </div>
+                    </div>
+                  <div class="">
+                    <div class="col-md-12 frk_corsoLaurea push-10">
+                            @Html.LabelForRequiredObbl(x => x._corsoLaurea, "Corso di Laurea", new { @class="titleElements rai-caption " })
+                            @*<label for="_corsoLaurea" class="titleElements rai-caption">Corso di Laurea</label>*@
+                            @*<input class="rai form-control" type="text" id="_corsoLaurea" name="_corsoLaurea"  placeholder="Inserisci a testo libero" />*@
+                            @Html.TextBoxFor(m => m._corsoLaurea, new { @class="rai form-control ", placeholder="Inserisci a testo libero", id="_corsoLaurea" })
+                            @Html.ValidationMessageFor(m => m._corsoLaurea)
+                    </div>
+                    
+                    <div class="col-md-6 push-10">
+                        <label for="_voto" class="titleElements rai-caption">Voto</label>
+                        @*<input class="rai form-control" type="text" id="_voto" name="_voto" placeholder="Inserisci votazione" onkeypress="return onlyNumeric(event);"/>*@
+                        @Html.TextBoxFor(m => m._voto, new { @class="rai form-control ", placeholder="Inserisci votazione", onkeypress="return onlyNumeric(event);", id="_voto" })
+                        @Html.ValidationMessageFor(m => m._voto)
+                        <!-- FREAK - test validazionre campo -->
+                    </div>
+                    
+                    <div class="col-md-6 push-10">
+                        <label for="_scala" class="titleElements rai-caption">Scala</label>
+                        @*<input class="rai form-control" type="text" id="_scala" name="_scala"  placeholder="Scala (in cifre)" onkeypress="return onlyNumeric(event);" />*@
+                        @Html.TextBoxFor(m => m._scala, new { @class="rai form-control ", placeholder="Scala (in cifre)", onkeypress="return onlyNumeric(event);",  id="_scala" })
+                        @Html.ValidationMessageFor(m => m._scala)
+                    </div>
+                    <span class="col-md-12 push-10 _customVotoScalaError field-validation-error">Il voto deve essere minore o uguale all scala</span>
+                                
+                    <div class="col-md-10 push-10">
+                        <label for="_riconoscimento" class="titleElements rai-caption">Riconoscimento</label>
+                        @Html.TextBoxFor(m => m._riconoscimento, new { @class="rai form-control ", placeholder="Inserisci a testo libero",  id="_riconoscimento" })
+                        @Html.ValidationMessageFor(m => m._riconoscimento)
+                        @* <select class="js-select2 rai form-control" id="_riconoscimento" name="_riconoscimento" style="width: 100%;"  data-placeholder="Selezionare dalla lista">
+                           <option></option><!-- necessario per il placeholder con Select2 plugin --></select>*@
+                    </div>
+                    @*<div class="col-md-2">&nbsp;</div>*@
+                    
+                    <div class="col-md-1 push-10">
+                        <div class="checkbox-custom checkbox-text-primary push-40-t"> @* css-input css-checkbox css-checkbox-success *@
+                            <input  type="checkbox" name="_lode" id="_lode"
+                                @if(Model._lode=='S')
+                                {
+                                    @:checked="checked"
+                                }
+                                 value="S" class="rai form-control "/>
+                            <label for="_lode" class="titleElements rai-caption">Lode</label>
+                        </div>
+                    </div>
+              
+                        
+                    <div class="frk_titoloTesi col-md-12 push-10">
+                        <div>
+                            <label for="_titoloTesi" class="titleElements rai-caption">Titolo della tesi</label>
+                            @*<input class="rai form-control" type="text" id="_titoloTesi" name="_titoloTesi" placeholder="Inserisci a testo libero" />*@
+                            @Html.TextBoxFor(m => m._titoloTesi, new { @class="rai form-control ", placeholder="Inserisci a testo libero",  id="_titoloTesi" })
+                            @Html.ValidationMessageFor(m => m._titoloTesi)
+                        </div>
+                    </div> 
+             
+               </div>
+                <!-- Termine parte "VARIABILE" e la parte inserimento dettaglio titolo -->
+                <!-- PARTE RELATIVA ALL'ISTITUTO COMUNE A TUTTE E TRE LE TIPOLOGIE -->
+                <!-- FINE PARTE ISTITUTO -->
+                <h5 class="col-md-12 push-20-t push-10 titleSezione">Dettaglio istituto o ente erogatore</h5>
+                <div class="col-md-12 push-10">
+                    <input type="hidden" id="_istituto" name="_istituto" value="@Model._istituto" />
+                    @*<label for="_codIstituto" class="titleElements rai-caption">Nome</label>*@
+                     @Html.LabelForRequiredObbl(x => x._codIstituto, "Nome", new { @class="titleElements rai-caption requiredobbl" })
+                    <select class="js-select2 rai form-control input-validation-error textable-select" data-val="true" data-val-required="Campo obbligatorio" id="_codIstituto" name="_codIstituto" style="width: 100%">
+                        <option></option>
+                        @{
+                            var istituto = cvEnt.DAteneoCV.OrderBy(x => x.Ordine).ToList();
+                            foreach (var elem in istituto)
+                            {
+                                string check = "";
+                                if (Model._codIstituto == elem.Codice)
+                                {
+                                    check = "selected=\"selected\""; 
+                                }
+                                <option value="@elem.Codice" @check>@CommonHelper.ToTitleCase(elem.Descrizione)</option>
+                            }
+                            if (Model._codIstituto == "-1")
+                            {
+                                string check = "selected=\"selected\"";
+                                <option value="@Model._codIstituto" @check>@CommonHelper.ToTitleCase(Model._istituto)</option>
+                            }
+                        }
+                    </select>
+                    @Html.ValidationMessageFor(m => m._codIstituto)
+@*                    @Html.LabelForRequiredObbl(x => x._istituto, "Nome", new { @class="titleElements rai-caption" })
+                    @Html.TextBoxFor(m => m._istituto, new { @class="rai form-control ", placeholder="Inserisci a testo libero", id="_istituto" })
+                    @Html.ValidationMessageFor(m => m._istituto)*@
+                </div>
+                <div class="col-md-6 push-10">
+                    <label for="_localitaStudi" class="titleElements rai-caption">Città</label>
+                    @*<input class="rai form-control" type="text" id="_localitaStudi" name="_localitaStudi" placeholder="Inserisci a testo libero" />*@
+                    @Html.TextBoxFor(m => m._localitaStudi, new { @class="rai form-control ", placeholder="Inserisci a testo libero", id="_localitaStudi" })
+                    @Html.ValidationMessageFor(m => m._localitaStudi)
+                </div>
+                <div class="col-md-6 push-10">
+                    <label for="_codNazione" class="titleElements rai-caption">Paese</label>
+                    <select class="js-select2 rai form-control "  id="_codNazione" name="_codNazione" style="width: 100%;"  data-placeholder="Selezionare dalla lista">
+                        <option></option><!-- necessario per il placeholder con Select2 plugin -->
+                        @{
+                            var naz = (from nazione in cvEnt.DNazione
+                                        orderby nazione.DES_NAZIONE
+                                       select nazione).OrderBy(x => new { x.QTA_ORDINE, x.DES_NAZIONE }).ToList();
+                        }
+                        @foreach (var elem in naz)
+                        {
+                            string selected;
+                            if (elem.COD_SIGLANAZIONE == Model._codNazione)
+                            {
+                                selected = "selected=\"selected\"";
+                            }
+                            else
+                            {
+                                selected = "";
+                            }
+                            <option value="@elem.COD_SIGLANAZIONE" @selected>@CommonHelper.ToTitleCase(elem.DES_NAZIONE)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-12 push-10">
+                    <label for="_indirizzoStudi" class="titleElements rai-caption">Indirizzo</label>
+                    @*<input class="rai form-control" type="text" id="_indirizzoStudi" name="_indirizzoStudi" placeholder="Inserisci a testo libero" />*@
+                    @Html.TextBoxFor(m => m._indirizzoStudi, new { @class="rai form-control ", placeholder="Inserisci a testo libero", id="_indirizzoStudi" })
+                    @Html.ValidationMessageFor(m => m._indirizzoStudi)
+                </div>
+                        <div class="col-md-6 text-right border-top">
+                            <br /><br />
+                            <button type="button" class="btn btn-lg btn-default">
+                            @{
+                            if (Model._logo.ToLower() == "master"){
+                                <span onclick="ConfermaCancellazione_Studies('@Model._logo.ToLower()', '@Model._matricola', '@Model._prog')">Elimina</span>
+                            }
+                            else{
+                                <span onclick="ConfermaCancellazione_Studies('@Model._logo.ToLower()', '@Model._matricola', '@Model._codTitolo')">Elimina</span>
+                            }
+                            }
+                            </button>
+                            @*<button class="btn btn-warning"  data-dismiss="modal" type="button"><i class="fa fa-arrow-circle-o-left"></i> Indietro</button>*@
+                        </div>
+                        <div class="col-md-6 text-left border-top">
+                            <br /><br />
+                            <button class="btn btn-lg btn-primary" type="submit" onclick="FormModificaCV()"><i class=""></i>Salva</button>  @* fa fa-check-circle-o *@
+                        </div>
+            </div>
+            <div class="col-md-1"></div>
+        </div>
+    </div> <!-- FREAK - COPIARE FINO A QUAAAAAAAAAAAA -->
+                                </div>
+@*              <div class="modal-footer">
+                <button type="submit" class="btn btn-primary" onclick="FormModificaCV()">Salva Modifiche</button>
+                <button type="button" class="btn btn-danger" data-dismiss="modal">
+                    @{
+                    if (Model._logo.ToLower() == "master"){
+                        <span onclick="ConfermaCancellazione_Studies('@Model._logo.ToLower()', '@Model._matricola', '@Model._prog')">Elimina</span>
+                    }
+                    else{
+                        <span onclick="ConfermaCancellazione_Studies('@Model._logo.ToLower()', '@Model._matricola', '@Model._codTitolo')">Elimina</span>
+                    }
+                    }
+                </button>
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Annulla</button>
+              </div>*@
+        
+    </form>
+      </div>
+  </div>
+
+<script>
+    
+    $.validator.unobtrusive.parse($(".form-modificacv"));
+    FillDTitoloByCodTipoTitolo("@Model._codTipoTitolo", "editLaurea #_codTitolo", "@Model._codTitolo");
+</script>
+

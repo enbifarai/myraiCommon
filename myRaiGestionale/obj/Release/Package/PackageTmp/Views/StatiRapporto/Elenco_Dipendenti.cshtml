@@ -1,0 +1,50 @@
+﻿@using myRaiCommonModel
+@model List<AnagraficaModel>
+
+<table class="table rai-table js-table-sections rai-table-vcenter rai-table-panel" id="elenco-dip-table">
+    <thead>
+        <tr>
+            <th>Nominativo</th>
+            <th>Stato</th>
+            <th></th>
+            @*<th></th>*@
+        </tr>
+    </thead>
+    @if (Model == null || Model.Count()==0)
+    {
+        <tr>
+            <td colspan="7" class="text-center"><span class="rai-font-md-neutral">Non ci sono dati visualizzare</span></td>
+        </tr>
+    }
+    else
+    {
+        foreach (var dip in Model)
+        { 
+            <tbody class="to-append">
+                <tr data-persone="" id="TR_@(dip.IdPersona)" data-iddipendente="@(dip.IdPersona)" role="row" style="margin:2px; border-top:1px solid lightgray; ">
+                    <td data-id-persona="@(dip.IdPersona)">
+                        @Html.ProfileWidget(dip.Matricola, dip.Cognome + " " + dip.Nome, null, dip.Servizio, caption:"Matricola " + dip.Matricola)
+                    </td>
+                    <td data-id-persona="@(dip.IdPersona)">
+                        @{
+                            bool isActive = true;
+                            var current = dip.DatiStatiRapporti.Eventi.FirstOrDefault(x => x.DataInizio <= DateTime.Today && x.DataFine > DateTime.Today);
+                            if (current == null)
+                            {
+                                isActive = false;
+                                current = dip.DatiStatiRapporti.Eventi.OrderByDescending(x => x.DataInizio).FirstOrDefault();
+                            }
+                        }
+                        <label class="rai-label @(isActive?"rai-label-interactive":"")">
+                            @current.Descrizione
+                        </label>
+                        <br /> Dal @current.DataInizio.ToString("dd/MM/yyyy") al @current.DataFine.ToString("dd/MM/yyyy")
+                    </td>
+                    <td class="text-right">
+                        <button onclick="OpenModalDipStati(@dip.IdPersona, 'modal-dipendente')" class="btn rai-btn-small">Visualizza</button>
+                    </td>
+                </tr>
+            </tbody>
+        }
+    }
+</table>

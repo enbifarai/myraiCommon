@@ -1,0 +1,634 @@
+﻿@using myRaiCommonModel
+@model myRaiCommonModel.AssunzioniVM
+
+<div class="row">
+    <div class="col-sm-8" id="div_modalInserEditAssunzioni">
+        @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Dati Assunzione", false))
+        {
+        <form id="add-imm" onsubmit="return false;">
+            @Html.Hidden("IdEvento", Model.IdEvento)
+            @Html.Hidden("IdPersona", Model.IdPersona)
+            @Html.Hidden("Matricola", Model.Matricola)
+            @Html.Hidden("TabAnagrafica", Model.TabAnagrafica)
+            @Html.Hidden("TabDatiContrattuali", Model.TabDatiContrattuali)
+            @Html.Hidden("TabAllegati", Model.TabAllegati)
+            @Html.Hidden("Completo", Model.Completo)
+            @Html.Hidden("TabAttivo", Model.TabAttivo)
+            <div class="form-group">
+                <div id="wiz-parent">
+                    <div id="wiz-body">
+                        <div class="js-wizard-classic-validation">
+                            <div id="newwizard" class="wizard-progress wizard-progress-llg wiznew">
+                                <ul class="wizard-steps">
+                                    <li class="tabhead tabheadrich @(Model.TabAnagrafica ? "disable completed" : "disable active") @(Model.Avanzamento < 20 ? "active" : "")" id="LiTabGenerale" role="presentation">
+                                        <a role="tab" tabindex="-1" aria-label="" aria-controls="wizgenerale" id="tab1" data-toggle="tab" aria-selected="@(Model.TabAttivo == 1 ? "true" : "false")" href="#wizgenerale"><span>1</span>DATI ANAGRAFICI</a>
+                                    </li>
+                                    <li class="tabhead tabheadrich @(Model.TabDatiContrattuali ? "disable completed" : "disable") @(Model.Avanzamento == 20 ? "active" : "")" id="LiTabCategoria" role="presentation">
+                                        <a role="tab" tabindex="-1" aria-label="" aria-controls="wizfiltro-contratto" id="tab2" data-toggle="tab" aria-selected="@(Model.TabAttivo == 2 ? "true" : "false")" href="#wizfiltro-categoria"><span>2</span>DATI CONTRATTUALI</a>
+                                    </li>
+                                    <li class="tabhead tabheadrich @(Model.TabAllegati ? "disable completed" : "disable") @(Model.Avanzamento == 40 ? "active" : "")" id="LiTabAltro" role="presentation">
+                                        <a role="tab" tabindex="-1" aria-label="" aria-controls="wizaltro" id="tab3" data-toggle="tab" aria-selected="@(Model.TabAttivo == 3 ? "true" : "false")" href="#wizaltro"><span>3</span>ALTRI DATI E ALLEGATI</a>
+                                    </li>
+                                    <li class="tabhead tabheadrich @(Model.TabAllegati ? "disable completed" : "disable") @(Model.Avanzamento == 60 ? "active" : "")" id="LiTabRiepilogo" role="presentation">
+                                        <a role="tab" tabindex="-1" aria-label="Riepilogo" aria-controls="wizriepilogo" id="tab4" aria-selected="@(Model.TabAttivo == 4 ? "true" : "false")" data-toggle="tab" href="#wizriepilogo"><span>4</span>RIEPILOGO</a>
+                                    </li>
+                                </ul>
+                                <div class="block-content tab-content" style="overflow: visible; padding:0px; border: 0px; box-shadow: none">
+                                    <div class="tab-pane @(Model.Avanzamento < 20 ? "active" : "") text-left" id="wizgenerale" role="tabpanel" tabindex="0">
+                                        <div>
+                                            <div class="row push-10">
+                                                <div class="col-sm-6 ">
+                                                    @Html.LabelForRequiredObbl(model => model.Cognome, "Cognome", new { @class = "rai-caption" })
+                                                    @Html.TextBoxFor(m => m.Cognome, new { @onchange = "Assunzione_CheckTabAnagrafica()", @class = " form-control form-control-value", style = "width: 100%", placeholder = "Cognome", required = "required", @onkeyup = "InputToUpper(this);" })
+                                                </div>
+                                                <div class="col-sm-6 ">
+                                                    @Html.LabelForRequiredObbl(model => model.Nome, "Nome", new { @class = "rai-caption" })
+                                                    @Html.TextBoxFor(m => m.Nome, new { @onchange = "Assunzione_CheckTabAnagrafica()", @class = "form-control form-control-value", style = "width: 100%", placeholder = "Nome", required = "required", @onkeyup = "InputToUpper(this);" })
+                                                </div>
+                                            </div>
+                                            <div class="row push-10">
+                                                <div class="col-sm-6">
+                                                    @Html.LabelForRequiredObbl(model => model.DataNascita, "Data di nascita", new { @class = "rai-caption", placeholder = "Data di Nascita" })
+                                                    <div class="input-group">
+                                                        <span class="input-group-addon" style="cursor: pointer" onclick="$('#DataNascita').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                                                        @Html.TextBoxFor(m => m.DataNascita, new { @onchange = "Assunzione_CheckTabAnagrafica()", @class = "js-datetimepicker form-control form-control-value", data_format = "DD/MM/YYYY", minData = DateTime.Today.ToString("dd/MM/yyyy"), data_locale = "it", style = "width: 100%", placeholder = "Data di nascita" })
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-6">
+                                                    @Html.LabelForRequiredObbl(model => model.Genere, "Genere", new { @class = "rai-caption" })
+                                                    <br />
+                                                    <div class="rai-radio radio-inline padding-15">
+                                                        @Html.RadioButtonFor(model => model.Genere, "M", htmlAttributes: new { id = "GenereM" })
+                                                        <label for="GenereM">Maschio</label>
+                                                    </div>
+                                                    <div class="rai-radio radio-inline padding-15">
+                                                        @Html.RadioButtonFor(model => model.Genere, "F", htmlAttributes: new { id = "GenereF" })
+                                                        <label for="GenereF">Femmina</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row push-10">
+                                                <div class="col-sm-6">
+                                                    @Html.LabelForRequiredObbl(model => model.LuogoDiNascita, "Luogo di nascita", new { @class = "rai-caption" })
+                                                    @Html.RaiAsyncSelectFor(model => model.LuogoDiNascita, Url.Action("GetComuni", "Immatricolazione"), 1, "Seleziona un comune", "Cerca", true, "decodProvincia(); Assunzione_CheckTabAnagrafica();", tipoFiltro: myRaiHelper.SelectFilterType.StartsWith)
+                                                </div>
+                                                <div class="col-sm-6">
+                                                    @Html.Label("Provincia", new { @class = "rai-caption" })
+                                                    <div class="input-group">
+                                                        @if (Model.IdEvento == 0)
+                                                        {
+                                                            @Html.TextBox("Provincia", Model.CodiceISTAT, new { id = "Provincia", @readonly = "readonly", style = "width:100%", @class = "form-control form-control-value", placeholder = "Provincia" })
+                                                        }
+                                                        else
+                                                        {@Html.TextBox("Provincia", Model.CodiceISTAT, new { id = "Provincia", @readonly = "readonly", style = "width:100%", @class = "form-control form-control-value", placeholder = "Provincia" })}
+
+                                                        <span class="input-group-addon"><i class="fa fa-lock"></i></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row  push-10">
+                                                <div class="col-sm-6">
+                                                    @Html.LabelForRequiredObbl(model => model.Cittadinanza, "Cittadinanza", new { @class = "rai-caption" })
+                                                    @Html.RaiAsyncSelectFor(m => m.Cittadinanza, Url.Action("GetNazioni", "Immatricolazione"), 1, "Seleziona una nazione", "Cerca", true, onSelectchange: "Assunzione_CheckTabAnagrafica()", tipoFiltro: myRaiHelper.SelectFilterType.StartsWith)
+                                                </div>
+                                                <div class="col-sm-6">
+                                                    @Html.LabelFor(model => model.CodiceFiscale, "Codice Fiscale", new { @class = "rai-caption" })
+                                                    @if (Model.IdPersona > 0)
+                                                    {
+                                                        @Html.TextBoxFor(m => m.CodiceFiscale, new { @class = "form-control form-control-value", @readonly = "readonly", style = "width: 100%", placeholder = "Codice Fiscale", @onmouseup = "cancelBorderRed()" })
+                                                    }
+                                                    else
+                                                    { @Html.TextBoxFor(m => m.CodiceFiscale, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Codice Fiscale", @onmouseup = "cancelBorderRed()", onkeyup = "InputToUpper(this);" })}
+                                                </div>
+                                            </div>
+                                            <div class="row push-10">
+                                                <div class="col-sm-6">
+                                                    @Html.LabelForRequiredObbl(model => model.LuogoDiNascita, "Comune di residenza", new { @class = "rai-caption" })
+                                                    @Html.RaiAsyncSelectFor(model => model.LuogoDiNascita, Url.Action("GetComuni", "Immatricolazione"), 1, "Seleziona un comune", "Cerca", true, "decodProvincia(); Assunzione_CheckTabAnagrafica();", tipoFiltro: myRaiHelper.SelectFilterType.StartsWith)
+                                                </div>
+                                                <div class="col-sm-6">
+                                                    @Html.Label("Provincia", new { @class = "rai-caption" })
+                                                    <div class="input-group">
+                                                        @if (Model.IdEvento == 0)
+                                                        {
+                                                            @Html.TextBox("Provincia", Model.CodiceISTAT, new { id = "Provincia", @readonly = "readonly", style = "width:100%", @class = "form-control form-control-value", placeholder = "Provincia" })
+                                                        }
+                                                        else
+                                                        {@Html.TextBox("Provincia", Model.CodiceISTAT, new { id = "Provincia", @readonly = "readonly", style = "width:100%", @class = "form-control form-control-value", placeholder = "Provincia" })}
+
+                                                        <span class="input-group-addon"><i class="fa fa-lock"></i></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row push-10">
+                                                <div class="col-sm-6">
+                                                    @Html.Label("Cap", new { @class = "rai-caption" })
+                                                    @Html.TextBoxFor(m => m.codSezione, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Cap" })
+                                                </div>
+                                                <div class="col-sm-6">
+                                                    @Html.LabelFor(model => model.Indirizzo, "Indirizzo", new { @class = "rai-caption", placeholder = "Stato civile" })
+                                                    @Html.TextBoxFor(m => m.Indirizzo, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Indirizzo" })
+                                                </div>
+                                            </div>
+                                            <div class="row push-10">
+                                                <div class="col-sm-6">
+                                                    @Html.LabelFor(model => model.SelectedStatoCivile, "Stato civile", new { @class = "rai-caption", placeholder = "Stato civile" })
+                                                    @Html.RaiSelectFor(model => model.SelectedStatoCivile, myRaiGestionale.Controllers.AssunzioneController.GetListItems("statocivile"), "Seleziona stato civile", "Cerca", false, "", false, null, true)
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                        
+                                    </div>
+                                    <div class="tab-pane @(Model.Avanzamento == 20 ? "active" : "") text-left" id="wizfiltro-categoria" role="tabpanel" tabindex="0">
+                                        <div>
+                                            <div class="row push-10-t">
+                                                <div class="col-md-6 push-10">
+                                                    @Html.LabelForRequiredObbl(model => model.SelectedAzienda, "Azienda", new { @class = "rai-caption" })
+                                                    @Html.RaiSelectFor(model => model.SelectedAzienda, myRaiCommonManager.AnagraficaManager.GetSocieta("", "", loadAll: true, addCodDes: false, addCodParentesi: true), "Seleziona una azienda", "Cerca", hideSearch: true, onSelectchange: "changeSelectAzienda(); Assunzione_CheckTabDatiContrattuali();", tipoFiltro: myRaiHelper.SelectFilterType.StartsWith)
+                                                </div>
+                                                <div class="col-md-6 push-10 ">
+                                                    @Html.LabelForRequiredObbl(model => model.SelectedSede, "Sede", new { @class = "rai-caption" })
+                                                    @Html.RaiAsyncSelectFor(model => model.SelectedSede, Url.Action("GetSedi", "Assunzione"), 1, "Seleziona una sede", "Cerca", true, onSelectchange: "Assunzione_CheckTabDatiContrattuali()", tipoFiltro: myRaiHelper.SelectFilterType.AllStartsWith, showCodeInDropdown: false)
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6 push-10" id="serv">
+                                                    @Html.LabelForRequiredObbl(model => model.SelectedServizio, "Servizio", new { @class = "rai-caption" })
+                                                    @Html.RaiAsyncSelectFor(model => model.SelectedServizio, Url.Action("GetServizi", "Assunzione"), 1, "Seleziona un servizio", "Cerca", true, getParametersFunction: "getParametriServizi()", onSelectchange: "changeSelectServizio(); Assunzione_CheckTabDatiContrattuali();", tipoFiltro: myRaiHelper.SelectFilterType.AllStartsWith)
+                                                </div>
+                                                <div class="col-md-6 push-10" id="sezione">
+                                                    @Html.LabelForRequiredObbl(model => model.SelectedSezione, "Sezione", new { @class = "rai-caption" })
+                                                    @Html.RaiAsyncSelectFor(model => model.SelectedSezione, Url.Action("GetSezioni", "Assunzione"), 1, "Seleziona una sezione", "Cerca", true, onSelectchange: "Assunzione_CheckTabDatiContrattuali()", getParametersFunction: "getParametriSezioni()", tipoFiltro: myRaiHelper.SelectFilterType.AllStartsWith)
+                                                </div>
+                                            </div>
+                                            <div class="row ">
+                                                <div class="col-md-6 push-10" id="contratto">
+                                                    @Html.LabelForRequiredObbl(model => model.SelectedTipoAssunzione, "Tipo Assunzione(Tipo Variazione)", new { @class = "rai-caption" })
+                                                    @Html.RaiSelectFor(model => model.SelectedTipoAssunzione, myRaiGestionale.Controllers.AssunzioneController.GetListItems("tipoassunzione"), "Seleziona tipo contratto", "Cerca", false, "Assunzione_CheckTabDatiContrattuali()", false, null, true)
+                                                </div>
+                                                <div class="col-md-6 push-10">
+                                                    @Html.LabelForRequiredObbl(model => model.SelectedFormaContratto, "Forma Contratto", new { @class = "rai-caption" })
+                                                    @Html.RaiSelectFor(model => model.SelectedFormaContratto, myRaiGestionale.Controllers.AssunzioneController.GetListItems("formacontratto"), "Seleziona contratto", "Cerca", false, "changeSelectedRappLavoro(); Assunzione_CheckTabDatiContrattuali();", false, null, true)
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6 push-10">
+                                                    @Html.LabelForRequiredObbl(model => model.SelectedCausaleAssunzione, "Causale Assunzione", new { @class = "rai-caption" })
+                                                    @Html.RaiSelectFor(model => model.SelectedCausaleAssunzione, myRaiGestionale.Controllers.AssunzioneController.GetListItems("causale"), "Seleziona una causale", "Cerca", true, "Assunzione_CheckTabDatiContrattuali()", tipoFiltro: myRaiHelper.SelectFilterType.AllStartsWith)
+                                                </div>
+                                                <div class="col-md-6 push-10">
+                                                    @Html.LabelForRequiredObbl(model => model.SelectedModalitaReclutamento, "Modalità di Reclutamento", new { @class = "rai-caption" })
+                                                    @Html.RaiSelectFor(model => model.SelectedModalitaReclutamento, myRaiGestionale.Controllers.AssunzioneController.GetListItems("modalita"), "Seleziona una modalità", "Cerca", true, "Assunzione_CheckTabDatiContrattuali()", tipoFiltro: myRaiHelper.SelectFilterType.AllStartsWith)
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6 push-10">
+                                                    @Html.RaiCheckBoxLabelFor(model => model.CollocamentoObbligatorio, "Collocamento obbligatorio", "")
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6 push-10 ">
+                                                    @Html.LabelForRequiredObbl(model => model.DataInizio, "Data inizio contratto", new { @class = "rai-caption" })
+                                                    <div class="input-group">
+                                                        <span class="input-group-addon" style="cursor: pointer" onclick="$('#DataInizio').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                                                        @Html.TextBoxFor(m => m.DataInizio, new { @onchange = "UpdateMinDateEnd(); Assunzione_CheckTabDatiContrattuali();", @class = "js-datetimepicker form-control form-control-value", data_format = "DD/MM/YYYY", style = "width: 100%", placeholder = "Data inizio", required = "required" })
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6 push-10 ">
+                                                    @Html.LabelForRequiredObbl(model => model.DataFine, "Data Fine contratto", new { @class = "rai-caption", style = "padding-left:0px;" })
+                                                    <div class="input-group">
+                                                        <span class="input-group-addon" style="cursor: pointer" onclick="$('#DataFine').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                                                        @Html.TextBoxFor(model => model.DataFine, new { @onchange = "Assunzione_CheckTabDatiContrattuali()", @class = "js-datetimepicker form-control form-control-value", data_format = "DD/MM/YYYY", style = "width: 100%", placeholder = "Data Fine", required = "required" })
+                                                    </div>
+                                                    <span class="rai-caption">Solo per contratti a tempo determinato</span>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6 push-10">
+                                                    @Html.LabelForRequiredObbl(model => model.SelectedCategoria, "Categoria", new { @class = "rai-caption" })
+                                                    @Html.RaiAsyncSelectFor(model => model.SelectedCategoria, Url.Action("GetQualifiche", "Assunzione"),1, "Seleziona una categoria", "Cerca", true, onSelectchange: "Assunzione_CheckTabDatiContrattuali(); FiltraTipoMinimo();", attributes: new { id = "categoria" }, tipoFiltro: myRaiHelper.SelectFilterType.AllStartsWith, showCodeInDropdown: false)
+                                                </div>
+                                                <div id="selectTipoMinimo" class="col-md-6 push-10">
+                                                    @Html.LabelForRequiredObbl(model => model.SelectedTipoMinimo, "Tipo minimo", new { @class = "rai-caption" })
+                                                    @Html.RaiSelectFor(model => model.SelectedTipoMinimo, myRaiGestionale.Controllers.AssunzioneController.GetListItems("tipominimo", Model.SelectedCategoria), "Seleziona tipo minimo", "Cerca", false, "Assunzione_CheckTabDatiContrattuali(); changeTipoMinimo();", false, new { id = "tipoMinimo" }, true)
+                                                    @*@Html.RaiAsyncSelectFor(model => model.SelectedTipoMinimo, Url.Action("GetTipoMinimo", "Assunzione"), 1, "Seleziona tipo minimo", "Cerca", true, tipoFiltro: myRaiHelper.SelectFilterType.AllStartsWith, showCodeInDropdown: true)*@
+                                                </div>
+                                            </div>
+                                            <div id="oreTipoMinimo" class="row" style="display:none">
+                                                <div class="col-md-6 push-10">
+                                                    @Html.LabelFor(model => model.OrarioSettimanaleContratto, "Orario settimanale", new { @class = "rai-caption", placeholder = "Orario settimanale" })
+                                                    @Html.RaiSelectFor(model => model.OrarioSettimanaleContratto, myRaiGestionale.Controllers.AssunzioneController.GetListItems("orario"), "Seleziona orario", "Cerca", false, null, false, new { id = "orarioSelect"}, true)
+                                                    @*@Html.RaiAsyncSelectFor(model => model.SelectedCategoria, Url.Action("GetQualifiche", "Assunzione"), 1, "Seleziona una categoria", "Cerca", true, onSelectchange: "Assunzione_CheckTabDatiContrattuali(); FiltraTipoMinimo();", tipoFiltro: myRaiHelper.SelectFilterType.AllStartsWith, showCodeInDropdown: false)*@
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6 push-10">
+                                                    @Html.LabelForRequiredObbl(model => model.SelectedMansione, "Mansione", new { @class = "rai-caption" })
+                                                    @Html.RaiAsyncSelectFor(model => model.SelectedMansione, Url.Action("GetMansioni", "Assunzione"), 1, "Seleziona una mansione", "Cerca", true, onSelectchange: "Assunzione_CheckTabDatiContrattuali()", tipoFiltro: myRaiHelper.SelectFilterType.AllStartsWith, showCodeInDropdown: false)
+                                                </div>
+                                                <div class="col-md-6 push-10">
+                                                    @Html.LabelFor(model => model.AssicurazioneInfortuni, "Assicurazione Infortuni", new { @class = "rai-caption" })
+                                                    @Html.RaiSelectFor(model => model.AssicurazioneInfortuni, myRaiGestionale.Controllers.AssunzioneController.GetListItems("assicurazioneinfortuni"), "Seleziona assicurazione infortuni", "Cerca", false, null, false, null, true)
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-sm-6">
+                                                    @Html.LabelFor(model => model.Indennita, "Indennità", new { @class = "rai-caption", placeholder = "Indennità" })
+                                                    @Html.RaiSelectFor(model => model.Indennita, myRaiGestionale.Controllers.AssunzioneController.GetListItems("indennita"), "Seleziona indennità", "Cerca", false, null, true, null, true)
+                                                </div>
+                                                <div class="col-sm-6">
+                                                    @Html.LabelFor(model => model.Insediamento, "Insediamento", new { @class = "rai-caption", placeholder = "Insediamento" })
+                                                    @Html.RaiSelectFor(model => model.Insediamento, myRaiGestionale.Controllers.AssunzioneController.GetListItems("insediamento", Model.SelectedSede), "Seleziona insedimento", "Cerca", false, null, false, null, true)
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane @(Model.Avanzamento == 40 ? "active" : "") text-left" id="wizaltro" role="tabpanel" tabindex="0">
+                                        <div>
+                                            <div class="row push-10">
+                                                <div class="col-xs-12 push-10">
+                                                    @Html.LabelFor(model => model.Note, "Note", new { @class = "rai-caption" })
+                                                    <div class="input-group">
+                                                        @Html.TextAreaFor(model => model.Note, new { @class = "form-control", @rows = 5, @cols = 200 })
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <div class="form-group">
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-12">
+                                                                <label id="lb_doc_supporto" class="rai-caption">Documenti allegati</label>
+                                                                <br />
+                                                                <label class="rai-font-md">Se hai altri documenti a supporto della richiesta puoi caricarli qui Formati supportati .pdf</label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row push-10" id="div-uploading-supporti">
+                                                            <div class="col-sm-12">
+                                                                <table id="table-uploading-supporti" class="rai-table rai-table-vcenter" style="min-width:100%">
+                                                                    <tbody style="min-width:100%" id="table-uploading-supporti-body">
+                                                                        @{
+
+
+                                                                            Assunzione_FileUploadVM fileS = new Assunzione_FileUploadVM();
+                                                                            fileS.Allegati = myRaiCommonTasks.Helpers.FileAssunzioneManager.GetFilesByIdAssunzione(Model.IdEvento, "ASS").Files;
+                                                                            if (fileS.Allegati != null && fileS.Allegati.Count > 0)
+                                                                            {
+                                                                                fileS.Principale = false;
+                                                                                fileS.InModifica = false;
+
+                                                                                @Html.Partial("~/Views/Assunzione/_subpartial/FileUpload.cshtml", fileS)
+                                                                            }
+
+
+                                                                        }
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-12">
+                                                                <button id="btn-aggiungi-allegato-supporto" type="button" onclick="$('#fileupload-VSDIP-allegati-supporto').click()" class="btn rai-btn-small" style="margin-bottom: 12px;margin-top:16px">
+                                                                    Aggiungi documenti
+                                                                </button>
+                                                                <input data-tipo="PDF" style="display:none" type="file" multiple="multiple" id="fileupload-VSDIP-allegati-supporto" onchange="Assunzione_AbilitaInfoFileMultiplo()" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            @*<div class="row">
+                                            <div class="col-sm-6">
+                                                @Html.LabelFor(model => model.AssicurazioneInfortuni, "Documenti Allegati", new { @class = "rai-caption" })
+
+                                            </div>
+                                        </div>*@
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane @(Model.Avanzamento == 60 ? "active" : "") text-left" id="wizriepilogo" role="tabpanel" tabindex="0">
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </form>
+
+            <div class="row push-20-t">
+                <div class="col-sm-12">
+                    <div class="rai-btn-fill">
+                        <button class="btn rai-btn-secondary @(Model.Avanzamento < 20 ? "disable" : "")" onclick="GotoPreviousTab()" id="btnPrevTab">Indietro</button>
+                        <input type="button" id="btnProsegui" style="@(Model.Avanzamento < 20 ? "" : "display:none;")" class="btn btn-primary full-width disable" title="Prosegui" value="Continua" onclick="GotoNextTab()" />
+                        <input type="button" id="btnProsegui_" style="@(Model.Avanzamento == 20 ? "" : "display:none;")" class="btn btn-primary full-width disable" title="Continua" value="Continua" onclick="GotoNextTab1()" />
+                        <input type="button" id="btnProsegui_2" style="@(Model.Avanzamento == 40 ? "" : "display:none;")" class="btn btn-primary full-width" title="Continua" value="Continua" onclick="GotoNextTab2()" />
+                        <input type="button" id="btnSave" style="@(Model.Avanzamento == 60 ? "" : "display:none;")" class="btn btn-primary full-width" title="Salva" value="Conferma" onclick="SaveDipendente()" />
+                    </div>
+                </div>
+            </div>
+
+
+
+        }
+    </div>
+    <div class="col-sm-4">
+        @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Note", true))
+        {
+
+            <div class="row">
+                <div class="col-md-12">
+                    <p class="rai-font-md"><i class="fa fa-info-circle neutrals-md-40-color" style="padding-right:5px;"></i>I campi contrassegnati con * sono obbligatori.</p><br />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <p class="rai-font-md"><i class="fa fa-info-circle neutrals-md-40-color" style="padding-right:5px;"></i>I dati inseriti sono dati previsionali e possono essere modificati in qualsiasi momento.</p><br />
+                </div>
+            </div>
+        }
+
+    </div>
+</div>
+
+<script type="text/javascript">
+    var today = new Date();
+    var dataal = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate() + 1);
+    var dd = String(today.getDate()).padStart(2, '0');
+    var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+    var yyyy = today.getFullYear();
+    today = dd + '/' + mm + '/' + yyyy;
+    var dd = String(dataal.getDate()).padStart(2, '0');
+    var mm = String(dataal.getMonth() + 1).padStart(2, '0'); //January is 0!
+    var yyyy = dataal.getFullYear();
+    dataal = dd + '/' + mm + '/' + yyyy;
+    $(function () {
+        InitDatePicker();
+        var modelDataFine = @Html.Raw(Json.Encode(Model.DataFine.GetValueOrDefault().ToShortDateString()));
+        var modelDataInizio =  @Html.Raw(Json.Encode(Model.DataInizio.ToShortDateString()));
+        var modelDataNascita = @Html.Raw(Json.Encode(Model.DataNascita.ToShortDateString()));
+        var modelIdEvento = @Html.Raw(Json.Encode(Model.IdEvento));
+        if (modelIdEvento != 0) {
+
+            $('#DataNascita').val(modelDataNascita);
+            $('#DataInizio').val(modelDataInizio);
+            if ($('#SelectedFormaContratto').val() == "9" || $('#SelectedFormaContratto').val() == "K" ) {
+                $('#DataFine').val('');
+                $('#DataFine').prop('disabled', true);
+            }else{
+                $('#DataFine').prop('disabled', false);
+                $('#DataFine').val(modelDataFine);
+            }
+
+        }else {
+            if (modelDataNascita) {
+                $('#DataNascita').val(modelDataNascita);
+            }
+            else {
+                $('#DataNascita').val('');
+            }
+            $('#DataInizio').val(today);
+
+            $('#DataFine').val(dataal);
+        }
+        UpdateMinDateEnd();
+        if (@Model.Avanzamento == 60) {
+            $.ajax({
+                url: "/Assunzione/GetDataPerRiepilogo",
+                type: "GET",
+                async: false,
+                data: {
+                    id: modelIdEvento,
+                    idContratto: 0
+                },
+                contentType: "application/json; charset=utf-8",
+                dataType: 'html',
+                success: function (data) {
+                    //alert("ciao");
+                    $('#wizriepilogo').html(data);
+                },
+                error: function (xhr, status) {
+                    swal({
+                        title: 'Si è verificato un errore nel reperimento dei dati',
+                        type: 'error',
+                        showConfirmButton: true,
+                        confirmButtonText: 'Ok',
+                        customClass: 'rai'
+                    });
+                }
+            });
+        }
+    });
+    function cancelBorderRed() {
+        document.getElementById("CodiceFiscale").style = "border:  1px solid #c2cfd6";
+    }
+    
+    function changeSelectedRappLavoro() {
+        $('#DataInizio').trigger("reset").val(today);
+        $('#DataFine').trigger("reset").val(today);
+        var contrattoSelezionato = $('#SelectedFormaContratto').val();
+        if (contrattoSelezionato == "9" || contrattoSelezionato == "K") {
+             //$('#DataFine').attr('readonly', 'readonly');
+             $('#DataFine').val('');
+             //$('#DataFine').addClass('disable');
+             $("#DataFine").prop("disabled", true);
+         } else {
+             $("#DataFine").prop("disabled", false);
+             $('#DataFine').val(dataal);
+         }
+
+    }
+        function changeSelectAzienda() {
+
+            $("#SelectedServizio").find("option").empty();
+
+            $("#serv").find("span").empty();
+           // changeSelectServizio();
+
+        }
+
+    function getParametriServizi() {
+
+        return {
+            azienda: $('#SelectedAzienda').val()
+                    };
+    }
+
+    function getParametriSezioni() {
+
+        return {
+            azienda: $('#SelectedAzienda').val(),
+            servizio: $('#SelectedServizio').val()
+        };
+    }
+    function InputToUpper(obj) {
+        if (obj.value != "") {
+            obj.value = obj.value.toUpperCase();
+        }
+    }
+    function UpdateMinDateEnd() {
+        var contrattoSelezionato = $('#SelectedFormaContratto').val();
+        if (contrattoSelezionato == "9" || contrattoSelezionato == "K") return;
+        var value = $('#DataInizio').val();
+        var vala = $('#DataFine').val();
+        var datafine = new Date();
+        datafine.setFullYear(vala.substr(6, 4), (vala.substr(3, 2) - 1), vala.substr(0, 2));
+        var datadal = new Date();
+        datadal.setFullYear(value.substr(6, 4), (value.substr(3, 2) - 1), value.substr(0, 2));
+        var dataal = new Date(
+            datadal.getFullYear(),
+            datadal.getMonth(),
+            datadal.getDate() + 1);
+        var dd = String(dataal.getDate()).padStart(2, '0');
+        var mm = String(dataal.getMonth() + 1).padStart(2, '0'); //January is 0!
+        var yyyy = dataal.getFullYear();
+        dataal = dd + '/' + mm + '/' + yyyy;
+        $('#DataFine').data('DateTimePicker').minDate(dataal);
+        if (datadal > datafine) {
+            $('#DataFine').val(dataal);
+        }
+
+    }
+    function Assunzione_AbilitaInfoFileMultiplo() {
+        var totalFiles = document.getElementById("fileupload-VSDIP-allegati-supporto").files.length;
+        var formData = new FormData();
+
+        for (var i = 0; i < totalFiles; i++) {
+            var file = document.getElementById("fileupload-VSDIP-allegati-supporto").files[i];
+            var nomefile = file.name;
+
+            if (nomefile.toLowerCase().indexOf(".pdf") < 0)
+                //&&
+                //nomefile.toLowerCase().indexOf(".doc") < 0 &&
+                //nomefile.toLowerCase().indexOf(".docx") < 0)
+            {
+                swal("Formato file non supportato. Sono ammessi soltanto .pdf");
+                return;
+            }
+
+            formData.append('filePrincipale', false);
+            formData.append('file', file);
+            formData.append("nome", nomefile);
+            formData.append("tipo", 'PDF');
+            formData.append("idEvento", @Model.IdEvento);
+        }
+
+        var request = new XMLHttpRequest();
+        request.onreadystatechange = function () {
+            if (request.readyState === 4 && request.status === 200) {
+                var data = $.parseJSON(request.responseText);
+                if (data.success) {
+                    Assunzione_Upload_OnSuccess(data.responseText, false);
+                    $('#fileupload-VSDIP-allegati-supporto').val('');
+                }
+                else {
+                    Assunzione_Upload_OnFailure(data);
+                }
+            }
+        };
+
+        request.open('post', "/Assunzione/UploadFile");
+        request.timeout = 45000;
+        request.send(formData);
+    }
+    function Assunzione_Upload_OnSuccess(idAllegato, isPrincipal) {
+        $.ajax({
+            url: '/Assunzione/GetFileAllegati',
+            type: "GET",
+            data: {
+                idAllegato: idAllegato,
+                isPrincipal: isPrincipal,
+            },
+            async: false,
+            cache: false,
+            contentType: "application/json; charset=utf-8",
+            dataType: 'html',
+            complete: function () { },
+            success: function (data) {
+                if (isPrincipal) {
+                    //
+                    $('#tabella-file-principale').html(data);
+                    $('#div-upload-principale').hide();
+                    $('#btns-fase1-next').removeClass('disable');
+                    $('#identificativoAllegato').val(response.responseText);
+                    $('#identificativoAllegato').data('contatore', '0');
+                }
+                else {
+                    //
+                    $('#table-uploading-supporti-body').append(data);
+                }
+
+                if (!isPrincipal) {
+                    Assunzione_AbilitaButtonFase3();
+                }
+            }
+        });
+    }
+    function Assunzione_AbilitaButtonFase3() {
+        var pronto1 = false;
+        var pronto2 = false;
+        var pronto3 = false;
+
+        if ($('#selApprovatore').is(':visible')) {
+            var selApprovatore = $('#selApprovatore').val();
+
+            if (selApprovatore !== null && selApprovatore !== "" && selApprovatore !== "-1" && typeof selApprovatore !== "undefined") {
+                pronto1 = true;
+            }
+        }
+        else {
+            pronto1 = true;
+        }
+
+        if ($('#incaricatoFirma').is(':visible')) {
+            var incaricatoFirma = $('#incaricatoFirma').val();
+
+            if (incaricatoFirma !== null && incaricatoFirma !== "" && incaricatoFirma !== "-1" && typeof incaricatoFirma !== "undefined") {
+                pronto2 = true;
+            }
+        }
+        else {
+            pronto2 = true;
+        }
+
+        var tx = $('#lb_doc_supporto').text();
+
+        if (tx.indexOf('*') > -1) {
+            var tempAll = '';
+
+            $('tr[id^="riga-allegato-"]').each(function () {
+                var id = $(this).data('id');
+                if (tempAll === '') {
+                    tempAll = id;
+                }
+                else {
+                    tempAll = tempAll + "," + id;
+                }
+            });
+
+            if (tempAll !== "") {
+                pronto3 = true;
+            }
+        }
+        else {
+            pronto3 = true;
+        }
+
+        if (pronto1 && pronto2 && pronto3) {
+            $('#btns-fase3-next').removeClass('disable');
+        }
+        else {
+            if (!$('#btns-fase3-next').hasClass('disable')) {
+                $('#btns-fase3-next').addClass('disable');
+            }
+        }
+    }
+
+</script>

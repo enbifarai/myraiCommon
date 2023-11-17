@@ -1,0 +1,331 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+@model AnagraficaModel
+
+@{
+
+    var elencoContratti = new List<SelectListItem>();
+    elencoContratti.AddRange(Model.DatiContratti.Eventi.OrderByDescending(x => x.DataInizio)
+            .Select(x => new SelectListItem()
+            {
+                Value = String.Format("{0:yyyyMMdd}_{1:yyyyMMdd}", x.DataInizio, x.DataFine),
+                Text = String.Format("{0} {1:dd/MM/yyyy} - {2}", x.Descrizione.TitleCase(), x.DataInizio, x.DataFine == x.MaxDate ? "presente" : x.DataFine.ToString("dd/MM/yyyy")),
+                Selected = x.DataFine == x.MaxDate
+            }));
+
+    var currentContract = Model.DatiContratti.Eventi.OrderByDescending(x => x.DataInizio).First();
+
+    var listEventi = new List<EventoModel>();
+    listEventi.AddRange(Model.DatiSedi.Eventi);
+    listEventi.AddRange(Model.DatiServizi.Eventi);
+    listEventi.AddRange(Model.DatiRuoli.Eventi);
+    listEventi.AddRange(Model.DatiQualifiche.Eventi);
+    listEventi.AddRange(Model.DatiSezioni.Eventi);
+
+    var tmp = listEventi.OrderByDescending(x => x.DataInizio).ThenBy(x => x.Tipo);
+}
+
+
+<div class="form-group">
+    <div class="row push-10">
+        <div class="col-sm-12 col-md-6">
+            <label class="rai-caption">Contratto</label>
+            @Html.RaiSelect("select-contract", elencoContratti, "Seleziona un contratto", expandView: false, onSelectchange: "onFilterChange(true)", hideSearch: true)
+        </div>
+        <div class="col-sm-12 col-md-6">
+            <label class="rai-caption">Filtri</label>
+            <div class="rai-checkbox-container rai-check-inline">
+                <div class="rai-checkbox">
+                    <input type="checkbox" id="chkSedi" checked="checked" data-check-type="@TipoEvento.Sede" onclick="onFilterChange(false)" />
+                    <label for="chkSedi">Sedi</label>
+                </div>
+                <div class="rai-checkbox">
+                    <input type="checkbox" id="chkServ" checked="checked" data-check-type="@TipoEvento.Servizio" onclick="onFilterChange(false)" />
+                    <label for="chkServ">Servizi</label>
+                </div>
+                <div class="rai-checkbox">
+                    <input type="checkbox" id="chkMans" checked="checked" data-check-type="@TipoEvento.Mansione" onclick="onFilterChange(false)" />
+                    <label for="chkMans">Mansione</label>
+                </div>
+                <div class="rai-checkbox">
+                    <input type="checkbox" id="chkQual" checked="checked" data-check-type="@TipoEvento.Qualifica" onclick="onFilterChange(false)" />
+                    <label for="chkQual">Qualifiche</label>
+                </div>
+                <div class="rai-checkbox">
+                    <input type="checkbox" id="chkSez" checked="checked" data-check-type="@TipoEvento.Sezione" onclick="onFilterChange(false)" />
+                    <label for="chkSez">Sezioni</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row bg-neutrals-xl-10 border-bottom">
+        <div class="col-sm-6 push-10 push-10-t">
+            <div class="btn-action-icon-switch">
+                <button class="btn-action-icon active" onclick="contractViewSwitch('list')"><i class="fa fa-list"></i></button>
+                <button class="btn-action-icon" onclick="contractViewSwitch('chart')"><i class="fa fa-calendar"></i></button>
+            </div>
+        </div>
+        <div class="col-sm-6 push-10 push-10-t text-right">
+            <div style="width:200px;display:inline-block">
+                <table class="table rai-table rai-table-vcenter border-neutral-20 bg-white" style="display:none;" data-contract-view="chart">
+                    <tr>
+                        <td class="rai-table-td-toggle text-center"><span class="fa fa-minus interactive-primary-color"></span></td>
+                        <td class="text-center" style="width:100px;"><input type="range" class="rai-range" min="0" max="1" id="zoomContractSelector" onchange="changeZoomContract(this)" value="0" /></td>
+                        <td class="rai-table-td-toggle text-center"><span class="fa fa-plus interactive-primary-color"></span></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="row push-10" data-contract-view="list">
+        <div class="col-sm-12">
+            <table class="table rai-table rai-table-vcenter rai-table-borderless rai-table-high-row">
+                <thead>
+                    <tr>
+                        <th>Data inizio</th>
+                        <th>Data fine</th>
+                        <th>Variazione</th>
+                        <th>Descrizione</th>
+                        <th>Motivo variazione</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in tmp)
+                    {
+                        <tr data-evento=""
+                            data-i="@item.DataInizio.ToString("yyyyMMdd")"
+                            data-f="@item.DataFine.ToString("yyyyMMdd")"
+                            data-type="@item.Tipo"
+                            style="@(currentContract.DataInizio <= item.DataFine && item.DataInizio <= currentContract.DataFine ? "" : "display:none;")">
+                            <td>@item.DataInizio.ToString("dd/MM/yyyy")</td>
+                            <td>
+                                @if (item.DataFine == item.MaxDate)
+                                {
+                                    <span class="feedback-success-color text-bold">presente</span>
+                                }
+                                else
+                                {
+                                    <span>@item.DataFine.ToString("dd/MM/yyyy")</span>
+                                }
+                            </td>
+                            <td>
+                                @item.Tipo
+                            </td>
+                            <td>
+                                <span>@item.Codice  - @CezanneHelper.GetDes(item.Codice, item.Descrizione)</span>
+                            </td>
+                            <td>
+                                @item.DescrizioneEvento.UpperFirst()
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="row" data-contract-view="chart" style="display:none;" id="view-chart">
+        <style>
+            #leg th, #leg td {
+                border: none;
+            }
+
+            #leg > tbody > tr:nth-child(even) > td {
+                height: 8em;
+            }
+
+            .actual-event {
+                border-bottom: 3px solid #008A09;
+            }
+        </style>
+        <div class="col-sm-4 col-lg-1 border-right">
+            <table class="table rai-table rai-table-vcenter" id="leg">
+                <thead>
+                    <tr><th>&nbsp;</th></tr>
+                    <tr><th>&nbsp;</th></tr>
+                </thead>
+                <tbody>
+                    <tr data-evento-row="" data-type="@TipoEvento.Sede">
+                        <td></td>
+                    </tr>
+                    <tr data-evento-row="" data-type="@TipoEvento.Sede">
+                        <td><b>Sedi</b></td>
+                    </tr>
+                    <tr data-evento-row="" data-type="@TipoEvento.Servizio">
+                        <td></td>
+                    </tr>
+                    <tr data-evento-row="" data-type="@TipoEvento.Servizio">
+                        <td><b>Servizi</b></td>
+                    </tr>
+                    <tr data-evento-row="" data-type="@TipoEvento.Mansione">
+                        <td></td>
+                    </tr>
+                    <tr data-evento-row="" data-type="@TipoEvento.Mansione">
+                        <td><b>Mansione</b></td>
+                    </tr>
+                    <tr data-evento-row="" data-type="@TipoEvento.Qualifica">
+                        <td></td>
+                    </tr>
+                    <tr data-evento-row="" data-type="@TipoEvento.Qualifica">
+                        <td><b>Qualifiche</b></td>
+                    </tr>
+                    <tr data-evento-row="" data-type="@TipoEvento.Sezione">
+                        <td></td>
+                    </tr>
+                    <tr data-evento-row="" data-type="@TipoEvento.Sezione">
+                        <td><b>Sezione</b></td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-sm-8 col-lg-11 no-padding">
+            <div class="table-responsive" id="table-contr-container" onscroll="onScrollContainer()">
+                <div data-table-view="year_month" id="contract-year-month" data-table-viewdata="carriera/Tab_CarrieraPerContratto_AnnoMese">
+
+                </div>
+                <div data-table-view="month_day" id="contract-month-day" data-table-viewdata="carriera/Tab_CarrieraPerContratto_MeseGiorno" class="hidden">
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    function contractViewSwitch(view) {
+        $('[data-contract-view]').hide();
+        $('[data-contract-view="' + view + '"]').show();
+        onFilterChange(true);
+    }
+
+    function changeZoomContract(rangeSelector) {
+        var valZoom = parseInt($(rangeSelector).val());
+        var aryViews = ['year_month', 'month_day'];
+        $('[data-table-view]').removeClass('hidden');
+        $('[data-table-view]').addClass('hidden');
+        $('[data-table-view="' + aryViews[valZoom] + '"]').removeClass('hidden');
+        onFilterChange(true);
+    }
+
+    function onScrollContainer() {
+        var boundFather = $('#table-contr-container')[0].getBoundingClientRect();
+
+        var listElem = $('[data-table-view]:not(.hidden) .table-storico-carriera td:not(.not-selected) > div');
+        for (var i = 0; i < listElem.length; i++) {
+            var bound = listElem[i].getBoundingClientRect();
+            var width = listElem[i].offsetWidth;
+            var widthChild = $(listElem[i]).children()[0].offsetWidth;
+            
+            if (bound.width > 0 && (bound.left) < boundFather.left) {
+                var marginValue = (boundFather.left - bound.left);
+                if (width - marginValue > widthChild) {
+                    $(listElem[i]).children().first().css("margin-left", marginValue + "px");
+                }
+            } else {
+                $(listElem[i]).children().first().css("margin-left", '0px');
+            }
+        }
+    }
+
+    function showContractPopover(element) {
+        if ($(element).attr('data-content') != '') {
+            $(element).popover('hide');
+            $(element).attr('data-content', '');
+        }
+        else {
+            var popContent = document.createElement('div');
+            popContent.innerHTML = $(element).html();
+            $(element).attr('data-content', $(popContent).html());
+            $(element).attr('title', $(element).closest('[data-type]').attr('data-type'));
+            $(element).popover('show');
+        }
+    }
+
+    function onFilterChange(reloadTable) {
+        var rifDate = $('#select-contract').val();
+        var rifInizio = '19000101';
+        var rifFine = '29991231';
+
+        if (rifDate != '') {
+            rifInizio = rifDate.substr(0, 8);
+            rifFine = rifDate.substr(9, 8);
+        }
+
+        $('[data-evento]').hide();
+        var list = $('[data-evento]');
+        for (var i = 0; i < list.length; i++) {
+            if (rifInizio <= $(list[i]).attr('data-f')
+                && $(list[i]).attr('data-i') <= rifFine) {
+
+                var tipo = $(list[i]).attr('data-type');
+                if ($('[data-check-type="' + tipo + '"]:checked').length > 0) {
+                    $(list[i]).show();
+                } else {
+                    $(list[i]).hide();
+                }
+            }
+            else {
+                $(list[i]).hide();
+            }
+        }
+
+        var list2 = $('[data-evento-row]');
+        for (var i = 0; i < list2.length; i++) {
+            var tipo = $(list2[i]).attr('data-type');
+            if ($('[data-check-type="' + tipo + '"]:checked').length > 0) {
+                $(list2[i]).show();
+            } else {
+                $(list2[i]).hide();
+            }
+        }
+
+        if (reloadTable) {
+            var idTabVisible = $('[data-table-view]:not(.hidden)').attr('id');
+            var viewVisibile = $('[data-table-view]:not(.hidden)').attr('data-table-viewdata');
+            $('#view-chart').addClass("rai-loader");
+            $.ajax({
+                async: true,
+                url: '/Anagrafica/Tab_VariazioniContratti',
+                type: 'POST',
+                data: { m: '@Model.Matricola', dataInizio: rifInizio, dataFine: rifFine, view: viewVisibile },
+                dataType: "html",
+                cache: false,
+                success: function (data) {
+                    $('#' + idTabVisible).html(data);
+                    $('#view-chart').removeClass("rai-loader");
+
+                    $('#table-contr-container')[0].scrollLeft = 0;
+                }
+            });
+        }
+
+
+        //var list3 = $('[data-table-view]:not(.hidden)  .table-storico-carriera th, [data-table-view]:not(.hidden) .table-storico-carriera td');
+        //for (var i = 0; i < list3.length; i++) {
+        //    if (rifInizio <= $(list3[i]).attr('data-f')
+        //        && $(list3[i]).attr('data-i') <= rifFine) {
+        //        $(list3[i]).removeClass("not-selected");
+        //    }
+        //    else {
+        //        $(list3[i]).addClass("not-selected");
+        //    }
+        //}
+
+        ////fixcolspan
+        //var listYear = $('div[data-table-view="year_month"]:not(.hidden) [data-ce="y"]:not(.not-selected)');
+        //for (var i = 0; i < listYear.length; i++) {
+        //    var year = $(listYear[i]).attr("data-i").substr(0, 4);
+        //    $(listYear[i]).attr("colspan", $('div[data-table-view="year_month"] [data-ce="m"][data-i^="' + year + '"]:not(.not-selected)').length * 2);
+        //}
+        //var listYear = $('div[data-table-view="month_day"]:not(.hidden) [data-ce="m"]:not(.not-selected)');
+        //for (var i = 0; i < listYear.length; i++) {
+        //    var yearMonth = $(listYear[i]).attr("data-i").substr(0, 6);
+        //    $(listYear[i]).attr("colspan", $('div[data-table-view="month_day"] [data-ce="d"][data-i^="' + yearMonth + '"]:not(.not-selected)').length);
+        //}
+    }
+
+    onFilterChange(true);
+</script>

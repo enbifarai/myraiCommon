@@ -1,0 +1,100 @@
+﻿@using myRaiHelper
+@using myRaiGestionale.Controllers
+@using myRaiCommonModel.Gestionale
+@model IEnumerable<myRaiData.Incentivi.XR_PRV_DIPENDENTI>
+
+
+
+@{
+    int count = 0;
+    //bool enableGest = PoliticheRetributiveManager.EnableGest(PolRetrChiaveEnum.Richieste);
+    bool enableRich = (bool)ViewData["EnableRich"];
+    bool enableGest = (bool)ViewData["EnableGestRich"];
+    bool enableLett = (bool)ViewData["EnableLettere"];
+}
+
+@foreach (var pratica in Model)
+{
+    count++;
+    int numStato = -1;
+    string stato = "";
+    if (pratica.XR_PRV_OPERSTATI != null && pratica.XR_PRV_OPERSTATI.Where(x => x.DATA_FINE_VALIDITA == null).Count() > 0)
+    {
+        numStato = pratica.XR_PRV_OPERSTATI.Where(y => !y.DATA_FINE_VALIDITA.HasValue).Max(x => x.ID_STATO);
+        stato = pratica.XR_PRV_OPERSTATI.Where(y => !y.DATA_FINE_VALIDITA.HasValue).OrderByDescending(x => x.ID_STATO).First().XR_PRV_STATI.DESCRIZIONE;
+    }
+    bool isConsolidato = pratica.XR_PRV_OPERSTATI.Any(x => x.ID_STATO == (int)ProvvStatoEnum.Convalidato && x.DATA_FINE_VALIDITA == null);
+    bool isConsegnato = pratica.XR_PRV_OPERSTATI.Any(x => x.ID_STATO == (int)ProvvStatoEnum.Consegnato && x.DATA_FINE_VALIDITA == null);
+    var noteCount = pratica.XR_PRV_DIPENDENTI_NOTE.Count();
+
+    int tipoProvEff = (int)ProvvedimentiEnum.Nessuno;
+    string nomeProvEff = "Nessuno";
+    var provEffettivo = PoliticheRetributiveHelper.GetDipProvEffettivo(pratica);
+    if (provEffettivo!=null)
+    {
+        tipoProvEff = provEffettivo.XR_PRV_PROV.BASE_PROV ?? provEffettivo.XR_PRV_PROV.ID_PROV;
+        nomeProvEff = provEffettivo.XR_PRV_PROV.NOME;
+    }
+
+
+    string nominativo = pratica.SINTESI1!=null? pratica.SINTESI1.DES_COGNOMEPERS.TitleCase() + " " + pratica.SINTESI1.DES_NOMEPERS.TitleCase():"Matricola "+pratica.MATRICOLA;
+    string piano = pratica.XR_PRV_CAMPAGNA.NOME;
+    string noteTag = "";
+    if (noteCount == 1)
+    {
+        noteTag = "1 nota";
+    }
+    else if (noteCount > 1)
+    {
+        noteTag = noteCount.ToString() + " note";
+    }
+    string dataDecorrenza = "Data decorrenza: "+(pratica.DECORRENZA.HasValue ? pratica.DECORRENZA.Value.ToString("dd/MM/yyyy") : " - ");
+
+    <div class="row" role="row" style="padding:10px;@(count>1?"border-top:1px solid lightgray;":"")" data-id-pratica="@pratica.ID_DIPENDENTE" data-stato="@numStato">
+        <div class="col-sm-6">
+            @Html.ProfileWidget(pratica.MATRICOLA, nominativo, null, piano, dataDecorrenza)
+        </div>
+        <div class="col-sm-3">
+            @if (pratica.ID_PROV_RICH == tipoProvEff)
+            {
+                <label class="rai-font-md">@pratica.XR_PRV_PROV_EFFETTIVO.NOME</label>
+            }
+            else
+            {
+                <label class="rai-font-md">
+                    @nomeProvEff
+                    <small class="text-italic">&nbsp;(Richiesto: @pratica.XR_PRV_PROV_RICH.NOME)</small>
+                </label>
+            }
+            <br/>
+            @if (noteCount > 0)
+            {
+                <label class="rai-label">@noteTag</label>
+            }
+            @if (pratica.CUSTOM_PROV.GetValueOrDefault())
+            {
+                <label class="rai-label" >Gestione manuale</label>
+            }
+            @if (isConsegnato)
+            {
+                <label class="rai-label" >Lettera consegnata</label>
+            }
+            else if (isConsolidato)
+            {
+                <label class="rai-label" >Convalidato</label>
+            }
+        </div>
+        <div class="col-sm-3 text-right">
+            @if (enableGest && !isConsolidato)
+            {
+                <a href="#" style="opacity:1;text-decoration:none;" alt="Rimuovi pratica" title="Rimuovi pratica" class="btn btn-action-icon" onclick="GestRimuoviPratica(@pratica.ID_DIPENDENTE)">
+                    <i class="fa fa-trash"></i>
+                </a>
+            }
+            <a href="#" class="btn rai-btn-small" onclick="ShowPratica(@pratica.ID_DIPENDENTE);">Visualizza</a>
+        </div>
+    </div>
+
+
+
+}

@@ -1,0 +1,304 @@
+﻿@using myRaiHelper
+@using myRaiGestionale.Controllers
+@model myRaiCommonModel.Gestionale.Pratica
+
+@{
+    string nominativo = Model.Dipendente.SINTESI1.DES_COGNOMEPERS.TitleCase() + " " + Model.Dipendente.SINTESI1.DES_NOMEPERS.TitleCase();
+    string subtitle = "Matricola: " + Model.Dipendente.MATRICOLA;
+}
+
+<div class="row push-10">
+    <div class="col-sm-6">
+        @Html.ProfileWidget(Model.Dipendente.MATRICOLA, nominativo, null, subtitle)
+    </div>
+</div>
+
+<div class="block block-content-table block-transparent">
+
+
+    <div class="block-header block-content-mini">
+        <label class="rai-font-table-heading">Dati generali</label>
+    </div>
+    <!--contenuto-->
+    <div class="block-content block-content-mini block-content-full">
+
+        <div class="rai-table-info">
+            <div class="row">
+                <div class="col-sm-7 col-xs-6">
+                    <label class="">Sesso</label>
+                </div>
+                <div class="col-sm-5 col-xs-6">
+                    <label>@Model.Dipendente.SINTESI1.COD_SESSO</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-7 col-xs-6">
+                    <label class="">Data di nascita</label>
+                </div>
+                <div class="col-sm-5 col-xs-6">
+                    <label>@Model.Dipendente.SINTESI1.DTA_NASCITAPERS.Value.ToString("dd/MM/yyyy")</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-7 col-xs-6">
+                    <label class="">Data assunzione</label>
+                </div>
+                <div class="col-sm-5 col-xs-6">
+                    <label>@Model.Dipendente.SINTESI1.DTA_INIZIO_CR.Value.ToString("dd/MM/yyyy")</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-7 col-xs-6">
+                    <label class="">Cause</label>
+                </div>
+                <div class="col-sm-5 col-xs-6">
+                    @if (Model.CauseAperte == 0 && Model.CauseChiuse == 0)// && Model.CauseDB.Count() == 0)
+                    {
+                        <label>No</label>
+                    }
+                    else
+                    {
+                        var numero = Model.Cause.Count();
+                        //var numero = Model.CauseDB.Count();
+                        <label><a href="#" onclick="ShowCause()">@(numero == 1 ? "1 causa" : numero + " cause")</a></label>
+                        @*<label>@(numero == 1 ? "1 causa" : numero + " cause")</label>*@
+                    }
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-7 col-xs-6">
+                    <label class="">Provvedimenti Disciplinari</label>
+                </div>
+                <div class="col-sm-5 col-xs-6">
+                    @if (Model.ProvvedimentiAperti == 0 && Model.ProvvedimentiChiusi == 0)
+                    {
+                        <label>No</label>
+                    }
+                    else
+                    {
+                        var numero = Model.Provvedimenti.Where(x => x.Progressivo != "N.ro").Count();
+                        <label><a href="#" onclick="ShowProvv()">@(numero == 1 ? "1 provvedimento" : numero + " provvedimenti")</a></label>
+                    }
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-7 col-xs-6">
+                    <label class="">Vertenze sindacali</label>
+                </div>
+                <div class="col-sm-5 col-xs-6">
+                    @if (!Model.VertenzeSind.Any())
+                    {
+                        <label>No</label>
+                    }
+                    else
+                    {
+                        var numero = Model.VertenzeSind.Count();
+                        <label><a href="#" onclick="ShowVertenze()">@(numero == 1 ? "1 vertenza" : numero + " vertenze")</a></label>
+                    }
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-7 col-xs-6">
+                    <label class="">Vertenze stragiudiziali</label>
+                </div>
+                <div class="col-sm-5 col-xs-6">
+                    @if (!Model.Stragiudiziali.Any())
+                    {
+                        <label>No</label>
+                    }
+                    else
+                    {
+                        var numero = Model.Stragiudiziali.Count();
+                        <label><a href="#" onclick="ShowStragiudiziali()">@(numero == 1 ? "1 vertenza" : numero + " vertenze")</a></label>
+                    }
+                </div>
+            </div>
+
+        </div>
+        @Html.Partial("../PoliticheRetributive/subpartial/Dettaglio_Note", Model.Dipendente)
+        @if (!Model.IsPreview && Model.EnableGest)
+        {
+            <div class="row">
+                <div class="col-sm-12">
+                    <button class="btn rai-btn-secondary full-width" onclick="GestAggiungiNotaPratica(@Model.Dipendente.ID_DIPENDENTE)"><i class="icons icon-note"></i> Aggiungi nota</button>
+                </div>
+            </div>
+
+        }
+    </div>
+    <!--fine contenuto-->
+</div>
+
+@{
+    string cause = "<table class='table table-hover table-responsive' role='grid' style='font-size:14px; text-align:left;'>";
+    cause += "<thead><tr>" +
+        "<th>Data</th>" +
+        "<th>Esito</th>" +
+        "<th>Stato</th>" +
+        "<th>Tipo</th>" +
+        "<th>Tipo motivo</th>" +
+        "</tr></thead><tbody>";
+    if (Model.Cause != null)
+    {
+        foreach (var causa in Model.Cause)
+        {
+            cause += "<tr>" +
+                "<td>" + causa.DataText + "</td>" +
+                "<td>" + causa.Esito + "</td>" +
+                "<td>" + causa.Stato + "</td>" +
+                "<td>" + causa.Tipo + "</td>" +
+                "<td>" + causa.TipoMotivo + "</td>" +
+                "</tr>";
+        }
+    }
+    cause += "</tbody></table>";
+
+    string provvedimenti = "<table class='table table-hover table-responsive' role='grid' style='font-size:14px; text-align:left;'>";
+    provvedimenti += "<thead><tr>" +
+                    "<th>Data</th>" +
+                    "<th>Stato</th>" +
+                    "<th>Durata</th>" +
+                    "<th>Tipo provvedimento</th>" +
+                    "<th>Servizio</th>" +
+                    "<th>Causale</th>" +
+                    "</tr></thead><tbody>";
+    if (Model.Provvedimenti != null)
+    {
+        foreach (var provvedimento in Model.Provvedimenti.Where(x => x.Progressivo != "N.ro").OrderBy(x => x.Date).ThenBy(y => y.Progressivo))
+        {
+            provvedimenti += "<tr>" +
+        "<td>" + provvedimento.DataText + "</td>" +
+        "<td>" + provvedimento.Stato + "</td>" +
+        "<td>" + provvedimento.Durata + "</td>" +
+        "<td>" + provvedimento.Provvedim + "</td>" +
+        "<td>" + provvedimento.Servizio + "</td>" +
+        "<td>" + provvedimento.Testo1 + " " + provvedimento.Testo2 + "</td>" +
+        "</tr>";
+        }
+    }
+    provvedimenti += "</table>";
+
+    string vertenze = "<table class='table table-hover table-responsive' role='grid' style='font-size:14px; text-align:left;'>";
+    vertenze += "<thead><tr>" +
+            "<th>Anno richiesta</th>" +
+            "<th>Stato</th>" +
+            "<th>Descrizione</th>" +
+            "</tr></thead><tbody>";
+    if (Model.VertenzeSind != null && Model.VertenzeSind.Any())
+    {
+        foreach (var vertenza in Model.VertenzeSind.OrderBy(x => x.ANNO_RICHIESTA).ThenBy(y => y.DT_RICHIESTA))
+        {
+            vertenze += "<tr>" +
+            "<td>" + (vertenza.ANNO_RICHIESTA.HasValue ? vertenza.ANNO_RICHIESTA.Value.ToString() : "") + "</td>" +
+            "<td>" + vertenza.STATO + "</td>" +
+            "<td>" + vertenza.DESCRIZIONE + "</td>" +
+            "</tr>";
+        }
+    }
+    vertenze += "</table>";
+
+    string stragiudiziali = "<table class='table table-hover table-responsive' role='grid' style='font-size:14px; text-align:left;'>";
+    stragiudiziali += "<thead><tr>" +
+                "<th>Data creazione</th>" +
+                "<th>Data stato</th>" +
+                "<th>Soggetto</th>" +
+                "<th>Oggetto</th>" +
+                "<th>Stato</th>" +
+                "<th>Note</th>" +
+                "</tr></thead><tbody>";
+    if (Model.Stragiudiziali != null && Model.Stragiudiziali.Any())
+    {
+        foreach (var stra in Model.Stragiudiziali.OrderBy(x => x.DataStato))
+        {
+            stragiudiziali += "<tr>" +
+            "<td>" + stra.DataCreazione + "</td>" +
+            "<td>" + stra.DataStato + "</td>" +
+            "<td>" + stra.Soggetto + "</td>" +
+            "<td>" + stra.Oggetto + "</td>" +
+            "<td>" + stra.DescrizioneStato + "</td>" +
+            "<td>" + stra.Note + "</td>" +
+            "</tr>";
+        }
+    }
+    stragiudiziali += "</table>";
+}
+
+<script>
+    function ShowCause()
+    {
+        swal({
+            title: 'Elenco cause',
+            text: "",
+            html: "@Html.Raw(cause)",
+            width: 700,
+            //input: 'text',
+            //type: 'warning',
+            //showCancelButton: true,
+            //confirmButtonColor: '#3085d6',
+            //cancelButtonColor: '#d33',
+            confirmButtonText: 'Ok',
+            //cancelButtonText: 'No, cancel!',
+            confirmButtonClass: 'btn btn-primary btn-lg',
+            //cancelButtonClass: 'btn btn-danger',
+            buttonsStyling: false
+        });
+    }
+
+    function ShowProvv()
+    {
+        swal({
+            title: 'Elenco provvedimenti disciplinari',
+            text: "",
+            html: "@Html.Raw(provvedimenti)",
+            width: 700,
+            //input: 'text',
+            //type: 'warning',
+            //showCancelButton: true,
+            //confirmButtonColor: '#3085d6',
+            //cancelButtonColor: '#d33',
+            confirmButtonText: 'Ok',
+            //cancelButtonText: 'No, cancel!',
+            confirmButtonClass: 'btn btn-primary btn-lg',
+            //cancelButtonClass: 'btn btn-danger',
+            buttonsStyling: false
+        });
+    }
+
+    function ShowVertenze() {
+        swal({
+            title: 'Elenco vertenze sindacali',
+            text: "",
+            html: "@Html.Raw(vertenze)",
+            width: 700,
+            //input: 'text',
+            //type: 'warning',
+            //showCancelButton: true,
+            //confirmButtonColor: '#3085d6',
+            //cancelButtonColor: '#d33',
+            confirmButtonText: 'Ok',
+            //cancelButtonText: 'No, cancel!',
+            confirmButtonClass: 'btn btn-primary btn-lg',
+            //cancelButtonClass: 'btn btn-danger',
+            buttonsStyling: false
+        });
+    }
+
+    function ShowStragiudiziali() {
+        swal({
+            title: 'Elenco vertenze stragiudiziali',
+            text: "",
+            html: "@Html.Raw(stragiudiziali)",
+            width: 700,
+            //input: 'text',
+            //type: 'warning',
+            //showCancelButton: true,
+            //confirmButtonColor: '#3085d6',
+            //cancelButtonColor: '#d33',
+            confirmButtonText: 'Ok',
+            //cancelButtonText: 'No, cancel!',
+            confirmButtonClass: 'btn btn-primary btn-lg',
+            //cancelButtonClass: 'btn btn-danger',
+            buttonsStyling: false
+        });
+    }
+</script>

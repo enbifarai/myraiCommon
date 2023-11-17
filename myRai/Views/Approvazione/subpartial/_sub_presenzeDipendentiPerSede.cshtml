@@ -1,0 +1,157 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model  PresenzaDipendentiPerSede
+@{
+    var dipendentipersede = Model;
+    var act = "";
+    var hasDip = Model.ListaDipendentiPerSede != null && Model.ListaDipendentiPerSede.Count( ) > 0;
+    if ( !hasDip )
+    {
+        return;
+    }
+}
+<div class="panel-accordion" style="border-right: none; border-left: none; border-top: none">
+    <div class="panel-heading" style="background-color: transparent;padding:0px;">
+        <h4 class="panel-title">
+            <a class="accdip collapsed" @(hasDip ? "data-toggle=collapse" : "")
+               href="#id@(dipendentipersede.SedeGapp)">
+                <i class="fa fa-calendar interactive-primary-color" onclick="javascript:MostraPianoFerie('@(dipendentipersede.SedeGapp)');" title="Visualizza piano ferie"></i>
+                <span class="rai-font-md-bold">@dipendentipersede.SedeGapp </span><span class="rai-font-md">- @CommonHelper.ToTitleCase( dipendentipersede.DescrizioneSedeGap )</span>
+            </a>
+        </h4>
+        <div class="panel-actions">
+            <i class="fa fa-@(hasDip?"angle-right":"")"></i>
+        </div>
+    </div>
+    @if ( Model.ListaDipendentiPerSede != null )
+    {
+        <div id="id@(dipendentipersede.SedeGapp)" class="accordion-body collapse @act">
+            <div class="panel-body rai-scrollh" style="padding: 0px" data-presenza="">
+                <div class="rai-scrollh-200">
+                    <table class="table rai-table-vcenter">
+                        <tbody>
+                            @foreach ( var dipendente in dipendentipersede.ListaDipendentiPerSede.Where( a => a.PertinenzaApprovatore ) )
+                            {
+                                string title = "";
+                                string subTitle = "";
+                                if ( dipendente.Presente )
+                                {
+                                    title = "Entrato alle <b><em> " + dipendente.OrarioPrimaEntrata + " </em></b>";
+                                    if ( dipendente.tipoDip == "D" || dipendente.tipoDip.Equals( "G" , StringComparison.InvariantCultureIgnoreCase ) )
+                                    {
+                                        title = "In servizio";
+                                    }
+                                    if ( dipendente.tipoDip == "G" )
+                                    {
+                                        subTitle = "Entrato in";
+                                    }
+                                    else
+                                    {
+                                        subTitle = "ora in";
+                                    }
+                                }
+                                subTitle += " " + dipendente.DescrizionePresenzaDipendente;
+                                subTitle = subTitle.Trim( );
+                                string subTitle2 = "";
+                                if ( !String.IsNullOrWhiteSpace( dipendente.NotaDaSegreteria ) )
+                                {
+                                    subTitle2 = dipendente.NotaDaSegreteria;
+                                }
+                                if ( !String.IsNullOrWhiteSpace( dipendente.DescrizioneCodiceOrario ) )
+                                {
+                                    if ( !String.IsNullOrWhiteSpace( subTitle2 ) )
+                                    { subTitle2 += "<br/>"; }
+                                    subTitle2 += dipendente.codiceOrario + " - " + dipendente.DescrizioneCodiceOrario;
+                                }
+                                string infoAggiuntive1 = "";
+                                if ( dipendente.Quadratura == Quadratura.Giornaliera )
+                                {
+                                    infoAggiuntive1 = "Bilancio POH: " + dipendente.BilancioPOH + " (" + dipendente.POHMeseCorrente + " nel mese corrente)";
+                                }
+                                string action = "javascript:ShowPopupBoss('" + dipendente.matricola + "','" + DateTime.Today.ToString( "dd/MM/yyyy" ) + "','" + dipendente.Nominativo.ToUpper( ).Replace( "'" , "" ) + "', '1' )";
+                                myRaiHelper.EnumPresenzaDip presenzaDip;
+                                if (subTitle.ToLower() == "smartworking")
+                                {
+                                    presenzaDip = myRaiHelper.EnumPresenzaDip.SmartWorking;
+                                }
+                                else if (dipendente.Presente)
+                                {
+                                    presenzaDip = myRaiHelper.EnumPresenzaDip.Presente;
+                                }
+                                else
+                                {
+                                    presenzaDip = myRaiHelper.EnumPresenzaDip.Assente;
+                                }
+
+                                string action = "javascript:ShowPopupBoss('" + dipendente.matricola + "','" + DateTime.Today.ToString("dd/MM/yyyy") + "','" + dipendente.Nominativo.ToUpper().Replace("'", "") + "', '1' )";
+
+
+                                <tr>
+                                    <td colspan="3" style="padding:22px 2px;">
+                                        <div class="row ">
+                                            <div class="col-xs-4 no-padding-right">
+                                                @Html.ProfileWidgetAction(dipendente.matricola, dipendente.Nominativo, action, presenzaDip, subTitle, subTitle2, htmlImgAttributes: new { data_toggle = "tooltip", data_container = "body", data_html = "true", title = title })
+                                                
+                                            </div>
+                                            <div class="col-xs-2 text-right">
+                                                @{
+                                                    string matricola = dipendente.matricola;
+                                                    if (matricola.Length > 6 && matricola[0] == '0' || matricola[0] == 'P')
+                                                    {
+                                                        matricola = matricola.Substring(1);
+                                                    }
+
+                                                    var test = CommonHelper.GetEmailPerMatricola(matricola);
+                                                    var linkSkype = "";
+                                                    if (test.Contains("@rai.it"))
+                                                    {
+                                                        linkSkype = "sip:" + test.Replace("@rai.it", "@ucms.rai.it");
+                                                    }
+                                                }
+
+                                                @if (!String.IsNullOrWhiteSpace(linkSkype))
+                                                {
+                                                    <a href="@(linkSkype)" data-skype-call="" class="btn btn-action-icon" onclick="CallToSkype2(this)"><i class="fa fa-skype"></i></a>
+                                                }
+                                                
+                                                <a class="hidden-xs interactive-primary-color rai-text-bold-12 rai-alert-dot" style="padding-left:5px;" href="javascript:ApplicaFiltriApprovatore('@dipendentipersede.SedeGapp','@dipendente.Nominativo.ToUpper().Replace("'", "")')">
+                                                    @dipendente.NumeroRichieste rich
+                                                </a>
+                                            </div>
+                                            <div class="col-xs-5" style="">
+                                                @Html.ProfileWidgetAction( dipendente.matricola , dipendente.Nominativo , action , presenzaDip , infoAggiuntive1 )
+                                            </div>
+                                            <div class="col-xs-1 text-right" style="">
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    }
+        </div>
+
+
+<script>
+    function CallToSkype2(  ) {
+        debugger
+
+        try {
+            if (getIVEHostname() != undefined) {
+                var aFunction = "$('[data-skype-call]').each(function () { var testo = $(this).attr('href'); $(this).attr('href', testo.substring(testo.indexOf('sip:')));});";
+                var func = new Function(aFunction);
+                func();
+            }
+        } catch (e) {
+
+        }
+        return true;
+    }
+</script>

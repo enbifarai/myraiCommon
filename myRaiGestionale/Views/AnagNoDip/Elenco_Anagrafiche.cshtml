@@ -1,0 +1,185 @@
+﻿@using myRaiCommonModel
+@using myRaiHelper
+@using myRaiCommonManager
+@model List<AnagraficaNoDipModel>
+
+@{ 
+    string matricola = CommonHelper.GetCurrentUserMatricola();
+    AbilSubFunc subFunc = null;
+    bool isAbil = AnagraficaNoDipManager.EnabledToSubFunc(matricola, "NDIADM", out subFunc)
+        || AnagraficaNoDipManager.EnabledToSubFunc(matricola, "NDIGEST", out subFunc)
+        || AnagraficaNoDipManager.EnabledToSubFunc(matricola, "NDIVIS", out subFunc);
+}
+
+
+@using (Html.BeginPanel(PanelType.PanelNoPadding, "Elenco anagrafiche", false))
+{
+    <div style="overflow:hidden;">
+        <div class="row bg-neutrals-xl-20" id="nodip-filter-info-cont" style="display:none;">
+            <div class="col-sm-9 push-10-t push-10">
+                <em>Stai visualizzando le anagrafiche <strong id="nodip-filter-info"></strong></em>. <a href="#" onclick="RaiSearchFormClear('form-nodip-ricerca',true)">Vedi tutte</a>
+            </div>
+            <div class="col-sm-3 push-10-t push-10 text-right">
+                <em id="nodip-filter-numb"></em>
+            </div>
+        </div>
+        <table class="table rai-table rai-table-vcenter rai-table-collapsable rai-table-panel ">
+            <thead>
+                <tr>
+                    <th><span>Matricola</span></th>
+                    <th>@*<span>Nominativo</span>*@</th>
+                    <th></th>
+                    <th><span>Periodo</span></th>
+                    <th></th>
+                    <th class="rai-table-td-action"></th>
+                </tr>
+            </thead>
+
+            @if (Model == null || !Model.Any())
+            {
+                <tbody>
+                    <tr>
+                        @Html.Partial("_NoDati")
+                    </tr>
+                </tbody>
+            }
+            else
+            {
+                bool anyIncomplete = Model.Any(x => x.Rapporti.Elenco == null || !x.Rapporti.Elenco.Any() || x.ResidenzaDomicilio.Elenco == null || !x.ResidenzaDomicilio.Elenco.Any());
+
+                foreach (var grData in Model.GroupBy(x => x.Rapporti.Elenco == null || !x.Rapporti.Elenco.Any() || x.ResidenzaDomicilio.Elenco == null || !x.ResidenzaDomicilio.Elenco.Any() ? 0 : 1).OrderBy(x => x.Key))
+                {
+                    if (grData.Key == 0)
+                    {
+                        <tr class="bg-neutrals-xl-10">
+                            <td colspan="6"><em class="rai-font-lg">Dati mancanti</em></td>
+                        </tr>
+                    }
+                    else if (anyIncomplete)
+                    {
+                        <tr class="bg-neutrals-xl-10">
+                            <td colspan="6"><em class="rai-font-lg">Anagrafiche complete</em></td>
+                        </tr>
+                    }
+
+                    foreach (var grAnag in grData.GroupBy(x => x.Matricola).OrderByDescending(x => x.Key))
+                    {
+                        var last = grAnag.OrderByDescending(x => x.AnagDataInizio).First();
+                        int countRapp = last.Rapporti.Elenco.Count();
+
+                        <tbody class="rai-table-collapsable-header" data-tbody-anag="">
+                            <tr>
+                                <td class="ws-nowrap" style="width:1%">
+                                    <div class="rai-profile-widget">
+                                        <div class="rai-profile-info">
+                                            <span class="rai-font-md-bold">@last.DatiAnagrafici.Matricola</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="rai-font-md">@last.DatiAnagrafici.Nominativo.TitleCase()</span>
+                                </td>
+                                <td class="text-center">
+                                    @if (countRapp > 0)
+                                    {
+                                        <span class="rai-label rai-label-interactive" data-table-collapsable-toggle="ignore" data-toggle="popover" data-content="Attendere" data-placement="top" data-html="true"  onclick="AnagNoDipPopoverRapp(this, @last.IdAnag)" onmouseout="$('.popover').popover('hide')" >@(countRapp==1?"1 rapporto":countRapp.ToString()+" rapporti")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="rai-label">0 rapporti</span>
+                                    }
+                                </td>
+                                <td style="width:30rem">
+                                    @if (grAnag.Count() == 1)
+                                    {
+                                        <span>Dal @last.AnagDataInizio.ToString("dd/MM/yyyy")</span>
+                                        if (last.AnagDataFine == new DateTime(9999, 12, 31))
+                                        {
+                                            <span> ad oggi</span>
+                                        }
+                                        else
+                                        {
+                                            <span> al @last.AnagDataFine.ToString("dd/MM/yyyy")</span>
+                                        }
+                                    }
+                                </td>
+                                <td class="ws-nowrap text-right" style="width:1%">
+                                    @if (grAnag.Count() > 1)
+                                    {
+                                        <span class="rai-label">@grAnag.Count() versioni</span>
+                                    }
+
+                                    @if ((last.Rapporti.Elenco == null || !last.Rapporti.Elenco.Any())
+                                                || (last.ResidenzaDomicilio.Elenco == null || !last.ResidenzaDomicilio.Elenco.Any()))
+                                    {
+                                        string testo = "";
+                                        if (last.Rapporti.Elenco == null || !last.Rapporti.Elenco.Any())
+                                        {
+                                            testo += testo == "" ? "" : "<br/>";
+                                            testo += "Dati rapporti mancanti";
+                                        }
+                                        if (last.ResidenzaDomicilio.Elenco == null || !last.ResidenzaDomicilio.Elenco.Any())
+                                        {
+                                            testo += testo == "" ? "" : "<br/>";
+                                            testo += "Dati residenza/domicilio mancanti";
+                                        }
+                                        <span class="fa fa-warning feedback-warning-color" id="tooltip-@last.IdAnag-@last.AnagDataInizio.ToString("yyyyMMdd")" data-toggle="tooltip" data-html="true" title="@testo"></span>
+                                    }
+                                </td>
+                                @if (grAnag.Count() == 1)
+                                {
+                                    <td>
+                                        @*<button class="btn btn-action-icon" title="Visualizza/Modifica" onclick="AnagNoDipModal(@last.IdAnag, '@last.AnagDataInizio.ToString("dd/MM/yyyy")', '@last.DatiAnagrafici.Matricola', '@last.DatiAnagrafici.Nominativo.Replace("'","\\'")')"><i class="fa fa-pencil"></i></button>*@
+                                        <button class="btn rai-btn-small" title="@(subFunc.Update?"Modifica":"Visualizza")" onclick="AnagNoDipModal(@last.IdAnag, '@last.AnagDataInizio.ToString("dd/MM/yyyy")', '@last.DatiAnagrafici.Matricola', '@last.DatiAnagrafici.Nominativo.Replace("'","\\'")')">@(subFunc.Update?"Gestisci":"Visualizza")</button>
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td class="rai-table-td-toggle text-right">
+                                        <i class="fa fa-chevron-down" style="height:32px;padding:8px;"></i>
+                                    </td>
+                                }
+                            </tr>
+                        </tbody>
+                        <tbody>
+                            @if (grAnag.Count() > 1)
+                            {
+                                foreach (var anag in grAnag)
+                                {
+                                    <tr>
+                                        <td style="border-top-width:0px;">
+                                            <span>&nbsp;</span>
+                                        </td>
+                                        <td colspan="2">
+                                            <span>@anag.DatiAnagrafici.Nominativo.TitleCase()</span>
+                                        </td>
+                                        <td colspan="2">
+                                            <span>Dal @anag.AnagDataInizio.ToString("dd/MM/yyyy")</span>
+                                            @if (anag.AnagDataFine == new DateTime(9999, 12, 31))
+                                            {
+                                                <span> ad oggi</span>
+                                            }
+                                            else
+                                            {
+                                                <span> al @anag.AnagDataFine.ToString("dd/MM/yyyy")</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @*<button class="btn btn-action-icon" title="Visualizza/Modifica" onclick="AnagNoDipModal(@anag.IdAnag, '@anag.AnagDataInizio.ToString("dd/MM/yyyy")', '@anag.DatiAnagrafici.Matricola', '@anag.DatiAnagrafici.Nominativo.Replace("'","\\'")')"><i class="fa fa-pencil"></i></button>*@
+                                            <button class="btn rai-btn-small" title="Visualizza/Modifica" onclick="AnagNoDipModal(@anag.IdAnag, '@anag.AnagDataInizio.ToString("dd/MM/yyyy")', '@anag.DatiAnagrafici.Matricola', '@anag.DatiAnagrafici.Nominativo.Replace("'","\\'")')">Gestisci</button>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    }
+                }
+            }
+
+        </table>
+    </div>
+}
+
+<script>
+    $('[data-toggle="tooltip"]').tooltip();
+</script>

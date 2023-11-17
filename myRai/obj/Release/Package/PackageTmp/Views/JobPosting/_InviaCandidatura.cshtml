@@ -1,0 +1,154 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model JobPostingModel
+
+@{
+    Layout = "~/Views/Shared/_Layout3.cshtml";
+}
+
+<style>
+    html, body {
+        background-color: #ffffff;
+    }
+
+    .job-posting {
+        width: 100%;
+        text-align: center;
+    }
+
+    .msg {
+        color: #999;
+        font-family: Open Sans, Arial, sans-serif;
+        font-size: 30px;
+        font-weight: 100;
+    }
+
+    .msg2 {
+        color: #999;
+        font-family: Open Sans, Arial, sans-serif;
+        font-size: 24px;
+        font-weight: 100;
+    }
+
+    .A_1 {
+        box-sizing: border-box;
+        color: rgb(51, 51, 51);
+        display: inline-block;
+        height: 30px;
+        text-align: center;
+        text-decoration: none solid rgb(51, 51, 51);
+        text-size-adjust: 100%;
+        text-transform: uppercase;
+        touch-action: manipulation;
+        vertical-align: middle;
+        column-rule-color: rgb(51, 51, 51);
+        perspective-origin: 34.1719px 15px;
+        transform-origin: 34.1719px 15px;
+        user-select: none;
+        caret-color: rgb(51, 51, 51);
+        background: rgb(243, 243, 243) none repeat scroll 0% 0% / auto padding-box border-box;
+        border: 0px none rgb(51, 51, 51);
+        border-radius: 3px 3px 3px 3px;
+        font: normal normal 700 normal 10.4px / 14.8571px "Open Sans", Arial, sans-serif;
+        outline: rgb(51, 51, 51) none 0px;
+        padding: 6px 12px;
+    }
+</style>
+
+<section role="main" class="content-body" style="margin-left:0px;">
+    <div class="job-posting">
+        <div id="GestioneCandidature">
+            <h2 class="msg"> Gestione candidature</h2>
+            <br />
+            @{
+                string mess = string.Format( "Sono interessato a: {0}" , Model.Produzione );
+
+                if ( !String.IsNullOrEmpty( Model.NumeroJP ) )
+                {
+                    int n;
+                    bool isNumeric = int.TryParse( Model.NumeroJP , out n );
+
+                    if ( !isNumeric )
+                    {
+                        mess = string.Format( "Sono interessato a: {0} - Profilo {1}" , Model.Produzione , Model.NumeroJP.ToUpper( ) );
+                    }
+                }
+
+            }
+            <h4 class="msg2"> @(mess)</h4>
+            <br />
+            <div class="row">
+                <div class="hidden-xs hidden-sm col-lg-2">&nbsp;</div>
+                <div class="col-xs-12 col-sm-12 col-lg-8" id="jobPostingTxt">
+                    <i>
+                        <b>
+                            <p>
+                                Si evidenzia che la compilazione del CV è propedeutica all'invio della propria candidatura; pertanto il dipendente è tenuto, prima dell'invio, a verificarne e/o a implementarne il contenuto utilizzando il seguente pulsante "Visualizza il mio CV"
+                            </p>
+                        </b>
+                    </i>
+                    <br />
+                </div>
+                <div class="hidden-xs hidden-sm col-lg-2">&nbsp;</div>
+            </div>
+            <hr />
+            <a class="A_1" href="@Url.Action( "CVDettaglio", "JobPosting" )?id=@(Model.IdJob)&numerojp=@(Model.NumeroJP)" target="_blank" id="btnShowMyCV">Visualizza il mio CV</a>
+
+            <a class="A_1" href="#" id="btnSendMyApplication" onclick="SendMyApplication('@(Model.IdJob)', '@(Model.NumeroJP)');">Invia candidatura</a>
+
+        </div>
+    </div>
+</section>
+
+@section afterjs {
+    <script type="text/javascript">
+
+        function SendMyApplication(idJob, numeroJP) {
+            $.ajax({
+                url: "/JobPosting/SendMyApplication",
+                type: "POST",
+                data: {
+                    idJob: idJob,
+                    numerojp: numeroJP
+                },
+                cache: false,
+                async: false,
+                dataType: 'json',
+                success: function (data) {
+                    if (!data.success) {
+                        var errorMessage = 'Si è verificato un errore!';
+                        if ($.trim(data.errorMessage).length > 0) {
+                            errorMessage = data.errorMessage;
+                        }
+
+                        swal('Oops...',
+                            errorMessage,
+                            'error'
+                        )
+                        return false;
+                    }
+
+                    swal(
+                        'Candidatura inviata correttamente!',
+                        '',
+                        'success'
+                    ).then(function (result) {
+                        if (result) {
+                            if ($.trim(data.errorMessage).length > 0) {
+                                $('#jobPostingTxt').html('<i><b><p>La candidatura per il Job Posting è stata registrata.</p><p>' + $.trim(data.errorMessage) + '</p><p>La ringraziamo per il contributo.</p><p>Direzione Risorse Umane e Organizzazione</p></b></i>');
+                            }
+                            else {
+                                $('#jobPostingTxt').html('<i><b><p>La candidatura per il Job Posting è stata registrata.</p><p>La ringraziamo per il contributo.</p><p>Direzione Risorse Umane e Organizzazione</p></b></i>');
+                            }
+
+                            $('a[class="A_1"]').hide();
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}

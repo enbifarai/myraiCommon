@@ -1,0 +1,69 @@
+﻿@model myRaiCommonModel.cvModels.cvModel.AutoPresentazioneBox
+@using MVCProject.Custom_Helpers
+@{
+    /**/
+
+    bool notHasAttach = Model._id == 0 || String.IsNullOrWhiteSpace(Model._pathName);
+}
+
+@using (Html.BeginModal("Inserisci la tua autopresentazione"))
+{
+    using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Dati generali", false))
+    {
+        <form class="form-horizontal mb-lg form-editAutopresentazione" id="form-editAutopresentazione" enctype="multipart/form-data" novalidate="novalidate" action="/CV_Online/InsertAutopresentazione" method="post">
+            <div id="edit-content">
+
+                @Html.HiddenFor(m => m._id, new { @id = "_id" })
+
+                @Html.TextBoxFor(m => m._pathName, new { @id = "_autoPathName", style = "display:none;" })
+                @Html.TextBoxFor(m => m._name, new { @id = "_autoName", style = "display:none;" })
+
+                <div class="row">
+                    <div class="col-sm-2 col-xs-4 text-left">
+                        <input id="inputAttachFile" class="hidden" type="file" name="inputAttachFile" onchange="AutopresSelezionata()" />
+                        <label class="titleElements">Allegato</label><br />
+                        <div id="boxFile" class="summary-icon item item-2x item-rounded text-primary bigborder" style="@(notHasAttach?"":"border-style:solid")">
+                            <span id="spanAddFile" class="cursor-pointer">
+                                <i id="iAddFile" style="font-size: 36px;@(!notHasAttach?"display:none;":"")" role="link" aria-label="Aggiungi il verbale" class="" onclick="$('#inputAttachFile').trigger('click')">+</i>
+                                <i id="iAddedFile" class="icons icon-doc" style="font-size:36px;@(notHasAttach?"display: none;":"")"></i>
+                            </span>
+                            <a class="hover-icon-span visibilityfixed" id="hrefCanc" tabindex="0" aria-label="Cancella contributo" style="@(notHasAttach?"display: none;":"") margin-left: -10px; position: absolute; top:0px">
+                                <span class="icons icon-trash h4 text-primary" onclick="ConfermaCancellazioneAutopresentazione()"></span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-sm-10 col-xs-8 text-left">
+                        @Html.LabelFor(m => m._note, "Autopresentazione", new { @class = "titleElements" })
+                        @Html.TextAreaFor(m => m._note, new { @id = "_note", @class = "form-control", style = "width: 100%", placeholder = "Inserire a testo libero utilizzando al massimo n caratteri", rows = 5 })
+                    </div>
+                </div>
+                <div class="row push-20-t">
+                    <div class="col-md-12 text-center">
+
+                            <a href="@Html.Raw(Request.Url.Scheme + "://" + Request.Url.Authority + Request.ApplicationPath.TrimEnd('/') + "/cv_online/pdf")" target="_blank" target="_blank">
+                                <p class="text-bold">Visualizza l'anteprima del tuo CV</p>
+                            </a>
+
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <button class="btn rai-btn-primary full-width" type="submit"
+                                onclick="submit_autopresentazione(this)">
+                            Salva
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    }
+
+    <div id="savedbautopres" class="alert alert-info" style="position: fixed; bottom: 10px; right: 10px; display: none; z-index: 100">
+        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+        <i class="fa fa-refresh fa-spin"></i>Salvataggio in corso
+    </div>
+}
+
+<script>
+    $.validator.unobtrusive.parse($("form:last"));
+</script>

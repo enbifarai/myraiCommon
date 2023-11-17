@@ -1,0 +1,467 @@
+﻿@using MVCProject.Custom_Helpers
+@using myRaiData;
+@using myRaiHelper;
+
+@model myRaiCommonModel.cvModels.cvModel
+
+@{
+    var lista = Model.allegati;
+}
+
+
+<section class="panel">
+    <header class="panel-heading">
+        <h2 class="panel-title">
+            <span tabindex="0">Contributi Multimediali</span>
+            <span tabindex="0" id="popContMultimediali" data-popover-content="#myPopover" class="push-5-l" data-toggle="popover" data-html="true" data-container="body" data-placement="right" title="" data-content="<ul><li>Puoi inserire file audio, video, foto e altri documenti selezionando il pulsante (+) fino ad un massimo di 5 allegati da 20 Mega l'uno.</li><li>Gli allegati possono riguardare aspetti/momenti significativi delle tue esperienze Rai e/o Interessi, progetti, attività, passioni personali extra Rai.</li></ul>" data-original-title="&nbsp;" data-trigger="focus" aria-label="Informazioni sezione">
+                <i id="" class="fa fa-info-circle"></i>
+            </span>
+        </h2>
+        <div class="panel-actions">
+            @if (lista.Count() < Convert.ToInt32(CommonHelper.GetParametri<string>(EnumParametriSistema.NumeriMassimoAllegati)[0]))
+            {
+                <button class="btn btn-action-icon" onclick="ModificaAllegato(0)"><span class="fa fa-plus"></span></button>
+            }
+        </div>
+    </header>
+
+    <div class="panel-body panel-body-nopadding-xs">
+        @* FREAK - POPUP GALLERY *@
+        @using (Html.BeginForm("InsertAllegati", "CV_Online", FormMethod.Post, new { enctype = "multipart/form-data", id = "frmInsertAllegati" }))
+        {
+            <table class="table rai-table table-hover">
+                <tbody>
+                    @foreach (var elem in lista)
+                    {
+                        string formato_file = "";
+                        string titolo = "";
+                        string icona_file = "";
+                        string file_type = "";
+
+                        titolo = elem._name;
+
+                        if (elem._contentType.Contains("audio"))
+                        {
+                            formato_file = "File Audio";
+                            icona_file = "music-tone-alt";
+                            file_type = "audio";
+                        }
+                        else if (elem._contentType.Contains("video"))
+                        {
+                            formato_file = "File Video";
+                            icona_file = "film";
+                            file_type = "video";
+                        }
+                        else if (elem._contentType.Contains("image"))
+                        {
+                            formato_file = "File Immagine";
+                            icona_file = "picture";
+                            file_type = "image";
+                        }
+                        else if (elem._contentType.Contains("word"))
+                        {
+                            formato_file = "File Word";
+                            icona_file = "doc";
+                            file_type = "document"; // "word";
+                        }
+                        else if (elem._contentType.Contains("excel"))
+                        {
+                            formato_file = "File Excel";
+                            icona_file = "doc";
+                            file_type = "document"; //"excel";
+                        }
+                        else if (elem._contentType.Contains("pdf"))
+                        {
+                            formato_file = "File Pdf";
+                            icona_file = "doc";
+                            file_type = "pdf";
+                        }
+                        else if (elem._contentType.Contains("website"))
+                        {
+                            formato_file = "Link a sito web";
+                            icona_file = "globe";
+                            file_type = "website";
+                        }
+                        else
+                        {
+                            formato_file = " File Generico (Altro...)";
+                            icona_file = "doc";
+                            file_type = "document";// "altro";
+                        }
+
+                        string ariaLabel = titolo + " - " + formato_file;
+                        if (!String.IsNullOrWhiteSpace(elem._note)) { ariaLabel += " - " + elem._note; }
+                        <!-- qua sotto -->
+                        <tr>
+                            <td>
+                                <div class="row">
+                                    <div class="text-left col-xs-12">
+                                        <div class="widget-summary widget-summary-xlg" style="float:left;max-width:110px;">
+                                            <div class="widget-summary-col widget-summary-col-icon">
+                                                <div class="summary-icon item item-rounded text-primary bigborder" style="border-style:solid;overflow:hidden" data-tourdb="tour-index-allegati" @Html.IntroTourAttributes(Model.TourElements, "tour-index-allegati")>
+                                                    @if (file_type == "image")
+                                                    {
+                                                        <i class="thumb-@file_type" href="@(Url.Action("GetFile", "CV_Online", new { id = elem._id, mc=elem._dataOraAgg.GetValueOrDefault().ToString("yyyyMMddHHmmss") }))">
+                                                            <img src="@(Url.Action("GetFile", "CV_Online", new { id = elem._id }))" class="img-fluid height-98-allegati" style="width: 100%;vertical-align: top;border-radius: 2px;height: 106px;">
+                                                        </i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="icons icon-@icona_file"></i>
+                                                    }
+
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    @*</div>
+                                    <div class="col-sm-8 col-xs-6 col-md-9 col-lg-9">*@
+                                        @if (file_type != "website")
+                                        {
+                                            <a tabindex="-1" id="attach_@elem._id" href="@(Url.Action("GetFile", "CV_Online", new { id = elem._id }))" target="_blank">
+                                                <p class="text-bold">@titolo</p>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <a tabindex="-1" href="@elem._pathName" target="_blank">
+                                                <p class="text-bold">@titolo</p>
+                                            </a>
+                                        }
+                                        <p class="text-italic">@formato_file</p>
+                                        <div class="hidden-xs">
+                                            @if (!String.IsNullOrWhiteSpace(elem._note))
+                                            {
+                                                int maxLength = 150;
+
+                                                if (elem._note.Length < maxLength)
+                                                {
+                                                    <p style="word-break: break-word;">@elem._note</p>
+                                                }
+                                                else
+                                                {
+                                                    <p style="word-break: break-word;">
+                                                        @(elem._note.Substring(0, maxLength))<span class="dot_@elem._id">... <a href="#" onclick="LeggiTutto('@elem._id')"> Leggi tutto</a></span><span class="moreText_@elem._id" style="display:none;">@elem._note.Substring(maxLength)<br /><a href="#" onclick="Nascondi('@elem._id')">Nascondi</a></span>
+                                                    </p>
+                                                }
+
+                                            }
+                                            else
+                                            {
+                                                <p>&nbsp;</p>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row visible-xs">
+                                    <div class="col-xs-12">
+                                        <div class="">
+                                            @if (!String.IsNullOrWhiteSpace(elem._note))
+                                            {
+                                                int maxLength = 150;
+
+                                                if (elem._note.Length < maxLength)
+                                                {
+                                                    <p style="word-break: break-word;">@elem._note</p>
+                                                }
+                                                else
+                                                {
+                                                    <p style="word-break: break-word;">
+                                                        @(elem._note.Substring(0, maxLength))<span class="dot_@elem._id">... <a href="#" onclick="LeggiTutto('@elem._id')"> Leggi tutto</a></span><span class="moreText_@elem._id" style="display:none;">@elem._note.Substring(maxLength)<br /><a href="#" onclick="Nascondi('@elem._id')">Nascondi</a></span>
+                                                    </p>
+                                                }
+
+                                            }
+                                            else
+                                            {
+                                                <p>&nbsp;</p>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row visible-xs">
+                                    <div class="col-xs-12 text-right">
+                                        <div class="btn-action-icon-container">
+                                            <a class="btn btn-action-icon text-primary" href="#" aria-label="Cancella contributo" onclick="ConfermaCancellazione_Allegati('@elem._id')">
+                                                <i class="fa fa-trash"></i>
+                                            </a>
+                                            <a class="btn btn-action-icon text-primary" href="#"  onclick="ModificaAllegato(@elem._id)">
+                                                <i class="fa fa-pencil"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-right hidden-xs" style="vertical-align:top">
+                                <div class="btn-action-icon-container">
+                                    <a class="btn btn-action-icon text-primary" href="#"  onclick="ModificaAllegato(@elem._id)">
+                                        <i class="fa fa-pencil"></i>
+                                    </a>
+                                    <a class="btn btn-action-icon text-primary" href="#" aria-label="Cancella contributo" onclick="ConfermaCancellazione_Allegati('@elem._id')">
+                                        <i class="glyphicon glyphicon-remove"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+
+
+                    <tr>
+                        <td>
+                            <div class="row">
+                                <div class="col-xs-12 text-left">
+                                    <div class="widget-summary widget-summary-xlg">
+                                        <div class="widget-summary-col widget-summary-col-icon upload-drop-zone" id="drop-zone">
+                                            @if (lista.Count() < Convert.ToInt32(CommonHelper.GetParametri<string>(EnumParametriSistema.NumeriMassimoAllegati)[0]))
+                                            {
+                                                <div class="summary-icon item item-rounded text-primary bigborder" data-tourdb="tour-index-allegati" @Html.IntroTourAttributes(Model.TourElements, "tour-index-allegati")>
+                                                    <span class="cursor-pointer"><i tabindex="0" role="link"  aria-label="Aggiungi un nuovo contributo" class="" onclick="ModificaAllegato(0)" @*onclick="scegliTipoContributo('_fileUpload')"*@>+</i></span>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="hidden-xs">
+                            &nbsp;
+                        </td>
+                    </tr>
+
+
+                </tbody>
+            </table>
+
+            <input type="file" class="hide" name="_fileUpload" id="_fileUpload" onchange="UploadActionAllegati('_name','_note')" multiple /> @* js-upload-files *@
+            <input type="hidden" name="_name" id="_name" value="" />
+            <input type="hidden" name="_note" id="_note" value="" />
+            <input type="hidden" name="_pathName" id="_pathName" value="" />
+        }
+    </div>
+</section>
+
+
+
+@*<div class="modal fade right modalCheck" id="modalAllegato" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+
+</div>*@
+
+@Html.RenderModal("Allegato")
+
+<script>
+    /* FREAK - PLUGIN DRAG&DROP */
+    + function ($) {
+        //'use strict';
+
+        // UPLOAD CLASS DEFINITION
+        // ======================
+
+        var dropZone = document.getElementById('drop-zone');
+        var uploadForm = document.getElementById('frmInsertAllegati'); // js-upload-form
+        //var doc = document.getElementById("headerwtooltip");
+        //doc.onload = function () {
+        //    $("#tooltip-experiences").tooltip();
+        //}
+
+        var startUpload = function (files) {
+            console.log(files);
+            UploadActionAllegati('_name','_note');
+        }
+
+        uploadForm.addEventListener('submit', function (e) {
+            var uploadFiles = document.getElementById('_fileUpload').files; //js-upload-files
+            e.preventDefault()
+
+            startUpload(uploadFiles)
+        })
+
+        dropZone.ondrop = function (e) {
+            e.preventDefault();
+            this.className = 'upload-drop-zone';
+            $("#_fileUpload").prop("files", e.dataTransfer.files); //originalEvent
+            startUpload(e.dataTransfer.files)
+        }
+
+        dropZone.ondragover = function () {
+            this.className = 'upload-drop-zone drop';
+            return false;
+        }
+
+        dropZone.ondragleave = function () {
+            this.className = 'upload-drop-zone';
+            return false;
+        }
+
+    }(jQuery);
+
+    /* FREAK - FINE PLUG IN */
+
+
+
+    /* FREAK - PLUGIN - BOX */
+    (function ($) {
+
+        /*
+        Thumbnail: Select
+        */
+        $('.mg-option input[type=checkbox]').on('change', function (ev) {
+            var wrapper = $(this).parents('.thumbnail');
+            if ($(this).is(':checked')) {
+                wrapper.addClass('thumbnail-selected');
+            } else {
+                wrapper.removeClass('thumbnail-selected');
+            }
+        });
+
+        $('.mg-option input[type=checkbox]:checked').trigger('change');
+
+        /*
+        Toolbar: Select All
+        */
+        $('#mgSelectAll').on('click', function (ev) {
+            ev.preventDefault();
+            var $this = $(this),
+                $label = $this.find('> span');
+            $checks = $('.mg-option input[type=checkbox]');
+
+            if ($this.attr('data-all-selected')) {
+                $this.removeAttr('data-all-selected');
+                $checks.prop('checked', false).trigger('change');
+                $label.html($label.data('all-text'));
+            } else {
+                $this.attr('data-all-selected', 'true');
+                $checks.prop('checked', true).trigger('change');
+                $label.html($label.data('none-text'));
+            }
+        });
+
+        /*
+        Image Preview: Lightbox
+        */
+        $('.thumb-preview > i[href]').magnificPopup({
+            type: 'image',
+            closeOnContentClick: true,
+            mainClass: 'mfp-img-mobile',
+            image: {
+                verticalFit: true
+            }
+        });
+
+        $('.thumb-preview .mg-zoom').on('click.lightbox', function (ev) {
+            ev.preventDefault();
+            $(this).closest('.thumb-preview').find('i.thumb-image').triggerHandler('click');
+        });
+
+        /*
+        Thumnail: Dropdown Options
+        */
+        $('.thumbnail .mg-toggle').parent()
+            .on('show.bs.dropdown', function (ev) {
+                $(this).closest('.mg-thumb-options').css('overflow', 'visible');
+            })
+            .on('hidden.bs.dropdown', function (ev) {
+                $(this).closest('.mg-thumb-options').css('overflow', '');
+            });
+
+        $('.thumbnail').on('mouseenter', function () {
+            var toggle = $(this).find('.mg-toggle');
+            if (toggle.parent().hasClass('open')) {
+                toggle.dropdown('toggle');
+            }
+        });
+
+        /*
+        Isotope: Sort Thumbnails
+        */
+        $("[data-sort-source]").each(function () {
+
+            var source = $(this);
+            var destination = $("[data-sort-destination][data-sort-id=" + $(this).attr("data-sort-id") + "]");
+
+            if (destination.get(0)) {
+
+                $(window).on('load', function () {
+
+                    destination.isotope({
+                        itemSelector: ".isotope-item",
+                        layoutMode: 'fitRows'
+                    });
+
+                    $(window).on('sidebar-left-toggle inner-menu-toggle', function () {
+                        destination.isotope();
+                    });
+
+                    source.find("a[data-option-value]").click(function (e) {
+
+                        e.preventDefault();
+
+                        var $this = $(this),
+                            filter = $this.attr("data-option-value");
+
+                        source.find(".active").removeClass("active");
+                        $this.closest("li").addClass("active");
+
+                        destination.isotope({
+                            filter: filter
+                        });
+
+                        if (window.location.hash != "" || filter.replace(".", "") != "*") {
+                            window.location.hash = filter.replace(".", "");
+                        }
+
+                        return false;
+
+                    });
+
+                    $(window).bind("hashchange", function (e) {
+
+                        var hashFilter = "." + location.hash.replace("#", ""),
+                            hash = (hashFilter == "." || hashFilter == ".*" ? "*" : hashFilter);
+
+                        source.find(".active").removeClass("active");
+                        source.find("[data-option-value='" + hash + "']").closest("li").addClass("active");
+
+                        destination.isotope({
+                            filter: hash
+                        });
+
+                    });
+
+                    var hashFilter = "." + (location.hash.replace("#", "") || "*");
+                    var initFilterEl = source.find("a[data-option-value='" + hashFilter + "']");
+
+                    if (initFilterEl.get(0)) {
+                        source.find("[data-option-value='" + hashFilter + "']").click();
+                    } else {
+                        source.find(".active a").click();
+                    }
+
+                });
+
+            }
+
+        });
+
+    }(jQuery));
+
+    $('[data-toggle="popover"]').popover({
+        template: '<div class="popover"><div class="arrow"></div><div><span style="float:left; width:100%; display:inline;" class="popover-title"></span><span class="customPopOverCloser" style="float:right; width:5%; margin-top: -30px; margin-left: -3px; dispay:inline; cursor:pointer;" aria-hidden="true">x</span></div><div class="clearfix"></div><div class="popover-content"></div></div>',
+        html: true
+    });
+
+    function LeggiTutto(id)
+    {
+        event.preventDefault();
+        $('.dot_'+id).hide();
+        $('.moreText_'+id).show();
+    }
+    function Nascondi(id)
+    {
+        event.preventDefault();
+        $('.dot_'+id).show();
+        $('.moreText_' + id).hide();
+        $('html,body').animate({
+            'scrollTop': $('#attach_' + id).offset().top-100
+        }, 500);
+    }
+</script>

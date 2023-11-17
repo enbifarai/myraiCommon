@@ -1,0 +1,208 @@
+﻿@using myRaiData.Incentivi
+@model XR_TSK_TASK
+
+@{
+    bool isNew = Model.ID == 0;
+}
+
+@using (Html.BeginModal("Dettaglio task"))
+{
+    <div class="row">
+        <div class="col-sm-12">
+            @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, ""))
+            {
+                using (Html.BeginForm("Save_Task", "Dashboard", FormMethod.Post, new { id = "form-task" }))
+                {
+                    <div class="form-group">
+                        @if (!isNew)
+                        {
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <label class="rai-caption">Data creazione</label><br />
+                                    <label>@Model.DATA_CREAZIONE.ToString("dd/MM/yyyy HH:mm:ss")</label>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="rai-caption">Matricola creatore</label><br />
+                                    <label>@Model.MATRICOLA_CREATORE</label>
+                                </div>
+                            </div>
+                            if (Model.XR_TSK_SCHEDULER != null)
+                            {
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <label class="rai-caption">Nome schedulazione</label><br />
+                                        <label class="">@Model.XR_TSK_SCHEDULER.COD_NAME</label>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <label class="rai-caption">Tipologia</label><br />
+                                @if (isNew)
+                                {
+                                    @Html.TextBoxFor(m => m.COD_TIPOLOGIA, new { @class = "form-control", @readonly = "readonly" })
+                                }
+                                else
+                                {
+                                    <label>@Model.COD_TIPOLOGIA</label>
+                                }
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="rai-caption">Sottotipologia</label><br />
+                                @if (isNew)
+                                {
+                                    @Html.TextBoxFor(m => m.COD_SOTTOTIPOLOGIA, new { @class = "form-control", @readonly = "readonly" })
+                                }
+                                else
+                                {
+                                    <label>@Model.COD_SOTTOTIPOLOGIA</label>
+                                }
+                            </div>
+                        </div>
+                        @if (!isNew)
+                        {
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <label class="rai-caption">Data esecuzione</label><br />
+                                    @if (Model.DATA_ESECUZIONE.HasValue)
+                                    {
+                                        <label>@Model.DATA_ESECUZIONE.Value.ToString("dd/MM/yyyy HH:mm:ss")</label>
+                                    }
+                                    else
+                                    {
+                                        <label>-</label>
+                                    }
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="rai-caption">Data fine esecuzione</label><br />
+                                    @if (Model.DATA_ESECUZIONE_FINE.HasValue)
+                                    {
+                                        <label>@Model.DATA_ESECUZIONE_FINE.Value.ToString("dd/MM/yyyy HH:mm:ss")</label>
+                                    }
+                                    else
+                                    {
+                                        <label>-</label>
+                                    }
+                                </div>
+                            </div>
+                            <div class="row push-10 push-10-t">
+                                <div class="col-sm-12">
+                                    <div class="rai-checkbox">
+                                        <input type="checkbox" disabled @(Model.IND_RUNNING.GetValueOrDefault() ? "checked" : "")>
+                                        <label>In esecuzione</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row push-10 push-10-t">
+                                <div class="col-sm-12">
+                                    <div class="rai-checkbox">
+                                        <input type="checkbox" disabled @(Model.IND_ESITO.GetValueOrDefault() ? "checked" : "")>
+                                        <label>Esito</label>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        @if (isNew)
+                        {
+                            <div class="row push-10">
+                                <div class="col-sm-12">
+                                    <label class="rai-caption">Input</label><br />
+                                    @Html.TextAreaFor(m => m.INPUT, new { rows = "10", @class = "form-control", data_format = "json" })
+                                </div>
+                            </div>
+                        }
+                        else if (!String.IsNullOrWhiteSpace(Model.INPUT))
+                        {
+                            <div class="row push-10">
+                                <div class="col-sm-12">
+                                    <label class="rai-caption">Input</label><br />
+                                    @Html.TextAreaFor(m => m.INPUT, new { @readonly = "readonly", rows = "10", @class = "form-control", data_format = "json" })
+                                </div>
+                            </div>
+                        }
+
+                        @if (!String.IsNullOrWhiteSpace(Model.OUTPUT))
+                        {
+                            <div class="row push-10">
+                                <div class="col-sm-12">
+                                    <label class="rai-caption">Output</label><br />
+                                    @Html.TextAreaFor(m => m.OUTPUT, new { @readonly = "readonly", rows = "5", @class = "form-control" })
+                                </div>
+                            </div>
+                        }
+                        @if (!String.IsNullOrWhiteSpace(Model.NOT_ERRORE))
+                        {
+                            <div class="row push-10">
+                                <div class="col-sm-12">
+                                    <label class="rai-caption">Errore</label><br />
+                                    @Html.TextAreaFor(m => m.NOT_ERRORE, new { @readonly = "readonly", rows = "5", @class = "form-control" })
+                                </div>
+                            </div>
+                        }
+                        @if (isNew)
+                        {
+                            <div class="row push-20">
+                                <div class="col-sm-12">
+                                    <button class="btn btn-primary full-width" onclick="HrisTaskSave(this)">Inserisci task</button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            }
+        </div>
+    </div>
+}
+
+<script>
+    function formatJson() {
+        $('[data-format="json"]').each(function () {
+            let obj = JSON.parse($(this).val());
+            let jsonRes = JSON.stringify(obj, undefined, 4);
+            $(this).val(jsonRes);
+        })
+    }
+    formatJson();
+
+    function HrisTaskSave(button) {
+        event.preventDefault();
+
+        var paramGetter = function () {
+            var obj = new FormData($('#form-task')[0]);
+            return obj;
+        };
+
+        var onSuccess = function () {
+            $('#modal-task').modal("hide");
+            $('#form-ricerca-task').submit();
+        }
+
+        var message = "Vuoi confermare i dati inseriti?";
+        var confirmMessage = "Richiesta inserita con successo";
+
+        swal({
+            title: 'Sei sicuro?',
+            type: 'question',
+            html: message,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+            var paramGetter = function () {
+                var obj = new FormData($('#form-task')[0]);
+                return obj;
+            };
+
+            var onSuccess = function () {
+                $('#modal-task').modal("hide");
+                $('#form-ricerca-task').submit();
+            }
+
+            RaiSubmitForm(button, 'form-task', paramGetter, false, false, confirmMessage, onSuccess, false);
+        });
+    }
+</script>
+

@@ -1,0 +1,114 @@
+﻿@model myRaiCommonModel.cvModels.cvModel.Formazione
+@using MVCProject.Custom_Helpers
+
+@{
+    myRai.Data.CurriculumVitae.cv_ModelEntities cvEnt = new myRai.Data.CurriculumVitae.cv_ModelEntities();
+}
+
+@using (Html.BeginModal("Modifica corso di formazione"))
+{
+    using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Dati generali", false))
+    {
+        using (Html.BeginForm("ModificaFormazione", "CV_Online", FormMethod.Post, new { id = "form-modificaformazione", @class = "mb-lg form-modificaFormazione" }))
+        {
+
+            @Html.HiddenFor(x => x._matricola)
+            @Html.HiddenFor(x => x._prog)
+
+
+            <div class="rai form-group">
+
+                <div class="row">
+                    <div class="col-md-12 push-10">
+                                    @Html.LabelForRequiredObbl(model => model._corso, "Titolo corso", new { @class = "titleElements rai-caption requiredobbl" })
+                        @Html.TextBoxFor(model => model._corso, new { @id = "_corso", @class = "rai form-control ", @placeholder = "Inserisci il titolo del corso" })
+                        @Html.ValidationMessageFor(model => model._corso)
+                    </div>
+                </div>
+
+                <div  class="row">
+                    <div class="col-md-6 push-10">
+                                        @Html.LabelForRequiredObbl(model => model._anno, "Anno", new { @class = "titleElements rai-caption requiredobbl" })
+                        <div class="input-group">
+                            <span class="input-group-addon" style="cursor: pointer" onclick="$('._annoFormazione').datetimepicker('show')"><i class="icons icon-calendar"></i></span>
+                            @Html.TextBoxFor(model => model._anno, new { @id = "_anno", @class = "js-datetimepicker rai form-control ", @placeholder = "Seleziona un anno", @data_format = "YYYY", @data_locale = "it" })
+                        </div>
+                        @Html.ValidationMessageFor(model => model._anno)
+                    </div>
+                    <div class="col-md-6 push-10">
+                                        @Html.LabelForRequiredObbl(model => model._durata, "Durata", new { @class = "titleElements rai-caption requiredobbl" })
+                        @Html.TextBoxFor(model => model._durata, new { @id = "_durata", @class = "rai form-control ", @placeholder = "Inserisci la durata", @data_format = "YYYY", @data_locale = "it" })
+                        @Html.ValidationMessageFor(model => model._durata)
+                    </div>
+                </div>
+
+                <div  class="row">
+                    <div class="col-md-12 push-10">
+                                    <label for="_presso" class="titleElements rai-caption">Nome società o ente erogatore della formazione</label>
+                                    <input class="rai form-control " type="text" id="_presso" name="_presso" placeholder="Inserire a testo libero il nome della società" value="@Model._presso"/>
+                        @Html.ValidationMessageFor(x => x._presso)
+                    </div>
+                </div>
+
+                <div  class="row">
+                    <div class="col-md-6 push-10">
+                                        <label for="_localitaStudi" class="titleElements rai-caption">Città</label>
+                                        <input class="rai form-control " type="text" id="_localitaCorso" name="_localitaCorso" placeholder="Inserisci la città dove si è svolto il corso" value="@Model._localitaCorso"/>
+                    </div>
+                    <div class="col-md-6  push-10">
+                                        <label for="_codNazione" class="titleElements rai-caption">Paese</label>
+                                        <select class="js-select2 rai form-control " id="_codNazione" name="_codNazione" style="width: 100%;" data-placeholder="Seleziona dalla lista">
+                            <option></option>
+                            <!-- necessario per il placeholder con Select2 plugin -->
+                            @{
+                                var naz = (from nazione in cvEnt.DNazione
+                                           orderby nazione.DES_NAZIONE
+                                           select nazione).OrderBy(x => new { x.QTA_ORDINE, x.DES_NAZIONE }).ToList();
+                            }
+                            @foreach (var elem in naz)
+                            {
+                                string selected = "";
+                                if (Model._codNazione == elem.COD_SIGLANAZIONE)
+                                {
+                                    selected = "selected=\"selected\"";
+                                }
+                                <option value="@elem.COD_SIGLANAZIONE" @selected>@(elem.DES_NAZIONE)</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12 push-10">
+                                        <label for="_note" class="titleElements rai-caption">Principali competenze acquisite</label>
+                                        <textarea  maxlength="1000" class="rai form-control" id="_note2" name="_note" rows="5" placeholder="Descrivere sinteticamente le principali competenze acquisite utilizzando al massimo 1000 caratteri">@Model._note</textarea>
+                        @Html.ValidationMessageFor(x => x._note)
+                    </div>
+                </div>
+
+                <div class="row push-20-t">
+                    <div class="col-md-12">
+                        <div class="rai-btn-fill">
+                            <button type="button" class="btn rai-btn-secondary"><span onclick="ConfermaCancellazione_Formazione('@Model._matricola', '@Model._prog')">Elimina</span></button>
+                            <button class="btn btn-primary" type="submit" onclick="submit_modificaFormazione(this)"><i class=""></i>Salva</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+        }
+    <div id="savedbmodcorsi" class="alert alert-primary" style="position:fixed;bottom:10px;right:10px;display:none;z-index:100; width:250px;">
+            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+            <i class="fa fa-refresh fa-spin"></i> Salvataggio in corso
+        </div>
+    }
+}
+
+<div class="modal-dialog modal-lg">
+
+
+</div>
+<script>
+    $.validator.unobtrusive.parse("#form-modificaformazione");
+</script>

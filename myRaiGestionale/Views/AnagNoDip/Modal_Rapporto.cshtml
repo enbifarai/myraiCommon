@@ -1,0 +1,439 @@
+﻿@using myRaiCommonModel
+@using myRaiCommonManager
+@using myRaiHelper
+@model AnagNoDipRapportoModel
+
+@{
+    var db = new myRaiData.Incentivi.IncentiviEntities();
+    var listTip = db.XR_NDI_TB_TIPO_RAPPORTO.ToList();
+
+    //Finchè non viene gestita la storicità delle società (non solo a livello di struttura ma anche nei dati)
+    //non è possibile usare il GetSocieta.
+    //Pertanto su XR_HRIS_PARAM c'è un parametro per gestire l'attuale codifica
+    //List<SelectListItem> societa = AnagraficaManager.GetSocieta("", "", true);
+    List<SelectListItem> societa = new List<SelectListItem>();
+    societa.Add(new SelectListItem() { Value = "", Text = "Seleziona un valore" });
+    var paramSoc = HrisHelper.GetParametriJson<HrisMapSocieta>(HrisParam.DecodSocietaStrOrg);
+    foreach (var item in paramSoc.Where(x => x.Stato == 1))
+    {
+        societa.Add(new SelectListItem()
+        {
+            Value = item.Cezanne,
+            Text = item.Descrizione
+        });
+    }
+
+
+    List<SelectListItem> tipiRapp = new List<SelectListItem>();
+    tipiRapp.Add(new SelectListItem() { Value = "", Text = "Seleziona un valore" });
+    tipiRapp.AddRange(listTip.OrderBy(x => x.ORDINE).Select(x => new SelectListItem()
+    {
+        Value = x.COD_TIPOLOGIA,
+        Text = x.DES_TIPOLOGIA
+    }));
+
+    var serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
+    var rawArray = serializer.Serialize(listTip.Select(x => new
+    {
+        Codice = x.COD_TIPOLOGIA,
+        MatrColl = x.IND_MATR_COLLEGATA,
+        ImpRedd = x.IND_IMPORTO_REDDITO
+    }).ToArray());
+
+    List<SelectListItem> numEredi = new List<SelectListItem>();
+    numEredi.Add(new SelectListItem() { Value = "", Text = "Seleziona un valore" });
+    for (int i = 1; i <= 99; i++)
+    {
+        numEredi.Add(new SelectListItem() { Value = i.ToString("00"), Text = i.ToString("00") });
+    }
+}
+
+@using (Html.BeginModal("Gestione rapporto"))
+{
+    <div class="row">
+        <div class="col-md-12">
+            @using (Html.BeginPanel(PanelType.NoHeader, "Dati individuali"))
+            {
+                using (Html.BeginForm("Save_Rapporto", "AnagNoDip", FormMethod.Post, new { @id = "form-rapp" }))
+                {
+                    @Html.HiddenFor(m => m.IdAnag)
+                    @Html.HiddenFor(m => m.IdPersona)
+                    @Html.HiddenFor(m => m.IsNew)
+                    @Html.HiddenFor(m => m.Matricola)
+                    @Html.HiddenFor(m => m.OrigCodice)
+                    @Html.HiddenFor(m => m.OrigSocieta)
+                    @Html.HiddenFor(m => m.OrigRappDataInizio)
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-sm-6 push-10">
+                                <label class="rai-caption" for="RappAnnoRiferimento">Anno riferimento <font color="#d2322d">*</font></label>
+                                <div class="input-group">
+                                    <div class="input-group-addon" onclick="$('#RappAnnoRiferimento').datetimepicker('show')">
+                                        <i class="fa fa-calendar"></i>
+                                    </div>
+                                    <input type="text" class="form-control js-datetimepicker" for="RappAnnoRiferimento" name="RappAnnoRiferimento" id="RappAnnoRiferimento" data-format="YYYY" data-locale="it" placeholder="Anno riferimento"  autocomplete="off" required="required" onchange="AnagNoDipAnnoRif()" value="@(Model.RappAnnoRiferimento)" />
+                                </div>
+                                @Html.ValidationMessage("RapportoAnno")
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-6 push-10">
+                                @Html.LabelForRequiredObbl(m => m.Codice, "Tipo rapporto", new { @class = "rai-caption" })
+                                @Html.RaiSelectFor(m => m.Codice, tipiRapp, "Seleziona un tipo di rapporto", onSelectchange: "AnagNoDipCheckTipoRapporto()", attributes: new { required = "required", size = tipiRapp.Count().ToString() })
+                                @Html.ValidationMessageFor(m => m.Codice)
+                            </div>
+                            <div class="col-sm-6 push-10" id="selNumEredi" style="display:none">
+                                @Html.LabelForRequiredObbl(m => m.NumErede, "Numero erede", new { @class = "rai-caption" })
+                                @Html.RaiSelectFor(m => m.NumErede, numEredi, attributes: new { @required = "required" })
+                                @Html.ValidationMessageFor(m => m.NumErede)
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-6 push-10">
+                                @Html.LabelForRequiredObbl(m => m.Societa, "Società", new { @class = "rai-caption" })
+                                @Html.RaiSelectFor(m => m.Societa, societa, "Seleziona una società", attributes: new { required = "required" })
+                                @Html.ValidationMessageFor(m => m.Societa)
+                            </div>
+                            <div class="col-sm-6 push-10" id="imp_red">
+                                @Html.LabelFor(m => m.ImportoReddito, "Importo reddito", new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.ImportoReddito, new { @class = "form-control", data_allowedchar = @"[\d\.,]", data_type = "currency", pattern = @"^\d{1,3}(\.\d{3}){0,2}(\,\d{1,2})?$", maxlength = 14 })
+                                @Html.ValidationMessageFor(m => m.ImportoReddito)
+                            </div>
+                        </div>
+                        @*<div class="row" id="rapp-anno" style="display:none;">
+                            <div class="col-sm-6 push-10">
+                                <label class="rai-caption" for="RapportoAnno">Anno rapporto <font color="#d2322d">*</font></label>
+                                <div class="input-group">
+                                    <div class="input-group-addon" onclick="$('#RapportoAnno').datetimepicker('show')">
+                                        <i class="fa fa-calendar"></i>
+                                    </div>
+                                    <input type="text" class="form-control js-datetimepicker" id="RapportoAnno" data-format="YYYY" data-locale="it" placeholder="Anno" autocomplete="off" required="required" onchange="AnagNoDipRappAnno()" value="@(Model.RappDataInizio.Year)" />
+                                </div>
+                                @Html.ValidationMessage("RapportoAnno")
+                            </div>
+                        </div>*@
+                        <div class="row" id="rapp-periodo">
+                            <div class="col-sm-6 push-10">
+                                @Html.LabelForRequiredObbl(m => m.RappDataInizio, "Data inizio", new { @class = "rai-caption" })
+                                <div class="input-group">
+                                    <div class="input-group-addon" onclick="$('#RappDataInizio').datetimepicker('show')">
+                                        <i class="fa fa-calendar"></i>
+                                    </div>
+                                    @Html.TextBoxFor(m => m.RappDataInizio, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY", data_locale = "it", placeholder = "Data inizio", autocomplete = "off", required = "required", onchange = "AnagNoDipRappDate()" })
+                                </div>
+                                @Html.ValidationMessageFor(m => m.RappDataInizio)
+                            </div>
+                            <div class="col-md-6">
+                                @Html.LabelForRequiredObbl(m => m.RappDataFine, "Data fine", new { @class = "rai-caption" })
+                                <div class="input-group">
+                                    <div class="input-group-addon" onclick="$('#RappDataFine').datetimepicker('show')">
+                                        <i class="fa fa-calendar"></i>
+                                    </div>
+                                    @Html.TextBoxFor(m => m.RappDataFine, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY", data_locale = "it", placeholder = "Data fine", autocomplete = "off", required = "required" })
+                                </div>
+                                @Html.ValidationMessageFor(m => m.RappDataFine)
+                            </div>
+                        </div>
+
+                        <div id="anagnodip-matr-coll">
+                            @using (Html.BeginBlock(BlockType.ContentTable, "Matricola dipendente collegata"))
+                            {
+                                <div class="form-group">
+                                    <div class="row">
+                                        <div class="col-xs-6 push-10">
+                                            @Html.Label("Nominativo", new { @class = "rai-caption" })
+                                            @Html.TextBox("RicercaNominativo", "", new { @class = " form-control form-control-value", style = "width: 100%", placeholder = "Inserisci un nominativo" })
+                                        </div>
+                                        <div class="col-xs-6 push-10">
+                                            @Html.Label("Matricola", new { @class = "rai-caption" })
+                                            @Html.TextBox("RicercaMatricola", "", new { @class = " form-control form-control-value", style = "width: 100%", placeholder = "Inserisci la matricola" })
+                                        </div>
+                                    </div>
+                                    <div class="row push-20">
+                                        <div class="col-sm-12">
+                                            <div class="rai-btn-fill">
+                                                <input type="submit" id="btnCerca" class="btn rai-btn-small" title="Cerca" value="Cerca" onclick="AnagNoDipCerca()" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <label class="rai-caption">Matricola</label>
+                                        <div class="input-group">
+                                            @Html.TextBoxFor(m => m.MatricolaCollegata, new { @class = "form-control", @readonly = "readonly" })
+                                            <div class="input-group-addon">
+                                                <i class="fa fa-lock"></i>
+                                            </div>
+                                        </div>
+                                        @Html.ValidationMessageFor(m => m.MatricolaCollegata)
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <label class="rai-caption">Nominativo</label>
+                                        <div class="input-group">
+                                            <input type="text" id="ric-nominativo" class="form-control" readonly="readonly" />
+                                            <div class="input-group-addon">
+                                                <i class="fa fa-lock"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <label class="rai-caption">Codice fiscale</label>
+                                        <div class="input-group">
+                                            <input type="text" id="ric-cf" class="form-control" readonly="readonly" />
+                                            <div class="input-group-addon">
+                                                <i class="fa fa-lock"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+
+                }
+
+                <div class="row push-20-t">
+                    <div class="col-sm-12">
+                        <div class="rai-btn-fill">
+                            <button id="btnSave" onclick="AnagNoDipSaveRapp(this)" class="btn rai-btn-primary">Salva</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<script>
+    InitDatePicker();
+    AnagNoDipCheckTipoRapporto();
+    $("input[data-type='currency']").on({
+        keyup: function () {
+            formatCurrency($(this));
+        },
+        blur: function () {
+            formatCurrency($(this), "blur");
+        }
+    });
+    function formatAllCurrency() {
+        var list = $('input[data-type="currency"]');
+        for (var i = 0; i < list.length; i++) {
+            formatCurrency($(list[i]));
+        }
+    }
+    formatAllCurrency();
+
+    function AnagNoDipRappDate() {
+        let ini = $('#RappDataInizio').val();
+        $('#RappDataFine').data('DateTimePicker').minDate(moment(ini, 'DD/MM/YYYY').format('DD/MM/YYYY'));
+    }
+    AnagNoDipRappDate();
+
+    function AnagNoDipCheckTipoRapporto() {
+        let tipologie = @Html.Raw(rawArray);
+        let selTip = $('#Codice').val() ? $('#Codice').val():'';
+        let tipologia = tipologie.find(function (obj) {
+            return obj.Codice == selTip;
+        });
+        if (tipologia && tipologia.MatrColl) {
+            $('#anagnodip-matr-coll').show();
+            $('#MatricolaCollegata').attr('required', 'required');
+
+            let matrCollegata = $('#MatricolaCollegata').val();
+            if (matrCollegata !== '') {
+                AnagNoDipRicercaMatricola(matrCollegata);
+            }
+        } else {
+            $('#anagnodip-matr-coll').hide();
+            $('#MatricolaCollegata').removeAttr('required');
+        }
+
+        if (tipologia && tipologia.Codice == "ER") {
+            $('#selNumEredi').show();
+
+            //$('#rapp-anno').show();
+            $('#rapp-periodo').css('visibility', 'collapse');
+
+            //AnagNoDipRappAnno();
+            AnagNoDipAnnoRif();
+        }
+        else {
+            $('#selNumEredi').hide();
+
+            //$('#rapp-anno').hide();
+            $('#rapp-periodo').css('visibility', 'visible');
+        }
+
+        if (tipologia && tipologia.ImpRedd) {
+            $('#imp_red').show();
+        } else {
+            $('#imp_red').hide();
+        }
+    }
+
+    function AnagNoDipRappAnno() {
+        let anno = $('#RapportoAnno').val();
+        if (anno != '') {
+            $('#RappDataInizio').val(moment(anno + '0101', 'YYYYMMDD').format('DD/MM/YYYY'));
+            $('#RappDataFine').val(moment(anno + '1231', 'YYYYMMDD').format('DD/MM/YYYY'));
+        }
+        else {
+            $('#RappDataInizio').val();
+            $('#RappDataFine').val();
+        }
+    }
+    function AnagNoDipAnnoRif() {
+        if ($('#Codice').val() != 'ER') return;
+
+        debugger
+        let anno = $('#RappAnnoRiferimento').val();
+        if (anno != '') {
+            $('#RappDataInizio').val(moment(anno + '0101', 'YYYYMMDD').format('DD/MM/YYYY'));
+            $('#RappDataFine').val(moment(anno + '1231', 'YYYYMMDD').format('DD/MM/YYYY'));
+        }
+        else {
+            $('#RappDataInizio').val();
+            $('#RappDataFine').val();
+        }
+    }
+
+    function AnagNoDipCerca() {
+        event.preventDefault();
+        let nominativo = $('#RicercaNominativo').val();
+        let matricola = $('#RicercaMatricola').val();
+        let provenienza = 'NODIP';
+        let action = "AnagNoDipSelezionaMatricola('$matricola')";
+        let actionText = 'Seleziona';
+
+        apriModale('modal-ricerca-dipendente');
+        RaiUpdateWidget('modal-ricerca-dipendente-body', '/Ricerca/RicercaDipendente', 'html', {
+            nominativoDipendente: nominativo,
+            matricola: matricola,
+            provenienza: provenienza,
+            action: action,
+            actionText: actionText
+        }, false, null, false, "POST");
+    }
+    function AnagNoDipSelezionaMatricola(matricola) {
+        event.preventDefault();
+        $('#modal-ricerca-dipendente').modal('hide');
+        AnagNoDipRicercaMatricola(matricola);
+    }
+    function AnagNoDipRicercaMatricola(matricola) {
+        $.ajax({
+            url: '/AnagNoDip/RicercaMatricola',
+            cache: 'false',
+            type: 'POST',
+            dataType: "json",
+            data: {
+                matricola: matricola
+            },
+            success: function (data) {
+                if (data.found == true) {
+                    $('#MatricolaCollegata').val(data.matricola);
+                    $('#ric-nominativo').val(data.nominativo);
+                    $('#ric-cf').val(data.cf);
+
+                    $('#ric-matr-err').text('');
+                    $('#ric-matr-err').hide();
+                }
+                else {
+                    $('#MatricolaCollegata').val('');
+                    $('#ric-nominativo').val('');
+                    $('#ric-cf').val('');
+
+                    $('#ric-matr-err').text(data.message);
+                    $('#ric-matr-err').show();
+                }
+            },
+            error: function (a, b, c) {
+                $('#MatricolaCollegata').val('');
+                $('#ric-nominativo').val('');
+                $('#ric-cf').val('');
+
+                $('#ric-matr-err').text('Si è verificato un errore imprevisto');
+                $('#ric-matr-err').show();
+            }
+        });
+    }
+
+
+
+    function AnagNoDipSaveRapp(button) {
+        event.preventDefault();
+        let tipologie = @Html.Raw(rawArray);
+        let selTip = ($('#Codice').val() ?? "");
+        let tipologia = tipologie.find(function (obj) {
+            return obj.Codice == selTip
+        });
+        if (!tipologia || !tipologia.MatrColl) {
+            $('#MatricolaCollegata').val('');
+        }
+
+        let form = $('#form-rapp');
+        let validator = $(form).validate();
+
+        if (!$(form).valid()) {
+            validator.focusInvalid();
+            return false;
+        }
+
+        swal({
+            title: 'Sei sicuro?',
+            text: "Vuoi confermare i dati?",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sì!',
+            cancelButtonText: 'Annulla',
+            reverseButtons: 'true'
+        }).then(function () {
+            $(button).addClass("disable");
+            $(form).parent().addClass("rai-loader");
+
+            var obj = new FormData($(form)[0]);
+            obj.set("ImportoReddito", $('#ImportoReddito').val().replace('.', ''));
+
+            $.ajax({
+                url: "/AnagNoDip/Save_Rapporto",
+                type: "POST",
+                cache: false,
+                dataType: 'json',
+                contentType: false,
+                processData: false,
+                data: obj,
+                success: function (data) {
+                    if (data.esito) {
+                        swal("OK", "Salvataggio effettuato", "success");
+                        var idAnag = $('#IdAnag').val();
+                        var anagDataInizio = $('#AnagDataInizio').val();
+                        let matricola = $('#DatiAnagrafici_Matricola').val();
+                        let cognome = $('#DatiAnagrafici_Cognome').val();
+                        let nome = $('#DatiAnagrafici_Nome').val();
+                        AnagNoDipModal(idAnag, anagDataInizio, matricola, cognome + ' ' + nome);
+                        if ($('#form-nodip-ricerca').length > 0) {
+                            $('#form-nodip-ricerca').submit();
+                        }
+                        $('#modal-anag-no-dip').modal('hide');
+                    } else {
+                        swal("Oops...", data.message, 'error');
+                    }
+                },
+                error: function (a, b, c) {
+                    swal({ title: "Ops...", text: ' ' + b + ' ' + c, type: 'error', customClass: 'rai' });
+                    $(button).removeClass("disable");
+                    $(form).parent().removeClass("rai-loader");
+                },
+                complete: function () {
+                    $(button).removeClass("disable");
+                    $(form).parent().removeClass("rai-loader");
+                }
+            });
+        })
+    }
+</script>

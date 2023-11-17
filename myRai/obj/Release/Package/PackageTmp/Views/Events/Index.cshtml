@@ -1,0 +1,197 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model EventsClientModel
+
+@{
+    ViewBag.Title = "Eventi";
+    var matricola = myRaiHelper.CommonHelper.GetCurrentUserMatricola();
+    if (String.IsNullOrWhiteSpace(Model.ReturnURL))
+    {
+        Layout = "~/Views/Shared/_layout2.cshtml";
+    }
+    else
+    {
+        Layout = "~/Views/Shared/_layout3.cshtml";
+    }
+    string[] testoPrivacy = myRai.Business.CommonManager.GetParametri<string>( EnumParametriSistema.TestoPrivacyGenerale );
+}
+
+<section class="body">
+    @Html.Partial("../Shared/header2", new myRaiCommonModel.NotifichePopupModel(CommonHelper.GetCurrentUserMatricola()))
+    <div class="inner-wrapper">
+        @if (String.IsNullOrWhiteSpace(Model.ReturnURL))
+        {
+            @Html.Partial("../Shared/sidebar", myRaiHelper.UtenteHelper.getSidebarModel())
+        }
+        <section role="main" class="content-body" style="@(!String.IsNullOrWhiteSpace(Model.ReturnURL)?"margin-left:0px;":"")">
+            <main id="main-container">
+                <div class="content">
+                    <div class="row">
+                        <div class="col-sm-8">
+                            @Html.AsyncPartial("events", "listaeventi", null, TempData)
+                        </div>
+                        <div class="col-sm-4">
+                            @if (Model.EventiPrenotati.Count(x => x.data_inizio >= DateTime.Now) == 0)
+                            {
+                                @Html.RenderWidget(WidgetType.Normal, "Eventi prenotati", "ti-face-sad", "Non hai prenotazioni attive al momento")
+                            }
+                            else
+                            {
+                                foreach (var item in Model.EventiPrenotati.Where(x => x.data_inizio >= DateTime.Now))
+                                {
+                                    string matr = myRaiHelper.CommonHelper.GetCurrentUserMatricola();
+                                    <section class="panel">
+                                        <header class="panel-heading">
+                                            <div class="panel-actions">
+                                                <a href="#" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+                                            </div>
+                                            <h2 class="panel-title">@item.titolo</h2>
+                                        </header>
+                                        <div class="panel-body" id="my-block">
+
+
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <span class="rai-font-md-neutral">Data Evento: <span class="rai-font-md-bold">@item.data_inizio</span></span>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <span class="rai-font-md-neutral">Luogo Evento: <span class="rai-font-md-bold">@item.luogo</span></span>
+                                                </div>
+                                            </div>
+                                            <div class="row push-10">
+                                                <div class="col-sm-12">
+                                                    <span class="rai-font-md-neutral">Posti prenotati:</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <table class="table table-hover rai-table rai-table-vcenter">
+                                                        <tbody>
+                                                            @foreach (var pren in item.B2RaiPlace_Eventi_Anagrafica.Where(x => x.matricola == matr && x.confermata))
+                                                            {
+                                                                <tr>
+                                                                    <td class="rai-font-md">@pren.nome @pren.cognome</td>
+                                                                    <td class="rai-table-td-action">
+                                                                        @if (item.data_fine_prenotazione > DateTime.Now)
+                                                                        {
+                                                                        <button class="btn btn-action-icon" onclick="EliminaPrenIdAnWidget(@pren.id, @pren.id_evento)">
+                                                                            <i class="icons icon-trash" ></i>
+                                                                        </button>
+                                                                        }
+                                                                    </td>
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="panel-footer">
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <div class="rai-btn-fill">
+                                                        @if (item.B2RaiPlace_Eventi_Pdf.Count > 0)
+                                                        {
+                                                            <a href="#" onclick="ShowPdfEvento(@item.id,'@matricola')"
+                                                               class="btn rai-btn-small">
+                                                                PDF
+                                                            </a>
+                                                        }
+                                                        @if (item.data_fine_prenotazione > DateTime.Now)
+                                                        {
+                                                            <a id="gestisci-evento-@item.id" class="btn rai-btn-small" href="javascript:PrenotaEvento(@item.id)">Modifica</a>
+                                                            <a id="elimina-pren-evento-@item.id" class="btn rai-btn-small" href="javascript:EliminaPrenEvento(@item.id)">Cancella tutti</a>
+                                                        }
+                                                        else
+                                                        {
+                                                            <a id="info-evento-@item.id" class="btn rai-btn-small" href="javascript:InfoEvento(@item.id)">INFO</a>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                        </div>
+
+                                    </section>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="modal fade right" id="doc-modal" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+                    <div class="modal-dialog modal-dialog-popin modal-lg">
+                        <div class="block-header bg-cdf" style="height: 0px; padding:0px;">
+                            <ul class="block-options visible-xs">
+                                <li>
+                                    <button data-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+                                </li>
+                            </ul>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        </div>
+                        <div class="modal-content" id="pdfcontent" style="text-align :center">
+                            <iframe style="width:100%;margin:8px;border:none" id="docframe"></iframe>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </section>
+    </div>
+    <aside id="sidebar-right" class="sidebar-right">
+        <div class="nano has-scrollbar">
+            <div class="nano-content" tabindex="0" style="right: -17px;">
+            </div>
+        </div>
+        <div class="nano-pane" style="opacity: 1; visibility: visible;">
+            <div class="nano-slider" style="height: 583px; transform: translate(0px, 0px);"></div>
+        </div>
+    </aside>
+    <input type="hidden" id="backurl" value="@Model.ReturnURL" />
+    <input type="hidden" id="timeout-minuti" value="@Model.timeoutMinuti" />
+</section>
+
+@Html.Partial("popupEventi", Model.anagraficaModel)
+
+@section afterjs {
+    @Html.Raw(TempData["script"])
+    @if (Model.PopupAutoOpen)
+    {
+        <script>
+            $(document).ready(function () {
+                PrenotaEvento(@Model.ideventoAperturaRemota);
+            });
+        </script>
+    }
+    <script>AggiornaPostiDisponibiliAll();</script>
+
+
+    @{ var policy = myRai.Business.CommonManager.GetPolicyEventi( );
+
+        <script type="text/javascript">
+            function unEntity(str) {
+                return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+            }
+            var testo=unEntity('@policy.Testo');
+            if (testo != "") {
+                $('#tab_content_policy').append(testo);
+                $("#id_visione").val(@policy.Id_RaiPlacePolicy);
+            }
+            else {
+                $("#id_visione").val('');
+            }
+        </script>
+    }
+}
+
+<div class="modal fade" id="giornata-modal" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+</div>
+<div class="modal fade" id="richiesta-modal" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+</div>
+<div id="pg-visible-xs" class="visible-xs"></div>
+<div id="pg-visible-sm" class="visible-sm"></div>
+<div id="pg-visible-md" class="visible-md"></div>
+<div id="pg-visible-lg" class="visible-lg"></div>

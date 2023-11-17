@@ -1,0 +1,74 @@
+﻿@using myRai.Business
+@using myRai.DataControllers;
+
+@model myRai.Models.ModelDash
+
+
+
+<tbody class="tbodydata rai-tbody-striped" id="dettaglioRichieste_@(r.CodiceSedeGapp)">
+    <tr class="hidden-xs">
+        <td colspan="2" class="text-center" style="padding-top: 0px;padding-bottom: 0px; width:5%">
+            <label class="css-input css-checkbox css-checkbox-rounded css-checkbox-sm css-checkbox-info">
+                <input class="seltutti" type="checkbox" onchange="">
+                <span></span>
+            </label>
+        </td>
+        <td colspan="5"><span class="text-bold rai-text-color">SELEZIONA TUTTI</span></td>
+    </tr>
+</tbody>
+
+
+<tbody class="tbodydata rai-tbody-striped">
+
+    <tr class="hidden-xs">
+
+        <td colspan="2" class="text-center" style="padding-top: 0px;padding-bottom: 0px; width:5%">
+            <label class="css-input css-checkbox css-checkbox-rounded css-checkbox-sm css-checkbox-info">
+                <input class="seltutti" type="checkbox" onchange="SelTutti(this,'@SedeAbil.Codice_sede_gapp')">
+                <span></span>
+            </label>
+        </td>
+        <td colspan="5"><span class="text-bold rai-text-color">SELEZIONA TUTTI</span></td>
+    </tr>
+    @foreach ( MyRaiServiceInterface.it.rai.servizi.digigappws.Eccezione eccezione in listEcc.Take( Model.elencoProfilieSedi.MaxRowsVisualizzabili ) )
+    {
+
+        myRai.Models.EccezioneApprovatoreVM vm = new myRai.Models.EccezioneApprovatoreVM( )
+        {
+            Eccezione = eccezione ,
+            Visualizzato = false ,
+            attivitaCeiton = Model.ViewUtility.GetAttivitaCeiton( eccezione.IdRichiestaPadre )
+        };
+
+        if ( eccezione.cod.Trim( ) == "POH" )
+        {
+            var myList = UtenteDataController.GetPOHdays( eccezione.matricola );
+
+            if ( myList != null && myList.Any( ) )
+            {
+                foreach ( var itm in myList )
+                {
+                    if ( itm.Date <= eccezione.DataRichiesta.Date &&
+                        itm.Date.Month.Equals( eccezione.DataRichiesta.Month ) )
+                    {
+                        vm.POH++;
+                    }
+                }
+            }
+        }
+
+        if ( Model.elencoProfilieSedi.EccVisualizzate != null )
+        {
+            var myItem = Model.elencoProfilieSedi.EccVisualizzate.Where( i => i.Matricola.Equals( eccezione.matricola ) && i.Data.Equals( eccezione.dataCompleta ) ).FirstOrDefault( );
+
+            if ( myItem != null )
+            {
+                vm.Visualizzato = myItem.Visualizzato;
+                vm.Visualizzatore = myItem.Visualizzatore;
+            }
+        }
+
+        @Html.Partial( "~/Views/Responsabile/_TRdaapprovare2.cshtml" , vm )
+
+    }
+</tbody>

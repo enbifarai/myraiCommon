@@ -1,0 +1,201 @@
+﻿@model Arturo.RaiSelectControl
+
+@{
+    var tempId = Model.ControlID;
+    var placeholder = Model.Placeholder;
+    var searchPlaceHolder = Model.SearchPlaceholder;
+    var listSelect = Model.OptionList;
+
+    //TODO controllare non solo x.Selected ma valore di default  Model.SelectedValue
+    SelectListItem elemSelected = null;
+    if (listSelect != null)
+    {
+        if (Model.SelectedValue != null)
+        {
+            elemSelected = listSelect.FirstOrDefault(x => x.Value == Convert.ToString(Model.SelectedValue));
+        }
+        else
+        {
+            elemSelected = listSelect.FirstOrDefault(x => x.Selected);
+        }
+
+    }
+    bool anySelected = elemSelected != null;
+}
+
+<div class="rai-select-container" id="@tempId" data-rai-select-placeholder="@placeholder" data-rai-select-onchange="@Model.OnSelectChange" data-rai-select-multiple="@(Model.MultiSelect?"true":"false")">
+    @if (String.IsNullOrWhiteSpace(Model.GeneratedControl))
+    {
+        <select class="form-control" style="display:none;" data-rai-select="@tempId" id="@Model.Id" @(Model.MultiSelect ? "multiple" : "")>
+            @if (anySelected)
+            {
+                <option value="@elemSelected.Value" selected>@elemSelected.Text</option>
+            }
+            else
+            {
+                <option value=""></option>
+            }
+        </select>
+    }
+    else
+    {
+        @Html.Raw(Model.GeneratedControl)
+
+    }
+    <div class="rai-select" onclick="RaiSelectToggle('@tempId')" aria-expanded="false">
+        <div class="rai-select-value">
+            @if (anySelected)
+            {
+                <span data-placeholder="false" data-sel-value="@elemSelected.Value" title="@elemSelected.Text">@elemSelected.Text</span>
+            }
+            else
+            {
+                <span data-placeholder="true" data-sel-value="" title="@placeholder">@placeholder</span>
+            }
+        </div>
+        <div class="rai-select-chevron">
+            <span class="fa"></span>
+        </div>
+    </div>
+    <div class="rai-select-popover" id="popover-@tempId" style="display:none;">
+        <div class="rai-select-popover-container">
+            <div class="rai-select-search">
+                <input class="form-control" type="text" placeholder="@searchPlaceHolder"
+                       data-search="search-@tempId" onkeyup="RaiSelectSearch(this, 'search-@tempId', 'text', '@tempId', true)"
+                       @if (Model.IsAsync) { <text>
+                       data-search-async="true"
+                       data-search-url="@Model.UrlAction"
+                       data-search-mininput="@Model.MinCharInput"
+                       data-search-previous=""
+                       data-search-container="options-@tempId"
+                       data-search-style="option"
+                       data-search-func-param="@Model.GetParameterFunction"
+                       </text> } />
+            </div>
+            <div class="rai-select-options" id="options-@tempId">
+                @if (!Model.IsAsync)
+                {
+                    int counter = 0;
+                    foreach (var listItem in listSelect)
+                    {
+                        counter++;
+                        <div class="rai-select-option"
+                             data-rai-select-multiple="@(Model.MultiSelect?"true":"false")"
+                             aria-selected="@(anySelected && listItem.Value==elemSelected.Value ? "true" : "false")" data-option-value="@listItem.Value" onclick="RaiSelectOption('@listItem.Value', '@tempId')"
+                             data-search="search-@tempId" data-search-text="@listItem.Text">
+                            @if (Model.MultiSelect)
+                            {
+                                <div class="rai-checkbox">
+                                    <input type="checkbox" id="@counter-@tempId" @(anySelected && listItem.Value == elemSelected.Value ? "checked" : "") />
+                                    <label forx="@counter-@tempId">@listItem.Text</label>
+                                </div>
+                            }
+                            else
+                            {
+                                <span>@listItem.Text</span>
+                            }
+                        </div>
+                    }
+                }
+                else
+                {
+                    <label class="rai-font-md-neutral full-width" data-search="search-@tempId" data-search-role="lessinput">@Html.Raw(String.Format(Model.SearchText, Model.MinCharInput))</label>
+                }
+            </div>
+            @if (Model.ExpandView)
+            {
+                <div class="rai-select-expand">
+                    <div class="btn rai-btn-small full-width" onclick="RaiSelectModalOpen('@tempId',@Model.IsAsync)">Espandi la visualizzazione</div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@if (Model.ExpandView)
+{
+    int counter = 0;
+
+    <div id="modal-@(Model.ControlID)" style="display:none;">
+        @using (Html.BeginModal("Ricerca avanzata"))
+        {
+
+            using (Html.BeginPanel(Arturo.PanelType.Panel, Model.Placeholder, false))
+            {
+                <div class="row push-10">
+                    <div class="col-sm-12">
+                        <input class="form-control" type="text"
+                               data-search="search-modal-@tempId" onkeyup="RaiSelectSearch(this, 'search-modal-@tempId', 'text', '@tempId', false)" placeholder="@searchPlaceHolder"
+                               @if (Model.IsAsync) { <text>
+                               data-search-async="true"
+                               data-search-url="@Model.UrlAction"
+                               data-search-mininput="@Model.MinCharInput"
+                               data-search-previous=""
+                               data-search-container="modal-rai-search-select-internal #table-@tempId tbody"
+                               data-search-style="tablerow"
+                               data-search-func-param="@Model.GetParameterFunction"
+                               </text> } />
+                    </div>
+                </div>
+                <div class="row push-10">
+                    <div class="col-sm-12">
+                        <div style="height:65vh;overflow:hidden;overflow-y:auto;padding:2px;">
+                            <table class="table rai-table rai-table-vcenter" id="table-@tempId">
+                                @if (!Model.IsAsync)
+                                {
+                                    foreach (var listItem in listSelect)
+                                    {
+                                        counter++;
+
+                                        <tr data-search="search-modal-@tempId" data-search-text="@listItem.Text">
+                                            <td>
+                                                <div class="rai-radio">
+                                                    <input type="radio" name="@tempId" data-option-value="@listItem.Value" id="radio-@counter-@tempId" />
+                                                    <label for="radio-@counter-@tempId">@listItem.Value</label>
+                                                </div>
+                                            </td>
+                                            <td>@listItem.Text</td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr data-search="search-modal-@tempId" data-search-role="lessinput">
+                                        <td colspan="2">
+                                            <label class="rai-font-md-neutral full-width">Immetti almeno @Model.MinCharInput caratteri per cercare</label>
+                                        </td>
+                                    </tr>
+                                }
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="">
+                    <div class="rai-btn-fill">
+                        <button class="btn rai-btn-secondary" onclick="RaiSelectModalClose('@tempId', false, @Model.IsAsync)">Annulla</button>
+                        <button class="btn rai-btn-primary" onclick="RaiSelectModalClose('@tempId',true, @Model.IsAsync)">Applica</button>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+}
+
+
+
+
+@if (Model.IsAsync && !String.IsNullOrWhiteSpace(Model.GeneratedControl) && Model.SelectedValue != null)
+{
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            RaiSelectLoadDefaultValue('@tempId', '@Model.UrlAction', '@Model.SelectedValue');
+        });
+
+        try {
+            RaiSelectLoadDefaultValue('@tempId', '@Model.UrlAction', '@Model.SelectedValue');
+        } catch (e) {
+
+        }
+    </script>
+}

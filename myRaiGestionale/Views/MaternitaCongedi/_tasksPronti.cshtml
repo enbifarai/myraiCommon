@@ -1,0 +1,485 @@
+﻿@model myRaiCommonModel.TaskModel
+
+
+
+
+@{
+    int counter = -1;
+    List<DateTime> DateRiferimentoPrimoDelMese = Model.ListaTaskPronti.Select(x => x.DataRiferimentoMeseAnno).Distinct().ToList()
+        .OrderBy(x => x).ToList();
+
+  // var ListaAggiuntiForzati= Model.DettaglioAmmModel.ElencoGiorni.Where(x => x.AggiuntoForzato == true).Select(x => x.DataDa).ToList();
+}
+@if (!String.IsNullOrWhiteSpace(Model.GiorniForzatiCSV))
+{
+<div class="row">
+    <div class="col-sm-12" style="margin-top:10px">
+        <div class="alert alert-warning" style="margin-bottom:0px">
+            <b>Attenzione</b><br>
+            <span data-giorni-forzati="@Model.GiorniForzatiCSV">Per il completamento dei tracciati, alcune giornate sono state considerate come aventi le giuste eccezioni nel sistema presenze, nonostante non presentino le stesse della richiesta</span>
+        </div>
+    </div>
+</div>
+}
+
+<div class="row">
+    <div class="col-sm-12">
+        @if (DateRiferimentoPrimoDelMese.Any())
+        {
+            <span>Il sistema eseguirà automaticamente le operazioni automatiche elencate. Se non vuoi eseguire una di queste operazioni puoi disattivarla.</span>
+        }
+        else
+        {
+            <span class="text-warning">Nessuna operazione necessaria</span>
+        }
+
+    </div>
+</div>
+<form id="form-tasks" method="post" action="/maternitacongedi/salvatask">
+    @foreach (var mese in DateRiferimentoPrimoDelMese)
+    {
+        int counterPerMese = 0;
+        int IdRichiestaPrincipaleConTaskInCorso = 0;
+        string MeseAnnoLabel = "";
+        double g26mi = 0;
+        float giorni26mi = 0;
+
+        if ( ! Model.IsTrattamentoEconomico)
+        {
+            giorni26mi = Model.DettaglioAmmModel.ElencoGiorniPerMese.Where(x => x.RiferimentoPrimoDelMese == mese)
+      .Select(z => z.TotaleGiorni).FirstOrDefault();
+            giorni26mi = myRaiCommonManager.MaternitaCongediManager.ControllaSe26(mese.Year, mese.Month, giorni26mi,Model.Richiesta);
+            g26mi = Math.Round(giorni26mi, 2);
+
+            var MeseHaTracciati = Model.DettaglioAmmModel.ElencoGiorniPerMese.Where(x => x.RiferimentoPrimoDelMese == mese).Count() > 0;
+
+            MeseAnnoLabel = (mese.ToString("MMMM yyyy").Substring(0, 1).ToUpper() + mese.ToString("MMMM yyyy").Substring(1));
+
+            //if (myRaiCommonManager.MaternitaCongediManager.SonoDaAggiungereGiorniForzati(Model.Richiesta))
+            if (Model.Giorni26FrontEnd!=null)
+            {
+                var item = Model.Giorni26FrontEnd.Where(x => x.PrimoDelMese == mese).FirstOrDefault();
+                if (item != null)
+                {
+                    g26mi = item.Giorni26mi;
+                }
+            }
+        }
+
+
+
+        <div class="row">
+            <div class="col-sm-8" style="padding-top:22px">
+                <span class="rai-font-md-bold text-primary">@MeseAnnoLabel</span>
+            </div>
+            <div class="col-sm-4" style="padding-top:22px;text-align:right">
+                @{
+                    string limite = "26";
+                    if (!Model.IsTrattamentoEconomico)
+                    {
+                        if (Model.Richiesta.GIORNI_DEFAULT26 != null)
+                        {
+                            if ((int)(Model.Richiesta.GIORNI_DEFAULT26) == Model.Richiesta.GIORNI_DEFAULT26)
+                            {
+                                limite = ((int)(Model.Richiesta.GIORNI_DEFAULT26)).ToString();
+                            }
+                            else
+                            {
+                                limite = Math.Round((double)Model.Richiesta.GIORNI_DEFAULT26, 1).ToString();
+                            }
+                        }
+                    }
+
+                }
+                @if (! Model.IsTrattamentoEconomico)
+                {
+                    <span class="rai-font-md-bold text-primary"> @g26mi/@limite</span>
+                    <span class="rai-font-md text-primary">giorni</span>
+                }
+
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-12">
+                <div style="background-color: #eee;height: 1px;margin-top: 11px;"></div>
+            </div>
+        </div>
+
+        int QuantiTaskSuAltrePratiche = Model.ListaTaskPronti.Where(x => x.DataRiferimentoMeseAnno == mese && x.IdAltraPraticaGiaSuDB != 0).Count();
+
+        if (QuantiTaskSuAltrePratiche > 0)
+        {
+            <div class="row">
+                <div class="col-sm-8">
+                    <span>
+                        Alcune operazioni automatiche sono già impostate nella pratica precedente.
+                    </span>
+                </div>
+                <div class="col-sm-4" style="text-align:right">
+                    <span class="text-primary" style="cursor:pointer" onclick="$('.table-@mese.ToString("yyyyMM")').show()">
+                        mostra @QuantiTaskSuAltrePratiche operazion@(QuantiTaskSuAltrePratiche > 1 ? "i" : "e")
+                    </span>
+                </div>
+            </div>
+        }
+        foreach (var taskPronto in Model.ListaTaskPronti.Where(x => x.DataRiferimentoMeseAnno == mese).OrderBy(x => x.TaskInCorso.PROGRESSIVO))
+        {
+            counter++;
+            counterPerMese++;
+            bool SwitchDisabilitato = taskPronto.IdAltraPraticaGiaSuDB != 0;
+
+            if (taskPronto.TaskInCorso.XR_MAT_ELENCO_TASK.TIPO == "TRACCIATO" || 
+                 (Model.IsTrattamentoEconomico && taskPronto.TaskInCorso.XR_MAT_ELENCO_TASK.TIPO == "TRACCIATO-TE"))
+            {
+
+                <table data-idaltrapratica="@taskPronto.IdAltraPraticaGiaSuDB" class="js-table-sections table  rai-table table-@mese.ToString("yyyyMM")"
+                       @if (taskPronto.IdAltraPraticaGiaSuDB != 0) { @: style="display:none"
+                       }
+                       role="grid">
+                    <tbody class="js-table-sections-header">
+                        <tr role="row" tabindex="0">
+                            <td>
+                                <div class="row task-row" style="border-bottom:solid 1px #eee;padding-top:16px;padding-bottom:16px">
+                                    @if (Model.IsTrattamentoEconomico)
+                                    {
+                                        <input type="hidden" name="model[@counter].isfromTE"
+                                               value="1" />
+                                    }
+
+                                    <input type="hidden" name="model[@counter].idtaskincorso"
+                                           value="@taskPronto.TaskInCorso.ID" />
+                                    <input type="hidden" name="model[@counter].idtask"
+                                           value="@taskPronto.TaskInCorso.XR_MAT_ELENCO_TASK.ID" />
+                                    <input type="hidden" name="model[@counter].idrichiesta"
+                                           value="@Model.Richiesta.ID" />
+                                    <input type="hidden" name="model[@counter].progressivotask"
+                                           value="@taskPronto.TaskInCorso.PROGRESSIVO" />
+                                    <input type="hidden" name="model[@counter].mese"
+                                           value="@mese.ToString("MM")" />
+                                    <input type="hidden" name="model[@counter].anno"
+                                           value="@mese.ToString("yyyy")" />
+                                    <input type="hidden" name="model[@counter].eccezionerisultante"
+                                           value="@Model.EccezioneRisultante" />
+                                    <input type="hidden" name="model[@counter].idaltrapratica"
+                                           value="@taskPronto.IdAltraPraticaGiaSuDB" />
+
+                                    @if (taskPronto.PeriodoDa != null)
+                                    {
+                                        <input type="hidden" name="model[@counter].periododa"
+                                               value="@taskPronto.PeriodoDa.Value.ToString("dd/MM/yyyy")" />
+                                        <input type="hidden" name="model[@counter].periodoa"
+                                               value="@taskPronto.PeriodoA.Value.ToString("dd/MM/yyyy")" />
+                                    }
+
+
+
+                                    <div class="col-sm-8">
+                                        <span class="task-nome rai-font-md-bold">@taskPronto.TaskInCorso.XR_MAT_ELENCO_TASK.NOME_TASK</span>
+
+
+                                        @if (taskPronto.DicituraPeriodo != null)
+                                        {
+                                            <br /> <span class="rai-font-sm"> @Html.Raw(taskPronto.DicituraPeriodo)</span>
+                                        }
+                                        @if (taskPronto.NumeroFusioni > 0)
+                                        {
+                                            string titolo = String.Join("<br />", taskPronto.IntervalliFusi.ToArray());
+                                            <span data-toggle="tooltip" data-html="true"
+                                                  style="margin-left:12px"
+                                                  title="@titolo" class="rai-label ">@(taskPronto.NumeroFusioni)periodi uniti</span>
+
+                                            }
+                                    </div>
+
+                                    <div class="col-sm-4" style="text-align:right">
+                                        <span class="rai-font-sm-neutral" style="margin-right:10px">@(myRaiCommonManager.MaternitaCongediManager.GetRewDew(mese.Year, mese.Month))</span>
+
+
+                                        @Html.Partial("_taskStatus", new myRaiCommonModel.TaskStatusModel()
+                                   {
+                                       counter = counter,
+                                       TaskInCorso = taskPronto.TaskInCorso,
+                                        switch_disabilitato=SwitchDisabilitato,
+                                         IsStornoCedolino=taskPronto.TaskInCorso.ID_TASK==1,
+                                         taskPronto=taskPronto
+                                   })
+
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="padding-top: 24px;width:20px" class="interactive-primary-color text-center">
+                                @if (taskPronto.TaskInCorso != null && taskPronto.TaskInCorso.TERMINATA == false)
+                                {
+                                    <i class="fa fa-angle-down" style="font-size:20px"></i>
+                                }
+
+                            </td>
+                        </tr>
+                    </tbody>
+
+                    <tbody class="tbodydata" style="border:none ">
+                        <tr>
+                            <td>
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <span class="task-desc rai-font-sm">@taskPronto.TaskInCorso.XR_MAT_ELENCO_TASK.DESCRIZIONE_TASK  </span>
+                                    </div>
+                                </div>
+
+                            </td>
+                        </tr>
+                        @if (taskPronto.TaskInCorso.TERMINATA == false)
+                        {
+                            <tr>
+                                <td>
+                                    @{
+                                        taskPronto.TracciatoEsplosoModel.counter = counter;
+                                        taskPronto.TracciatoEsplosoModel.TracciatoEsploso.mese = mese.Month;
+                                        taskPronto.TracciatoEsplosoModel.TracciatoEsploso.anno = mese.Year;
+                                    }
+                                    @Html.Partial("_tasksTracciatoExp", taskPronto.TracciatoEsplosoModel)
+
+                                </td>
+
+                            </tr>
+                        }
+
+                    </tbody>
+
+
+                </table>
+            }
+
+
+
+            if (taskPronto.TaskInCorso.XR_MAT_ELENCO_TASK.TIPO == "SERVIZIO")
+            {
+                <table data-idaltrapratica="@taskPronto.IdAltraPraticaGiaSuDB" class="js-table-sections table  rai-table table-@mese.ToString("yyyyMM")"
+                       @if (taskPronto.IdAltraPraticaGiaSuDB != 0) { @: style="display:none"
+                       }
+                       role="grid">
+                    <tbody class="js-table-sections-header">
+                        <tr role="row" tabindex="0">
+                            <td>
+                                <div class="row task-row" style="border-bottom:solid 1px #eee;padding-top:16px;padding-bottom:16px">
+                                    <input type="hidden" name="model[@counter].idtaskincorso"
+                                           value="@taskPronto.TaskInCorso.ID" />
+                                    <input type="hidden" name="model[@counter].idtask"
+                                           value="@taskPronto.TaskInCorso.XR_MAT_ELENCO_TASK.ID" />
+                                    <input type="hidden" name="model[@counter].idrichiesta"
+                                           value="@Model.Richiesta.ID" />
+                                    <input type="hidden" name="model[@counter].progressivotask"
+                                           value="@taskPronto.TaskInCorso.PROGRESSIVO" />
+                                    <input type="hidden" name="model[@counter].mese"
+                                           value="@mese.ToString("MM")" />
+                                    <input type="hidden" name="model[@counter].anno"
+                                           value="@mese.ToString("yyyy")" />
+                                    <input type="hidden" name="model[@counter].eccezionerisultante"
+                                           value="@Model.EccezioneRisultante" />
+                                    <input type="hidden" name="model[@counter].idaltrapratica"
+                                           value="@taskPronto.IdAltraPraticaGiaSuDB" />
+
+                                    <div class="col-sm-8">
+                                        <span class="task-nome rai-font-md-bold">@taskPronto.TaskInCorso.XR_MAT_ELENCO_TASK.NOME_TASK</span>
+
+
+                                        @if (taskPronto.DicituraPeriodo != null)
+                                        {
+                                            <br /> <span class="rai-font-sm">@taskPronto.DicituraPeriodo</span>
+                                        }
+                                    </div>
+
+                                    <div class="col-sm-4" style="text-align:right">
+                                        <span class="rai-font-sm-neutral" style="margin-right:10px">PANGEA</span>
+
+
+                                        @Html.Partial("_taskStatus", new myRaiCommonModel.TaskStatusModel()
+                                   {
+                                       counter = counter,
+                                       TaskInCorso = taskPronto.TaskInCorso,
+                                       switch_disabilitato = SwitchDisabilitato,
+                                       IsStornoCedolino = taskPronto.TaskInCorso.ID_TASK == 1,
+                                        taskPronto=taskPronto
+                                   })
+
+                                    </div>
+                                </div>
+                            </td>
+                            @if (taskPronto.TaskInCorso != null && taskPronto.TaskInCorso.TERMINATA)
+                            {
+                                <td style="padding-top: 24px;width:20px" class="interactive-primary-color text-center"></td>
+                            }
+                            else
+                            {
+                                <td style="padding-top: 24px;width:20px" class="interactive-primary-color text-center">
+                                    <i class="fa fa-angle-down" style="font-size:20px"></i>
+                                </td>
+                            }
+
+                        </tr>
+                    </tbody>
+                    <tbody class="tbodydata" style="border:none ">
+                        <tr>
+                            <td>
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        @if (taskPronto.TaskInCorso.ID_TASK == 15)
+                                        {
+                                            if (taskPronto.TracciatiRew != null && taskPronto.TracciatiRew.Any())
+                                            {
+                                                <span class="task-desc rai-font-sm">I seguenti record verranno eliminati dal sistema REW :</span>
+                                                <br /> <br />
+                                                foreach (var t in taskPronto.TracciatiRew)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-sm-10">
+                                                            <span class="task-desc rai-font-sm" style="font-family:'Courier New'">
+                                                                @t.Testo_record
+                                                            </span>
+                                                        </div>
+                                                        <div class="col-sm-2">
+                                                            @if (t.Flag_cancellazione != null && t.Flag_cancellazione.Trim() == "1")
+                                                            {
+                                                                <a class="rai-label rai-label-interactive"
+                                                                   style="padding-top:5px">Eliminato</a>
+                                                            }
+                                                        </div>
+                                                    </div>
+
+
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="task-desc rai-font-sm">Nessun record REW trovato</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="task-desc rai-font-sm">@taskPronto.TaskInCorso.XR_MAT_ELENCO_TASK.DESCRIZIONE_TASK  </span>
+                                        }
+
+
+                                    </div>
+                                </div>
+
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            }
+
+        }
+    }
+</form>
+
+
+<script>
+ 
+    @if ( ! DateRiferimentoPrimoDelMese.Any())
+    {
+        @:$("#avvia-pratica").hide();
+        @:$("#button-chiudi").show();
+    }
+    else if (Model.ListaTaskPronti.Any(x => x.IdAltraPraticaGiaSuDB != 0))
+    {
+        var dataProssimoMese = new DateTime(DateTime.Now.AddMonths(1).Year, DateTime.Now.AddMonths(1).Month, 1);
+        bool FinisceProxMese = Model.Richiesta.FINE_GIUSTIFICATIVO >= dataProssimoMese || Model.Richiesta.DATA_FINE_MATERNITA >=
+            dataProssimoMese;
+
+        if (FinisceProxMese)
+        {
+            //@:$("#avvia-pratica").addClass("disable");
+
+        }
+        else
+        {
+            if (Model.ListaTaskPronti.Count() == Model.ListaTaskPronti.Where(x => x.IdAltraPraticaGiaSuDB != 0).Count())
+            {
+                 @:$("#avvia-pratica").hide();
+                 @:$("#button-chiudi").show();
+            }
+            else {
+                 @:$("#avvia-pratica").show();
+             @:$("#button-chiudi").hide();
+            }
+
+        }
+        int IDaltra= Model.ListaTaskPronti.Where(x => x.IdAltraPraticaGiaSuDB != 0).Select(x=>x.IdAltraPraticaGiaSuDB).FirstOrDefault();
+
+        @:$("#nome-dipendente").text('@Model.Richiesta.NOMINATIVO');
+        @:$("#apri-pratica").attr("href", "javascript:ApriPratica('@Model.Richiesta.XR_MAT_CATEGORIE.TITOLO', @IDaltra)");
+        @:$("#alert-lavorata").show();
+        @:$("#stato-label").text("Parzialmente o interamente avviata");
+        @:$("#stato-icona").removeClass("circle-orange").addClass("circle-green");
+        @: var apriprat = $("#apri-pratica").clone().removeAttr("id");
+        @: $("#stato-label").after($(apriprat));
+    }
+    else
+    {
+        @:$("#alert-lavorata").hide();
+        @:$("#avvia-pratica").show();
+         @:$("#button-chiudi").hide();
+    }
+    @if (counter < 0)
+    {
+        @:$("#avvia-pratica").addClass("disable");
+    }
+    $(".campo-tracc-edit").on("keyup", function (evt) { ModificaTracciato($(this), evt) });
+    $(".campo-tracc-edit").on("keydown", function (evt) {
+        CheckValido($(this), evt)
+    });
+
+    function CheckValido(input, evt) {
+        var tipo = $(input).attr("data-campo-codicetipocampo");
+        if (tipo == "P") {
+            evt.stopPropagation();
+            evt.preventDefault();
+            return;
+        }
+        var nome = $(input).attr("data-campo-nome");
+        if (nome == "MATRICOLA RAI") {
+            evt.stopPropagation();
+            evt.preventDefault();
+            return;
+        }
+        debugger
+        var spanError = $(input).closest("div").find(".err-tracc");
+
+        if (evt.keyCode == 8 || evt.keyCode == 37 || evt.keyCode == 39 || evt.keyCode == 46) {
+            $(spanError).text("");
+            return;
+        }
+        var tipocampo = $(input).attr("data-campo-codicetipocampo");
+        if (!CarattereValido(tipocampo, evt.key)) {
+            $(spanError).text("Carattere '" + evt.key + "' non valido");
+            evt.stopPropagation();
+            evt.preventDefault();
+        }
+        else
+            $(spanError).text("");
+    }
+    function ModificaTracciato(input, evt) {
+        var pos = ($(input).attr("data-campo-posizione"));
+        var lun = ($(input).attr("data-campo-lunghezza"));
+        var testoAttuale = $(input).val();
+        if (testoAttuale.length == lun) {
+            debugger
+            $(input).removeClass("input-error");
+            $("#avvia-pratica").removeClass("disable");
+            var elementTestoTracc = $(input).parents("td").find("input.tracc");
+            var testo = $(elementTestoTracc).val();
+            var outstr = testo.substr(0, pos - 1) + testoAttuale + testo.substr(pos - 1 + testoAttuale.length);
+            $(elementTestoTracc).val(outstr);
+        }
+        else {
+            $(input).addClass("input-error");
+            $("#avvia-pratica").addClass("disable");
+        }
+    }
+    $(".switch-primary").on("click", function (evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+        ChangeSwitch($(this));
+    });
+</script>

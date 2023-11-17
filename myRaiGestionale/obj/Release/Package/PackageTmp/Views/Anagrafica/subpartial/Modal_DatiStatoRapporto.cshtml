@@ -1,0 +1,119 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiCommonModel
+@model  EventoModel
+
+@{
+    DateTime minDate = DateTime.Today;
+
+    string swalTitle = "";
+    string subTitle = "";
+    if (Model.Codice=="SW")
+    {
+        swalTitle = Model.IdEvento == 0 ? "Sei sicuro di voler attivare lo Smartworking per questo utente?": "Sei sicuro di voler modificare lo Smartworking per questo utente?";
+        subTitle = "In Smartworking";
+    }
+    else
+    {
+        swalTitle = Model.IdEvento == 0 ? "Sei sicuro di voler impostare lo stato questo utente?" : "Sei sicuro di voler modificare lo stato per questo utente?";
+        subTitle = "Commissario di gara";
+    }
+}
+
+@using (Html.BeginForm("Save_StatiRapporto", "Anagrafica", FormMethod.Post, new { id = "form-stati-rapporto-"+Model.Codice }))
+{
+<div class="form-group">
+    @Html.HiddenFor(m => m.IdEvento)
+    @Html.HiddenFor(m => m.IdPersona)
+    @Html.HiddenFor(m => m.Matricola)
+    @Html.HiddenFor(m => m.Codice)
+    <input type="hidden" id="stato-swal-title" value="@swalTitle" />
+    <input type="hidden" id="stato-swal-subtitle" value="@subTitle" />
+    <input type="hidden" id="oldDataFine" value="@Model.DataFine" />
+
+    @if (Model.Codice == "SW")
+    {
+        <div class="row">
+            <div class="col-xs-12 push-10">
+                @if (Model.IdEvento == 0)
+                {
+                    @Html.LabelForRequiredObbl(m => m.TipologiaAccordo, "Tipologia accordo", new { @class = "rai-caption" })
+                    @Html.RaiSelectFor(m => m.TipologiaAccordo, new List<SelectListItem>()
+                    {
+                        new SelectListItem() { Value = "Unilaterale", Text = "Unilaterale" }
+                    }, attributes: new { required = "required" })
+                }
+                else
+                {
+                    @Html.LabelFor(m => m.TipologiaAccordo, "Tipologia accordo", new { @class = "rai-caption" })
+                    <div class="input-group">
+                        @Html.TextBoxFor(m => m.TipologiaAccordo, new { @class = "form-control disable", @readonly = "readonly" })
+                        <span class="input-group-addon">
+                            <i class="fa fa-lock"></i>
+                        </span>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    <div class="row">
+        <div class="col-xs-12 push-10">
+            @if (Model.IdEvento == 0)
+            {
+                @Html.LabelForRequiredObbl(m => m.DataInizio, "Data inizio", new { @class = "rai-caption" })
+                <div class="input-group">
+                    <span class="input-group-addon" style="cursor: pointer" onclick="$('#DataInizio').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                    @Html.TextBoxFor(m => m.DataInizio, new { @class = "js-datetimepicker  form-control", data_format = "DD/MM/YYYY", data_locale = "it", required = "required", data_minData = Model.MinDate.ToString("MM/dd/yyyy"), data_maxData = Model.MaxDate.ToString("MM/dd/yyyy"), placeholder = "Selezionare una data", autocomplete = "off", onchange = "UpdateMinDateEnd('" + Model.Codice + "')" })
+                </div>
+            }
+            else
+            {
+                @Html.LabelFor(m => m.DataInizio, "Data inizio", new { @class = "rai-caption" })
+                <div class="input-group">
+                    @*<span class="input-group-addon" style="cursor: pointer" onclick="$('#DataInizio').datetimepicker('show')"><i class="fa fa-calendar"></i></span>*@
+                    @Html.TextBoxFor(m => m.DataInizio, new { @class = "js-datetimepicker  form-control disable", @readonly = "readonly", data_format = "DD/MM/YYYY", data_locale = "it", data_minData = Model.MinDate.ToString("MM/dd/yyyy"), data_maxData = Model.MaxDate.ToString("MM/dd/yyyy"), placeholder = "Selezionare una data", autocomplete = "off", onchange = "UpdateMinDateEnd('" + Model.Codice + "')" })
+                    <i class="input-group-addon">
+                        <i class="fa fa-lock"></i>
+                    </i>
+                </div>
+
+            }
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-12 push-10">
+            @Html.LabelForRequiredObbl(m => m.DataFine, "Data fine", new { @class = "rai-caption" })
+            <div class="input-group">
+                <span class="input-group-addon" style="cursor: pointer" onclick="$('#DataFine').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                @Html.TextBoxFor(m => m.DataFine, new { @class = "js-datetimepicker  form-control", data_format = "DD/MM/YYYY", data_locale = "it", required = "required", data_minData = Model.MinDate.ToString("MM/dd/yyyy"), data_maxData = Model.MaxDate.ToString("MM/dd/yyyy"), placeholder = "Selezionare una data", autocomplete = "off" })
+            </div>
+
+        </div>
+    </div>
+    <div class="row push-20-t">
+        <div class="col-sm-12">
+            <button class="btn rai-btn-primary full-width" onclick="Save_DatiStatoRapporto(this, '@Model.Codice')">
+                @if (Model.IdEvento == 0)
+                {
+                    <text>Attiva</text>
+                }
+                else
+                {
+                    <text>Modifica stato</text>
+                }
+            </button>
+        </div>
+    </div>
+</div>
+}
+
+
+
+<script>
+    InitDatePicker();
+
+    function UpdateMinDateEnd(codice) {
+        var value = $('#form-stati-rapporto-' + codice+' #DataInizio').val();
+        var rifDate = value.substr(3, 2) + '/' + value.substr(0, 2) + '/' + value.substr(6, 4);
+        $('#form-stati-rapporto-' + codice +' #DataFine').data('DateTimePicker').minDate(value);
+    }
+</script>

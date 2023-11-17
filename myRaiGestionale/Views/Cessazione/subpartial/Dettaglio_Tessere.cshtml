@@ -1,0 +1,140 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiHelper
+@using myRaiCommonModel.Gestionale
+@model CessazioneModel
+
+@{
+    bool hasAnyData = false;
+    bool abilMail = CessazioneHelper.EnabledToAnySubFunc(CommonHelper.GetCurrentUserMatricola(),  "ADM", "GEST");
+
+    bool collapsable = false;// CommonHelper.GetCurrentUserMatricola() == "103650";
+}
+
+@using (Html.BeginBlock(BlockType.ContentTable, "Dati amministrativi", collapsable: collapsable))
+{
+    if (!String.IsNullOrWhiteSpace(Model.Pratica.NOT_RICH_TESS_CONTR))
+    {
+        <div class="rai-table-info">
+            <div class="row push-5">
+                <div class="col-sm-12"><span>Motivazione richiesta</span></div>
+                <div class="col-sm-12"><span>@Model.Pratica.NOT_RICH_TESS_CONTR</span></div>
+            </div>
+        </div>
+    }
+
+    if (Model.OpenFunction != "TESSCONTR" && Model.Pratica.DATA_RICH_TESS_CONTR.HasValue)
+    {
+        //&nbsp;<i class="fa fa-info-circle neutrals-md-80-color" data-toggle="tooltip" title="@Model.Pratica.NOT_RICH_TESS_CONTR"></i>
+
+        if (!Model.Pratica.DTA_ARR_TESS_CONTR.HasValue)
+        {
+            if (Model.AbilFunctions.Contains("TESSCONTR"))
+            {
+                <div class="row">
+                    <div class="col-sm-12">
+                        <button class="btn rai-btn-small full-width" onclick="ShowIncentivato(@Model.Pratica.ID_DIPENDENTE, 'TESSCONTR')">Carica tessere contributive</button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-sm-12">
+                        <i>Richiesta approfondimenti da evadere</i>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            hasAnyData = false;
+
+            var fileTessContr = new List<myRaiData.Incentivi.XR_INC_OPERSTATI_DOC>();
+            <div class="push-5 rai-table-info">
+                <div class="row">
+                    <div class="col-sm-6"><span>Tessere assicurative</span></div>
+
+                    @if (!Model.Pratica.GetField("NotHasTessereContr", false))
+                    {
+                        hasAnyData = true;
+                        if (Model.DictAllegati.TryGetValue((int)IncStato.FileTessContr, out fileTessContr) && fileTessContr.Any())
+                        {
+                            foreach (var all in fileTessContr)
+                            {
+                                <div class="col-sm-12">
+                                    <a href="@Url.Action("GetDoc", "Cessazione", new { idDoc = all.ID_ALLEGATO })" title="@all.DES_ALLEGATO"><i class="fa fa-download"></i>&nbsp; @all.COD_TITLE</a>
+                                </div>
+                            }
+                        }
+                    }
+                    else
+                    {
+                        <div class="col-sm-6"><span>Documentazione completa</span></div>
+                    }
+                </div>
+            </div>
+
+            var fileMat = new List<myRaiData.Incentivi.XR_INC_OPERSTATI_DOC>();
+            <div class="push-5 rai-table-info">
+                <div class="row">
+                    <div class="col-sm-6"><span>Maternità</span></div>
+                    @if (!Model.Pratica.GetField("NotHasMaternita", false))
+                    {
+                        hasAnyData = true;
+                        if (Model.DictAllegati.TryGetValue((int)IncStato.FileMat, out fileMat) && fileMat.Any())
+                        {
+                            foreach (var all in fileMat)
+                            {
+                                <div class="col-sm-12">
+                                    <a href="@Url.Action("GetDoc", "Cessazione", new { idDoc = all.ID_ALLEGATO })" title="@all.DES_ALLEGATO"><i class="fa fa-download"></i>&nbsp; @all.COD_TITLE</a>
+                                </div>
+                            }
+                        }
+                    }
+                    else
+                    {
+                        <div class="col-sm-6"><span>Documentazione completa</span></div>
+                    }
+                </div>
+            </div>
+        }
+    }
+
+    if (abilMail && Model.Pratica.DTA_ARR_TESS_CONTR.HasValue && hasAnyData)
+    {
+        <div class="row">
+            <div class="col-sm-12">
+                @if (Model.Pratica.DTA_INVIO_TESS.HasValue)
+                {
+                    <em class="rai-font-sm">Mail inviata il @(Model.Pratica.DTA_INVIO_TESS.Value.ToString("dd/MM/yyyy HH:mm"))</em>
+                }
+                else
+                {
+                    <button class="btn rai-btn-small full-width" onclick="IncConfermaTessMat(@Model.Pratica.ID_DIPENDENTE)">Invia notifica al dipendente</button>
+                }
+            </div>
+        </div>
+    }
+}
+
+
+@if (Model.OpenFunction != "TESSCONTR" && Model.Pratica.DATA_RICH_TESS_CONTR.HasValue && Model.Pratica.DTA_ARR_TESS_CONTR.HasValue && !Model.Pratica.GetField("NotHasCambioQualifica", false))
+{
+    using (Html.BeginBlock(BlockType.ContentTable, "Dati cambio qualifica", collapsable: collapsable))
+    {
+        var fileCambioQual = new List<myRaiData.Incentivi.XR_INC_OPERSTATI_DOC>();
+        <div class="push-5">
+            <div class="row">
+                @if (Model.DictAllegati.TryGetValue((int)IncStato.FileCambioQual, out fileCambioQual) && fileCambioQual.Any())
+                {
+                    foreach (var all in fileCambioQual)
+                    {
+                        <div class="col-sm-12">
+                            <a href="@Url.Action("GetDoc", "Cessazione", new { idDoc = all.ID_ALLEGATO })" title="@all.DES_ALLEGATO"><i class="fa fa-download"></i>&nbsp; @all.COD_TITLE</a>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    }
+}

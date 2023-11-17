@@ -1,0 +1,178 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiCommonModel
+@using myRaiHelper
+@model InsRicModel
+
+@{ 
+    Model.MatricolaDestinatario = Model.Matricola;
+    Model.IdPersonaDestinatario = Model.IdPersona;
+}
+
+    <div class="col-sm-12">
+
+        @using ( Ajax.BeginForm( "InsertDocumentoVSDip" , "Dematerializzazione" ,
+            new { enctype = "multipart/form-data" } ,
+            new AjaxOptions
+            {
+                InsertionMode = InsertionMode.Replace ,
+                HttpMethod = "POST" ,
+                OnSuccess = "OnSuccess();" ,
+                OnFailure = "OnFailure(xhr, status);"
+            } ,
+            new
+            {
+                id = "form-insert-richiestaVSDip"
+            } ) )
+        {            
+            @Html.HiddenFor( m => m.IdPersona )
+            @Html.HiddenFor( m => m.Matricola )
+            @Html.HiddenFor( m => m.Nominativo )
+            @Html.HiddenFor( m => m.Descrizione )
+            @Html.HiddenFor( m => m.MatricolaDestinatario )
+            @Html.HiddenFor( m => m.IdPersonaDestinatario )
+        <div class="form-group">
+            <div class="row push-10">
+                <div class="col-xs-12">
+                    @Html.LabelForRequiredObbl( m => m.MatricolaApprovatore , "Approvatore" , new { @class = "rai-caption" } )
+                    @Html.RaiSelectFor( m => m.MatricolaApprovatore , DematerializzazioneController.GetElencoApprovatori( ) , attributes: new { required = "required" , id = "selApprovatore" } , hideSearch: true , onSelectchange: "" )
+                </div>
+            </div>
+
+            <div class="row push-10">
+                <div class="col-xs-12">
+                    @Html.LabelForRequiredObbl( m => m.IncaricatoFirma , "Incaricato della firma" , new { @class = "rai-caption" } )
+                    @Html.RaiSelectFor( m => m.IncaricatoFirma , DematerializzazioneController.GetIncaricatiFirma( ) , attributes: new { required = "required" , id = "incaricatoFirma" } , hideSearch: true , onSelectchange: "Dematerializzazione_CheckTab2()" )
+                </div>
+            </div>
+
+            <div class="row push-10">
+                <div class="col-sm-12">
+                    <div class="rai-btn-fill">
+                        <button id="button-allegato" type="button" onclick="$('#fileupload-VSDIP').click()" class="btn rai-btn-small" style="margin-bottom: 12px;margin-top:16px">
+                            Aggiungi documento
+                        </button>
+                        <input data-tipo="PDF" style="display:none" type="file" id="fileupload-VSDIP" onchange="AbilitaInfoFile()" />
+                        <input name="IdAllegatoInviato" data-tipo="PDF"
+                               class="id-all" type="hidden" id="id-allegato-VSDIP" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="row push-10" id="uploading-VSDIP" style="display:none;">
+                <div class="widget-summary push-10">
+                    <div class="widget-summary-col widget-summary-col-icon">
+                        <div class="summary-icon bg-cda" style="width:42px; height:42px;line-height:32px;background-color:#eee">
+                            <i class="icons icon-doc" style="font-size: 65%;"></i>
+                        </div>
+                    </div>
+                    <div class="widget-summary-col">
+                        <div class="summary">
+                            <span id="nome-file-VSDIP" class="rai-font-md" style="word-break:break-word;display: block;">Nome del file</span>
+                            <span id="loaded-VSDIP" class="rai-font-sm-neutral">100</span> / <span id="total-VSDIP" class="rai-font-sm-neutral">200</span>
+                            <a id="remove-VSDIP" href="javascript:Dematerializzazione_CancellaUpl()" style="float: right;">Rimuovi</a>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="rai progress progress-xs m-2 light">
+                    <div id="progress-bar-VSDIP" class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="6" aria-valuemin="0" aria-valuemax="100" style="width: 6%; display:none;">
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="row push-10">
+                <div class="col-xs-12">
+                    @Html.LabelFor( m => m.Note , "Note" , new { @class = "rai-caption" } )
+                    @Html.TextAreaFor( m => m.Note , new { @class = "form-control" , @rows = 5 , @cols = 200 } )
+                </div>
+            </div>
+
+        </div>
+        }
+
+        <div class="row push-20-t">
+            <div class="col-sm-12">
+                <div style="">
+                    <div id="import-data">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+<script type="text/javascript">
+
+
+    $("form#form-insert-richiestaVSDip").submit(function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var formData = new FormData(this);
+
+        $('#import-data').html('');
+        $('#import-data').addClass('rai-loader');
+
+        var val = $('#tipologiaDocumentale').val();
+        val = $.trim(val);
+        val = val.toUpperCase();
+
+        var val2 = $('#tipodoc').val();
+        val2 = $.trim(val2);
+        val2 = val2.toUpperCase();
+
+        //var selApprovatore = ('#selApprovatore').val();
+        //selApprovatore = $.trim(selApprovatore);
+
+        var tipoWKF = $('#div-tipologiaDocumentale-' + val).data('tipo');
+
+        formData.append('TipologiaDocumentale', val);
+        formData.append('TipologiaDocumento', val2);
+        formData.append('TipologiaWKF', tipoWKF);
+        //formData.append('MatricolaApprovatore', selApprovatore);
+
+        var nomefile = ($("#fileupload-VSDIP").val().split("\\").pop())
+        $("#nome-file-VSDIP").text(nomefile);
+       
+        if (nomefile.toLowerCase().indexOf(".pdf") < 0) {
+            swal("Sono ammessi soltanto file pdf");
+            return;
+        }
+
+        $("#uploading-VSDIP").show();
+        $('#remove-VSDIP').show();
+        $("#progress-bar-VSDIP").show();
+
+        formData.append('file', $('#fileupload-VSDIP')[0].files[0]);
+        formData.append("nome", nomefile);
+        formData.append("tipo", $('#fileupload-VSDIP').attr("data-tipo"));
+
+        var request = new XMLHttpRequest();
+        request.onreadystatechange = function () {
+            if (request.readyState == 4 && request.status == 200) {
+                var data = $.parseJSON(request.responseText);
+                $('#import-data').html('');
+                $('#import-data').removeClass('rai-loader');
+                if (data.success) {
+                    OnSuccess(data, true);
+                }
+                else {
+                    OnFailure(data);
+                }
+            }
+        };
+        request.upload.addEventListener('progress', function (e) {
+            var filesize = $('#fileupload-VSDIP')[0].files[0].size;
+            $("#total-VSDIP").text(parseInt(filesize / 1000) + " KB");
+            $("#loaded-VSDIP").text(parseInt(e.loaded / 1000) + " KB");
+            var percent = Math.round(e.loaded / filesize * 100);
+            $("#progress-bar-VSDIP").css("width", percent + "%");
+        });
+
+        request.open('post', "/Dematerializzazione/InsertDocumentoVSDip");
+        request.timeout = 45000;
+        request.send(formData);
+    });
+</script>

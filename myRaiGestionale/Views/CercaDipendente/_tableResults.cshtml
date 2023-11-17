@@ -1,0 +1,470 @@
+﻿@using myRaiCommonModel
+@using myRaiHelper
+@model CercaDipendenteVM
+
+
+<div id="CercaDipendenti-risultati-body">
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="panel">
+                <div class="panel-body">
+                    <div class="row push-10">
+                        <div class="col-sm-6">
+                            <label><b>RISULTATI RICERCA</b></label>
+                        </div>
+                        <div class="col-sm-6 text-right">
+                            @if (Model.CercaDipendentiResult != null && Model.CercaDipendentiResult.Any())
+                            {
+                                if (Model.CercaDipendentiResult.Count() == 1)
+                                {
+                                    <em>1 risultato trovato</em>
+
+                                }
+                                else
+                                {
+                                    <em>@Model.CercaDipendentiResult.Count() risultati trovati</em>
+                                }
+                            }
+                        </div>
+                    </div>
+                    @if (Model.Provenienza == "SEARCHBAR")
+                    {
+                        <div class="row bg-neutrals-xl-10" style="margin:0 -15px;padding: 10px 10px">
+                            <div class="col-sm-12 text-right">
+                                                        @*     <button class="btn rai-btn-small" onclick="SalvaRicerca(this)"> Salva Ricerca</button>*@
+
+                                @if (AuthHelper.EnabledToSubFunc(CommonHelper.GetCurrentUserMatricola(), "HRA", "F19"))
+                                {
+                                    <button class="btn rai-btn-small" onclick="Esporta(this)"><i class="fa fa-file-excel-o"></i> Esporta</button>
+                                }
+                            </div>
+                        </div>
+                    }
+                    <div class="row" style="margin:0 -15px;padding: 10px 10px">
+                        <div class="col-sm-12 text-right">
+                            &nbsp;
+                            <a id="visualizzaColonne" onclick="VisualizzaColonne();" hidden>Visualizza tutte le colonne</a>
+                        </div>
+                    </div>
+
+                    <div style="overflow-x:auto;overflow-y:auto;max-height:430px;">
+                        <table class="table table-hover rai-table rai-table-vcenter push-10" role="grid">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        <a style="white-space:nowrap;" onclick="RaiSortData(this)" data-order-group="tbodyResult" data-order-name="Nominativo" data-order-container="#tbodyResult" aria-expanded="false" tabindex="-1" role="link">Nominativo <i class="fa fa-chevron-down" data-order-dir="down"></i></a>
+
+                                        <div class="btn-group">
+                                        </div>
+
+                                    </th>
+                                    @*<th style="min-width:120px;">*@
+                                    <th style="min-width:115px;">
+                                        <a style="white-space:nowrap;" oncontextmenu="event.preventDefault(); $('#aAssunzione').dropdown('toggle')" onclick="RaiSortData(this)" data-order-group="tbodyResult" data-order-name="Assunzione" data-order-container="#tbodyResult" aria-expanded="false" tabindex="-1" role="link">Assunzione <i class="fa fa-chevron-down" data-order-dir=""></i></a>
+
+                                        <div class="btn-group flex-wrap dropleft" style="display:block;">
+                                            <a id="aAssunzione" hidden type="button" class="dropdown-toggle text-primary" data-toggle="dropdown" aria-expanded="false" tabindex="-1" role="link"></a>
+                                            <div class="dropdown-menu" style="min-width:60px;">
+                                                <a class="dropdown-item text-primary" data-toggle="modal" style="display: inherit; margin: 4px;" onclick="Nascondi(this)"> Nascondi </a>
+
+                                            </div>
+                                        </div>
+
+                                    </th>
+                                    <th>
+                                        <a style="white-space:nowrap;" oncontextmenu="event.preventDefault(); $('#aContratto').dropdown('toggle')" onclick="RaiSortData(this)" data-order-group="tbodyResult" data-order-name="Contratto" data-order-container="#tbodyResult" aria-expanded="false" tabindex="-1" role="link">Contratto <i class="fa fa-chevron-down" data-order-dir=""></i></a>
+
+                                        <div class="btn-group flex-wrap dropleft" style="display:block;">
+                                            <a id="aContratto" hidden type="button" class="dropdown-toggle text-primary" data-toggle="dropdown" aria-expanded="false" tabindex="-1" role="link"></a>
+                                            <div class="dropdown-menu" style="min-width:60px;">
+                                                <a class="dropdown-item text-primary" data-toggle="modal" style="display: inherit; margin: 4px;" onclick="Nascondi(this)"> Nascondi </a>
+
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th>
+                                        <a style="white-space:nowrap;" oncontextmenu="event.preventDefault(); $('#aSede').dropdown('toggle')" onclick="RaiSortData(this)" data-order-group="tbodyResult" data-order-name="Sede" data-order-container="#tbodyResult" aria-expanded="false" tabindex="-1" role="link">Sede <i class="fa fa-chevron-down" data-order-dir=""></i></a>
+
+                                        <div class="btn-group flex-wrap dropleft" style="display:block;">
+                                            <a id="aSede" hidden type="button" class="dropdown-toggle text-primary" data-toggle="dropdown" aria-expanded="false" tabindex="-1" role="link"></a>
+                                            <div class="dropdown-menu" style="min-width:60px;">
+                                                <a class="dropdown-item text-primary" data-toggle="modal" style="display: inherit; margin: 4px;" onclick="Nascondi(this)"> Nascondi </a>
+
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th>
+                                        <a style="white-space:nowrap;" oncontextmenu="event.preventDefault(); $('#aServizio').dropdown('toggle')" onclick="RaiSortData(this)" data-order-group="tbodyResult" data-order-name="Servizio" data-order-container="#tbodyResult" aria-expanded="false" tabindex="-1" role="link">Servizio <i class="fa fa-chevron-down" data-order-dir=""></i></a>
+
+                                        <div class="btn-group flex-wrap dropleft" style="display:block;">
+                                            <a id="aServizio" hidden type="button" class="dropdown-toggle text-primary" data-toggle="dropdown" aria-expanded="false" tabindex="-1" role="link"></a>
+                                            <div class="dropdown-menu" style="min-width:60px;">
+                                                <a class="dropdown-item text-primary" data-toggle="modal" style="display: inherit; margin: 4px;" onclick="Nascondi(this)"> Nascondi </a>
+
+                                            </div>
+                                        </div>
+                                    </th>
+
+                                    @{
+                                        if (Model.Filtri.Sezioni != null && Model.Filtri.Sezioni.Any())
+                                        {
+                                            <th>
+                                                <a style="white-space:nowrap;" oncontextmenu="event.preventDefault(); $('#aContratto').dropdown('toggle')" onclick="RaiSortData(this)" data-order-group="tbodyResult" data-order-name="Sezione" data-order-container="#tbodyResult" aria-expanded="false" tabindex="-1" role="link">Sezione <i class="fa fa-chevron-down" data-order-dir=""></i></a>
+
+                                                <div class="btn-group flex-wrap dropleft" style="display:block;">
+                                                    <a id="aSezione" hidden type="button" class="dropdown-toggle text-primary" data-toggle="dropdown" aria-expanded="false" tabindex="-1" role="link"></a>
+                                                    <div class="dropdown-menu" style="min-width:60px;">
+                                                        <a class="dropdown-item text-primary" data-toggle="modal" style="display: inherit; margin: 4px;" onclick="Nascondi(this)"> Nascondi </a>
+
+                                                    </div>
+                                                </div>
+                                            </th>
+
+                                        }
+                                        if (!String.IsNullOrWhiteSpace(Model.Filtri.CodiceFiscale))
+                                        {
+                                            <th>
+                                                <a style="white-space:nowrap;" oncontextmenu="event.preventDefault(); $('#aCF').dropdown('toggle')" onclick="RaiSortData(this)" data-order-group="tbodyResult" data-order-name="CF" data-order-container="#tbodyResult" aria-expanded="false" tabindex="-1" role="link">Codice Fiscale <i class="fa fa-chevron-down" data-order-dir=""></i></a>
+
+                                                <div class="btn-group flex-wrap dropleft" style="display:block;">
+                                                    <a id="aCF" hidden type="button" class="dropdown-toggle text-primary" data-toggle="dropdown" aria-expanded="false" tabindex="-1" role="link"></a>
+                                                    <div class="dropdown-menu" style="min-width:60px;">
+                                                        <a class="dropdown-item text-primary" data-toggle="modal" style="display: inherit; margin: 4px;" onclick="Nascondi(this)"> Nascondi </a>
+
+                                                    </div>
+                                                </div>
+                                            </th>
+
+                                        }
+                                        if (Model.Filtri.Sesso != null && Model.Filtri.Sesso.Any())
+                                        {
+                                            @*<th style="min-width:60px;">*@
+                                            <th style="min-width:75px;">
+                                                <a style="white-space:nowrap;" oncontextmenu="event.preventDefault(); $('#aSesso').dropdown('toggle')" onclick="RaiSortData(this)" data-order-group="tbodyResult" data-order-name="Sesso" data-order-container="#tbodyResult" aria-expanded="false" tabindex="-1" role="link">Sesso <i class="fa fa-chevron-down" data-order-dir=""></i></a>
+
+                                                <div class="btn-group flex-wrap dropleft" style="display:block;">
+                                                    <a id="aSesso" hidden type="button" class="dropdown-toggle text-primary" data-toggle="dropdown" aria-expanded="false" tabindex="-1" role="link"></a>
+                                                    <div class="dropdown-menu" style="min-width:60px;">
+                                                        <a class="dropdown-item text-primary" data-toggle="modal" style="display: inherit; margin: 4px;" onclick="Nascondi(this)"> Nascondi </a>
+
+                                                    </div>
+                                                </div>
+                                            </th>
+
+                                        }
+                                        if (!String.IsNullOrWhiteSpace(Model.Filtri.NascitaDa) || !String.IsNullOrWhiteSpace(Model.Filtri.NascitaA))
+                                        {
+                                            @*<th style="min-width:76px;">*@
+                                            <th style="min-width:125px;">
+                                                <a style="white-space:nowrap;" oncontextmenu="event.preventDefault(); $('#aAnnoNascita').dropdown('toggle')" onclick="RaiSortData(this)" data-order-group="tbodyResult" data-order-name="AnnoNascita" data-order-container="#tbodyResult" aria-expanded="false" tabindex="-1" role="link">Anno nascita <i class="fa fa-chevron-down" data-order-dir=""></i></a>
+
+                                                <div class="btn-group flex-wrap dropleft" style="display:block;">
+                                                    <a id="aAnnoNascita" hidden type="button" class="dropdown-toggle text-primary" data-toggle="dropdown" aria-expanded="false" tabindex="-1" role="link"></a>
+                                                    <div class="dropdown-menu" style="min-width:60px;">
+                                                        <a class="dropdown-item text-primary" data-toggle="modal" style="display: inherit; margin: 4px;" onclick="Nascondi(this)"> Nascondi </a>
+
+                                                    </div>
+                                                </div>
+                                            </th>
+
+                                        }
+                                        if (Model.Filtri.Categoria != null && Model.Filtri.Categoria.Any())
+                                        {
+                                            <th>
+                                                <a style="white-space:nowrap;" oncontextmenu="event.preventDefault(); $('#aCategoria').dropdown('toggle')" onclick="RaiSortData(this)" data-order-group="tbodyResult" data-order-name="Categoria" data-order-container="#tbodyResult" aria-expanded="false" tabindex="-1" role="link">Categoria <i class="fa fa-chevron-down" data-order-dir=""></i></a>
+
+                                                <div class="btn-group flex-wrap dropleft" style="display:block;">
+                                                    <a id="aCategoria" hidden type="button" class="dropdown-toggle text-primary" data-toggle="dropdown" aria-expanded="false" tabindex="-1" role="link"></a>
+                                                    <div class="dropdown-menu" style="min-width:60px;">
+                                                        <a class="dropdown-item text-primary" data-toggle="modal" style="display: inherit; margin: 4px;" onclick="Nascondi(this)"> Nascondi </a>
+
+                                                    </div>
+                                                </div>
+                                            </th>
+
+                                        }
+                                        if (Model.Filtri.Azienda != null && Model.Filtri.Azienda.Any())
+                                        {
+                                            @*<th>*@
+                                            <th style="min-width:90px;">
+                                                <a style="white-space:nowrap;" oncontextmenu="event.preventDefault(); $('#aAzienda').dropdown('toggle')" onclick="RaiSortData(this)" data-order-group="tbodyResult" data-order-name="Azienda" data-order-container="#tbodyResult" aria-expanded="false" tabindex="-1" role="link">Azienda <i class="fa fa-chevron-down" data-order-dir=""></i></a>
+
+                                                <div class="btn-group flex-wrap dropleft" style="display:block;">
+                                                    <a id="aAzienda" hidden type="button" class="dropdown-toggle text-primary" data-toggle="dropdown" aria-expanded="false" tabindex="-1" role="link"></a>
+                                                    <div class="dropdown-menu" style="min-width:60px;">
+                                                        <a class="dropdown-item text-primary" data-toggle="modal" style="display: inherit; margin: 4px;" onclick="Nascondi(this)"> Nascondi </a>
+
+                                                    </div>
+                                                </div>
+                                            </th>
+                                        }
+                                        if (Model.Filtri.FiltriAggiuntivi != null)
+                                        {
+                                            foreach (var filtro in Model.Filtri.FiltriAggiuntivi.GroupBy(x => x.NomeFiltro))
+                                            {
+
+                                                <th style="min-width:90px;">
+                                                    <a style="white-space:nowrap;" oncontextmenu="event.preventDefault(); $('#a@(filtro.Key)').dropdown('toggle')">@filtro.Key </a>
+
+                                                    <div class="btn-group flex-wrap dropleft" style="display:block;">
+                                                        <a id="a@(filtro.Key)" hidden type="button" class="dropdown-toggle text-primary" data-toggle="dropdown" aria-expanded="false" tabindex="-1" role="link"></a>
+                                                        <div class="dropdown-menu" style="min-width:60px;">
+                                                            <a class="dropdown-item text-primary" data-toggle="modal" style="display: inherit; margin: 4px;" onclick="Nascondi(this)"> Nascondi </a>
+
+                                                        </div>
+                                                    </div>
+                                                </th>
+
+
+                                            }
+                                        }
+                                    }
+                                    <th class="rai-table-td-action">&nbsp;</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyResult">
+                                @{
+                                    if (Model.CercaDipendentiResult != null && Model.CercaDipendentiResult.Any())
+                                    {
+                                        foreach (var dip in Model.CercaDipendentiResult.OrderBy(x => x.NOMINATIVO))
+                                        {
+                                            var filtriAggiuntivi = "";
+
+                                            if (Model.Filtri.FiltriAggiuntivi != null)
+                                            {
+                                                foreach (var filtro in Model.Filtri.FiltriAggiuntivi.GroupBy(x => x.NomeFiltro))
+                                                {
+                                                    filtriAggiuntivi = filtriAggiuntivi + " data-" + filtro.Key + "='" + dip.FiltriAggiuntivi.Where(x => x.NomeFiltro == filtro.Key).FirstOrDefault().Descrizione.Trim() + "'";
+                                                }
+                                            }
+                                            <tr data-persone="" id="TR_@(dip.ID_PERSONA)" data-iddipendente="@(dip.ID_PERSONA)" role="row" style="margin:2px; border-top:1px solid lightgray; " data-order-item="" data-Assunzione="@(dip.DATA_ASSUNZIONE.GetValueOrDefault().ToString("yyyyMMdd"))" data-Nominativo="@dip.NOMINATIVO" data-Sezione="@dip.SEZIONE" data-Azienda="@dip.AZIENDA" data-CF="@dip.CF" data-Sesso="@dip.SESSO" data-Servizio="@dip.SERVIZIO" data-Categoria="@dip.CATEGORIA" data-Contratto="@dip.CONTRATTO" data-AnnoNascita="@dip.AnnoNascita" data-Sede="@dip.SEDE" @filtriAggiuntivi>
+                                                <td data-id-persona="@(dip.ID_PERSONA)" style="width:1%; white-space:nowrap;">
+                                                    @Html.ProfileWidget(dip.MATRICOLA, dip.NOMINATIVO, null, "Matricola " + dip.MATRICOLA)
+                                                </td>
+                                                <td data-id-persona="@(dip.ID_PERSONA)">
+                                                    <span>@(dip.DATA_ASSUNZIONE.GetValueOrDefault().ToString("dd/MM/yyyy"))</span>
+                                                </td>
+                                                <td data-id-persona="@(dip.ID_PERSONA)">
+                                                    @if (dip.DATA_CESSAZIONE >= DateTime.Today)
+                                                    {
+                                                        <span class=" text-left" style="width:100%; margin-bottom:0px;">@(dip.CONTRATTO)</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="rai-label">Cessato il @dip.DATA_CESSAZIONE.Value.ToString("dd/MM/yyyy")</span>
+                                                    }
+                                                </td>
+                                                <td data-id-persona="@(dip.ID_PERSONA)">
+                                                    <span class=" text-left" style="width:100%; margin-bottom:0px;">@(dip.SEDE)</span>
+                                                </td>
+                                                <td data-id-persona="@(dip.ID_PERSONA)">
+                                                    <span class=" text-left" style="width:100%; margin-bottom:0px;">@(dip.SERVIZIO)</span>
+                                                </td>
+                                                @if (Model.Filtri.Sezioni != null && Model.Filtri.Sezioni.Any())
+                                                {
+                                                    <td data-id-persona="@(dip.ID_PERSONA)">
+                                                        <span class=" text-left" style="width:100%; margin-bottom:0px;">@(dip.SEZIONE)</span>
+                                                    </td>
+                                                }
+                                                @if (!String.IsNullOrWhiteSpace(Model.Filtri.CodiceFiscale))
+                                                {
+                                                    <td data-id-persona="@(dip.ID_PERSONA)">
+                                                        <span class=" text-left" style="width:100%; margin-bottom:0px;">@(dip.CF)</span>
+                                                    </td>
+                                                }
+                                                @if (Model.Filtri.Sesso != null && Model.Filtri.Sesso.Any())
+                                                {
+                                                    <td data-id-persona="@(dip.ID_PERSONA)">
+                                                        <span class=" text-left" style="width:100%; margin-bottom:0px;">@(dip.SESSO)</span>
+                                                    </td>
+                                                }
+                                                @if (!String.IsNullOrWhiteSpace(Model.Filtri.NascitaDa) || !String.IsNullOrWhiteSpace(Model.Filtri.NascitaA))
+                                                {
+                                                    <td data-id-persona="@(dip.ID_PERSONA)">
+                                                        <span class=" text-left" style="width:100%; margin-bottom:0px;">@(dip.AnnoNascita)</span>
+                                                    </td>
+                                                }
+                                                @if (Model.Filtri.Categoria != null && Model.Filtri.Categoria.Any())
+                                                {
+                                                    <td data-id-persona="@(dip.ID_PERSONA)">
+                                                        <span class=" text-left" style="width:100%; margin-bottom:0px;">@(dip.CATEGORIA)</span>
+                                                    </td>
+                                                }
+                                                @if (Model.Filtri.Azienda != null && Model.Filtri.Azienda.Any())
+                                                {
+                                                    <td data-id-persona="@(dip.ID_PERSONA)">
+                                                        <span class=" text-left" style="width:100%; margin-bottom:0px;">@(dip.AZIENDA)</span>
+                                                    </td>
+                                                }
+                                                @if (Model.Filtri.FiltriAggiuntivi != null)
+                                                {
+                                                    foreach (var filtro in Model.Filtri.FiltriAggiuntivi.GroupBy(x => x.NomeFiltro))
+                                                    {
+                                                        var filtroAggiuntivo = "";
+                                                        foreach (var dettaglio in dip.FiltriAggiuntivi)
+                                                        {
+                                                            if (dettaglio.NomeFiltro == filtro.Key)
+                                                            {
+                                                                filtroAggiuntivo = filtroAggiuntivo + " " + dettaglio.Descrizione;
+                                                            }
+                                                        }
+                                                        <td data-id-persona="@(dip.ID_PERSONA)">
+                                                            <span class=" text-left" style="width:100%; margin-bottom:0px; display:block;">
+                                                                @filtroAggiuntivo
+                                                            </span>
+                                                        </td>
+                                                    }
+
+                                                }
+                                                <td class="text-right">
+                                                    @if (String.IsNullOrWhiteSpace(Model.Action))
+                                                    {
+                                                        <a href="@Url.Action("Index", "Anagrafica", new { m = dip.MATRICOLA })" class="btn rai-btn-small">Visualizza</a>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button onclick="@Model.Action.Replace("$matricola", dip.MATRICOLA)" class="btn rai-btn-small">@Model.ActionText</button>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            @Html.Partial("_NoDati")
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function Esporta(button) {
+
+         RaiOpenAsyncModal('modal-ExportDipendenti', '@Url.Action("ModalExportDipendenti", "Ricerca")', null , null, null,null,null,true);
+    }
+
+
+    function SearchExport(button) {
+        event.preventDefault();
+        $(button).addClass("rai-loader");
+        let urlform = $('#form-searchbar').attr('action');
+        var campi = $("#form_Esporta input:checked");
+        var scelti = [];
+        campi.each(function (index, value) {
+            scelti.push(value.value);
+        });
+        $("#CampidaEsportare").val(scelti);
+        let faSelected = $('[name="Filtri.Aggiuntivi"]input:checked').toArray();
+        let formData = new FormData($('#form-searchbar')[0]);
+        faSelected.forEach(function (sez, i) {
+            formData.append('Filtri.FiltriAggiuntivi[' + i + '].NomeFiltro', $(sez).attr("data-filter-element"));
+            formData.append('Filtri.FiltriAggiuntivi[' + i + '].Descrizione', $(sez).text());
+            formData.append('Filtri.FiltriAggiuntivi[' + i + '].Valore', $(sez).val());
+
+        });
+
+
+        $.ajax({
+            url: "/Ricerca/EsportaResult",
+            processData: false,
+            contentType: false,
+            type: "POST",
+            data: formData,
+            dataType: "binary",
+            responseType: 'arraybuffer',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+
+            success: function (data) {
+                var blob = new Blob([data], { type: 'application/ms-excel' });
+                var downloadUrl = URL.createObjectURL(blob);
+                var a = document.createElement("a");
+                a.href = downloadUrl;
+                a.download = "Risultati.xlsx";
+                document.body.appendChild(a);
+                a.click();
+                $(button).removeClass("rai-loader");
+            },
+
+        });
+    }
+
+    function Nascondi(elem) {
+        var testa = $('thead').find('th');
+        var th = $(elem).closest('th');
+        var index = testa.index(th);
+        $(th).attr("hidden", "hidden");
+        var bo = $('tr[data-iddipendente]');
+        $(bo).each(function (ind, elem) {
+            $(elem).find('td:eq(' + index + ')').attr("hidden", "hidden");
+            $("#visualizzaColonne").removeAttr("hidden");
+  });
+    }
+    function VisualizzaColonne() {
+       $("th:hidden").removeAttr("hidden");
+        $("td:hidden").removeAttr("hidden");
+        $("#visualizzaColonne").attr("hidden","hidden");
+
+    }
+
+    function SalvaRicerca(button) {
+        swal({
+            title: "Nome Voce Ricerca",
+            text: "Inserire il nome della voce della ricerca da salvare:",
+            input: 'text',
+            showCancelButton: true,
+            closeOnConfirm: false,
+            inputPlaceholder: "",
+            preConfirm: function (value) {
+                return new Promise(function (resolve, reject) {
+                    if (value == "") {
+                        reject("Nome della voce di ricerca obbligatorio!")
+                    }
+                    else {
+                        resolve()
+                    }
+                })
+            },
+        }).then(function (result) {
+            var voce = result;
+            event.preventDefault();
+            $(button).addClass("rai-loader");
+            let faSelected = $('[name="Filtri.Aggiuntivi"]input:checked').toArray();
+            let formData = new FormData($('#form-searchbar')[0]);
+            faSelected.forEach(function (sez, i) {
+                formData.append('Filtri.FiltriAggiuntivi[' + i + '].NomeFiltro', $(sez).attr("data-filter-element"));
+                formData.append('Filtri.FiltriAggiuntivi[' + i + '].Descrizione', $(sez).text());
+                formData.append('Filtri.FiltriAggiuntivi[' + i + '].Valore', $(sez).val());
+
+            });
+            formData.append('NomeRicerca', voce);
+
+            $.ajax({
+                url: "/Ricerca/SalvaRicerca",
+                processData: false,
+                contentType: false,
+                type: "POST",
+                data: formData,
+                dataType: "binary",
+                responseType: 'arraybuffer',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+
+                success: function (data) {
+                    $(button).removeClass("rai-loader");
+
+                },
+
+            });
+        })
+
+             }
+
+</script>

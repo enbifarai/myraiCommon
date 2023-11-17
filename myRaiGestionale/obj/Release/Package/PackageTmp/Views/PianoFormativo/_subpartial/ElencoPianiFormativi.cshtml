@@ -1,0 +1,202 @@
+﻿@using myRaiCommonModel;
+@model myRaiCommonModel.ElencoPianiFormativi
+
+@{
+    if (Model == null)
+    {
+
+        Html.RenderPartial("~/Views/Shared/_NoDati.cshtml");
+    }
+    else
+    {
+
+        if (Model.tab.IsEmpty() || Model.tab.ToLower() == "p")
+        {
+            foreach (var item in Model.pianificati)
+            {
+                <tr style="cursor: pointer;" data-target="pianificati">
+                    <td>
+                        <span class="rai-font-md-bold">@item.Matricola</span>
+                    </td>
+                    <td>
+                        <span class="rai-font-md">@item.Nominativo</span>
+                    </td>
+                    <td>
+
+                        <span class="rai-font-md">
+                            @if (item.DataInizioApprendistato.HasValue)
+                            {
+                                @item.DataInizioApprendistato.Value.ToShortDateString()
+                            }
+                        </span>
+
+                    </td>
+                    <td>
+                        <span class="rai-font-md">
+                            @if (item.DataFineApprendistato.HasValue)
+                            {
+                                @item.DataFineApprendistato.Value.ToShortDateString()
+                            }
+                        </span>
+                    </td>
+                    <td>
+
+                        <button id="dettaglio-imm" class="btn btn-sm rai-btn-small dettaglio" onclick="dettaglioPianoFormativo(' @item.IdPersona')">Visualizza</button>
+                        @if (item.Cessato)
+                        {
+                            <button id="modifica-imm" class="btn btn-sm rai-btn-small modifica" disabled onclick="modificaPianoFormativo(' @item.IdPersona')"><i class="fa fa-pencil"></i></button>
+                        }
+                        else
+                        {
+                            <button id="modifica-imm" class="btn btn-sm rai-btn-small modifica" onclick="modificaPianoFormativo(' @item.IdPersona')"><i class="fa fa-pencil"></i></button>
+                        }
+                        @*       <button id="dettaglio-imm" class="btn btn-sm rai-btn-small dettaglio" onclick="location.href = '@Url.Action("GeneraWordPianoFormativoIndividuale", "PianoFormativo", new  { idPersona = item.IdPersona })'">Scarica file</button>*@
+
+                    </td>
+
+                </tr>
+
+            }
+        }
+        if (Model.tab.IsEmpty() || Model.tab.ToLower() == "d")
+        {
+            foreach (var item in Model.daPianificare)
+            {
+                <tr style="cursor: pointer;" data-target="daPianificare">
+                    <td>
+                        <span class="rai-font-md-bold">@item.Matricola</span>
+                    </td>
+                    <td>
+                        <span class="rai-font-md">@item.Nominativo</span>
+                    </td>
+                    <td>
+
+                        <span class="rai-font-md">
+                            @if (item.DataImmatricolazione.HasValue)
+                            {
+                                @item.DataImmatricolazione.Value.ToShortDateString()
+                            }
+                        </span>
+
+                    </td>
+                    <td>
+                        <span class="rai-font-md">
+                            @if (item.DataInizioContratto.HasValue)
+                            {
+                                @item.DataInizioContratto.Value.ToShortDateString()
+                            }
+                        </span>
+                    </td>
+                    @{ if (!item.IsRuoloAggreg)
+                        {
+                    <td style="width:100px;" class="text-right">
+                        @if (item.Cessato)
+                        {
+                            <button id="pianificazioneAttivita" class="btn btn-sm rai-btn-small pianificazione" disabled onclick="pianificaAttivitaPianoFormativo(' @item.IdPersona')">Pianifica</button>
+                        }
+                        else
+                        {
+                            <button id="pianificazioneAttivita" class="btn btn-sm rai-btn-small pianificazione" onclick="pianificaAttivitaPianoFormativo(' @item.IdPersona')">Pianifica</button>
+                        }
+                        @*<button id="dettaglio-imm" class="btn btn-sm rai-btn-small dettaglio" onclick="mostraDettaglioImmatricolazione(@item.IdEvento, @item.IdPersona)">Visualizza</button>*@
+                        @*<button id="modifica" class="btn btn-sm rai-btn-small modifica" onclick="modificaImm(@item.IdEvento)"><i class="fa fa-pencil"></i></button>*@
+                        @*<button id="eliminazione" class="btn btn-action-icon eliminazione" onclick="eliminaImmatricolazione(@item.IdEvento)"> <i class="icon icon-trash"></i></button>*@
+                    </td>
+                                }
+                                }
+                            </tr>
+
+        }
+                    }
+                    }
+
+                    }
+
+
+                    <script type="text/javascript">
+    function switchTabifIsDaPianificareOrNot(tab, hasNext) {
+        var righePianificati = $('*[data-target="pianificati"]');
+        var righeDaPianificare = $('*[data-target="daPianificare"]');
+        switch (tab) {
+            case "p":
+                $('#listaPF_Pianificati').empty();
+                $("#listaPF_Pianificati").append(righePianificati.clone()).html();
+                break;
+            case "d":
+                $('#listaPF_DaPianificare').empty();
+                $("#listaPF_DaPianificare").append(righeDaPianificare.clone()).html();
+                break;
+            default:
+                $('#listaPF_DaPianificare').empty();
+                $("#listaPF_DaPianificare").append(righeDaPianificare.clone()).html();
+                $('#listaPF_Pianificati').empty();
+                $("#listaPF_Pianificati").append(righePianificati.clone()).html();
+                break;
+        }
+        if (hasNext) {
+            console.log("entro");
+            $('#btnAltriPianiFormativi').show();
+        }
+        else {
+            $('#btnAltriPianiFormativi').hide();
+        }
+    }
+    $(function () {
+       var tabactive = $('.active').children('*[role="tab"]');
+        let hasNext = false;
+        @{
+            var tab = Model.tab.ToLower();
+
+
+        }
+        var testab="@tab";
+        if (testab == "" || testab == "d") {
+              var strd = "@Model.daPianificare.HasNext.ToString().ToLower()";
+            $('#hrefTab1').attr('data-target', strd);
+           $('#totDaPianificare').text("@Model.totDaPianificare.ToString()");
+
+        }
+        if (testab == "" || testab == "p") {
+
+        var strp = "@Model.pianificati.HasNext.ToString().ToLower()";
+            $('#hrefTab2').attr('data-target', strp);
+            $('#totPianificati').text("@Model.totPianificati.ToString()");
+
+
+        }
+        @*
+        var strd = "@Model.daPianificare.HasNext.ToString().ToLower()";
+        var strp = "@Model.pianificati.HasNext.ToString().ToLower()";
+
+        $('#hrefTab2').attr('data-target', strp);
+        $('#hrefTab1').attr('data-target', strd);*@
+        var str = tabactive.attr("data-target");
+        hasNext = (str === 'true');
+
+           switchTabifIsDaPianificareOrNot('@tab', hasNext);
+      @*
+        if (hasNext) {
+            console.log("entro");
+            $('#btnAltriPianiFormativi').show();
+        }
+        else {
+            $('#btnAltriPianiFormativi').hide();
+        }
+
+
+        @if ((tab == "p" && Model.pianificati.HasNext) || (tab == "d" && Model.daPianificare.HasNext))
+         {
+            <text>
+                hasNext = true;
+            </text>
+        }
+       if (hasNext) {
+            console.log("entro");
+            $('#btnAltriPianiFormativi').show();
+        }
+        else {
+            $('#btnAltriPianiFormativi').hide();
+        }*@
+    });
+
+                    </script>

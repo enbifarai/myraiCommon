@@ -1,0 +1,148 @@
+﻿
+@model string[]
+
+@{
+    Layout = "~/Views/Shared/_layoutLite.cshtml";
+
+    string matr = Model[0];
+    string data = Model[1].Substring(0,2)+"/"+ Model[1].Substring(2, 2)+ "/" +Model[1].Substring(4);
+}
+<style>
+    i {margin-right:10px; }
+</style>
+ 
+<div id="infogiornata" class="block">
+    <section class="panel">
+        <header class="panel-heading">
+            <div class="panel-actions">
+                <a href="#" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+            </div>
+            <h2 class="panel-title">Informazioni giornata</h2>
+        </header>
+        <div class="panel-body" id="infogiornata-content">
+            <i class="fa fa-spinner fa-spin"></i>Attendi...
+        </div>
+    </section>
+</div>
+
+
+
+
+
+
+<div id="timb">
+    <div id="timbdiv" class="block">
+        <section class="panel">
+            <header class="panel-heading">
+                <div class="panel-actions">
+                    <a href="#" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+                </div>
+                <h2 class="panel-title">Timbrature</h2>
+            </header>
+            <div class="panel-body" id="tim">
+                <i class="fa fa-spinner fa-spin"></i>Attendi...
+            </div>
+        </section>
+    </div>
+
+</div>
+
+<div id="segn">
+    <div id="segndiv" class="block">
+        <section class="panel">
+            <header class="panel-heading">
+                <div class="panel-actions">
+                    <a href="#" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+                </div>
+                <h2 class="panel-title">Segnalazioni presenti</h2>
+            </header>
+            <div class="panel-body" id="ti">
+                <i class="fa fa-spinner fa-spin"></i>Attendi...
+            </div>
+        </section>
+    </div>
+
+</div>
+ 
+  
+
+@section afterjs 
+    {
+                    <script>
+
+                        var sessionId = "GECC_" + getGuid();
+                        $.ajax({
+                            url: '/home/getEccezioniMadre',
+                            type: "POST",
+                            dataType: "json",
+                            async: false,
+                            data: {
+                                data: '@data',
+                                matr: '@matr',
+                                sessionId: sessionId
+                            },
+                            success: function (data) {
+                                if (data.result == false) sessionId = null;
+                            }
+                        });
+
+                        debugger
+                        $.ajax({
+                            url: '/ajax/getInfoGiornataAjaxView',
+                            type: "GET",
+                            dataType: "html",
+                            data: {
+                                date: '@data',
+                                matr: '@matr',
+                                sessionId: sessionId
+                            },
+                            success: function (data) {
+                                debugger
+                                var t = $("#infogiornata-content");
+                                $(t).html(data);
+                                console.log(data);
+
+                            },
+                            error: function (a, b, c) {
+             
+                            }
+                        })
+
+
+
+                        $.ajax({
+                            url: '/ajax/getTimbratureAjaxView',
+                            type: "GET",
+                            dataType: "html",
+                            data: {
+                                date: '@data', matr: '@matr', nocalendar: true,    sessionId: sessionId },
+                            success: function (data) {
+                                var t = $("#timb");
+                                $(t).html(data);
+                            },
+                            complete: function () {
+            
+                            }
+                        });
+
+
+                        $.ajax({
+                            url: '/ajax/getSegnalazioniAjaxView',
+                            type: "GET",
+                            dataType: "html",
+                            data: {
+                                date: '@data',
+                                matricola: '@matr',
+            
+                                hideCurrentDataRow: true,
+                                sessionId: sessionId
+                            },
+                            success: function (data) {
+                                var t = $("#segn");
+                                $(t).html(data);
+            
+                            }
+                        });
+
+                    </script>
+        }

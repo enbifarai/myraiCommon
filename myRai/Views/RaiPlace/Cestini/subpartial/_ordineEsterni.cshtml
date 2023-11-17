@@ -1,0 +1,77 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonModel.raiplace;
+@using MVCProject.Custom_Helpers;
+@using myRaiCommonManager;
+
+@model CestiniModel
+
+<div class="form-group no-margin-left-right">
+    @Html.LabelFor( m => m.ordine.referenteConsegna , "Referente per la consegna" )
+    <select id="selReferenteConsegna" class="js-data-example-ajax" required="required">
+        @{
+            if ( !String.IsNullOrEmpty( Model.ordine.referenteConsegna ) &&
+                !String.IsNullOrEmpty( Model.ordine.matricolaReferenteConsegna ) )
+            {
+                <option id="@(Model.ordine.matricolaReferenteConsegna)" selected="selected">@(Model.ordine.referenteConsegna)</option>
+            }
+        }
+    </select>
+    @Html.HiddenFor( m => m.ordine.matricolaReferenteConsegna )
+    @Html.HiddenFor( m => m.ordine.referenteConsegna )
+</div>
+<div class="form-group no-margin-left-right">
+    @Html.LabelFor( m => m.ordine.telefonoReferente , "Telefono referente" )
+    @Html.TextBoxFor( m => m.ordine.telefonoReferente , htmlAttributes: new { @class = "form-control disabilita" , required = "required" , onchange = "CtrInput($(this));" } )
+</div>
+
+<div class="row form-group no-margin-left-right" style="margin-left: -15px;margin-right: -15px;">
+    <div class="col-xs-12 col-sm-5 col-lg-5 form-group">
+        @Html.LabelFor( m => m.ordine.matricolaSpettacolo , "Matricola dello spettacolo" )
+        @Html.TextBoxFor( m => m.ordine.matricolaSpettacolo , htmlAttributes: new { @class = "form-control disabilita" , required = "required" , onchange = "CtrInput($(this));" , maxlength = "6" , minlength = "6" } )
+    </div>
+    <div class="col-xs-12 col-sm-3 col-lg-3 form-group">
+        @Html.LabelFor( m => m.ordine.centroCosto , "Centro di costo" )
+        @Html.TextBoxFor( m => m.ordine.centroCosto , htmlAttributes: new { @class = "form-control disabilita" , required = "required" , onchange = "CtrInput($(this));" , maxlength = "4" , minlength = "4" } )
+    </div>
+    <div class="col-xs-12 col-sm-4 col-lg-4 form-group"></div>
+</div>
+
+<script type="text/javascript">
+    $(".js-data-example-ajax").select2({
+        placeholder: "il cognome comincia per",
+        minimumInputLength: 3,
+        width: '100%',
+        ajax: {
+            url: '/Cestini/GetCognomiRisorsa',
+            type: "POST",
+            dataType: 'json',
+            data: function (params) {
+                return {
+                    cog: params.term
+                };
+            },
+            processResults: function (data) {
+                return {
+                    results: $.map(data, function (obj) {
+                        var a = new Array();
+                        for (var item in obj) {
+                            var txt = obj[item].text;
+                            var array = txt.split('/');
+                            var nome = array[1];
+                            var cognome = array[0];
+                            var direzione = array[2];
+                            var matricola = obj[item].id;
+                            var fullname = matricola + ' - ' + cognome + ' ' + nome + ' (' + direzione + ')';
+
+                            a.push({ id: obj[item].id, text: fullname, nome: nome, cognome: cognome });
+                        }
+                        return a;
+                    })
+                };
+            }
+        }
+    });
+</script>

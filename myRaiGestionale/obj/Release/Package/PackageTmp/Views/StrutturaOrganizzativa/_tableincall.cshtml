@@ -1,0 +1,65 @@
+﻿@model myRaiCommonModel.Gestionale.IncarichiTreeModel
+
+<table class="rai-table table" id="table-inc">
+
+    <thead>
+        <tr>
+            <th></th>
+            <th>Codice</th>
+            <th>Descrizione</th>
+            <th>Responsabile</th>
+            <th>Incarico</th>
+        </tr>
+    </thead>
+
+    @foreach (var t in Model.AlberoItems.Where(x => x.FirstShowing == true).OrderBy(x => x.num_ordina))
+    {
+        @RenderItem(t, 1)
+    }
+</table>
+
+
+
+
+<script>
+    $("#label-inc").text("Responsabili strutture - @(Model.Dettaglio.DescSezione)");
+    var h = $(window).height();
+    $("#div-inc").height((h - 180).toString() + "px");
+</script>
+
+
+@helper RenderItem(myRaiCommonModel.Gestionale.TAlberoSezioneModel t, int level)
+{
+    int rgb = 248 - (level * 6);
+    if (level > 6)
+    {
+        return;
+    }
+    level++;
+    t.HasChild = Model.AlberoItems.Any(x => x.subordinato_a == t.id);
+
+    <tbody class="js-table-sections-header">
+        @Html.Partial("_trinc", t)
+    </tbody>
+
+    if (t.HasChild)
+    {
+        <tbody>
+            <tr>
+                <td colspan="5" style="padding:0px">
+                    <table style="background-color:rgb(@rgb,@rgb,@rgb)" class="rai-table table table-inc-nested ">
+                        @foreach (var t2 in Model.AlberoItems.Where(x => x.subordinato_a == t.id).OrderBy(x => x.num_ordina))
+                        {
+                            @RenderItem(t2, level)
+                        }
+
+                    </table>
+                </td>
+            </tr>
+        </tbody>
+    }
+    else
+    {
+        <tbody></tbody>
+    }
+}

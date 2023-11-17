@@ -1,0 +1,273 @@
+﻿@model myRaiCommonModel.cvModels.cvModel
+@using myRaiHelper;
+
+@{
+    var lista = Model.curricula;
+}
+<section class="rai panel">
+    <header class="panel-heading bg-primary">
+        <h2 class="panel-title text-white">
+            <span tabindex="0">Titoli di studio e Specializzazioni</span>
+            <span tabindex="0" id="popTitoloStudio" data-popover-content="#myPopover" class="push-5-l" data-toggle="popover" data-html="true" data-container="body" data-placement="right" title="" data-content="Inserisci il tuo diploma/i (istruzione primaria e secondaria), laurea/e e specializzazione/i." data-original-title="&nbsp;" data-trigger="focus" aria-label="Informazioni sezione">
+                <i id="" class="fa fa-info-circle"></i>
+            </span>
+        </h2>
+
+        <div class="panel-actions rai-panel-actions">
+            <button class="btn-action-icon" style="cursor:pointer"
+                    @* data-toggle="modal" data-target="#modalStudiesInserimnento"
+           onclick="PulisciWizard();InizializzaTuttoDopoAjax('stud');Show_CV_Wizard('diploma');"*@
+                    onclick="ShowTit()" aria-label="Aggiungi titolo di studio">
+                <span class="fa fa-plus"></span>
+            </button>
+        </div>
+    </header>
+
+
+
+
+
+    <div class="panel-body panel-body-nopadding-xs" role="grid">
+        @* FREAK - PRIMA TABELLA VISIBILE CON AL MASSIMO 3 ELEMENTI *@
+        <table class="table table-hover rai-table">
+            <tbody >
+                @{
+                    int index_max;
+                    int count_lista;
+                    int i;
+                    int j = -1;
+                    int tbIX = -1;
+                    int cnt = 0; // necessario per la seconda for
+                    int tbIxImg = -1;
+                    count_lista = lista.Count;
+                    if (count_lista < 3)
+                    {
+                        index_max = count_lista;
+                    }
+                    else
+                    {
+                        index_max = 3;
+                    }
+                    for (i = 0; i < index_max; i++)
+                    {
+
+                        string not_primo_elemento = "";
+                        string comp_data;
+                        string tmp_anno_inizio = "", tmp_anno_fine = "";
+                        if (i == 0)
+                        {
+                            tbIX = 0;
+                        }
+                        else
+                        {
+                            tbIX = -1;
+                        }
+
+                        if (lista[i]._dataInizio != null)
+                        {
+                            tmp_anno_inizio = lista[i]._dataInizio.ToString().Substring(0, 4);
+                        }
+
+                        if (lista[i]._dataFine != null)
+                        {
+                            tmp_anno_fine = ((lista[i]._dataFine != "") || (lista[i]._dataFine != null)) ? " " + lista[i]._dataFine.ToString().Substring(0, 4) : " in corso";
+                        }
+
+                        if (lista[i]._dataFine != null && lista[i]._dataFine != "")
+                        {
+                            tmp_anno_fine = " " + lista[i]._dataFine.ToString().Substring(0, 4);
+                        }
+
+                        if (!String.IsNullOrEmpty(tmp_anno_fine))
+                        {
+                            comp_data = "Conseguito nel" + tmp_anno_fine;
+                        }
+                        else
+                        {
+                            comp_data = "In corso";
+                        }
+
+                        //if (lista[i]._dataInizio!=null && lista[i]._dataInizio.Contains("/"))
+                        //{ comp_data = "Conseguito il " + lista[i]._dataFine;
+                        //}
+                        //else
+                        //{ comp_data =  "Conseguito nel " + tmp_anno_fine;
+                        //}
+
+                        if (i > 0)
+                        {
+                            //not_primo_elemento = "actions-hover actions-fade";
+                            tbIxImg = -1;
+                        }
+                        else
+                        {
+                            tbIxImg = 0;
+                        }
+
+                        <tr tabindex="@tbIX" role="row" onfocus="onFocusRowShowCtrl(this);">
+                            <td class="text-left">
+                                <!-- Freak - Da decidere in deifnitiva -->
+                                @{
+                                    string text;
+                                }
+                                @if (lista[i]._logo.ToLower() == "diploma")
+                                {
+                                    text = lista[i]._descTitolo;
+                                }
+                                else
+                                {
+                                    text = lista[i]._descTitolo;
+                                }
+                                <span class="text-bold">@text</span><br />
+                                <span class="rai-font-sm">@lista[i]._istituto</span><br />
+                                <span class="rai-font-sm">@lista[i]._logo</span><br />
+                                <span class="rai-font-sm-neutral">@comp_data</span>
+                            </td>
+                            <td class="text-right @not_primo_elemento" style="vertical-align:top!important" role="toolbar">
+                                <div class="btn-action-icon-container">
+                                    @if (lista[i]._logo.ToLower() == "master")
+                                    {
+                                        <a class="btn-action-icon" aria-label="Elimina titolo di studio @text" role="link" tabindex="@tbIxImg" onclick="ConfermaCancellazione_Studies('@lista[i]._logo.ToLower()', '@lista[i]._matricola', '@lista[i]._prog')"><i class="fa fa-trash"></i></a>
+                                    }
+                                    else
+                                    {
+                                        <a class="btn-action-icon" role="link" tabindex="@tbIxImg" aria-label="Elimina titolo di studio @text" onclick="ConfermaCancellazione_Studies('@lista[i]._logo.ToLower()', '@lista[i]._matricola', '@lista[i]._codTitolo')"><i class="fa fa-trash"></i></a>
+                                    }
+
+                                                                <a class="btn-action-icon" style="cursor:pointer" role="link" tabindex="@tbIxImg" aria-label="Modifica titolo di studio @text"
+                                                                   @*onclick="CV_Modifica_CV(@Json.Encode(lista[i]))"*@
+                                                                   onclick="UpdateTit( @lista[i]._codTitolo, '@lista[i]._tableTarget','@lista[i]._prog')"><i class="fa fa-pencil"></i></a>
+                                                            </div>
+
+                            </td>
+
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+        @* FREAK - SECONDA TABELLA COLLAPSABILE *@
+        @if (i < count_lista)
+        {
+            cnt = 0;
+
+            <div class="collapse" id="collStudies">
+                <table class="table table-hover rai-table">
+                    <tbody>
+                        @for (j = i; j < count_lista; j++)
+                        {
+                            string comp_data;
+                            string tmp_anno_inizio, tmp_anno_fine;
+                            tmp_anno_fine = string.Empty;
+                            cnt++;
+                            if (cnt == 0)
+                            {
+                                tbIX = 0;
+                            }
+                            else
+                            {
+                                tbIX = -1;
+                            }
+                            if (lista[j]._dataInizio != null && lista[j]._dataInizio.Contains("/"))
+                            {
+                                comp_data = "Conseguito il " + lista[j]._dataFine;
+                            }
+                            else
+                            {
+                                if (lista[j]._dataInizio != null && lista[j]._dataInizio.Length > 4)
+                                {
+                                    tmp_anno_inizio = lista[j]._dataInizio.ToString().Substring(0, 4);
+                                }
+
+                                if (lista[j]._dataFine != null && lista[j]._dataFine != "")
+                                {
+                                    tmp_anno_fine = " " + lista[j]._dataFine.ToString().Substring(0, 4);
+                                }
+
+                                if (!String.IsNullOrEmpty(tmp_anno_fine))
+                                {
+                                    comp_data = "Conseguito nel" + tmp_anno_fine;
+                                }
+                                else
+                                {
+                                    comp_data = "In corso";
+                                }
+                            }
+
+                            <tr tabindex="@tbIX" role="row" onfocus="onFocusRowShowCtrl(this);">
+                                <td class="text-left">
+                                    @{
+                                        string text2;
+                                    }
+                                    @if (lista[j]._logo.ToLower() == "diploma")
+                                    {
+                                        text2 = lista[j]._descTitolo;
+                                    }
+                                    else
+                                    {
+                                        text2 = lista[j]._descTitolo;
+                                    }
+                                    <span class="text-bold">@text2</span><br />
+                                    <span class="rai-font-sm">@lista[j]._logo</span><br />
+                                    <span class="rai-font-sm">@lista[j]._istituto</span><br />
+                                    <span class="rai-font-sm-neutral">@comp_data</span>
+                                </td>
+                                <td class="text-right" style="vertical-align:top!important" role="toolbar">
+                                    <div class="btn-action-icon-container">
+                                        @if (lista[j]._logo.ToLower() == "master")
+                                        {
+                                            <a class="btn-action-icon" aria-label="Elimina titolo di studio @text2" tabindex="@tbIxImg" role="link" onclick="ConfermaCancellazione_Studies('@lista[j]._logo.ToLower()', '@lista[j]._matricola', '@lista[j]._prog')"><i class="fa fa-trash"></i></a>
+                                        }
+                                        else
+                                        {
+                                            <a class="btn-action-icon" aria-label="Elimina titolo di studio @text2" tabindex="@tbIxImg" role="link" onclick="ConfermaCancellazione_Studies('@lista[j]._logo.ToLower()', '@lista[j]._matricola', '@lista[j]._codTitolo')"><i class="fa fa-trash"></i></a>
+                                        }
+
+                                                                        <a class="btn-action-icon" style="cursor:pointer" tabindex="@tbIxImg" role="link" aria-label="Modifica titolo di studio @text2"
+                                                                           @*     onclick="CV_Modifica_CV(@Json.Encode(lista[j]))"*@
+                                                                           onclick="UpdateTit(@lista[j]._codTitolo,'@lista[j]._tableTarget', '@lista[j]._prog')"><i class="fa fa-pencil"></i></a>
+                                                                    </div>
+
+                                </td>
+
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            if (j > -1)
+            {
+                <div class="rai section-bottom">
+                    <a id="toggle-studies" data-toggle="collapse" data-target="#collStudies" class="apri-panel" onclick="toggleAngle('toggle-studies')" aria-label="Mostra altri titoli" tabindex="0"><i class="fa fa-2x push-5-t font-w600 fa-angle-down text-white"></i></a>  
+                </div>
+            }
+
+        }
+        @if (count_lista == 0)
+        {
+            @Html.Partial("~/Views/CV_Online/partials/_no_elements.cshtml");
+        }
+    </div>
+</section>
+
+
+
+<script>fixBarCV("form-inserimentocv");</script>
+@* ********************************** *@
+
+@Html.RenderModal("tit-studio")
+
+@*<div class="modal fade right modalCheck" id="tit-studio" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="tit-studio-content">
+
+        </div>
+    </div>
+</div>*@
+
+<script>
+    $('[data-toggle="popover"]').popover({
+        template: '<div class="popover"><div class="arrow"></div><div><span style="float:left; width:100%; display:inline;" class="popover-title"></span><span class="customPopOverCloser" style="float:right; width:5%; margin-top: -30px; margin-left: -3px; dispay:inline; cursor:pointer;" aria-hidden="true">x</span></div><div class="clearfix"></div><div class="popover-content"></div></div>',
+        html: true
+    });
+</script>

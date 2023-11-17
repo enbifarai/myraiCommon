@@ -1,0 +1,930 @@
+﻿
+@model myRaiCommonModel.MaternitaDettagliGestioneModel
+
+@{
+    var SegnalazioneAperta = Model.Richiesta.XR_MAT_SEGNALAZIONI.Where(x => x.RISOLTA == false).FirstOrDefault();
+    var SegnalazioneChiusa = Model.Richiesta.XR_MAT_SEGNALAZIONI.Where(x => x.RISOLTA == true).FirstOrDefault();
+    bool IsUffGestione = myRaiHelper.MaternitaCongediHelper.EnabledToMaternitaCongediUfficioAnyRole(
+             myRaiHelper.MaternitaCongediHelper.MaternitaCongediUffici.Gestione
+            );
+    bool IsUffPersonale = myRaiHelper.MaternitaCongediHelper.EnabledToMaternitaCongediUfficioAnyRole(
+             myRaiHelper.MaternitaCongediHelper.MaternitaCongediUffici.Personale
+            );
+    bool IsUffPersonaleRW = myRaiHelper.MaternitaCongediHelper.EnabledToMaternitaCongediDetail(
+         myRaiHelper.MaternitaCongediHelper.MaternitaCongediUffici.Personale,
+          myRaiHelper.MaternitaCongediHelper.MaternitaCongediGradiAbil.GEST
+        ) ||
+        myRaiHelper.MaternitaCongediHelper.EnabledToMaternitaCongediDetail(
+         myRaiHelper.MaternitaCongediHelper.MaternitaCongediUffici.Personale,
+          myRaiHelper.MaternitaCongediHelper.MaternitaCongediGradiAbil.ADM
+        );
+
+}
+
+<section class="rai panel" id="modifica-ecc" style="display:none">
+    @{
+        List<string> LS = new List<string>();
+        if (Model.Richiesta.XR_MAT_CATEGORIE.ECCEZIONE.Contains("-"))
+        {
+            LS = Model.Richiesta.XR_MAT_CATEGORIE.ECCEZIONE.Split('-').Select(x => x.Trim()).ToList();
+        }
+        var ItemsEccezioni = new List<SelectListItem>();
+        var db = new myRaiData.digiGappEntities();
+        var eccezioni = db.L2D_ECCEZIONE.Where(x => LS.Contains(x.cod_eccezione)).ToList();
+        foreach (var e in LS)
+        {
+            ItemsEccezioni.Add(new SelectListItem() {
+                Text =e+ " - " + eccezioni.Where(x=>x.cod_eccezione.Trim()==e)
+                                .Select(x=>x.desc_eccezione.Trim()).FirstOrDefault() ,
+                 Value=e
+            });
+        }
+    }
+    <header class="panel-heading">
+
+        <h2 class="panel-title">Domanda di @(Model.Richiesta.XR_MAT_CATEGORIE.CAT == "MAT" ? "maternità/paternità" : "congedo parentale" )</h2>
+
+    </header>
+
+    <div class="panel-body">
+
+        <div class="row">
+            <div class="col-sm-12">
+                <span class="rai-font-md-bold">Modifica eccezione risultante</span>
+            </div>
+        </div>
+        <div class="row" style="margin-top:16px">
+            <div class="col-sm-12">
+                <span>Scegli tra le tipologie consentite. </span>
+            </div>
+        </div>
+
+        <div class="row" style="margin-top: 30px;">
+            <div class="col-sm-5">
+                <span class="rai-font-md-neutral-bold">Tipo di congedo</span>
+
+            </div>
+            <div class="col-sm-7">
+                <span class="rai-font-lg">@Model.Richiesta.XR_MAT_CATEGORIE.TITOLO</span>
+            </div>
+        </div>
+        @if (Model.Richiesta.INIZIO_GIUSTIFICATIVO != null)
+        {
+            <div class="row" style="margin-top:12px">
+                <div class="col-sm-5">
+                    <span class="rai-font-md-neutral-bold">Periodo del giustificativo</span>
+                </div>
+                <div class="col-sm-7">
+                    <span class="rai-font-lg">@(((DateTime)Model.Richiesta.INIZIO_GIUSTIFICATIVO).ToString("dd/MM/yyyy") + " - " + ((DateTime)Model.Richiesta.FINE_GIUSTIFICATIVO).ToString("dd/MM/yyyy"))</span>
+                </div>
+            </div>
+        }
+        <div class="row" style="margin-top:30px">
+            <div class="col-sm-12">
+                <span class="rai-font-md-bold">ECCEZIONE RISULTANTE</span><span class="campoObbligatorio">*</span>
+            </div>
+            <div class="col-sm-12" style="margin-top:10px">
+                <select id="select-ecc" class="form-control" style="width:98%">
+                    @{
+                        foreach (var s in ItemsEccezioni)
+                        {
+                            <option value="@s.Value">@s.Text</option>
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="row" style="margin-top:30px">
+            <div class="col-sm-12">
+                <div class="rai-btn-fill">
+                    <input type="button" value="Annulla" class="btn rai-btn-secondary" title="Annulla" onclick="AnnullaModificaEccezione()" required="">
+                    <input type="button" value=" Salva" class="btn rai-btn-primary" title="Salva" onclick="SalvaModificaEccezione(@Model.Richiesta.ID)">
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+
+
+
+<section class="rai panel" id="normal-vis">
+    <header class="panel-heading">
+
+        <h2 class="panel-title">Domanda di @(Model.Richiesta.XR_MAT_CATEGORIE.CAT == "MAT" ? "maternità/paternità" : "congedo parentale" )</h2>
+
+    </header>
+
+    <div class="panel-body">
+        @if (SegnalazioneChiusa != null && IsUffGestione)
+        {
+            <div class="bg-neutrals-xl-10" style="padding:8px;margin-bottom:12px;border-radius: 2px;">
+                <div class="row">
+                    <div class="col-sm-8" style="padding-top:6px">
+                        <span class="rai-font-sm-neutral">Non ci sono richieste di modifica in corso</span>
+                    </div>
+                    <div class="col-sm-4" style="text-align:right">
+                        <button class="btn rai-btn-small" onclick="$('#risolte').show()" aria-label="mostra risolte" title="mostra risolte" style="min-width:80px;">Mostra risolte</button>
+                    </div>
+
+                </div>
+            </div>
+            <div id="risolte" style="display:none">
+                @Html.Partial("popupVisGestSegnalazione", new myRaiCommonModel.MaternitaSegnalazioneModel() {
+               Segnalazione = SegnalazioneChiusa, ListInfoMatricole = Model.ListInfoMatricola })
+            </div>
+        }
+        @if (SegnalazioneAperta != null && IsUffGestione)
+        {
+            @Html.Partial("popupVisGestSegnalazione", new myRaiCommonModel.MaternitaSegnalazioneModel() {
+           Segnalazione = SegnalazioneAperta, ListInfoMatricole = Model.ListInfoMatricola })
+        }
+
+        <div class="row">
+            <div class="col-sm-5">
+                @if (Model.Richiesta.XR_MAT_CATEGORIE.CAT == "MAT")
+                {
+                    <span class="rai-font-md-neutral-bold">Tipo di maternita</span>
+                }
+                @if (Model.Richiesta.XR_MAT_CATEGORIE.CAT == "CON")
+                {
+                    <span class="rai-font-md-neutral-bold">Tipo di congedo</span>
+                }
+
+            </div>
+            <div class="col-sm-7">
+                <span class="rai-font-lg">@Model.Richiesta.XR_MAT_CATEGORIE.TITOLO</span>
+            </div>
+        </div>
+        @*@if (Model.Richiesta.DATA_NASCITA_BAMBINO != null && Model.Richiesta.XR_MAT_CATEGORIE.ECCEZIONE != null && Model.Richiesta.XR_MAT_CATEGORIE.ECCEZIONE.Contains("AF") && Model.Richiesta.XR_MAT_CATEGORIE.ECCEZIONE.Contains("BF"))
+            {*@
+        @{
+            string ecc = myRaiCommonManager.MaternitaCongediManager.GetEccezioneRisultante(Model.Richiesta);
+            string desc = myRaiCommonManager.MaternitaCongediManager.GetDescrittivaEccezione(ecc);
+        }
+
+
+        <div class="row" style="margin-top:12px">
+            <div class="col-sm-5">
+                <span class="rai-font-md-neutral-bold">Eccezione risultante</span>
+            </div>
+            <div class="col-sm-7">
+                <span id="ecc-risu" class="rai-font-lg">@ecc</span><span> - </span>
+                <span id="ecc-desc" class="rai-font-lg">@desc</span>
+                @if (Model.InCaricoAMe && Model.Richiesta.XR_MAT_CATEGORIE.ECCEZIONE != null &&
+                    myRaiHelper.MaternitaCongediHelper.EnabledToMaternitaCongediUfficioAnyRole(myRaiHelper.MaternitaCongediHelper.MaternitaCongediUffici.Gestione) &&
+                    Model.Richiesta.XR_MAT_CATEGORIE.ECCEZIONE.Contains("-"))
+                {
+                    <button class="btn rai-btn-small" aria-label="Visualizza" onclick="VisModificaEccezione()" title="Modifica" style="min-width:80px;float: right;">
+                        Modifica
+                    </button>
+                }
+
+            </div>
+        </div>
+        @*}*@
+        @if (Model.Richiesta.DATA_PRESUNTA_PARTO != null)
+        {
+            <div class="row" style="margin-top:12px">
+                <div class="col-sm-5">
+                    <span class="rai-font-md-neutral-bold">Data presunta parto</span>
+                </div>
+                <div class="col-sm-7">
+                    <span class="rai-font-lg">@(((DateTime)Model.Richiesta.DATA_PRESUNTA_PARTO).ToString("dd/MM/yyyy"))</span>
+                </div>
+            </div>
+        }
+        @if (Model.Richiesta.DATA_PARTO != null)
+        {
+            <div class="row" style="margin-top:12px">
+                <div class="col-sm-5">
+                    <span class="rai-font-md-neutral-bold">Data parto</span>
+                </div>
+                <div class="col-sm-7">
+                    <span class="rai-font-lg">@(((DateTime)Model.Richiesta.DATA_PARTO).ToString("dd/MM/yyyy"))</span>
+                </div>
+            </div>
+        }
+        @if (Model.Richiesta.DATA_INTERDIZIONE != null)
+        {
+            <div class="row" style="margin-top:12px">
+                <div class="col-sm-5">
+                    <span class="rai-font-md-neutral-bold">Data interdizione</span>
+                </div>
+                <div class="col-sm-7">
+                    <span class="rai-font-lg">@(((DateTime)Model.Richiesta.DATA_INTERDIZIONE).ToString("dd/MM/yyyy"))</span>
+                </div>
+            </div>
+        }
+        @if (Model.Richiesta.DATA_INGRESSO_FAMIGLIA != null)
+        {
+            <div class="row" style="margin-top:12px">
+                <div class="col-sm-5">
+                    <span class="rai-font-md-neutral-bold">Data ingresso in famiglia</span>
+                </div>
+                <div class="col-sm-7">
+                    <span class="rai-font-lg">@(((DateTime)Model.Richiesta.DATA_INGRESSO_FAMIGLIA).ToString("dd/MM/yyyy"))</span>
+                </div>
+            </div>
+        }
+
+
+        @if (Model.Richiesta.DATA_INGRESSO_ITALIA != null)
+        {
+            <div class="row" style="margin-top:12px">
+                <div class="col-sm-5">
+                    <span class="rai-font-md-neutral-bold">Data ingresso in Italia</span>
+                </div>
+                <div class="col-sm-7">
+                    <span class="rai-font-lg">@(((DateTime)Model.Richiesta.DATA_INGRESSO_ITALIA).ToString("dd/MM/yyyy"))</span>
+                </div>
+            </div>
+        }
+
+
+        @if (Model.Richiesta.DATA_INIZIO_MATERNITA != null)
+        {
+            <div class="row" style="margin-top:12px">
+                <div class="col-sm-5">
+                    <span class="rai-font-md-neutral-bold">Data inizio maternità</span>
+                </div>
+                <div class="col-sm-7">
+                    <span class="rai-font-lg">@(((DateTime)Model.Richiesta.DATA_INIZIO_MATERNITA).ToString("dd/MM/yyyy"))</span>
+                </div>
+            </div>
+        }
+
+
+        @if (Model.Richiesta.DATA_FINE_MATERNITA != null)
+        {
+            <div class="row" style="margin-top:12px">
+                <div class="col-sm-5">
+                    <span class="rai-font-md-neutral-bold">Data fine maternità</span>
+                </div>
+                <div class="col-sm-7">
+                    <span class="rai-font-lg">@(((DateTime)Model.Richiesta.DATA_FINE_MATERNITA).ToString("dd/MM/yyyy"))</span>
+                </div>
+            </div>
+        }
+
+        @if (Model.Richiesta.SCELTA_ANTICIPAZIONE_MESI == true)
+        {
+            <div class="row" style="margin-top:12px">
+                <div class="col-sm-5">
+                    <span class="rai-font-md-neutral-bold">Scelta anticipazione mesi</span>
+                </div>
+                <div class="col-sm-7">
+                    <span class="rai-font-lg">SI</span>
+                </div>
+            </div>
+        }
+
+        @if (Model.Richiesta.MESE_FLESSIBILITA != null)
+        {
+            <div class="row" style="margin-top:12px">
+                <div class="col-sm-5">
+                    <span class="rai-font-md-neutral-bold">Mese flessibilità</span>
+                </div>
+                <div class="col-sm-7">
+                    <span class="rai-font-lg">@Model.Richiesta.MESE_FLESSIBILITA</span>
+                </div>
+            </div>
+        }
+
+
+        @if (Model.Richiesta.DATA_NASCITA_BAMBINO != null)
+        {
+            <div class="row" style="margin-top:12px">
+                <div class="col-sm-5">
+                    <span class="rai-font-md-neutral-bold">Data nascita bambino</span>
+                </div>
+                <div class="col-sm-7">
+                    <span class="rai-font-lg">@(((DateTime)Model.Richiesta.DATA_NASCITA_BAMBINO).ToString("dd/MM/yyyy"))</span>
+                </div>
+            </div>
+        }
+
+
+        @if (!String.IsNullOrWhiteSpace(Model.Richiesta.CF_BAMBINO))
+        {
+            <div class="row" style="margin-top:12px">
+                <div class="col-sm-5">
+                    <span class="rai-font-md-neutral-bold">Codice fiscale del bambino</span>
+                </div>
+                <div class="col-sm-7">
+                    <span class="rai-font-lg">@Model.Richiesta.CF_BAMBINO</span>
+                </div>
+            </div>
+        }
+
+
+        @if (Model.Richiesta.GIORNO_GIUSTIFICATIVO != null)
+        {
+            <div class="row" style="margin-top:12px">
+                <div class="col-sm-5">
+                    <span class="rai-font-md-neutral-bold">Giorno giustificativo</span>
+                </div>
+                <div class="col-sm-7">
+                    <span class="rai-font-lg">@(((DateTime)Model.Richiesta.GIORNO_GIUSTIFICATIVO).ToString("dd/MM/yyyy"))</span>
+                </div>
+            </div>
+        }
+
+
+        @if (Model.Richiesta.INIZIO_GIUSTIFICATIVO != null)
+        {
+            <div class="row" style="margin-top:12px">
+                <div class="col-sm-5">
+                    <span class="rai-font-md-neutral-bold">Inizio giustificativo</span>
+                </div>
+                <div class="col-sm-7">
+                    <span class="rai-font-lg">@(((DateTime)Model.Richiesta.INIZIO_GIUSTIFICATIVO).ToString("dd/MM/yyyy"))</span>
+                </div>
+            </div>
+        }
+
+        @if (Model.Richiesta.FINE_GIUSTIFICATIVO != null)
+        {
+            <div class="row" style="margin-top:12px">
+                <div class="col-sm-5">
+                    <span class="rai-font-md-neutral-bold">Fine giustificativo</span>
+                </div>
+                <div class="col-sm-7">
+                    <span class="rai-font-lg">@(((DateTime)Model.Richiesta.FINE_GIUSTIFICATIVO).ToString("dd/MM/yyyy"))</span>
+                </div>
+            </div>
+        }
+        <input type="hidden" value="@Model.Richiesta.GENITORE_SOLO" id="gen-solo" />
+        @if (Model.Richiesta.XR_MAT_CATEGORIE.CAT == "CON")
+        {
+            <div class="row" style="margin-top:12px">
+                <div class="col-sm-5">
+                    <span class="rai-font-md-neutral-bold">Giorni pianificati</span>
+                </div>
+                <div class="col-sm-7">
+                    <span class="rai-font-lg">@Model.Richiesta.NUMERO_GIORNI_GIUSTIFICATIVO - </span>
+                    <a   href="javascript:ShowPianificazione(@Model.Richiesta.ID)" title="Visualizza">Visualizza</a>
+                    @*<button class="btn rai-btn-small" aria-label="Visualizza" onclick="ShowPianificazione(@Model.Richiesta.ID)" title="Visualizza" style="min-width:80px;float: right;">
+                        Visualizza
+                    </button>*@
+                </div>
+            </div>
+        }
+
+        @*@if (Model.Richiesta.NUMERO_GIORNI_GIUSTIFICATIVO != null)
+            {
+                <div class="row" style="margin-top:12px">
+                    <div class="col-sm-5">
+                        <span class="rai-font-md-neutral-bold">Numero giorni giustificativo</span>
+                    </div>
+                    <div class="col-sm-7">
+                        <span class="rai-font-lg">@Model.Richiesta.NUMERO_GIORNI_GIUSTIFICATIVO</span>
+                    </div>
+                </div>
+            }*@
+
+
+
+        @*@if (Model.Richiesta.XR_MAT_CATEGORIE.CAT == "CON")
+            {
+                <div class="block block-content-table push-20-t">
+                    <div class="block-header block-content-mini">
+                        <span class="block-title">Pianificazione</span>
+                        <div class="block-options">
+                            <button class="btn rai-btn-small" aria-label="Visualizza" onclick="ShowPianificazione(@Model.Richiesta.ID)" title="Visualizza" style="min-width:80px;">
+                                Visualizza
+                            </button>
+                        </div>
+                    </div>
+                    <div class="block-content">
+                        @if (Model.Richiesta.INIZIO_GIUSTIFICATIVO != null)
+                        {
+                            <div class="row" style="margin-top:12px">
+                                <div class="col-sm-5">
+                                    <span class="rai-font-md-neutral-bold">Periodo del giustificativo</span>
+                                </div>
+                                <div class="col-sm-7">
+                                    <span class="rai-font-lg">@(((DateTime)Model.Richiesta.INIZIO_GIUSTIFICATIVO).ToString("dd/MM/yyyy") + " - " + ((DateTime)Model.Richiesta.FINE_GIUSTIFICATIVO).ToString("dd/MM/yyyy"))</span>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="row" style="margin-top:12px">
+                            <div class="col-sm-5">
+                                <span class="rai-font-md-neutral-bold">Giorni pianificati</span>
+                            </div>
+                            <div class="col-sm-7">
+                                <span class="rai-font-lg">@Model.Richiesta.NUMERO_GIORNI_GIUSTIFICATIVO</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }*@
+
+
+        <div class="row">
+            <div class="col-sm-12">
+                <span class="as-block-title" style="display:block;margin-top:16px">DOCUMENTI ALLEGATI  </span>
+            </div>
+        </div>
+
+        <div id="allegati-container-review" class="bg-neutrals-xl-10" style="padding:16px 24px 24px 24px; margin:12px -15px -15px -15px">
+
+            @if (SegnalazioneAperta == null)
+            {
+                @Html.Action("getallegatiVisualizzazione", new { idRichiesta = Model.Richiesta.ID, InCaricoAMe = Model.InCaricoAMe })
+            }
+            else
+            {
+                @Html.Action("getallegatiVisualizzazione", new { idRichiesta = Model.Richiesta.ID, InCaricoAMe = false })
+            }
+
+        </div>
+        @if (Model.InCaricoAMe && SegnalazioneAperta == null && IsUffGestione)
+        {
+            <div class="row" style="margin-top:20px">
+                <div class="col-sm-6">
+                    <span class="rai-font-md-bold">NOTA IN RISPOSTA  </span>
+                </div>
+                <div class="col-sm-6" style="text-align:right">
+                    <span class="rai-font-md-neutral">Obbligatoria in caso di rifiuto</span>
+                </div>
+                <div class="col-sm-12">
+                    <div style="width:100%;height: 1px;background-color: #eee;margin-top: 15px;margin-bottom: 15px;"></div>
+                </div>
+                <div class="col-sm-12">
+                    <textarea id="nota-risposta" onkeyup="SbloccaTasti()" placeholder="Inserisci una nota in risposta" rows="5" style="width:100%;border: solid 1px #eee; border-radius:3px"></textarea>
+                </div>
+
+                <div class="col-sm-12">
+                    <div class="rai-btn-fill">
+                        <button id="respingi-richiesta" style="padding:12px;height:50px" class="disable btn btn-md btn-action-icon text-danger" onclick="RespingiRichiestaMat(@Model.Richiesta.ID)">
+                            <i class="glyphicon glyphicon-remove"></i>
+                            Respingi richiesta
+                        </button>
+                        <button id="approva-richiesta" style="padding:12px;height:50px" class="disable btn btn-md btn-action-icon text-success" onclick="ApprovaRichiestaMat(@Model.Richiesta.ID)">
+                            <i class="fa fa-fw fa-check"></i>
+                            Approva richiesta
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        }
+        @if (IsUffPersonaleRW)
+        {
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="rai-btn-fill">
+                        <button class="btn rai-btn-secondary" onclick="$('#popupview-gestione').modal('hide')">Chiudi</button>
+                        <button class="btn rai-btn-primary" onclick="PrendiVisioneUffPersonale(@Model.Richiesta.ID)">Prendi visione</button>
+                    </div>
+                </div>
+            </div>
+        }
+        else if (Model.FromApprovatoreGestione)
+        {
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="rai-btn-fill">
+                        <button class="btn rai-btn-secondary" onclick="$('#popupview-gestione').modal('hide')">Chiudi</button>
+                        <button class="btn rai-btn-primary" onclick="ApprovaResponsabileGestione(@Model.Richiesta.ID)">Approva</button>
+                    </div>
+                </div>
+            </div>
+        }
+
+    </div>
+</section>
+<script>
+    @if (Model.EccezioniPossibili.Any())
+    {
+        @:$("#infoecc").html('');
+        foreach (var e in Model.EccezioniPossibili)
+        {
+            @:AddEccezionePossibile('@e.cod_eccezione', '@e.desc_eccezione');
+        }
+    }
+
+                function SalvaModificaEccezione(idrichiesta) {
+                    var ecc = $("#select-ecc").val();
+        $.ajax({
+                    url: '/MaternitaCongedi/ModificaEccezione',
+            type: "GET",
+            data: { idrichiesta: idrichiesta, eccezione:ecc },
+            dataType: "json",
+            complete: function () { },
+            success: function (data) {
+                            if (data.esito == true) {
+                                swal({
+                                title: 'Eccezione modificata correttamente',
+                        type: "success",
+                        confirmButtonText: 'OK',
+                        customClass: 'rai'
+                                }).then(function () {
+                        $("#ecc-risu").text(ecc);
+                        $("#ecc-desc").text(data.desc);
+                    AnnullaModificaEccezione();
+                });
+            }
+                else {
+                    swal({
+            title: data.errore,
+                        type: "error",
+                        confirmButtonText: 'OK',
+                        customClass: 'rai'
+                    });
+                }
+    }
+        });
+    }
+    function AddEccezionePossibile(codice, desc) {
+        var mydiv = document.getElementById("infoecc");
+        var aTag = document.createElement('a');
+        aTag.setAttribute('href', "javascript:showDettaglioEccezione('"+codice+"')");
+        aTag.innerText = codice + " - " + desc;
+        mydiv.appendChild(aTag);
+        var linebreak = document.createElement("br");
+        mydiv.appendChild(linebreak);
+    }
+    function VisModificaEccezione() {
+        var ecc = $("#ecc-risu").text().trim();
+        debugger
+        $("#normal-vis").hide();
+        $(".hideme").hide();
+        $(".showme").show();
+        $("#modifica-ecc").show();
+        $("#select-ecc").val(ecc);
+        $("#close-mod").hide();
+    }
+    function AnnullaModificaEccezione() {
+        $("#normal-vis").show();
+        $(".hideme").show();
+        $("#modifica-ecc").hide();
+        $(".showme").hide();
+        $("#close-mod").show();
+    }
+    function ApprovaResponsabileGestione(idRichiesta) {
+        swal({
+        title: "Approva richiesta",
+            type: 'question',
+            html: "Confermi di approvare la richiesta visualizzata?",
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+            $.ajax({
+            url: '/MaternitaCongedi/ApprovaResponsabileGestione',
+                type: "GET",
+                data: { idrichiesta: idRichiesta },
+                dataType: "json",
+                complete: function () { },
+                success: function (data) {
+                    if (data.esito == true) {
+                        swal({
+                        title: 'Approvazione registrata correttamente',
+                            type: "success",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                        $("#popupview-gestione").modal("hide");
+                        GetContentApprovazioni();
+                    }
+                    else {
+                        swal({
+                        title: data.errore,
+                            type: "error",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                    }
+                }
+            });
+        });
+    }
+    function PrendiVisioneUffPersonale(idRichiesta) {
+        swal({
+        title: "Presa visione richiesta",
+            type: 'question',
+            html: "Confermi di prendere visione della richiesta visualizzata?",
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+            $.ajax({
+            url: '/MaternitaCongedi/PrendiVisioneUffPesonale',
+                type: "GET",
+                data: { idrichiesta: idRichiesta },
+                dataType: "json",
+                complete: function () { },
+                success: function (data) {
+                    if (data.esito == true) {
+                        swal({
+                        title: 'Presa visione registrata correttamente',
+                            type: "success",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                        $("#popupview-gestione").modal("hide");
+                        GetContent();
+                    }
+                    else {
+                        swal({
+                        title: data.errore,
+                            type: "error",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                    }
+                }
+            });
+        });
+    }
+    function AnnullaRichiesta(idrichiesta) {
+        swal({
+        title: "Annullamento richiesta",
+            type: 'question',
+            html: "Confermi di annullare la richiesta visualizzata?",
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+
+            $.ajax({
+            url: '/MaternitaCongedi/AnnullaRichiesta',
+                type: "GET",
+                data: { idrichiesta: idrichiesta },
+                dataType: "json",
+                complete: function () { },
+                success: function (data) {
+                    if (data.esito == true) {
+                        swal({
+                        title: 'Richiesta annullata correttamente',
+                            type: "success",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                        $("#popupview-gestione").modal("hide");
+                        GetContent();
+                    }
+                    else {
+                        swal({
+                        title: data.errore,
+                            type: "error",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                    }
+                }
+            });
+        });
+
+
+    }
+
+    function InviaMessaggioPerSegnalazione(idSegnalazione) {
+        var testo = $("#testo-risposta").val().trim();
+
+
+        var idAllegatiNonOk = [];
+        var idString = "";
+        var allegatiNonOk = $("button.nok-selected").length;
+        if (allegatiNonOk > 0) {
+            $("button.nok-selected").each(function () {
+                idAllegatiNonOk.push($(this).attr("data-idallegato-valutato"));
+            });
+            idString = idAllegatiNonOk.toString();
+        }
+        debugger
+        $.ajax({
+        url: '/MaternitaCongedi/InviaMessaggioSegnalazione',
+            type: "GET",
+            data: { idSegnalazione: idSegnalazione, nota: testo, idAllegatiRifiutati: idString },
+            dataType: "json",
+            complete: function () { },
+            success: function (data) {
+                if (data.esito == true) {
+                    swal({
+                    title: 'Messaggio salvato correttamente',
+                        type: "success",
+                        confirmButtonText: 'OK',
+                        customClass: 'rai'
+                    }).then(function () {
+                        $("#button-invia-risposta").addClass("disable");
+
+                    });
+                }
+                else {
+                    swal({
+                    title: data.errore,
+                        type: "error",
+                        confirmButtonText: 'OK',
+                        customClass: 'rai'
+                    });
+                }
+            }
+        });
+    }
+    function CheckButtonInviaRisposta() {
+        var testo = $("#testo-risposta").val().trim();
+        var tastiValutazioneOK = true;
+        var numeroTasti = $(".valuta-allegato").length;
+        var numeroValutatiOK = $(".ok-selected").length;
+        var numeroValutatiNOK = $(".nok-selected").length;
+
+        if (numeroTasti > 0) {
+            tastiValutazioneOK = (numeroValutatiOK + numeroValutatiNOK == numeroTasti / 2);
+        }
+        debugger
+        if (testo.length > 4 && tastiValutazioneOK) {
+            $("#button-invia-risposta").removeClass("disable");
+        }
+        else {
+            $("#button-invia-risposta").addClass("disable");
+        }
+    }
+    function ApprovaRichiestaMat(idrichiesta) {
+        swal({
+        title: "Approvazione richiesta",
+            type: 'question',
+            html: "Confermi di approvare la richiesta visualizzata?",
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+
+            $.ajax({
+            url: '/MaternitaCongedi/ApprovaGestione',
+                type: "GET",
+                data: { idrichiesta: idrichiesta },
+                dataType: "json",
+                complete: function () { },
+                success: function (data) {
+                    if (data.esito == true) {
+
+                        swal({
+                        title: 'Richiesta approvata correttamente',
+                            type: "success",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        }).then(function () {
+                            $("#popupview-gestione").modal("hide");
+                            GetContent();
+                        });
+
+                    }
+                    else {
+                        swal({
+                        title: data.errore,
+                            type: "error",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                    }
+                }
+            });
+        });
+    }
+    function RespingiRichiestaMat(idrichiesta) {
+        var oksel = [];
+        var noksel = [];
+        $(".ok-selected").each(function () {
+            oksel.push($(this).attr("data-idallegato-valutato"));
+        });
+        $(".nok-selected").each(function () {
+            noksel.push($(this).attr("data-idallegato-valutato"));
+        });
+        var nota = $("#nota-risposta").val();
+
+        swal({
+        title: "Respingi richiesta",
+            type: 'question',
+            html: "Confermi di respingere la richiesta visualizzata?",
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+            $.ajax({
+            url: '/MaternitaCongedi/respingiGestione',
+                type: "GET",
+                data: { idrichiesta: idrichiesta, nota: nota, allegatiOK: oksel.toString(), allegatiNOK: noksel.toString() },
+                dataType: "json",
+                complete: function () { },
+                success: function (data) {
+                    swal({
+                    title: 'Richiesta respinta',
+                        type: "success",
+                        confirmButtonText: 'OK',
+                        customClass: 'rai'
+                    }).then(function () {
+                        $("#popupview-gestione").modal("hide");
+                        GetContent();
+                    });
+                }
+            });
+        });
+    }
+
+    function Rilascia(idrichiesta) {
+        swal({
+        title: "Rilascio richiesta",
+            type: 'question',
+            html: "Confermi di rilasciare la richiesta visualizzata?",
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+            $.ajax({
+            url: '/MaternitaCongedi/RilasciaGestione',
+                type: "GET",
+                data: { idrichiesta: idrichiesta },
+                dataType: "json",
+                complete: function () { },
+                success: function (data) {
+                    if (data.esito == true) {
+
+                        swal({
+                        title: 'Richiesta rilasciata correttamente',
+                            type: "success",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        }).then(function () {
+                            VisualizzaGestione(idrichiesta);
+                            GetContent();
+                        });
+
+                    }
+                    else {
+                        swal({
+                        title: data.errore,
+                            type: "error",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                    }
+                }
+            });
+        });
+
+
+
+    }
+    function PrendiInCarico(idrichiesta) {
+        swal({
+        title: "Presa in carico",
+            type: 'question',
+            html: "Confermi di prendere in carico la richiesta visualizzata?",
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+            $.ajax({
+            url: '/MaternitaCongedi/PrendiInCaricoGestione',
+                type: "GET",
+                data: { idrichiesta: idrichiesta },
+                dataType: "json",
+                complete: function () { },
+                success: function (data) {
+                    if (data.esito == true) {
+
+                        swal({
+                        title: 'Richiesta presa in carico correttamente',
+                            type: "success",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        }).then(function () {
+                            VisualizzaGestione(idrichiesta);
+                            GetContent();
+                        });
+
+                    }
+                    else {
+                        swal({
+                        title: data.errore,
+                            type: "error",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                    }
+                }
+            });
+        });
+
+    }
+</script>

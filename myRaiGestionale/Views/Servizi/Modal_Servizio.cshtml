@@ -1,0 +1,121 @@
+﻿@using myRaiData.Incentivi
+@model XR_TB_SERVIZIO
+
+@using (Html.BeginModal("Dettaglio servizio"))
+{
+    <div class="row">
+        <div class="col-sm-6">
+            @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, ""))
+            {
+                using (Html.BeginForm("Save_Servizio", "Servizi", FormMethod.Post, new { id = "form-servizio" }))
+                {
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-sm-12">
+                                @Html.LabelFor(m => m.COD_SERVIZIO, "Codice", new { @class = "rai-caption" })
+                                <div class="input-group">
+                                    @Html.TextBoxFor(m => m.COD_SERVIZIO, new { @class = "form-control", @readonly = "readonly" })
+                                    <div class="input-group-addon">
+                                        <i class="fa fa-lock"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12">
+                                @Html.LabelFor(m => m.DES_SERVIZIO, "Descrizione", new { @class = "rai-caption" })
+                                <div class="input-group">
+                                    @Html.TextBoxFor(m => m.DES_SERVIZIO, new { @class = "form-control", @readonly = "readonly" })
+                                    <div class="input-group-addon">
+                                        <i class="fa fa-lock"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12">
+                                @Html.LabelFor(m => m.COD_SIGLA, "Sigla", new { @class = "rai-caption" })
+                                <div class="input-group">
+                                    @Html.TextBoxFor(m => m.COD_SIGLA, new { @class = "form-control", @readonly = "readonly" })
+                                    <div class="input-group-addon">
+                                        <i class="fa fa-lock"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12">
+                                @Html.LabelFor(m => m.RecEsteso.DES_ESTESA, "Descrizione estesa", new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.RecEsteso.DES_ESTESA, new { @class = "form-control", maxLength = "250" })
+                            </div>
+                        </div>
+                        <div class="row form-button">
+                            <div class="col-sm-12">
+                                <button class="btn rai-btn-primary full-width" onclick="SaveFormServizio(this)">Salva</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+        <div class="col-sm-6">
+            @using (Html.BeginPanel(myRaiHelper.PanelType.PanelNoPadding, "Storico", false))
+            {
+                if (!Model.Storico.Any())
+                {
+                    <div class="row">
+                        @Html.Partial("_NoDatiDiv")
+                    </div>
+                }
+                else
+                {
+                    <table class="js-table-sections table rai-table rai-table-panel rai-table-vcenter rai-table-borderless rai-table-bordered" role="grid">
+
+                        @for (int i = 0; i < Model.Storico.Count(); i++)
+                        {
+                            var rec = Model.Storico.ElementAt(i);
+
+                            <tr>
+                                <td class="ws-nowrap" style="width:1%">
+                                    @if (i < Model.Storico.Count() - 1)
+                                    {
+                                        <span class="rai-font-md-neutral">Fino al @rec.DTA_FINE.ToString("dd/MM/yyyy")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="rai-font-md-neutral">Corrente</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!String.IsNullOrWhiteSpace(rec.DES_ESTESA))
+                                    {
+                                        <span>@rec.DES_ESTESA</span>
+                                    }
+                                    else
+                                    {
+                                        <span>-</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </table>
+                }
+            }
+        </div>
+    </div>
+}
+
+<script>
+    function SaveFormServizio(button) {
+        RaiSubmitForm(button, 'form-servizio', function () {
+            var obj = new FormData($('#form-servizio')[0]);
+            return obj;
+        }, false, false,
+            "Dati salvati con successo",
+            function () {
+                $('#modal-servizio').modal("hide");
+                $('#form-ric-ser input[type="submit"]').click();
+                RaiUpdateWidget("servizi-elenco", '/Servizi/Elenco_Servizi', 'html');
+            }, false);
+    }
+</script>

@@ -1,0 +1,209 @@
+﻿@using myRaiCommonModel
+@model SceltaDestinazioneTfrViewModel
+
+@if (Model != null)
+{
+    // Dati riepilogo
+    <div class="row" style="margin-top: 1.5rem;">
+        <div class="col-sm-12">
+            <span class="rai-font-md-bold">DETTAGLI RICHIESTA</span>
+        </div>
+        <hr />
+        <div class="row" style="margin-top: 1.5rem;">
+            <div class="col-md-3">
+                <span class="rai-font-md-neutral">Scelta pregressa</span>
+            </div>
+            <div class="col-md-9">
+                <div class="rai-font-md">@Model.DescrizioneSceltaPregressaEffettuata</div>
+                <div class="rai-font-md" style="margin-top: 1.5rem;">@Model.DescrizioneMotivoSceltaPregressaEffettuata</div>
+            </div>
+        </div>
+        <div class="row" style="margin-top: 1.5rem;">
+            <div class="col-md-3">
+                <span class=rai-font-md-neutral>Scelta attuale</span>
+            </div>
+            <div class="col-md-9">
+                <div class="rai-font-md">@Model.DescrizioneSceltaAttualeEffettuata</div>
+            </div>
+        </div>
+    </div>
+
+
+    // Documenti allegati
+    <div class="row" style="margin-top: 6rem;">
+        <section class="rai panel">
+            <div class="panel-body" id="my-block">
+                <span class="rai-font-md-bold">DOCUMENTI ALLEGATI</span>
+
+                @if (Model.ModuloDiAdesione != null)
+                {
+                    <div class="col-sm-12" style="margin-top: 1.5rem;">
+                        <span class="rai-font-md-bold">Modulo di adesione</span>
+                    </div>
+
+                    <div class="col-sm-12" style="margin-top: 0.5rem;">
+                        <table style="width: 100%;">
+                            <tbody>
+                                @Html.Partial("_trFileUpload", Model.ModuloDiAdesione)
+                            </tbody>
+                        </table>
+                    </div>
+
+                }
+
+                @if (Model.AltriDocumenti != null && Model.AltriDocumenti.Count() > 0)
+                {
+                    <div class="col-sm-12" style="margin-top: 1.5rem;">
+                        <span class="rai-font-md-bold">Altri documenti</span>
+                    </div>
+
+                    <div class="col-sm-12" style="margin-top: 0.5rem;">
+                        <table style="width: 100%;">
+                            <tbody>
+                                @foreach (var documento in Model.AltriDocumenti)
+                                {
+                                    @Html.Partial("_trFileUpload", documento)
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </section>
+    </div>
+
+    using (Html.BeginForm("PostStep3", "SceltaDestinazioneTfr", FormMethod.Post, new { id = "StepForm" }))
+    {
+        @* Hidden field fissi dell'utente *@
+        <input type="hidden" value="@ViewBag.MatricolaUtente" id="matricolaUtente" name="matricolaUtente" />
+        <input type="hidden" value="@ViewBag.IdUtente" id="idUtente" name="idUtente" />
+        <input type="hidden" value="@ViewBag.IdRecordScelta" id="idRecordScelta" name="idRecordScelta" />
+        <input type="hidden" asp-for="Model.SceltaEffettuata" id="hdnSceltaEffettuata" />
+
+        <div style="margin-top: 3rem;">
+            <div class="rai-btn-fill">
+                <button type="button" id="btnAnnulla" class="btn rai-btn-secondary" onclick="TornaIndietro()">Indietro</button>
+                <button type="button" id="btnContinua" onclick="confermaPosteTep4()" class="btn rai-btn-primary">Termina inserimento</button>
+            </div>
+        </div>
+    }
+}
+
+<script>
+    /**
+    * Funzione che chiede conferma sulla chiusura del model e, eventualmente, esegue azioni
+    * */
+    function confermaPosteTep4() {
+        swal({
+            title: 'Attenzione',
+            type: 'question',
+            html: "Non sarà possibile tornare indietro per modificare i dati. Continuare?",
+            showCancelButton: true,
+            confirmButtonText: 'Sì',
+            cancelButtonText: 'No',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+            // Cliccato su 'Sì, elimina i dati'
+            postForm();
+        }).catch(function () {
+            // Non faccio nulla
+        });
+    }
+
+    /**
+     * Funzione che esegue il post del form
+     * */
+    function postForm() {
+
+        var dati = $('#StepForm').serialize();
+
+        $.ajax({
+            type: 'POST',
+            cache: false,
+            url: "/SceltaDestinazioneTfr/PostStep4",
+            data: dati,
+            success: function (data) {
+                mostraConfermaDocumentoCreato();
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                swal({
+                    title: jqXHR.statusText,
+                    type: 'error',
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+            }
+        });
+    }
+
+    /**
+     * Funzione che esegue torna allo step precedente
+     * */
+    function TornaIndietro() {
+
+        var dati = $('#StepForm').serialize();
+
+        $.ajax({
+            type: 'POST',
+            cache: false,
+            url: "/SceltaDestinazioneTfr/BackStep3",
+            data: dati,
+            success: function (data) {
+                // Aggiorno il content del div principale
+                $('#div-modulo-trattamento-fine-rapporto').html(data);
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                swal({
+                    title: jqXHR.statusText,
+                    type: 'error',
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+            }
+        });
+    }
+
+    /**
+     * Funzione che mostra il corretto invio della richiesta e chiama un metodo del controller per compilare e mostrare il pdf
+     * */
+    function mostraConfermaDocumentoCreato() {
+        //console.log('mostraConfermaECompilaPdf')
+        swal({
+            title: 'Il documento è stato creato correttamente',
+            type: 'success',
+            showConfirmButton: true,
+            confirmButtonText: 'Ok',
+            customClass: 'rai'
+        }).then(function () {
+            // Apertura della vista che contiene il riepilogo finale
+            visualizzaModuloSceltaDestinazioneTfrFinale();
+        });
+    }
+
+    /**
+     * Funzione che sostituisce il ModuloSceltaDestinazioneTfrMain (che contiene il wizard e gli steps) con il ModuloSceltaDestinazioneTfrFinale (che contiene il riepilogo generale)
+     * */
+    function visualizzaModuloSceltaDestinazioneTfrFinale() {
+        var datiUtente = {
+            'matricolaUtente': $('#hdnSceltaDestinazioneTfrMatricolaUtente').val(),
+            'idUtente': $('#hdnSceltaDestinazioneTfrIdUtente').val(),
+            'idRecordScelta': $('#hdnSceltaDestinazioneTfrIdRecordScelta').val(),
+        }
+
+        $.ajax({
+            type: 'GET',
+            cache: false,
+            url: "/SceltaDestinazioneTfr/GetModuloSceltaDestinazioneTfrFinale",
+            data: datiUtente,
+            success: function (data) {
+                // Renderizzo il controllo simulando la funzione RaiOpenAsyncModal che si trova in myRaiV2.js
+                $('#modal-sceltaDestinazioneTfr-internal').html(data);
+            }
+        });
+    }
+</script>

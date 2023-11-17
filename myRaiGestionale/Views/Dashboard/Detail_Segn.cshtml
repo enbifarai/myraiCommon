@@ -1,0 +1,146 @@
+﻿@using myRaiData.Incentivi
+@model XR_HRIS_SEGNALAZIONE
+
+@using (Html.BeginModal("Dettaglio segnalazione"))
+{
+    <div class="row">
+        <div class="col-sm-12">
+            @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, ""))
+            {
+            <div class="form-group">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <label class="rai-caption">Data</label><br />
+                        <label>@Model.DTA_INSERIMENTO.ToString("dd/MM/yyyy HH:mm:ss")</label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-12">
+                        <label class="rai-caption">Matricola</label><br />
+                        <label>@Model.MATR_INSERIMENTO</label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-12">
+                        <label class="rai-caption">Ambito</label><br />
+                        <label>@Model.DES_AMBITO</label>
+                    </div>
+                </div>
+                <div class="row push-10">
+                    <div class="col-sm-12">
+                        <label class="rai-caption">Testo</label><br />
+                        @Html.TextAreaFor(m => m.NOT_SEGNALAZIONE, new { @readonly = "readonly", rows = "5", @class = "form-control" })
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-12">
+                        @if (!Model.IND_ESITO.HasValue)
+                        {
+                            if (!String.IsNullOrWhiteSpace(Model.MATR_INCARICO))
+                            {
+                                <span class="rai-label">In carico a @Model.MATR_INCARICO</span>
+                            }
+                        }
+                        else
+                        {
+                            switch (Model.IND_ESITO.Value)
+                            {
+                                case 0:
+                                    <span class="rai-label rai-label-success">Risolta</span>
+                                    break;
+                                case 1:
+                                    <span class="rai-label rai-label-error">Respinta</span>
+                                    break;
+                                default:
+                                    <span class="rai-label">Stato non riconosciuto</span>
+                                    break;
+                            }
+                            @Html.TextAreaFor(m => m.NOT_ESITO, new { @readonly = "readonly", rows = "10", @class = "form-control push-5-t" })
+                        }
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-12 rai-btn-fill">
+                        @if (!Model.IND_ESITO.HasValue)
+                        {
+                            <button class="btn rai-btn-secondary" onclick="SegnAssegna(@Model.ID_SEGNALAZIONE)">Assegna</button>
+                            <button class="btn rai-btn-secondary feedback-error-color" onclick="SegnRespingi(@Model.ID_SEGNALAZIONE)"><i class="fa fa-times"></i> Respingi</button>
+                            <button class="btn rai-btn-secondary feedback-success-color" onclick="SegnRisolvi(@Model.ID_SEGNALAZIONE)"><i class="fa fa-check"></i> Risolvi</button>
+                        }
+                    </div>
+                </div>
+            </div>
+            }
+        </div>
+    </div>
+}
+
+<script>
+    function SegnAssegna() {
+
+    }
+    function SegnRespingi(idSegn) {
+        swal({
+            title: 'Sei sicuro?',
+            text: "Inserisci una nota per respingere",
+            input: 'textarea',
+            showCancelButton: true,
+            confirmButtonText: 'Conferma',
+            cancelButtonText: 'Annulla',
+            reverseButtons: 'true',
+            customClass: 'rai',
+            preConfirm: function (value) {
+                return new Promise(function (resolve, reject) {
+                    if (value == "") {
+                        reject("Inserisci il testo della nota")
+                    }
+                    else {
+                        resolve()
+                    }
+                });
+            }
+        }).then(function (result) {
+            var nota = result;
+            InternalSegnEsito(idSegn, 1, nota);
+        });
+    }
+    function SegnRisolvi(idSegn) {
+        swal({
+            title: 'Sei sicuro?',
+            text: "Inserisci una nota per risolvere",
+            input: 'textarea',
+            showCancelButton: true,
+            confirmButtonText: 'Conferma',
+            cancelButtonText: 'Annulla',
+            reverseButtons: 'true',
+            customClass: 'rai',
+            preConfirm: function (value) {
+                return new Promise(function (resolve, reject) {
+                    if (value == "") {
+                        reject("Inserisci il testo della nota")
+                    }
+                    else {
+                        resolve()
+                    }
+                });
+            }
+        }).then(function (result) {
+            var nota = result;
+            InternalSegnEsito(idSegn, 0, nota);
+        });
+    }
+
+    function InternalSegnEsito(idSegn, indEsito, nota) {
+        $.ajax({
+            url: "/Dashboard/Esito_Segn",
+            type: "POST",
+            cache: false,
+            dataType: 'html',
+            data: { idSegn: idSegn, indEsito: indEsito, nota: nota },
+            success: function (data) {
+                $('#form-ricerca-segn input[type="submit"]').click();
+                $('#modal-segn-internal').html(data);
+            }
+        });
+    }
+</script>

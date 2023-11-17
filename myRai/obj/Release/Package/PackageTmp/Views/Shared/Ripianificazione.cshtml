@@ -1,0 +1,172 @@
+﻿<div class="modal fade" id="ripianifica" style="z-index:3000" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-popout">
+        <div class="modal-content">
+            <div class="block block-themed block-transparent remove-margin-b" style="margin-bottom:10px">
+
+
+                <div class="block-content block-content-full block-content-mini bg-primary">
+                    <h4 id="titolo" class="font-w600">Ripianificazione eccezione <span id="dettagli-ripian"></span></h4>
+                </div>
+
+
+                <div class="block-content">
+                    <form class="form-horizontal" action="base_pages_tickets.html" method="post" onsubmit="return false;">
+                        <div class="form-group push-10">
+                            <div class="col-xs-12">
+                                <span><b>Ripianifica l'eccezione per il giorno :</b></span> <br />
+                                <div class="input-group mb-md">
+
+                                    <span style="cursor:pointer" onclick="$('#data-ripian').datetimepicker('show')" class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                                    <input onchange="if ($('#motivo-ripianifica').val().trim().length > 5 && $('#data-ripian').val().trim()!='') $('#conferma-ripian').removeAttr('disabled'); else $('#conferma-ripian').attr('disabled', 'disabled')"
+                                           style="width:40%" class="js-datetimepicker form-control" data-format="DD/MM/YYYY" data-locale="it" type="text" id="data-ripian" placeholder="Data di Ripianificazione...">
+
+                                </div>
+                            </div>
+                            <div class="col-xs-12">
+                                <span>
+                                    <b> Motivo della richiesta (min. 5 caratteri) </b>
+                                </span>
+                                <span class="campoObbligatorio">*</span>
+                                <textarea id="motivo-ripianifica"
+                                          onkeyup="if ($('#motivo-ripianifica').val().trim().length > 5 && $('#data-ripian').val().trim()!='') $('#conferma-ripian').removeAttr('disabled'); else $('#conferma-ripian').attr('disabled', 'disabled')"
+                                              class="form-control" rows="4"></textarea>
+                            </div>
+                            <div class="col-xs-12" id="daremoto" style="display:none">
+                                <span id="spandata" style="display: block; margin-top: 16px;font-weight:bold">
+                                </span>
+                                <select class="form-control" id="attiv" onchange="lavoroScelto()">
+                                    <option value="">Lavoro in presenza</option>
+                                    <option value="SW">Lavoro da remoto - SW</option>
+                                    <option value="">Prenderò altro permesso</option>
+                                </select>
+                            </div>
+
+                            <div class="col-xs-12" id="div-sost-wait" style="display:none;margin-top:10px;font-weight:bold">
+                                <i class="fa fa-refresh fa-spin"></i> <span id="label-sost">Elaborazione eccezioni disponibili in corso...</span>
+                            </div>
+                            <div class="col-xs-12" id="div-sost" style="display:none">
+                                <span id="span-sost" style="display: block; margin-top: 16px;font-weight:bold">
+                                    Seleziona l'eccezione nella lista :
+                                </span>
+                                <select class="form-control" id="eccez-sost">
+                                    
+                                </select>
+                            </div>
+
+                        </div>
+                    </form>
+                </div>
+                <div class="block-content block-content-full bg-gray-lighter clearfix" style="padding-bottom:0px">
+
+                    <button 
+                            onclick="checkRip()"
+                            id="conferma-ripian" disabled="disabled" class="bg-puls_dash btn-scriv pull-right btn btn-square btn-default push-5-r push-10" type="button">
+                        CONFERMA
+                    </button>
+                    <button data-dismiss="modal" class="pull-right btn btn-square btn-default bg-puls_dash btn-scriv push-5-r push-10" type="button"
+                            style="margin-right: 10px;">
+                        ANNULLA
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <input type="hidden" id="id-richiesta" />
+</div>
+<script>
+    function lavoroScelto() {
+        if ($("#attiv option:selected").text().indexOf("P") == 0) {
+            debugger
+            var eccezioniSostitutive ="@(myRai.Business.CommonManager.GetParametro<string>(myRai.Business.EnumParametriSistema.EccezioniSostitutive))" ;
+
+            
+            var idr = $('#id-richiesta').val();
+            var tr = $("tr[data-id-rich='" + idr + "']");
+            var dataScelta = null;
+
+            if (tr.length > 0)
+                dataScelta = $(tr).attr("data-datarich");
+            else
+                dataScelta = $("#data_da").val();
+
+            
+            //if (dataScelta == null || dataScelta == "") {
+            //    swal("Devi prima impostare la data in cui vuoi ripianificare.");
+            //    $("#attiv")[0].selectedIndex = 0;
+            //    return;
+            //}
+            $("#label-sost").text("Ricerca eccezioni disponibili per il " + dataScelta + " in corso...");
+            $("#div-sost-wait").show();
+            $("#conferma-ripian").addClass("disable");
+            debugger
+            $.ajax({
+                url: '/ajax/geteccezioni',
+                type: "GET",
+                dataType: "json",
+                data: { idragg: 3, date: dataScelta },
+                success: function (data) {
+                    console.log(data);
+                    $("#eccez-sost").empty();
+                    for (var i = 0; i < data.result.length; i++) {
+                        if (eccezioniSostitutive.indexOf(data.result[i].cod) >= 0) {
+                            $("#eccez-sost").append("<option value='" + data.result[i].cod + "'>" + data.result[i].desc + "</option>");
+
+                        }
+                    }
+                    $("#div-sost-wait").hide();
+                    $("#div-sost").show();
+                    $("#conferma-ripian").removeClass("disable");
+                }
+            });
+
+        }
+        else {
+            $("#div-sost").hide();
+            $("#div-sost-wait").hide();
+        }
+    }
+
+    function checkRip() {
+        var dataScelta = $('#data-ripian').val();
+        $.ajax({
+            url: '/feriepermessi/isokrip',
+            type: "GET",
+            dataType: "json",
+            data: { datascelta: dataScelta },
+            success: function (data) {
+                debugger
+                if (data.result == true) {
+                    $("#ripianifica").modal("hide");
+                    CancellaRichiestaSend($('#id-richiesta').val(), $('#motivo-ripianifica').val(), $('#data-ripian').val());
+                }
+                else {
+                    swal(data.error);
+                }
+            }
+        });
+        //CancellaRichiestaSend($('#id-richiesta').val(), $('#motivo-ripianifica').val(), $('#data-ripian').val())
+    }
+    function isSW() {
+        
+        var idr = $('#id-richiesta').val();
+        $.ajax({
+            url: '/feriepermessi/issw',
+            type: "GET",
+            dataType: "json",
+            data: { idrichiesta:idr },
+            success: function (data) {
+                debugger
+                if (data.result == true) {
+                    $("#spandata").text("Il " + data.dataecc + " che lavoro effettuerai?");
+                    $("#daremoto").show();
+                }
+                else {
+                    $("#spandata").text("");
+                    $("#daremoto").hide();
+                    $("#attiv").val("");
+                    
+                }
+            }
+        });
+    }
+</script>

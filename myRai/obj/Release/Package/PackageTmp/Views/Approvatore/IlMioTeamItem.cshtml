@@ -1,0 +1,91 @@
+﻿@using myRaiCommonModel
+
+@model PresenzaDipendentiPerSede
+
+<table class="table">
+    <tbody>
+        @foreach ( var dipendente in Model.ListaDipendentiPerSede.Where( a => a.PertinenzaApprovatore ) )
+        {
+
+            string title = "";
+            string subTitle = "";
+            if ( dipendente.Presente )
+            {
+
+                title = "Entrato alle <b><em> " + dipendente.OrarioPrimaEntrata + " </em></b>";
+
+                if ( dipendente.tipoDip == "D" || dipendente.tipoDip.Equals( "G" , StringComparison.InvariantCultureIgnoreCase ) )
+                {
+                    title = "In servizio";
+                }
+
+                if ( dipendente.tipoDip == "G" )
+                {
+                    subTitle = "Entrato in";
+                }
+                else
+                {
+                    subTitle = "ora in";
+                }
+            }
+            subTitle += " " + dipendente.DescrizionePresenzaDipendente;
+            subTitle = subTitle.Trim( );
+            string subTitle2 = "";
+            if ( !String.IsNullOrWhiteSpace( dipendente.NotaDaSegreteria ) )
+            {
+                subTitle2 = dipendente.NotaDaSegreteria;
+            }
+            if ( !String.IsNullOrWhiteSpace( dipendente.DescrizioneCodiceOrario ) )
+            {
+                if ( !String.IsNullOrWhiteSpace( subTitle2 ) )
+                { subTitle2 += "<br/>"; }
+                subTitle2 += dipendente.codiceOrario + " - " + dipendente.DescrizioneCodiceOrario;
+            }
+
+            string infoAggiuntive1 = "";
+            if ( dipendente.Quadratura == myRaiHelper.Quadratura.Giornaliera )
+            {
+                infoAggiuntive1 = "Bilancio POH: " + dipendente.BilancioPOH + " (" + dipendente.POHMeseCorrente + " nel mese corrente)";
+            }
+
+            string action = "javascript:ShowPopupBoss('" + dipendente.matricola + "','" + DateTime.Today.ToString( "dd/MM/yyyy" ) + "','" + dipendente.Nominativo.ToUpper( ).Replace( "'" , "" ) + "', '1' )";
+
+            myRaiHelper.EnumPresenzaDip presenzaDip;
+            if (subTitle.ToLower() == "smartworking")
+            {
+                presenzaDip = myRaiHelper.EnumPresenzaDip.SmartWorking;
+            }
+            else if (dipendente.Presente)
+            {
+                presenzaDip = myRaiHelper.EnumPresenzaDip.Presente;
+            }
+            else
+            {
+                presenzaDip = myRaiHelper.EnumPresenzaDip.Assente;
+            }
+
+            <tr>
+                <td style="padding:22px 2px;">
+                    <div class="row ">
+                        <div class="col-xs-4 no-padding-right">
+                            @Html.ProfileWidgetAction( dipendente.matricola , dipendente.Nominativo , action , presenzaDip, subTitle , subTitle2 , htmlImgAttributes: new { data_toggle = "tooltip" , data_html = "true" , title = title } )
+                        </div>
+
+                        <div class="col-xs-2 text-right">
+                            <a class="interactive-primary-color rai-text-bold-12 rai-alert-dot" href="javascript:ApplicaFiltriApprovatore('@(Model.SedeGapp)','@dipendente.Nominativo.ToUpper().Replace("'", "")')">
+                                @dipendente.NumeroRichieste rich
+                            </a>
+                        </div>
+                        <div class="col-xs-5" style="">
+                            @Html.ProfileWidgetAction( dipendente.matricola , dipendente.Nominativo , action , presenzaDip , infoAggiuntive1 )
+                        </div>
+
+                        <div class="col-xs-1 text-right" style="">
+
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

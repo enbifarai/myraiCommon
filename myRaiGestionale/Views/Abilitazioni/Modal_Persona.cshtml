@@ -1,0 +1,343 @@
+﻿@using myRaiHelper
+@using myRaiCommonManager
+@model AbilitazioniPers
+
+@{
+    var listAbilModelli = Model.Abilitazioni.Where(x => x.ID_PROFILO == null && x.ID_SUBFUNZ == null).SelectMany(x => x.XR_HRIS_ABIL_ASSOC_MODELLO).OrderBy(x => x.XR_HRIS_ABIL_MODELLO.CODICE);
+    int idAbilModello = 0;
+    if (listAbilModelli.Any())
+    {
+        idAbilModello = listAbilModelli.FirstOrDefault().ID_ABIL;
+    }
+}
+
+<div class="row">
+    <div class="col-sm-8">
+
+        @using (Html.BeginPanel(PanelType.NoHeaderNoPadding, "Elenco abilitazioni", false))
+        {
+            <div class="row">
+                <div class="col-sm-12">
+                    <div id="anag-widget">
+                        @Html.Partial("../Anagrafica/Header_DatiDipendente", AnagraficaManager.GetAnagrafica(Model.Matricola, null, false))
+                    </div>
+                </div>
+            </div>
+            <table class="table rai-table rai-table-vcenter rai-table-panel push-20">
+                <thead>
+                    <tr>
+                        <th colspan="2" style="padding-bottom:4px">
+                            <span class="as-block-title">Elenco modelli</span>
+                        </th>
+                    </tr>
+                </thead>
+                @if (listAbilModelli != null && listAbilModelli.Any())
+                {
+                    foreach (var item in listAbilModelli)
+                    {
+                        <tr>
+                            <td>
+                                <span class="rai-font-md">@item.XR_HRIS_ABIL_MODELLO.CODICE</span>
+                            </td>
+                            <td class="rai-table-td-toggle">
+                                <div class="btn-action-icon-container">
+                                    @*<button class="btn btn-action-icon" onclick="AbilAbilPers(@item.ID_ABIL, null, null, @item.ID_MODELLO, '@Model.Matricola', '@item.XR_HRIS_ABIL_MODELLO.CODICE')"><i class="fa fa-pencil"></i></button>*@
+                                    <button class="btn btn-action-icon" onclick="AbilRemoveAbil(@item.ID_ABIL, null, null, @item.ID_MODELLO, '@Model.Matricola')"><i class="fa fa-times text-danger"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+
+                    }
+                }
+                else
+                {
+                    <tr>
+                        @Html.Partial("_NoDati")
+                    </tr>
+                }
+            </table>
+
+            <table class="table rai-table rai-table-vcenter rai-table-panel rai-table-collapsable">
+                <thead>
+                    <tr>
+                        <th colspan="2" style="padding-bottom:4px">
+                            <span class="as-block-title">Elenco abilitazioni</span>
+                        </th>
+                    </tr>
+                </thead>
+                @if (Model.Abilitazioni != null && Model.Abilitazioni.Any(x => x.ID_PROFILO != null || x.ID_SUBFUNZ != null))
+                {
+                    foreach (var grProf in Model.Abilitazioni.Where(x => x.ID_PROFILO != null || x.ID_SUBFUNZ != null).GroupBy(x => x.ID_PROFILO.HasValue))
+                    {
+                        if (grProf.Key)
+                        {
+                            <tbody class="rai-table-collapsable-header">
+                                <tr>
+                                    <td>
+                                        <span class="rai-font-md-bold">*PROFILI</span>
+                                    </td>
+                                    <td class="text-right">
+                                        <i class="fa fa-chevron-down"></i>
+                                    </td>
+                                </tr>
+                            </tbody>
+                            <tbody>
+                                <tr>
+                                    <td colspan="2" class="no-padding">
+                                        <table class="table rai-table rai-table-panel rai-table-vcenter table-striped">
+                                            @foreach (var item in grProf)
+                                            {
+                                                var profilo = item.XR_HRIS_ABIL_PROFILO;
+                                                <tr data-abil="@item.ID_ABIL">
+                                                    <td>
+                                                        <span class="rai-font-md">@profilo.COD_PROFILO</span><span class="rai-font-md-neutral"> - @profilo.DES_PROFILO</span>
+                                                        @if (!profilo.IND_ATTIVO)
+                                                        {
+
+                                                            <span class="rai-label">Profilo non attivo</span>
+                                                        }
+                                                        @if (!item.IND_ATTIVO)
+                                                        {
+                                                            <span class="rai-label">Abilitazione non attiva</span>
+                                                        }
+                                                    </td>
+                                                    <td class="rai-table-td-toggle">
+                                                        <div class="btn-action-icon-container">
+                                                            <button class="btn btn-action-icon" onclick="AbilAbilPers(@item.ID_ABIL, null, @(item.ID_PROFILO.Value.ToString()), null, '@Model.Matricola', 'Profilo @profilo.COD_PROFILO')"><i class="fa fa-pencil"></i></button>
+                                                            <button class="btn btn-action-icon" onclick="AbilRemoveAbil(@item.ID_ABIL, null, @(item.ID_PROFILO.Value.ToString()), null, '@Model.Matricola')"><i class="fa fa-times text-danger"></i></button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </table>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        }
+                        else
+                        {
+                            foreach (var funz in grProf.Where(x => x.ID_SUBFUNZ != null).GroupBy(x => x.XR_HRIS_ABIL_SUBFUNZIONE.ID_FUNZIONE))
+                            {
+                                <tbody class="rai-table-collapsable-header">
+                                    <tr>
+                                        <td>
+                                            <span class="rai-font-md-bold">@funz.First().XR_HRIS_ABIL_SUBFUNZIONE.XR_HRIS_ABIL_FUNZIONE.COD_FUNZIONE</span>
+                                            <span>- @funz.First().XR_HRIS_ABIL_SUBFUNZIONE.XR_HRIS_ABIL_FUNZIONE.DES_FUNZIONE</span>
+                                            @if (!funz.First().XR_HRIS_ABIL_SUBFUNZIONE.XR_HRIS_ABIL_FUNZIONE.IND_ATTIVO)
+                                            {
+
+                                                <span class="rai-label">Funzione non attiva</span>
+                                            }
+                                        </td>
+                                        <td class="text-right">
+                                            <i class="fa fa-chevron-down"></i>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="2" class="no-padding">
+                                            <table class="table rai-table rai-table-panel rai-table-vcenter table-striped">
+
+                                                @foreach (var item in funz)
+                                                {
+                                                    var subfunz = item.XR_HRIS_ABIL_SUBFUNZIONE;
+                                                    <tr data-abil="@item.ID_ABIL">
+                                                        <td>
+                                                            <span class="rai-font-md">@subfunz.COD_SUBFUNZIONE</span>
+                                                            <span class="rai-font-md-neutral"> - @subfunz.DES_SUBFUNZIONE</span>
+                                                            @if (item.ID_DELEGA.HasValue)
+                                                            {
+                                                                <span class="rai-label rai-label-warning">Delega</span>
+                                                            }
+                                                            @if (!subfunz.IND_ATTIVO)
+                                                            {
+
+                                                                <span class="rai-label">Sottofunzione non attiva</span>
+                                                            }
+                                                            @if (!item.IND_ATTIVO)
+                                                            {
+                                                                <span class="rai-label">Abilitazione non attiva</span>
+                                                            }
+                                                            @if (item.DTA_INIZIO != null && item.DTA_INIZIO > DateTime.Today)
+                                                            {
+                                                                <span class="rai-label">Abilitazione non ancora valida</span>
+                                                            }
+                                                            else if (item.DTA_FINE != null && item.DTA_FINE < DateTime.Today)
+                                                            {
+                                                                <span class="rai-label">Abilitazione scaduta</span>
+                                                            }
+                                                        </td>
+                                                        <td class="rai-table-td-toggle">
+                                                            <div class="btn-action-icon-container">
+                                                                <button class="btn btn-action-icon" onclick="AbilAbilPers(@item.ID_ABIL, @item.ID_SUBFUNZ.Value.ToString(), null, null, '@Model.Matricola', 'Sottofunzione @subfunz.XR_HRIS_ABIL_FUNZIONE.COD_FUNZIONE/@subfunz.COD_SUBFUNZIONE')"><i class="fa fa-pencil"></i></button>
+                                                                @if (!item.ID_DELEGA.HasValue)
+                                                                {
+                                                                    <button class="btn btn-action-icon" onclick="AbilRemoveAbil(@item.ID_ABIL, @item.ID_SUBFUNZ.Value.ToString(), null, null, '@Model.Matricola')"><i class="fa fa-times text-danger"></i></button>
+                                                                }
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    <tbody>
+                        <tr>
+                            @Html.Partial("_NoDati")
+                        </tr>
+                    </tbody>
+                }
+            </table>
+
+        }
+    </div>
+    <div class="col-sm-4">
+        @using (Html.BeginPanel(PanelType.PanelNoPadding, "Modelli disponibili"))
+        {
+            var modelli = AbilitazioniManager.GetModelli();
+
+            <table class="table rai-table rai-table-vcenter rai-table-panel">
+                <tbody>
+                    @if (modelli.Any(x => !listAbilModelli.Any(y => y.ID_MODELLO == x.ID_MODELLO)))
+                    {
+                        foreach (var item in modelli.Where(x => !listAbilModelli.Any(y => y.ID_MODELLO == x.ID_MODELLO)))
+                        {
+                            <tr>
+                                <td>
+                                    <span class="rai-font-md">@item.CODICE</span>
+                                    @if (!item.IND_ATTIVO)
+                                    {
+                                        <span class="rai-label">Modello non attivo</span>
+                                    }
+                                </td>
+                                <td class="rai-table-td-action">
+                                    <div class="btn-action-icon-container">
+                                        <button class="btn btn-action-icon" onclick="AbilAbilPers(@idAbilModello, null, null, @item.ID_MODELLO, '@Model.Matricola', '@item.CODICE')"><i class="fa fa-plus"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            @Html.Partial("_NoDati")
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        @using (Html.BeginPanel(PanelType.PanelNoPadding, "Funzioni disponibili"))
+        {
+            var funzioni = AbilitazioniManager.GetFunzioni();
+            var profili = AbilitazioniManager.GetProfili();
+
+            <table class="table rai-table rai-table-vcenter rai-table-panel rai-table-collapsable">
+                @foreach (var funz in funzioni.OrderBy(x => x.COD_FUNZIONE))
+                {
+                    <tbody class="rai-table-collapsable-header">
+                        <tr>
+                            <td>
+                                <span class="rai-font-md-bold">@funz.COD_FUNZIONE</span>
+                                <span>- @funz.DES_FUNZIONE</span>
+                                @if (!funz.IND_ATTIVO)
+                                {
+
+                                    <span class="rai-label">Funzione non attiva</span>
+                                }
+                            </td>
+                            <td class="text-right rai-table-td-toggle">
+                                <i class="fa fa-chevron-down"></i>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tbody>
+                        <tr>
+                            <td colspan="2" class="no-padding">
+                                <table class="table rai-table rai-table-panel rai-table-vcenter table-striped">
+                                    @if (funz.XR_HRIS_ABIL_SUBFUNZIONE.Any(x => !Model.Abilitazioni.Any(y => y.ID_SUBFUNZ == x.ID_SUBFUNZ)))
+                                    {
+                                        foreach (var subfunz in funz.XR_HRIS_ABIL_SUBFUNZIONE.Where(x => !Model.Abilitazioni.Any(y => y.ID_SUBFUNZ == x.ID_SUBFUNZ)).OrderBy(x => x.COD_SUBFUNZIONE))
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <span class="rai-font-md">@subfunz.COD_SUBFUNZIONE</span>
+                                                    <span class="rai-font-md-neutral"> - @subfunz.DES_SUBFUNZIONE</span>
+                                                    @if (!subfunz.IND_ATTIVO)
+                                                    {
+                                                        <span class="rai-label">Sottofunzione non attiva</span>
+                                                    }
+                                                </td>
+                                                <td class="rai-table-td-action">
+                                                    <button class="btn btn-action-icon" onclick="AbilAbilPers(0, @subfunz.ID_SUBFUNZ, null, null, '@Model.Matricola', 'Sottofunzione @subfunz.XR_HRIS_ABIL_FUNZIONE.COD_FUNZIONE/@subfunz.COD_SUBFUNZIONE')"><i class="fa fa-plus"></i></button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            @Html.Partial("_NoDati")
+                                        </tr>
+                                    }
+                                </table>
+                            </td>
+                        </tr>
+                    </tbody>
+                }
+                <tbody class="rai-table-collapsable-header">
+                    <tr>
+                        <td>
+                            <span class="rai-font-md-bold">*PROFILI</span>
+                        </td>
+                        <td class="text-right rai-table-td-toggle">
+                            <i class="fa fa-chevron-down"></i>
+                        </td>
+                    </tr>
+                </tbody>
+                <tbody>
+                    <tr>
+                        <td colspan="2" class="no-padding">
+                            <table class="table rai-table rai-table-panel rai-table-vcenter table-striped">
+                                @if (profili.Any(x => !Model.Abilitazioni.Any(y => x.ID_PROFILO == y.ID_PROFILO)))
+                                {
+                                    foreach (var profilo in profili.Where(x => !Model.Abilitazioni.Any(y => x.ID_PROFILO == y.ID_PROFILO)).OrderBy(x => x.COD_PROFILO))
+                                    {
+                                        <tr>
+                                            <td>
+                                                <span class="rai-font-md">@profilo.COD_PROFILO</span><br /><span class="rai-font-md-neutral">@profilo.DES_PROFILO</span>
+                                                @if (!profilo.IND_ATTIVO)
+                                                {
+
+                                                    <span class="rai-label">Profilo non attivo</span>
+                                                }
+                                            </td>
+                                            <td class="rai-table-td-action">
+                                                <button class="btn btn-action-icon" onclick="AbilAbilPers(0, null, @(profilo.ID_PROFILO), null, '@Model.Matricola', 'Profilo @profilo.COD_PROFILO - @profilo.DES_PROFILO')"><i class="fa fa-plus"></i></button>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        @Html.Partial("_NoDati")
+                                    </tr>
+                                }
+                            </table>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

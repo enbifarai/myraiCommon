@@ -1,0 +1,277 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model EventsClientModel
+
+@{
+    var matricola = CommonHelper.GetCurrentUserMatricola();
+}
+
+<section class="panel" id="panel-eventi-2">
+    <header class="panel-heading">
+        <div class="panel-actions rai-panel-actions">
+            <button class="btn btn-action-icon" data-toggle="block-option" data-action="refresh_toggle"
+               data-refreshurlllll="/notifiche/refreshMieNotifiche" data-parentdiv="panel-docdipendente"
+               data-refreshelements="docdipendente" data-refresh-partial
+               data-action-mode="demo"><i class="fa fa-refresh"></i></button>
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+        </div>
+        <h2 class="panel-title">Eventi disponibili</h2>
+    </header>
+    <div id="eventi-2" class="panel-body no-padding">
+        <table class="table table-hover rai-table" id="table-eventi-3">
+            <thead>
+                <tr>
+                    <th>Data Evento</th>
+                    <th>Evento</th>
+                    <th>Tempo Rimanente</th>
+                    <th>Posti Prenotabili</th>
+                    <th>Posti Rimanenti</th>
+                    <th>&nbsp;</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.EventiDisponibili)
+                {
+                    <tr class="tr-ric editMode">
+                        <td><span class="rai-font-md-neutral">@item.EventoDisp.data_inizio</span></td>
+                        <td>
+                            <span class="rai-font-md-bold">@item.EventoDisp.titolo</span>
+                            <div class="rai-font-sm">luogo: @item.EventoDisp.luogo</div>
+                        </td>
+                        @if (@item.EventoDisp.data_fine_prenotazione.Value.Subtract(DateTime.Now).Days > 0)
+                        {
+                            <td><span class="rai-font-md-neutral">@item.EventoDisp.data_fine_prenotazione.Value.Subtract(DateTime.Now).Days giorni</span></td>
+                        }
+                        else
+                        {
+                            <td>@item.EventoDisp.data_fine_prenotazione.Value.Subtract(DateTime.Now).Hours.ToString("00"):@item.EventoDisp.data_fine_prenotazione.Value.Subtract(DateTime.Now).Minutes.ToString("00"):@item.EventoDisp.data_fine_prenotazione.Value.Subtract(DateTime.Now).Seconds.ToString("00")</td>
+                        }
+                        <td>
+                            @{
+                                if (item.PostiDisponibili > item.PostiRimasti)
+                                {
+                                    item.PostiDisponibili = item.PostiRimasti;
+                                }
+                            }
+                            <span class="postidisp rai-font-md-bold" id="posti-miei-@item.EventoDisp.id">@item.PostiDisponibili</span> / <span class="postidisp rai-font-md-bold" id="posti-disp-@item.EventoDisp.id">@item.PostiRimasti</span>
+                        </td>
+                        <td>
+                            @if (item.PostiDisponibili > 0)
+                            {
+                                <a id="prenota-evento-@item.EventoDisp.id" class="btn rai-btn-small"  href="javascript:PrenotaEvento(@item.EventoDisp.id)">Prenota</a>
+                            }
+                        </td>
+                        <td>
+                            @if (item.EventoDisp.B2RaiPlace_Eventi_Pdf.Count > 0 && item.EventoDisp.B2RaiPlace_Eventi_Anagrafica.Any(x => x.matricola == matricola))
+                            {
+                                <a href="#" onclick="ShowPdfEvento(@item.EventoDisp.id,'@matricola')"
+                                   class="btn btn-default btn-scriv text-uppercase bg-puls_dash button-viewpdf">
+                                    PDF
+                                </a>
+                            }
+                            else
+                            {
+                                <text> &nbsp;</text>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+    </div>
+</section>
+
+<section class="panel" id="panel-eventi-1">
+    <header class="panel-heading">
+        <div class="panel-actions rai-panel-actions">
+            <button class="btn btn-action-icon" data-toggle="block-option" data-action="refresh_toggle"
+               data-refreshurlllll="/notifiche/refreshMieNotifiche" data-parentdiv="panel-docdipendente"
+               data-refreshelements="docdipendente" data-refresh-partial
+               data-action-mode="demo">
+                <i class="fa fa-refresh"></i>
+            </button>
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+        </div>
+        <h2 class="panel-title">Eventi prenotati</h2>
+    </header>
+    <div id="eventi" class="panel-body panel-body-nopadding">
+        <div class="block no-margin-bottom">
+            <ul class="nav nav-tabs nav-tabs-alt  nav-justified" data-toggle="tabs">
+                <li class="tabbianco active">
+                    <a data-toggle="tabs" id="a2" href="#tab2">PRENOTAZIONI ATTIVE</a>
+                </li>
+                <li class="tabbianco ">
+                    <a data-toggle="tabs" id="a1" href="#tab1">ARCHIVIO PRENOTAZIONI</a>
+                </li>
+            </ul>
+            <div class="block-content tab-content no-padding">
+                <div class="tab-pane active table-responsive" id="tab2">
+                    <table class="table table-hover rai-table push-5-t" id="table-eventi-2">
+                        <thead>
+                            <tr>
+                                <th>Data Evento</th>
+                                <th>Evento</th>
+                                <th>Tempo Rimanente</th>
+                                <th>Posti Prenotabili</th>
+                                <th>Posti Rimanenti</th>
+                                <th class="rai-table-td-action">&nbsp;</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                var prenAttive = Model.EventiPrenotati.Where(x => x.data_inizio >= DateTime.Now);
+
+                                if (prenAttive.Count() > 0)
+                                {
+                                    foreach (var item in prenAttive)
+                                    {
+                                        <tr class="tr-ric editMode">
+                                            <td><span class="rai-font-md-neutral">@item.data_inizio</span></td>
+                                            <td>
+                                                <span class="rai-font-md-bold">@item.titolo</span>
+                                                <div class="rai-font-sm">luogo: @item.luogo</div>
+                                            </td>
+
+                                            @if (item.data_fine_prenotazione.Value.Subtract(DateTime.Now).Days > 0)
+                                            {
+                                                <td class="rai-font-md-neutral">@item.data_fine_prenotazione.Value.Subtract(DateTime.Now).Days giorni </td>
+                                            }
+                                            else
+                                            {
+                                                <td class="rai-font-md-neutral">@item.data_fine_prenotazione.Value.Subtract(DateTime.Now).Hours.ToString("00"):@item.data_fine_prenotazione.Value.Subtract(DateTime.Now).Minutes.ToString("00"):@item.data_fine_prenotazione.Value.Subtract(DateTime.Now).Seconds.ToString("00")</td>
+                                            }
+                                            <td>
+                                                @{
+                                                    int postiDaEvento = int.Parse(item.numero_massimo.ToString()) - item.B2RaiPlace_Eventi_Anagrafica.Where(a => a.matricola == Model.matricola && a.confermata == true).Count();
+                                                    if (item.id_programma != null && item.B2RaiPlace_Eventi_Programma.numero_massimo != null)
+                                                    {
+                                                        int? max = EventsManager.PrenotazioniMaxPerProgramma((int)item.id_programma);
+                                                        if (max != null)
+                                                        {
+                                                            int mie = EventsManager.MiePrenotazioniPerProgramma((int)item.id_programma, myRaiHelper.CommonHelper.GetCurrentUserMatricola());
+                                                            int disp = (int)max - mie;
+                                                            if (disp < postiDaEvento)
+                                                            {
+                                                                postiDaEvento = disp;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+
+
+
+
+
+
+
+                                            <b><span class="postidisp" id="posti-mieipre-@item.id">@(postiDaEvento)</span></b> /
+
+                                            <b><span class="postidisp" id="posti-disppre-@item.id">@(int.Parse(item.numero_totale.ToString()) - @item.B2RaiPlace_Eventi_Anagrafica.Count()) </span></b>
+                                            </td>
+                                            <td>
+                                                @if (item.data_fine_prenotazione > DateTime.Now)
+                                                {
+                                                    <a id="gestisci-evento-@item.id" class="btn rai-btn-small" href="javascript:PrenotaEvento(@item.id)">Modifica</a>
+                                                }
+                                                else
+                                                {
+                                                    <a id="prenota-evento-@item.id" class="btn rai-btn-small" href="javascript:InfoEvento(@item.id)">Info</a>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (item.B2RaiPlace_Eventi_Pdf.Count > 0)
+                                                {
+                                                    <a href="#" onclick="ShowPdfEvento(@item.id, '@matricola')"
+                                                       class="btn btn-action-icon">
+                                                        <i class="fa fa-file-pdf-o"></i>
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <text>&nbsp;</text>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="5" class="text-center">
+                                            @Html.Partial("../shared/_NoDati")
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="tab-pane table-responsive" id="tab1">
+                    <table class="table table-hover rai-table push-5-t" id="table-eventi-1">
+                        <thead>
+                            <tr>
+                                <th>Data Evento</th>
+                                <th >Evento</th>
+                                <th class="rai-table-td-action"></th>
+                                <th class="rai-table-td-action"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                var listArchivio = Model.EventiPrenotati.Where(x => x.data_inizio < DateTime.Now);
+                                if (listArchivio.Count() > 0)
+                                {
+                                    foreach (var item in listArchivio)
+                                    {
+                                        <tr class="tr-ric editMode">
+                                            <td style="white-space:nowrap"><span class="rai-font-md-neutral">@item.data_inizio</span></td>
+                                            <td class="full-width">
+                                                <span class="rai-font-md-bold">@item.titolo</span>
+                                                <div class="rai-font-sm">luogo: @item.luogo</div>
+                                            </td>
+                                            <td>
+                                                <a id="arch-prenota-evento-@item.id" class="btn btn-action-icon" href="javascript:InfoEvento(@item.id)"><i class="fa fa-info"></i></a>
+                                                @*<a  class="btn rai-btn-small" >Info</a>*@
+                                            </td>
+                                            <td>
+                                                @if (item.B2RaiPlace_Eventi_Pdf.Count > 0)
+                                                {
+                                                    <a href="#" onclick="ShowPdfEvento(@item.id, '@matricola')"
+                                                       class="btn btn-action-icon">
+                                                        <i class="fa fa-file-pdf-o"></i>
+
+                                                    </a>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="4" class="text-center">
+                                            @Html.Partial("../shared/_NoDati")
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@*<div class="modal right fade" id="pdf-modal" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-popin modal-lg">
+        <div class="modal-content" id="pdfcontent"></div>
+    </div>
+</div>*@
+
+@Html.RenderModal("pdf")

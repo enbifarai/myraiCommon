@@ -1,0 +1,71 @@
+﻿@using myRaiData;
+@using myRaiHelper;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+@using MyRaiServiceInterface.it.rai.servizi.digigappws;
+
+@model POHmodel
+
+<section class="panel" id="poh">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblInEvidenza" tabindex="0" aria-expanded="true"></a>
+            <a href="#" aria-label="Aggiorna i tuoi permessi e recuperi orari" class="panel-action panel-action-refresh" id="button-refresh-permessi" type="button" data-toggle="block-option" data-action="refresh_toggle" data-refreshurl="/home/refreshPoh" data-parentdiv="poh" data-refreshelements="btab-poh,btab-roh" data-action-mode="demo">
+            </a>
+        </div>
+        <h2 id="lblPoh" class="panel-title">Permessi e Recuperi Orari</h2>
+    </header>
+    <div id="mieipermessi" class="block panel-body no-padding">
+        <div class="block-content tab-content">
+            <div data-toggle="slimscroll" data-height="50px" data-color="#46c37b" data-always-visible="true" style="overflow: hidden; width: auto;"
+                 class="tab-pane active" id="btab-poh">
+                <table class="js-table-sections table table-hover" id="tablepoh" style="margin-top:-16px" role="grid">
+                    <thead>
+                        <tr>
+                            <th style="width:25%;border:none;"></th>
+                            <th style="width:45%;border:none;"></th>
+                            <th style="width:10%;border:none;"></th>
+                            <th style="width:20%;border:none;"></th>
+                        </tr>
+                    </thead>
+                    @if ( Model.GiorniPOH != null && Model.GiorniPOH.Count > 0 )
+                    {
+                        int rows = 0;
+                        foreach ( var item in Model.GiorniPOH )
+                        {
+                            rows++;
+                            string desCodice = item.codice == "POH" ? "PERMESSO OR./CON RECUP." : item.codice == "ROH" ? "RECUPERO ORARIO" : "";
+                            string ariaLabel = "Hai un " + ( item.codice == "POH" ? "permesso orario con recupero" : item.codice == "ROH" ? "recupero orario" : "" ) + " di " + item.minuti + " minuti in data " + item.data.ToString( "dd MMMM yyyy" );
+                            <tr tabindex="@(rows==1?"0":"-1")" aria-label="@ariaLabel" role="row">
+                                <td class="font-w600 text-muted">
+                                    @item.data.ToString( "dd MMMM yyyy" )
+                                </td>
+                                <td>
+                                    <span class="font-w600 @(item.codice=="ROH"?"text-primary":"")" style="font-weight: bold;">
+                                        @(desCodice)
+                                    </span><br />
+                                    @item.minuti minuti
+                                </td>
+                                <td>
+                                    @Html.DisplayFor( a => item.IdStato , "IdStato" )
+                                </td>
+                                <td>
+                                    @if ( item.IdRichiesta != 0 )
+                                    {
+                                        <i class="icons icon-trash h4" style="cursor:pointer" onclick="CancellaRichiestaInApprovazione(@item.IdRichiesta)"></i>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        @Html.Partial( "_nodati" );
+                    }
+                </table>
+            </div>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,193 @@
+﻿@model myRaiCommonModel.TaskModel
+
+<div class="row" style="border-bottom:solid 1px #eee;margin-top:30px;padding-bottom:20px">
+    <div class="col-sm-9"><span class="rai-font-md-neutral-bold">Operazioni</span></div>
+    <div class="col-sm-3" style="text-align:right"><span class="rai-font-md-neutral-bold">Esito</span></div>
+    <input type="hidden" value="@Model.RichiesteCompreseInQuestoPeriodo.Count()" id="richieste-comprese" />
+ </div>
+
+@{
+    var db = new myRaiData.Incentivi.IncentiviEntities();
+    int meseCorrente = 0;
+    var stato = Model.Richiesta.XR_WKF_MATCON_OPERSTATI.OrderByDescending(x => x.ID_STATO).FirstOrDefault();
+    bool InCaricoAMe = stato.COD_USER == myRaiHelper.CommonHelper.GetCurrentUserMatricola() && stato.ID_STATO ==
+        (int)myRaiCommonManager.MaternitaCongediManager.EnumStatiRichiesta.InCaricoAmmin;
+}
+
+
+@foreach (var item in Model.Richiesta.XR_MAT_TASK_IN_CORSO.OrderBy(x => x.ANNO)
+    .ThenBy(x => x.MESE)
+    .ThenBy(x => x.PROGRESSIVO)
+    .ThenBy(x => x.ID)
+
+    )
+{
+    var task = db.XR_MAT_ELENCO_TASK.Where(x => x.ID == item.ID_TASK).FirstOrDefault();
+    if (item.MESE != meseCorrente)
+    {
+        meseCorrente = item.MESE;
+        DateTime mese = new DateTime(item.ANNO, item.MESE, 1);
+        <div class="row">
+            <div class="col-sm-8" style="padding-top:22px">
+                <span class="rai-font-md-bold text-primary">@(mese.ToString("MMMM yyyy").Substring(0, 1).ToUpper() + mese.ToString("MMMM yyyy").Substring(1)) </span>
+            </div>
+             
+        </div>
+        <div class="row">
+            <div class="col-sm-12">
+                <div style="background-color: #eee;height: 1px;margin-top: 11px;"></div>
+            </div>
+        </div>
+    }
+    <table class="js-table-sections table  rai-table" role="grid">
+        <tbody class="js-table-sections-header">
+            <tr role="row" tabindex="0">
+                <td>
+                    <div class="row" style="border-bottom:solid 1px #eee;padding-top:16px;padding-bottom:16px">
+                        <div class="col-sm-8">
+                            <span class="rai-font-md-bold">@task.NOME_TASK</span><br />
+                            <span class="rai-font-sm">@task.DESCRIZIONE_TASK  </span>
+                            @if (!String.IsNullOrWhiteSpace(item.NOTE))
+                            {
+                                string[] p = item.NOTE.Split('-');
+                                int t1 = Int32.Parse(p[1].Split('/')[2]);
+                                int t2 = Int32.Parse(p[1].Split('/')[1]);
+                                int t3 = Int32.Parse(p[1].Split('/')[0]);
+                                DateTime dt = new DateTime(t1, t2, t3);
+                                t1 = Int32.Parse(p[2].Split('/')[2]);
+                                t2 = Int32.Parse(p[2].Split('/')[1]);
+                                t3 = Int32.Parse(p[2].Split('/')[0]);
+                                DateTime dt2 = new DateTime(t1, t2, t3);
+
+                                myRaiCommonModel.AmministrazioneModel.BustaPaga res1 = myRaiCommonManager.AmministrazioneManager.GetPagamenti(item.XR_MAT_RICHIESTE.MATRICOLA, item.XR_MAT_RICHIESTE.ECCEZIONE + dt.ToString("dd") + "/" + dt2.ToString("dd-MM-yy"), item.ESEGUIBILE_DA_DATA);
+
+                                string testodaStampare = "";
+                                if (p.Length > 2)
+                                {
+                                    testodaStampare = p[1] + " - " + p[2];
+                                }
+                                if (res1.elencoVoci.Count() > 0)
+                                {
+                                    string data = Int32.Parse(res1.dataCompetenza.Substring(0, 2)) > 40 ? "19" + res1.dataCompetenza : "20" + res1.dataCompetenza;
+                                    if (res1.elencoVoci.Count() > 0)
+                                    {
+                                        testodaStampare = testodaStampare + " </span> <br><br><span class='rai-label rai-label-success' style='padding-top:5px'>PAGATO in " + DateTime.ParseExact(data + "01", "yyyyMMdd",
+                                        System.Globalization.CultureInfo.InvariantCulture).ToString("MMMM yyyy");
+                                        testodaStampare = testodaStampare + "</span>";
+                                    }
+                                }
+
+
+
+                                if (p.Length > 2)
+                                {
+                                    <br />
+                                    <span class="rai-font-sm">@Html.Raw(testodaStampare) </span>
+                                }
+
+                            }
+                        </div>
+                        <div class="col-sm-4" style="text-align:right">
+                            @if (item.TERMINATA)
+                            {
+                                <span>Completata</span> <i class="fa fa-circle circle-green" aria-hidden="true"></i>
+                                <br />
+                                <span class="rai-font-sm-neutral">@item.DATA_ULTIMO_TENTATIVO.Value.ToString("dd/MM/yyyy, HH.mm")</span>
+                            }
+                            else if (item.ERRORE_BATCH != null)
+                            {
+                                <span>In errore</span> <i class="fa fa-circle circle-red" aria-hidden="true"></i>
+                                <br />
+                                <span class="rai-font-sm-neutral">@item.DATA_ULTIMO_TENTATIVO.Value.ToString("dd/MM/yyyy, HH.mm")</span>
+                            }
+                            else
+                            {
+                                if (item.BLOCCATA_DATETIME == null)
+                                {
+                                    <span>In attesa</span> <i style="color:#aaa" class="fa fa-circle" aria-hidden="true"></i>
+                                }
+                                else
+                                {
+                                    <span>Sospesa da operatore</span> <i class="fa fa-circle circle-orange" aria-hidden="true"></i>
+                                    <br />
+                                    <span class="rai-font-sm-neutral">@item.BLOCCATA_DATETIME.Value.ToString("dd/MM/yyyy, HH.mm")</span>
+                                }
+                            }
+
+                        </div>
+
+                    </div>
+                </td>
+                <td style="padding-top: 24px;width:20px" class="interactive-primary-color text-center">
+                    <i class="fa fa-angle-down" style="font-size:20px;@(task.TIPO != "TRACCIATO"?"visibility:hidden":"")"></i>
+                </td>
+            </tr>
+        </tbody>
+        <tbody class="tbodydata" style="border:none ">
+            <tr>
+                <td>
+                    @if (item.ERRORE_BATCH != null)
+                    {
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <label class="rai-font-sm error">@item.ERRORE_BATCH</label>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        var cont = Model.ContenutoCampi.Where(x => x.ID_task == item.ID).FirstOrDefault();
+                        if (cont != null && cont.Contenuti != null)
+                        {
+                            foreach (var campo in cont.Contenuti)
+                            {
+                                <div class="row" style="margin-top:6px;margin-bottom:6px">
+                                    <div class="col-sm-4">
+                                        @campo.NomeCampo
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <span class="rai-font-sm-neutral">@campo.TipoCampo (@campo.LunghezzaCampo)</span>
+                                    </div>
+                                    <div class="col-sm-4" style="text-align:right">
+                                        @*<input
+                                               data-idtaskincorso="@item.ID" data-idelencotask="@task.ID"
+                                               data-nomecampo="@campo.NomeCampo"
+                                               size="@campo.LunghezzaCampo" maxlength="@campo.LunghezzaCampo" 
+                                               class="form-control"          
+                                               style="width:auto;float:right;height:36px;text-align:right"
+                                               value="@campo.ContenutoCampo"/>*@
+                                        <label class="campi-trac">  @campo.ContenutoCampo</label>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    }
+
+
+
+
+
+
+
+
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+
+}
+    <script>
+       
+    @if (Model.PuoConcluderePratica && InCaricoAMe
+        && Model.Richiesta.XR_WKF_MATCON_OPERSTATI.OrderByDescending(x=>x.ID_STATO).Select(x=>x.ID_STATO).FirstOrDefault()<80)
+    {
+        @:$("#concludi-pratica").removeClass("disable");
+    }
+    else
+    {
+        @:$("#concludi-pratica").addClass("disable");
+    }
+    </script>
+
+ 

@@ -1,0 +1,379 @@
+﻿@using myRaiHelper;
+
+@model myRaiCommonModel.ProfiloPersonaleModel
+
+<script src="~/assets/js/plugins/jquery-validation/additional-methods.min.js"></script>
+
+
+@{
+
+    int[] array = new int[3];
+    array[0] = 0;
+    array[1] = 0;
+    array[2] = 0;
+
+
+}
+
+@{
+    string accreditoStipendio = "";
+}
+
+@if (Model.ContiCorrente != null)
+
+{
+    foreach (var item in Model.ContiCorrente)
+    {
+        if (myRai.Business.CommonManager.ToTitleCase(item.Tipologia).Equals("Accredito Stipendio"))
+        {
+
+            accreditoStipendio = item.Iban;
+
+        }
+
+    }
+
+}
+
+
+@if (Model.ContiCorrente != null)
+
+{
+    foreach (var item in Model.ContiCorrente)
+    {
+        if (myRai.Business.CommonManager.ToTitleCase(item.Tipologia).Equals("Accredito Stipendio"))
+        {
+            array[0] = 1;
+        }
+        else
+
+        if (myRai.Business.CommonManager.ToTitleCase(item.Tipologia).Equals("Anticipo Trasferte"))
+
+        {
+            array[1] = 1;
+        }
+        else
+
+        if (myRai.Business.CommonManager.ToTitleCase(item.Tipologia).Equals("Anticipo Spese Di Produzione"))
+
+        {
+            array[2] = 1;
+
+        }
+
+
+    }
+}
+
+@using (Html.BeginModal("Aggiungi nuovo IBAN"))
+{
+
+    <div class="row">
+        <div class="col-sm-12">
+
+            @using (Html.BeginPanel(PanelType.Panel, "Nuova tipologia di dati bancari", false))
+            {
+
+                using (Html.BeginForm("AggiungiIbanDB", "ProfiloPersonale", FormMethod.Post, new { @id = "form-nuovo-iban", novalidate = "novalidate" }))
+                {
+
+
+
+
+            <div class="form-group rai">
+
+                <div class="row push-20">
+                    <div class="col-sm-12">
+                        <label class="rai-font-md">La dichiarazione di coordinate bancarie per gli anticipi è opzionale: in mancanza verranno utilizzate le medesime coordinate comunicate per l'accredito dello stipendio.</label>
+                    </div>
+                </div>
+
+                <div class="row push-20">
+
+                    <div class="col-sm-12">
+                        @Html.LabelForRequiredObbl(m => m.Contocorrentedb.COD_IBAN, "Codice IBAN", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.Contocorrentedb.COD_IBAN, new
+                   {
+                       @class = "rai form-control",
+                            data_rule_iban = "true",
+                            data_msg_iban = "Specifica un IBAN corretto",
+                            id = "inputiban",
+                            onblur = "updateValue(event)",
+                            onkeyup = "checkInputValue(true)"
+                   })
+
+                        @Html.ValidationMessageFor(m => m.Contocorrentedb.COD_IBAN)
+
+                    </div>
+                </div>
+
+                <div class="row push-20">
+
+                    <div id="ugualestipendio" class="field-validation-error col-sm-12" style="display:none;">Attenzione: le coordinate inserite sono già utilizzate per l'accredito dello stipendio.</div>
+                    <div id="ibanestero" class="field-validation-error col-sm-12" style="display:none;">In questo momento non è possibile la registrazione di coordinate bancarie estere.</div>
+                    <div id="stipendio" class="col-sm-12" style="display:none;">@accreditoStipendio</div>
+                </div>
+
+                <div class="row push-20">
+
+                    <div class="col-sm-12 " id="datibanca" style="display:none;">
+                        <div class="bg-neutrals-xl-10 rai-table-info" style="padding: 10px 5px">
+                            <div class="row push-10">
+                                <div class="col-sm-4">
+                                    <label>Agenzia:</label>
+                                </div>
+                                <div class="col-sm-8">
+                                    <label id="datibanca_agenzia"></label>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-4">
+                                    <label>Indirizzo agenzia:</label>
+                                </div>
+                                <div class="col-sm-8">
+                                    <label id="datibanca_indirizzo"></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="row push-20">
+
+                    <div class="col-sm-12">
+                        @Html.LabelForRequiredObbl(m => m.Contocorrentedb.DES_INTESTATARIO, "Intestatario", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.Contocorrentedb.DES_INTESTATARIO, new { @readonly = "true", @class = "rai form-control", onkeyup = "checkInputValue(true)" })
+                        @Html.ValidationMessageFor(m => m.Contocorrentedb.DES_INTESTATARIO)
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="row push-20">
+
+                    <div class="col-sm-12">
+
+                        <label class="requiredobbl rai-caption">Tipologia <font color="#d2322d">*</font></label>
+
+
+                        @if (array[0] == 0)
+                        {
+
+                            <div class="rai-checkbox">
+                                <input type="checkbox" id="flag-accredito-stipendio" value="01" name="AccStip" required onclick="checkInputValue(true)" />
+                                <input type="hidden" value="00" name="AccStip" />
+                                <label class="rai-caption" for="flag-accredito-stipendio">Accredito Stipendio</label>
+
+
+                            </div>
+
+                            <div class="rai-checkbox">
+                                <input type="checkbox" id="flag-anticipo-trasferte" value="02" name="AntTrasf" required disabled />
+                                <input type="hidden" value="00" name="AntTrasf" />
+                                <label class="rai-caption" for="flag-anticipo-trasferte" data-toggle="tooltip" title="E' necessario dichiarare prima un IBAN per l'accredito dello stipendio">Anticipo Trasferte</label>
+
+
+                            </div>
+
+
+                            <div class="rai-checkbox">
+                                <input type="checkbox" id="flag-anticipo-spprod" value="03" name="AntSpeseProd" required disabled />
+                                <input type="hidden" value="00" name="AntSpeseProd" />
+                                <label class="rai-caption" for="flag-anticipo-spprod" data-toggle="tooltip" title="E' necessario dichiarare prima un IBAN per l'accredito dello stipendio">Anticipo Spese di produzione</label>
+
+                            </div>
+                        }
+
+                        else
+
+
+                        if (array[1] == 0 && array[2] == 0)
+                        {
+
+                            <div class="rai-checkbox">
+                                <input type="checkbox" id="flag-accredito-stipendio" value="01" name="AccStip" required disabled />
+                                <input type="hidden" value="00" name="AccStip" />
+                                <label class="rai-caption" for="flag-accredito-stipendio" data-toggle="tooltip" title="Hai già dichiarato un IBAN per l'accredito dello stipendio">Accredito Stipendio</label>
+
+
+                            </div>
+
+                            <div class="rai-checkbox">
+                                <input type="checkbox" id="flag-anticipo-trasferte" value="02" name="AntTrasf" onclick="checkInputValue(true)" />
+                                <input type="hidden" value="00" name="AntTrasf" />
+                                <label class="rai-caption" for="flag-anticipo-trasferte">Anticipo Trasferte</label>
+
+                            </div>
+
+
+
+                            <div class="rai-checkbox">
+                                <input type="checkbox" id="flag-anticipo-spprod" value="03" name="AntSpeseProd" onclick="checkInputValue(true)" />
+                                <input type="hidden" value="00" name="AntSpeseProd" />
+                                <label class="rai-caption" for="flag-anticipo-spprod">Anticipo Spese di produzione</label>
+
+                            </div>
+
+
+
+
+                        }
+                        else
+                        if (array[1] == 1 && array[2] == 0)
+                        {
+                            <div class="rai-checkbox">
+                                <input type="checkbox" id="flag-accredito-stipendio" value="01" name="AccStip" required disabled />
+                                <input type="hidden" value="00" name="AccStip" />
+                                <label class="rai-caption" for="flag-accredito-stipendio" data-toggle="tooltip" title="Hai già dichiarato un IBAN per l'accredito dello stipendio">Accredito Stipendio</label>
+
+
+                            </div>
+
+                            <div class="rai-checkbox">
+                                <input type="checkbox" id="flag-anticipo-trasferte" value="02" name="AntTrasf" required disabled />
+                                <input type="hidden" value="00" name="AntTrasf" />
+                                <label class="rai-caption" for="flag-anticipo-trasferte" data-toggle="tooltip" title="Hai già dichiarato un IBAN per questa tipologia di anticipi">Anticipo Trasferte</label>
+
+                            </div>
+
+
+                            <div class="rai-checkbox">
+                                <input type="checkbox" id="flag-anticipo-spprod" value="03" name="AntSpeseProd" required onclick="checkInputValue(true)" />
+                                <input type="hidden" value="00" name="AntSpeseProd" />
+                                <label class="rai-caption" for="flag-anticipo-spprod">Anticipo Spese di produzione</label>
+
+                            </div>
+
+
+
+                        }
+                        else
+                        if (array[1] == 0 && array[2] == 1)
+
+                        {
+
+                            <div class="rai-checkbox" data-toggle="tooltip" title="Hai già dichiarato un IBAN per l'accredito dello stipendio" style="width:max-content;" data-container="body">
+                                <input type="checkbox" id="flag-accredito-stipendio" value="01" name="AccStip" required disabled />
+                                <input type="hidden" value="00" name="AccStip" />
+                                <label class="rai-caption" for="flag-accredito-stipendio">Accredito Stipendio</label>
+
+
+                            </div>
+
+                            <div class="rai-checkbox">
+                                <input type="checkbox" id="flag-anticipo-trasferte" value="02" name="AntTrasf" onclick="checkInputValue(true)" />
+                                <input type="hidden" value="00" name="AntTrasf" />
+                                <label class="rai-caption" for="flag-anticipo-trasferte">Anticipo Trasferte</label>
+
+
+                            </div>
+
+
+                            <div class="rai-checkbox">
+                                <input type="checkbox" id="flag-anticipo-spprod" value="03" name="AntSpeseProd" disabled />
+                                <input type="hidden" value="00" name="AntSpeseProd" />
+                                <label class="rai-caption" for="flag-anticipo-spprod" data-toggle="tooltip" title="Hai già dichiarato un IBAN per questa tipologia di anticipi">Anticipo Spese di produzione</label>
+
+                            </div>
+
+
+
+                        }
+
+                        <div id="tipologiaerror" class="field-validation-error">
+
+                        </div>
+
+
+                    </div>
+
+
+                </div>
+
+
+
+
+                <div class="row">
+                    <div class="col-sm-12">
+                        <label class="rai-font-md">
+                            Compilando il modulo si dichiara di essere intestatario dei rapporti qui indicati e di essere a conoscenza che, salvo diversa e tempestiva indicazione di diverse coordinate bancarie, eventuali competenze arretrate (nonché le indennità di fine rapporto, qualora lavoratore a tempo determinato) saranno accreditate sul conto già utilizzato per l’accredito dello stipendio.
+                        </label>
+                    </div>
+                </div>
+
+
+                @if(array[0]==0){
+                <div class="row" id="vincolato">
+                    <div class="col-sm-12">
+                        <label class="rai-font-md">
+                            Attenzione: in caso di conto <b>vincolato</b>, è propria responsabilità consegnare all’Ufficio di competenza la necessaria modulistica relativa alle coordinate bancarie dichiarate.
+                        </label>
+                    </div>
+                </div>
+                }
+
+
+
+                <div class="row">
+                    <div class="col-sm-12 text-left" style="margin-top:30px">
+                        <div class="rai-btn-fill">
+                            <button onclick="AggiungiIbanDB()" type="button" class="btn rai-btn-primary" id="submitIban" disabled>Salva i dati </button>
+                        </div>
+                    </div>
+
+                </div>
+
+
+
+            </div>
+                }
+
+            }
+        </div>
+    </div>
+
+
+}
+
+
+<script>
+    //InitDatePicker();
+
+
+
+    $.validator.unobtrusive.parse('#form-nuovo-iban');
+
+
+    //$("#submitIban").click(function () {
+    //        var checked_checkboxes = $("#form-nuovo-iban input[type=checkbox]:checked");
+    //        if (checked_checkboxes.length == 0) {
+    //            $("#tipologiaerror").text("Campo obbligatorio");
+    //            return false;
+    //        }
+    //        return true;
+    //    });
+
+    $(document).ready(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+
+    //window.addEventListener('load', function () {
+
+    //    if ($("#flag-anticipo-spprod").is('[disabled]')  &&
+    //        $("#flag-anticipo-trasferte").is('[disabled]')) {
+
+    //        $("#vincolato").show();
+
+    //     }
+    //})
+
+
+
+
+
+
+
+</script>

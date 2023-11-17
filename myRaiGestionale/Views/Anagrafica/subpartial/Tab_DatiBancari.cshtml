@@ -1,0 +1,113 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+@model AnagraficaIban
+
+@{
+
+}
+
+@foreach (var item in Model.Ibans.OrderBy(x => x.IdRichiestaMod > 0 ? 0 : 0).ThenBy(x => x.Tipologia))
+{
+    if (item.IdDatiBancari == 0) { continue; }
+
+    var listAction = new List<myRaiHelper.ActionTemplate>();
+
+
+    if (Model.CanModify && item.CanModify)
+    {
+        listAction.Add(new myRaiHelper.ActionTemplate() { Icon = "fa fa-pencil", OnClick = "OpenModalIban('" + Model.Matricola + "', " + item.IdDatiBancari + ", '" + item.Tipologia + "')" });
+    }
+    if (Model.CanDelete && item.IdRichiestaMod<=0 && item.CanDelete)
+    {
+        listAction.Add(new myRaiHelper.ActionTemplate() { Icon = "fa fa-trash-o", OnClick = "Delete_DatiIban('" + Model.Matricola + "', " + item.IdDatiBancari + ", '" + item.Tipologia + "')" });
+    }
+
+
+    using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, item.Tipologia.GetAmbientValue(), listAction))
+    {
+        if (item.IdRichiestaMod > 0)
+        {
+            <div class="rai-table-info">
+                <div class="row">
+                    <div class="col-sm-4 col-md-3 col-xl-2">
+                        <span>Status</span>
+                    </div>
+                    <div class="col-sm-8 col-md-9 col-xl-10">
+                        <span><i class="fa fa-circle feedback-warning-color">&nbsp;</i><b>Richiesta in corso</b></span>
+                    </div>
+                </div>
+            </div>
+        }
+
+        if (item.IdDatiBancari > 0)
+        {
+            <div class="rai-table-info">
+                @if (!String.IsNullOrWhiteSpace(item.Vincoli))
+                {
+                    <div class="row push-10-t">
+                        <div class="col-sm-4 col-md-3 col-xl-2">
+                            <span>Vincoli</span>
+                        </div>
+                        <div class="col-sm-8 col-md-9 col-xl-10">
+                            <span class="rai-font-md-bold">@item.Vincoli</span>
+                        </div>
+                    </div>
+                }
+                <div class="row push-10-t">
+                    <div class="col-sm-4 col-md-3 col-xl-2">
+                        <span>IBAN</span>
+                    </div>
+                    <div class="col-sm-8 col-md-9 col-xl-10">
+                        <span>@item.IBAN</span>
+                    </div>
+                </div>
+                <div class="row push-10-t">
+                    <div class="col-sm-4 col-md-3 col-xl-2">
+                        <span>Intestatario</span>
+                    </div>
+                    <div class="col-sm-8 col-md-9 col-xl-10">
+                        <span>@item.Intestatario</span>
+                    </div>
+                </div>
+                <div class="row push-10-t">
+                    <div class="col-sm-4 col-md-3 col-xl-2">
+                        <span>Agenzia</span>
+                    </div>
+                    <div class="col-sm-8 col-md-9 col-xl-10">
+                        <span>@item.Agenzia</span>
+                    </div>
+                </div>
+                <div class="row push-10-t">
+                    <div class="col-sm-4 col-md-3 col-xl-2">
+                        <span>Indirizzo agenzia</span>
+                    </div>
+                    <div class="col-sm-8 col-md-9 col-xl-10">
+                        <span>@item.IndirizzoAgenzia</span>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="row">
+                <div class="col-sm-12">
+                    <span class="rai-font-md-neutral">Se non specificato, l'anticipo verrà accreditato sull'IBAN dell'accredito stipendio. </span>
+                    @if (item.CanModify)
+                    {
+                        <span class="rai-font-md-neutral">Puoi eventualmente indicarne uno diverso cliccando sul bottone modifica.</span>
+                    }
+                </div>
+            </div>
+        }
+    }
+
+}
+
+@if (Model.CanAdd && Model.Ibans.Count(x => x.IdDatiBancari > 0) < 3)
+{
+    <div class="row">
+        <div class="col-xs-12">
+            <button class="btn rai-btn-small full-width" id="add-iban" onclick="OpenModalIban('@Model.Matricola', 0, '@IbanType.NonDefinito')">Aggiungi nuovo iban</button>
+        </div>
+    </div>
+}

@@ -1,0 +1,137 @@
+﻿@using myRaiDataTalentia
+@using myRaiCommonModel
+@using myRaiHelper
+@model XR_HRIS_ABIL_SUBFUNZIONE
+
+<div class="row">
+    <div class="col-md-8">
+        @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Dati sottofunzione", false))
+        {
+            using (Html.BeginForm("Save_Sottofunzione", "Abilitazioni", FormMethod.Post, new { id = "form-subfunz", @class = "form-group" }))
+            {
+                @Html.HiddenFor(m => m.ID_FUNZIONE)
+                @Html.HiddenFor(m => m.ID_SUBFUNZ)
+
+                <div class="row">
+                    <div class="col-sm-12 push-10">
+                        @Html.LabelForRequiredObbl(m => m.COD_SUBFUNZIONE, "Codice", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.COD_SUBFUNZIONE, new { @class = "form-control", required = "required" })
+                        @Html.ValidationMessageFor(m => m.COD_SUBFUNZIONE)
+                    </div>
+                    <div class="col-sm-12 push-10">
+                        @Html.LabelForRequiredObbl(m => m.DES_SUBFUNZIONE, "Descrizione", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.DES_SUBFUNZIONE, new { @class = "form-control" })
+                        @Html.ValidationMessageFor(m => m.DES_SUBFUNZIONE)
+                    </div>
+                    <div class="col-sm-12 push-10 push-10-t">
+                        <div class="rai-checkbox-container rai-checkbox-inline">
+                            <div class="rai-checkbox">
+                                @Html.CheckBoxFor(m => m.IND_CREATE)
+                                <label for="IND_CREATE">Creazione</label>
+                            </div>
+                            <div class="rai-checkbox">
+                                @Html.CheckBoxFor(m => m.IND_READ)
+                                <label for="IND_READ">Lettura</label>
+                            </div>
+                            <div class="rai-checkbox">
+                                @Html.CheckBoxFor(m => m.IND_UPDATE)
+                                <label for="IND_UPDATE">Modifica</label>
+                            </div>
+                            <div class="rai-checkbox">
+                                @Html.CheckBoxFor(m => m.IND_DELETE)
+                                <label for="IND_DELETE">Cancellazione</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-12 push-10 push-10-t">
+                        <div class="rai-checkbox">
+                            @Html.CheckBoxFor(m => m.IND_ATTIVO, new { id = "IND_ATTIVO_S" })
+                            <label for="IND_ATTIVO_S">Attivo</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row form-button">
+                    <div class="col-sm-12 ">
+                        <button class="btn rai-btn-primary full-width" onclick="SaveSubFunc(this)">Salva</button>
+                    </div>
+                </div>
+            }
+        }
+
+        @if (Model.ID_SUBFUNZ > 0)
+        {
+            
+        }
+    </div>
+    <div class="col-md-4">
+        @if (Model.ID_SUBFUNZ > 0)
+        {
+            var ricModel = new CercaDipendenteModel()
+            {
+                Provenienza = "ABIL",
+                Action = "AbilAbilPers(0, " + Model.ID_SUBFUNZ + ", null, '$matricola')",
+                ActionText = "Abilita"
+            };
+
+            @Html.Partial("~/Views/CercaDipendente/Index.cshtml", ricModel)
+
+            <div class="row">
+                <div class="col-sm-12">
+                    @Html.Partial("ElencoAbilitazioni", Model.XR_HRIS_ABIL)
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    function SaveSubFunc(button) {
+        event.preventDefault();
+
+        var idForm = 'form-subfunz';
+
+        $(button).addClass("disable");
+
+        var form = $("#" + idForm).first();
+        var validator = $(form).validate();
+
+        if (!$(form).valid()) {
+            $(button).removeClass("disable");
+            return false;
+        }
+
+        var formData = new FormData($(form)[0]);
+
+        $(form).parent().addClass("rai-loader");
+
+        $.ajax({
+            url: $(form).attr("action"),
+            processData: false,
+            contentType: false,
+            type: "POST",
+            data: formData,
+            dataType: 'json',
+            success: function (data) {
+                if (data.esito) {
+                    swal({ title: "Sottofunzione salvata con successo", type: 'success', customClass: 'rai' });
+
+                    var idFunz = $('#ID_FUNZIONE').val();
+                    var desSubFunz = "Sottofunzione " + $('#COD_SUBFUNZIONE').val() + " - " + $('#DES_SUBFUNZIONE').val();
+
+                    RaiUpdateWidget("box-funzioni", "/Abilitazioni/ElencoFunzioni", "html", null);
+                    RaiUpdateWidget('nav-abil-funz', '/Abilitazioni/Modal_Funzione', "html", { id: idFunz }, false, null, false, 'POST');
+                    RaiOPNavGoToNext('nav-abil', 'nav-abil-subfunc', desSubFunz, '/Abilitazioni/Modal_Sottofunzione', { idFunz: idFunz, idSubFunz: data.idSubFunz }, 'POST');
+                } else {
+                    swal({ title: "Ops...", text: data.message, type: 'error', customClass: 'rai' });
+                }
+                $(button).removeClass("disable");
+                $(form).parent().removeClass("rai-loader");
+            },
+            error: function (a, b, c) {
+                swal({ title: "Ops...", text: ' ' + b + ' ' + c, type: 'error', customClass: 'rai' });
+                $(button).removeClass("disable");
+                $(form).parent().removeClass("rai-loader");
+            }
+        })
+    }
+</script>

@@ -1,0 +1,966 @@
+﻿@using myRaiHelper
+@using myRaiGestionale.Controllers
+@using myRaiCommonModel
+@using myRaiCommonModel.Gestionale
+@model myRaiCommonModel.Gestionale.Pratica
+
+@{
+    var elencoProv = PoliticheRetributiveController.GetProvS(false);
+    var varRich = PoliticheRetributiveHelper.GetDipProv(Model.Dipendente, Model.Dipendente.ID_PROV_RICH);
+    var varEff = PoliticheRetributiveHelper.GetDipProvEffettivo(Model.Dipendente);
+    int tipoProvEff = Model.Dipendente.CUSTOM_PROV.GetValueOrDefault() ? (int)ProvvedimentiEnum.CUSNessuno : (int)ProvvedimentiEnum.Nessuno;
+    if (varEff != null)
+    {
+        tipoProvEff = varEff.ID_PROV;
+    }
+
+    var giaConvalidato = Model.Dipendente.XR_PRV_OPERSTATI.Any(x => x.ID_STATO == (int)ProvvStatoEnum.Convalidato && x.DATA_FINE_VALIDITA == null);
+    int idOperConvalida = 0;
+    if (giaConvalidato)
+    {
+        idOperConvalida = Model.Dipendente.XR_PRV_OPERSTATI.FirstOrDefault(x => x.ID_STATO == (int)ProvvStatoEnum.Convalidato && x.DATA_FINE_VALIDITA == null).ID_OPER;
+    }
+
+    var giaConsegnato = Model.Dipendente.XR_PRV_OPERSTATI.Any(x => x.ID_STATO == (int)ProvvStatoEnum.Consegnato && x.DATA_FINE_VALIDITA == null);
+    var conclusa = Model.Dipendente.XR_PRV_OPERSTATI.Any(x => x.ID_STATO == (int)ProvvStatoEnum.Conclusa && x.DATA_FINE_VALIDITA == null);
+
+    bool isCustom = Model.Dipendente.CUSTOM_PROV.GetValueOrDefault();
+
+    //bool canShowData = Model.CanShowData;
+    bool canShowData = true;
+
+    var db = new myRaiData.Incentivi.IncentiviEntities();
+    //var EsisteSimulazioneIncompleta = db.XR_PRV_DIPENDENTI_SIMULAZIONI.Where(x => x.ID_DIPENDENTE == Model.Dipendente.ID_DIPENDENTE &&
+    //                                     x.DTA_ESECUZIONE == null).FirstOrDefault();
+
+    //var EsisteSimulazioneCompletata = db.XR_PRV_DIPENDENTI_SIMULAZIONI.Where(x => x.ID_DIPENDENTE == Model.Dipendente.ID_DIPENDENTE &&
+    //                                    x.DTA_ESECUZIONE != null).FirstOrDefault();
+
+    //var catArrivoDisponibileInTabVariazioni = db.XR_PRV_DIPENDENTI_VARIAZIONI.Where(x => x.ID_DIPENDENTE == Model.Dipendente.ID_DIPENDENTE && x.CAT_PREVISTA != null)
+    //                                .Select(x => x.CAT_PREVISTA).FirstOrDefault();
+
+    //string catArrivoDisponibileInTabSimulazioni = null;
+    //if (EsisteSimulazioneCompletata != null)
+    //{
+    //    catArrivoDisponibileInTabSimulazioni = EsisteSimulazioneCompletata.CAT_ARRIVO;
+    //}
+    //bool IsFromIndex = Model.CatArrivo == null;
+    //bool IsFromCombo = Model.CatArrivo != null;
+
+
+}
+
+@if (!Model.IsPreview)
+{
+    //if (Model.Simulazioni.Any())
+    //{
+
+    if (Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta != null)
+    {
+        if (Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta.NOT_ERROR != null)
+        {
+            <div class="row" id="aggiornamento-corso">
+                <div class="col-sm-12">
+                    <div class="alert alert-danger" style="height:90px">
+                        <b>Errore</b><br>
+                        <span>
+                            La simulazione richiesta per @Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta.CAT_ARRIVO è
+                            andata in errore (@Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta.NOT_ERROR)
+                        </span>
+                        <a href="javascript:EliminaRiprovaSim(@Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta.ID_SIMULAZIONE , 'R' )" style="float: right;">Riprova</a>
+                        <a href="javascript:EliminaRiprovaSim(@Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta.ID_SIMULAZIONE , 'E')" style="float: right;margin-right: 18px;">Elimina simulazione</a>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="row" id="aggiornamento-corso">
+                <div class="col-sm-12">
+                    <div class="alert alert-info">
+                        <strong>Aggiornamento in corso</strong> <i id="wait-sim" class="fa fa-spinner fa-spin" style="margin-left:6px;display:none"></i><br />
+
+                        @if (Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta != null)
+                        {
+                            if (Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta.DTA_ACQUISIZIONE != null)
+                            {
+                                <span id="ult-agg">
+                                    E' stata richiesta la simulazione <li>
+                                        <b>@myRaiCommonManager.PoliticheRetributiveManager.GetDesQualifica(Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta.CAT_ARRIVO)</b>
+                                    </li> Elaborazione in corso...
+                                </span><br />
+                                @*<a href="javascript:DecodLivCat()">Aggiorna</a>*@
+                            }
+                            else
+                            {
+                                <span id="ult-agg">
+                                    E' stata richiesta la simulazione <li>
+                                        <b>@myRaiCommonManager.PoliticheRetributiveManager.GetDesQualifica(Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta.CAT_ARRIVO)</b>
+                                    </li> In attesa di elaborazione...
+                                </span><br />
+                                @*<a href="javascript:DecodLivCat()">Aggiorna</a>*@
+                            }
+                        }
+                        <span>Non sarà possibile aggiornare i dati fino al completamento dell'operazione.</span>
+                    </div>
+                </div>
+            </div>
+        }
+
+    }
+    if (Model.DatiConsiderandoSimulazioni.TabVariazioniSovrascrittaDaSimulazione)
+    {
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="alert alert-warning">
+                    <b>Simulazione</b><br>
+                    <span>I dati economici della scheda al momento rappresentano l'esito di una simuazione, clicca <a href="javascript:DecodLivCat(true)">Ripristina</a> per tornare ai valori di default</span>
+                </div>
+            </div>
+        </div>
+    }
+    if (Model.DatiConsiderandoSimulazioni.ShowNotaSimulazioniDisponibili != null)
+    {
+        int counter = 0;
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="alert alert-success alert-with-icon" id="box-sim">
+                    <b>Simulazioni disponibili :</b><br>
+                    <span id="ult-agg"></span>
+
+                    @foreach (string s in Model.DatiConsiderandoSimulazioni.ShowNotaSimulazioniDisponibili.Split(','))
+                    {
+                        counter++;
+                        <li class="li-sim" id="li-sim-@counter"><b>@s</b>  <a style="margin-left:20px" href="javascript:AggiornaSimulazioneDisponibile('@s', '@Model.Dipendente.MATRICOLA',@counter)">Aggiorna</a></li>
+                    }
+                    <span>Selezionare la categoria e salvare la scheda per impostarla come categoria di arrivo</span>
+                </div>
+            </div>
+        </div>
+
+    }
+
+    //  }
+    <div class="" style="@(Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta!=null?"pointer-events:none":"")">
+        <div class="row push-10">
+            <div class="col-sm-12">
+                <div class="rai-checkbox">
+                    <input id="chkGestExt" type="checkbox" @(Model.Dipendente.IND_PRATICA_EXT.GetValueOrDefault() ? "checked" : "") />
+                    <label class="rai-caption" for="chkGestExt" @(conclusa ? "disabled" : "")>Gestione esterna al sistema</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="row push-10">
+            <div class="col-sm-8">
+                <label class="rai-caption text-uppercase">Piano</label>
+                @if (!Model.EnableGest || giaConvalidato)
+                {
+                    <input id="piano-dip" type="hidden" value="@Model.Dipendente.ID_CAMPAGNA" />
+                    <div class="input-group">
+                        <input type="text" readonly class="form-control" value="@Model.Dipendente.XR_PRV_CAMPAGNA.NOME" />
+                        <span class="input-group-addon"><i class="fa fa-lock"></i></span>
+                    </div>
+                }
+                else
+                {
+                    <!-- Modificato in data 13/01/2023 -->
+                    <!-- Quando si apre una scheda di una campagna chiusa la combo non visualizzava la campagna giusta -->
+                    if (Model.Dipendente.XR_PRV_CAMPAGNA.DTA_FINE != null && Model.Dipendente.XR_PRV_CAMPAGNA.DTA_FINE.Value < DateTime.Today)
+                    {
+                        @Html.RaiSelect("piano-dip", new SelectList(PoliticheRetributiveController.getCampagnaList(false, true), "Value", "Text", Model.Dipendente.ID_CAMPAGNA),
+                                   attributes: new { @class = "form-control form-control-value", id = "piano-dip", name = "Piano", placeholder = "Piano", data_orig_piano = Model.Dipendente.ID_CAMPAGNA })
+                    }
+                    else
+                    {
+                        @Html.RaiSelect("piano-dip", new SelectList(PoliticheRetributiveController.getCampagnaList(), "Value", "Text", Model.Dipendente.ID_CAMPAGNA),
+                                                       attributes: new { @class = "form-control form-control-value", id = "piano-dip", name = "Piano", placeholder = "Piano", data_orig_piano = Model.Dipendente.ID_CAMPAGNA })
+                    }
+                }
+            </div>
+            @if (Model.EnableGest)
+            {
+                <div class="col-sm-4 @(giaConvalidato ? "disable" : "")">
+                    <label class="rai-caption text-uppercase">Decorrenza</label>
+                    @{
+                        bool showSelect = Model.Dipendente.ID_CAMPAGNA != null && Model.Dipendente.ID_CAMPAGNA > 2;
+                    }
+
+                    @*@Html.DropDownList("Decorrenza", new SelectList(PoliticheRetributiveController.getCampagnaDecorrenza(Model.Dipendente.ID_CAMPAGNA.Value, Model.Dipendente.DECORRENZA), "Value", "Text", Model.Dipendente.DECORRENZA.HasValue ? Model.Dipendente.DECORRENZA.Value.ToString("dd/MM/yyyy") : ""),
+                        new { @class = "form-control form-control-value", id = "data-decorrenza-select", style = "width: 100%" + (showSelect ? "" : "display:none;"), placeholder = "Decorrenza" })*@
+
+                    @Html.RaiSelect("data-decorrenza-select", new SelectList(PoliticheRetributiveController.getCampagnaDecorrenza(Model.Dipendente.ID_CAMPAGNA.Value,
+                         Model.Dipendente.DECORRENZA), "Value", "Text", Model.Dipendente.DECORRENZA.HasValue ? Model.Dipendente.DECORRENZA.Value.ToString("dd/MM/yyyy") : ""),
+                         attributes: new { @class = "form-control form-control-value", name = "Decorrenza",
+                             id = "data-decorrenza-select", style = (showSelect ? "" : "display:none;"), placeholder = "Decorrenza"
+                         },searchPlaceholder:null, expandView:false, onSelectchange:"blurAll()")
+
+                    @{
+                        var dtDec = "";
+                        if (Model.Dipendente.DECORRENZA.HasValue)
+                        {
+                            dtDec = Model.Dipendente.DECORRENZA.Value.ToString("MM/yyyy");
+                        }
+                        <input value="@dtDec" class="js-datetimepicker formElements form-control" style="@(showSelect ? "display:none;" : "")" data-format="MM/YYYY" data-locale="it" id="data-decorrenza-input" placeholder="Selezionare una data" autocomplete="off" />
+                    }
+                </div>
+            }
+            else
+            {
+                var dtDec = "";
+                if (Model.Dipendente.DECORRENZA.HasValue)
+                {
+                    dtDec = Model.Dipendente.DECORRENZA.Value.ToString("dd/MM/yyyy");
+                }
+                <div class="col-sm-4">
+                    <label class="rai-caption text-uppercase">Decorrenza</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" readonly value="@dtDec" />
+                        <div class="input-group-addon">
+                            <i class="fa fa-lock"></i>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @*Da commentare con il nuovo giro di acquisizione*@
+        @if (varEff != null && varEff.XR_PRV_PROV.SIGLA == PoliticheRetributiveHelper.SIGLA_PROMOZIONI)
+        {
+            var catPrevista = varEff.CAT_PREVISTA;
+            if (!String.IsNullOrWhiteSpace(Model.Dipendente.CAT_RICHIESTA))
+            {
+                catPrevista = Model.Dipendente.CAT_RICHIESTA;
+            }
+
+            if (Model.CatArrivo != null && Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta == null)
+            {
+                catPrevista = Model.CatArrivo;
+            }
+            var livPrevisto = varEff.LIV_PREVISTO;
+            if (!String.IsNullOrWhiteSpace(Model.Dipendente.LIV_RICHIESTA))
+            {
+                livPrevisto = Model.Dipendente.LIV_RICHIESTA;
+            }
+
+            <div class="row push-10">
+                <div class="col-sm-6">
+                    <label class="rai-caption text-uppercase">Livello attuale</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" readonly value="@varEff.LIV_ATTUALE" />
+                        <span class="input-group-addon"><i class="fa fa-lock"></i></span>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <label class="rai-caption text-uppercase">Livello previsto</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" readonly value="@livPrevisto" id="livPrevisto" />
+                        <span class="input-group-addon"><i class="fa fa-lock"></i></span>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="row push-10">
+                <div class="col-sm-6">
+                    <label class="rai-caption text-uppercase">Categoria prevista............</label>
+                    @{ 
+                        var catCombo = PoliticheRetributiveController.GetPossibiliCategorie(Model.Dipendente.SINTESI1.COD_QUALIFICA, catPrevista, Model.Dipendente.CUSTOM_PROV);
+                        var catComboAll = myRaiCommonManager.PoliticheRetributiveManager.GetPassaggiDisponibiliPerCategoriaPartenzaSelectList(Model.Dipendente.MATRICOLA,catPrevista);
+                    }
+                    @Html.RaiSelect("inputCatArrivo", catComboAll, onSelectchange: "DecodLivCat(false,true)", readOnly: !Model.EnableGest || giaConvalidato, hideSearch: !Model.Dipendente.CUSTOM_PROV.GetValueOrDefault())
+                </div>
+                <div class="col-sm-6">
+                    <label class="rai-caption text-uppercase">Mansione</label>
+                    <div class="@(Model.Simulazioni.Any() ? "input-group" : "") ">
+                        <input type="text" class="form-control" id="COD_MANSIONE" value="@Model.Dipendente.COD_MANSIONE" @(Model.Simulazioni.Any() ? "readonly" : "") />
+                        @if (!Model.EnableGest || giaConvalidato)
+                        {
+                            <div class="input-group-addon">
+                                <i class="fa fa-lock"></i>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="row push-10">
+                <div class="col-sm-6">
+
+                    @*@if (Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta != null)
+                        {
+                            if (Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta.DTA_ACQUISIZIONE != null)
+                            {
+                                <span id="ult-agg">Richiesta simulazione <b>@Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta.CAT_ARRIVO</b> - Acquisita dal sistema il @Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta.DTA_ACQUISIZIONE.Value.ToString("dd/MM/yyyy HH.mm")</span>
+
+                            }
+                            else
+                            {
+                                <span id="ult-agg">Richiesta simulazione <b>@Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta.CAT_ARRIVO</b> - Elaborazione richiesta il @Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta.DTA_RICHIESTA.ToString("dd/MM/yyyy HH.mm")</span>
+
+                            }
+                        }
+                        else if (Model.DatiConsiderandoSimulazioni.ShowNotaSimulazioniDisponibili != null)
+                        {
+                            <span id="ult-agg"> E' disponibile la simulazione per <b>@Model.DatiConsiderandoSimulazioni.ShowNotaSimulazioniDisponibili</b></span>
+                        }*@
+
+                </div>
+                <div class="col-sm-6">
+                    <button id="ric-sim" class="btn btn-md rai-btn-secondary" style="width:100%" disabled="disabled"
+                            onclick="RichiediSim(@Model.Dipendente.ID_DIPENDENTE)">
+                        Richiedi simulazione
+                    </button>
+                </div>
+            </div>
+        }
+
+        <div class="row push-10" style="@(PoliticheRetributiveController.AbilitaGestioneLettera() || giaConvalidato ? "" : "display:none;")">
+            <div class="col-sm-4">
+                <label class="rai-caption text-uppercase">
+                    Bozza lettera
+                </label>
+            </div>
+            <div class="col-sm-8">
+                <select class="form-control form-control-value-int " id="ID_TEMPLATE" @(giaConsegnato ? " disabled " : "")>
+                    <option value="0" @(Model.Dipendente.ID_TEMPLATE.GetValueOrDefault() == 0 ? "selected" : "")>-</option>
+                    @foreach (var group in PoliticheRetributiveController.getBozzeList())
+                    {
+                        <optgroup label="@group.Name">
+                            @foreach (var item in group.ListItems)
+                            {
+                                <option value="@item.Value" @(item.Value == Model.Dipendente.ID_TEMPLATE.GetValueOrDefault().ToString() ? "selected" : "")>@item.Text</option>
+                            }
+                        </optgroup>
+                    }
+                </select>
+            </div>
+        </div>
+
+        @if (giaConvalidato)
+        {
+            <div class="row push-10">
+                <div class="col-sm-4">
+                    <label class="rai-caption text-uppercase">
+                        Stato lettera
+                    </label>
+                </div>
+                <div class="col-sm-8">
+                    @if (!conclusa)
+                    {
+                        @Html.DropDownList("StatoLettera", new SelectList(myRaiCommonManager.PoliticheRetributiveManager.GetStatoLetteraList(), "Value", "Text", Model.Dipendente.STATO_LETTERA),
+                              new { @class = "form-control form-control-value", id = "stato-lettera", style = "width: 100%" })
+                    }
+                    else
+                    {
+                        @Html.RaiSelect("StatoLettera", new SelectList(myRaiCommonManager.PoliticheRetributiveManager.GetStatoLetteraList(), "Value", "Text", Model.Dipendente.STATO_LETTERA),
+                              attributes: new { id = "stato-lettera", @readonly = "readonly" }, readOnly: true)
+                    }
+
+                    @*@if (!giaConsegnato)
+                    {
+                        @Html.DropDownList("StatoLettera", new SelectList(myRaiCommonManager.PoliticheRetributiveManager.GetStatoLetteraList(), "Value", "Text", Model.Dipendente.STATO_LETTERA),
+                              new { @class = "form-control form-control-value", id = "stato-lettera", style = "width: 100%" })
+                    }
+                    else
+                    {
+                        @Html.RaiSelect("StatoLettera", new SelectList(myRaiCommonManager.PoliticheRetributiveManager.GetStatoLetteraList(), "Value", "Text", Model.Dipendente.STATO_LETTERA),
+                              attributes: new { id = "stato-lettera", @readonly = "readonly" }, readOnly: true)
+                    }*@
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    var prom = PoliticheRetributiveHelper.GetDipProv(Model.Dipendente, (int)ProvvedimentiEnum.AumentoLivello);
+    var catPrevista = prom.CAT_PREVISTA;
+    if (!String.IsNullOrWhiteSpace(Model.Dipendente.CAT_RICHIESTA))
+    {
+        catPrevista = Model.Dipendente.CAT_RICHIESTA;
+    }
+
+    var livPrevisto = prom.LIV_PREVISTO;
+    if (!String.IsNullOrWhiteSpace(Model.Dipendente.LIV_RICHIESTA))
+    {
+        livPrevisto = Model.Dipendente.LIV_RICHIESTA;
+    }
+
+    <div class="row push-10">
+        <div class="col-sm-6">
+            <label class="rai-caption text-uppercase">Livello attuale</label>
+            <div class="input-group">
+                <input type="text" class="form-control" readonly value="@prom.LIV_ATTUALE" />
+                <span class="input-group-addon"><i class="fa fa-lock"></i></span>
+            </div>
+        </div>
+        <div class="col-sm-6">
+            <label class="rai-caption text-uppercase">Livello previsto</label>
+            <div class="input-group">
+                <input type="text" class="form-control" readonly value="@livPrevisto" />
+                <span class="input-group-addon"><i class="fa fa-lock"></i></span>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="row push-10">
+        <div class="col-sm-6">
+            <label class="rai-caption text-uppercase">Categoria prevista</label>
+            @{ 
+                var listItems = myRaiCommonManager.AnagraficaManager.GetCategorieHRDW("", "", true, null, catPrevista);
+               // var listItems2 = myRaiCommonManager.PoliticheRetributiveManager.GetPassaggiDisponibiliPerCategoriaPartenzaSelectList(Model.Dipendente.MATRICOLA, catPrevista);
+            } 
+            @Html.RaiSelect("inputCatArrivo", listItems, readOnly: true)
+        </div>
+    </div>
+}
+
+<span style="display:none" class="rai-font-sm-neutral">Provenienza dati: @Model.DatiConsiderandoSimulazioni.PrendiDatiDa</span>
+<div class="row push-20-t" id="div-daticat">
+    <div class="col-sm-12">
+        <table class="table table-hover rai-table rai-table-vcenter" role="grid"
+               style="width:100%;@(Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta!=null?"pointer-events:none":"")" id="table-daticat">
+            <thead>
+                <tr>
+                    <th>Tipo</th>
+                    <th class="text-right" style="min-width:90px">Diff. RAL / Importo</th>
+                    <th class="text-right" style="min-width:90px">Costo annuo</th>
+                    <th class="text-right" style="min-width:90px">Costo periodo</th>
+                </tr>
+            </thead>
+            <tbody class="rai-font-md">
+                @{
+                    //bool DatiFromSimulazione = false;
+                    //bool PossibileRichiestaSimulazione = false;
+                    myRaiData.Incentivi.XR_PRV_DIPENDENTI_SIMULAZIONI simu = Model.DatiConsiderandoSimulazioni.SimulazioneCorrenteVisualizzata;
+
+                }
+                @foreach (var provv in elencoProv.Where(x => (!isCustom && (x.CUSTOM == null || !x.CUSTOM.Value)) || (isCustom && x.CUSTOM != null && x.CUSTOM.Value)).OrderBy(x => x.ORDINE))
+                {
+                    myRaiData.Incentivi.XR_PRV_DIPENDENTI_VARIAZIONI var = null;
+                    //if (Model.DatiConsiderandoSimulazioni.PrendiDatiDa == "V")
+                    //{
+                    var = PoliticheRetributiveHelper.GetDipProv(Model.Dipendente, provv.ID_PROV);
+                    //}
+                    if (Model.DatiConsiderandoSimulazioni.PrendiDatiDa == "S")
+                    {
+                        var = myRaiCommonManager.PoliticheRetributiveManager.GetDipProvFromSimulazioni(Model.Dipendente, provv.ID_PROV, Model.CatArrivo);
+
+                    }
+
+                    //if (Model.CatArrivo != null && var != null && var.CAT_PREVISTA != null && var.CAT_PREVISTA != Model.CatArrivo)
+                    //{
+                    //    simu = myRaiCommonManager.PoliticheRetributiveManager.GetSimulazionePending(Model.Dipendente.MATRICOLA, Model.CatArrivo);
+
+                    //    var = myRaiCommonManager.PoliticheRetributiveManager.GetDipProvFromSimulazioni(Model.Dipendente, provv.ID_PROV, Model.CatArrivo);
+                    //    if (var != null)
+                    //    {
+                    //        DatiFromSimulazione = true;
+                    //    }
+                    //    else
+                    //    {
+                    //        //PossibileRichiestaSimulazione = true;
+                    //    }
+                    //}
+                    <tr role="row" data-row-prov="@provv.ID_PROV" @(provv.CUSTOM.GetValueOrDefault() ? "data-row-prov-custom" : "")>
+                        <td class="">
+                            @if (!Model.IsPreview && Model.EnableGest)
+                            {
+
+                                <div class="rai-radio">
+                                    <input class="@(giaConvalidato?"disable":"")" data-id-prov="@provv.ID_PROV" data-prov-gr="" data-prov-ip="" id="prov-@provv.ID_PROV" type="radio" name="test" @(provv.ID_PROV == tipoProvEff ? "checked" : "") />
+                                    <label for="prov-@provv.ID_PROV">
+                                        @provv.DESCRIZIONE
+                                    </label>
+                                    @if (var != null && (!String.IsNullOrWhiteSpace(var.INDENNITA_ACQUISITE) || !String.IsNullOrWhiteSpace(var.INDENNITA_PERSE) || !String.IsNullOrWhiteSpace(var.INDENNITA_DELTA)))
+                                    {
+                                        <a href="#" title="Clicca per ulteriori informazioni su indennità" onclick='ShowIndennita("@var.INDENNITA_ACQUISITE","@var.INDENNITA_PERSE","@var.INDENNITA_DELTA")'><i class="icon icon-info"></i></a>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <span>&nbsp;</span>
+                                <label>@provv.DESCRIZIONE</label>
+                            }
+                        </td>
+                        @if (!provv.CUSTOM.GetValueOrDefault())
+                        {
+                            if (var != null)
+                            {
+                                if (canShowData || var.ID_PROV == 3 || var.ID_PROV == 2)
+                                {
+                                    <td class="text-right">@String.Format("{0:N2} €", var.DIFF_RAL)</td>
+                                    <td class="text-right">@String.Format("{0:N2} €", var.COSTO_ANNUO)</td>
+                                    <td class="text-right">@String.Format("{0:N2} €", var.COSTO_PERIODO)</td>
+                                }
+                                else
+                                {
+                                    <td class="text-right">***</td>
+                                    <td class="text-right">***</td>
+                                    <td class="text-right">***</td>
+                                }
+                            }
+                            else
+                            {
+                                <td class="text-right">-</td>
+                                <td class="text-right">-</td>
+                                <td class="text-right">-</td>
+
+                            }
+                        }
+                        else
+                        {
+                            if (var != null)
+                            {
+                                string functionUpdate = "";
+                                if (provv.BASE_PROV.Value == (int)ProvvedimentiEnum.Gratifica)
+                                {
+                                    functionUpdate = "GestAggiornaCostoGratifica(" + provv.ID_PROV + ",'" + PoliticheRetributiveController.GetAliq(provv.ID_PROV, Model.Dipendente.SINTESI1.COD_QUALIFICA).ToString("N2") + "')";
+                                }
+                                else //if (provv.BASE_PROV.Value == (int)ProvvedimentiEnum.AumentoMerito)
+                                {
+                                    functionUpdate = "GestAggiornaCostoAumento(" + provv.ID_PROV + ",'" + PoliticheRetributiveController.GetAliq(provv.ID_PROV, Model.Dipendente.SINTESI1.COD_QUALIFICA).ToString("N2") + "')"; ;
+                                }
+
+                                <td class="text-right" style="vertical-align:middle;">
+                                    <input id="diffRal-@provv.ID_PROV" class="formElements form-control @(!provv.EDITABLE.GetValueOrDefault()?"disable":"")" type="text" value="@(var!=null?var.DIFF_RAL.ToString():"")" onblur="@functionUpdate" />
+                                </td>
+                                <td class="text-right"><input id="costoAnnuo-@provv.ID_PROV" class="formElements form-control disable" type="text" value="@(var!=null?var.COSTO_ANNUO.ToString():"")" /></td>
+                                <td class="text-right"><input id="costoPeriodo-@provv.ID_PROV" class="formElements form-control disable" type="text" value="@(var!=null?var.COSTO_PERIODO.ToString():"")" /></td>
+                            }
+                            else
+                            {
+                                <td class="text-right">-</td>
+                                <td class="text-right">-</td>
+                                <td class="text-right">-</td>
+                            }
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (!Model.IsPreview && Model.EnableGest)
+{
+    string dis = Model.DatiConsiderandoSimulazioni.AbilitaButtonRichiediSimulazione ? "disabled='disabled'" : "";
+    if (Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta != null)
+    {
+        dis = "disabled='disabled'";
+    }
+    <div class="row push-10-t">
+        <div class="col-sm-12 text-center">
+            <div class="rai-btn-fill">
+                @if (!giaConvalidato)
+                {
+                    if (!isCustom)
+                    {
+                        <button @dis class="btn btn-md btn-warning" onclick="GestEditProvv(@Model.Dipendente.ID_DIPENDENTE, '@((!isCustom).ToString())')">Modifica manuale</button>
+                    }
+                    else
+                    {
+                        <button @dis class="btn btn-md btn-warning" onclick="GestEditProvv(@Model.Dipendente.ID_DIPENDENTE, '@((!isCustom).ToString())')">Ripristina default</button>
+                    }
+                }
+                @if (!conclusa)
+                {
+                    <button @dis class="btn btn-md btn-success" onclick="GestUpdatePratica(@Model.Dipendente.ID_DIPENDENTE)">Salva</button>
+                }
+                @if (Model.DatiConsiderandoSimulazioni.AbilitaButtonSalvaSimulazioneSuVariazioni)
+                {
+                    <input type="hidden" id="salva-cate" value="1" />
+                    @*<button @dis class="btn btn-md btn-warning" onclick="SalvaDatiCat(@Model.Dipendente.ID_DIPENDENTE)">Salva dati categoria</button>*@
+                }
+            </div>
+        </div>
+    </div>
+
+
+    if (Model.Dipendente.ID_TEMPLATE.GetValueOrDefault() > 0)
+    {
+        <div class="row push-5-t">
+            <div class="col-sm-12">
+                <div class="rai-btn-fill">
+                    @if (!giaConsegnato)
+                    {
+                        <a class="btn rai-btn-secondary" href="#" onclick="GestModificaLettera(@Model.Dipendente.ID_DIPENDENTE)" title="Modifica lettera">Modifica lettera</a>
+
+                    }
+                    <a class="btn rai-btn-secondary" href="@Url.Action("ScaricaLettera","PoliticheRetributive", new { idPratica = Model.Dipendente.ID_DIPENDENTE})" title="Scarica lettera">Scarica lettera</a>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+<script language="javascript">
+    InitDatePicker();
+
+    @if (Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta != null)
+    {
+             <text>
+    $("#aggiorna-scheda").show();
+            </text>
+    }
+    else
+    {
+      <text>
+    $("#aggiorna-scheda").hide();
+      </text>
+    }
+    @if (Model.DatiConsiderandoSimulazioni.AbilitaButtonRichiediSimulazione)
+    {
+    <text>
+    $("#ric-sim").removeAttr("disabled");
+    $("#ult-agg").text("Dati non disponibili per questa categoria");
+    $("#div-daticat").css("pointer-events", "none");
+    </text>
+    }
+    @if (simu != null && simu.DTA_RICHIESTA != null && simu.DTA_ACQUISIZIONE == null)
+    {
+     <text>
+    $("#ult-agg").text("Simulazione richiesta il @(simu.DTA_RICHIESTA.ToString("dd/MM/yyyy HH.mm"))" );
+    $("#div-daticat").css("pointer-events", "none");
+    $("#ric-sim").attr("disabled", "disabled");
+    $("#aggiornamento-corso").show();
+    </text>
+    }
+     else if (simu != null && simu.DTA_ESECUZIONE == null && simu.DTA_ACQUISIZIONE != null)
+    {
+     <text>
+    $("#ult-agg").text("Simulazione acquisita il @(simu.DTA_ACQUISIZIONE.Value.ToString("dd/MM/yyyy HH.mm"))");
+    $("#div-daticat").css("pointer-events", "none");
+    $("#ric-sim").attr("disabled", "disabled");
+    $("#aggiornamento-corso").show();
+    </text>
+    }
+
+    function AggiornaSimulazioneDisponibile(cat, matricola,counter) {
+        $.ajax({
+            url: '/politicheretributive/AggiornaSim',
+            type: "POST",
+            dataType: "json",
+
+            data: { cat: cat, matricola: matricola },
+            success: function (data) {
+                if (data.esito == true) {
+                    $("#reset-sim").click();
+                    //$("#li-sim-" + counter).remove();
+                    //if ($(".li-sim").length == 0)
+                    //    $("#box-sim").hide();
+                }
+                else {
+                    swal({
+                        title: "Attenzione",
+                        text: "Impossibile aggiornare simulazione",
+                        type: 'error',
+                        customClass: 'rai'
+                    });
+                }
+            }
+        });
+    }
+    function EliminaRiprovaSim(id, action) {
+        $.ajax({
+            url: '/politicheretributive/EliminaRiprovaSimulazione',
+            type: "POST",
+            dataType: "json",
+
+            data: { idsim:id, action:action },
+            success: function (data) {
+                if (data.esito) {
+                    DecodLivCat();
+                }
+                else {
+                    swal({
+                        title: "Attenzione",
+                        text: data.errore,
+                        type: 'error',
+                        customClass: 'rai'
+                    });
+                }
+            }
+        });
+    }
+     
+    function Ripristina() {
+
+    }
+
+            function RichiediSim(iddip) { //M-POLRETR
+                var catArrivo = $("#inputCatArrivo").val();
+                swal({
+                title: "Conferma",
+            type: 'question',
+            html: "Confermi di elaborare una simulazione per la categoria " + catArrivo+ " ? ",
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+                }).then(function () {
+
+            $.ajax({
+                url: '/politicheretributive/RichiediSimulazione',
+                type: "POST",
+                dataType: "json",
+
+                data: { catArrivo: catArrivo, iddip : iddip },
+                success: function (data) {
+                        if (data.esito == true) {
+                            swal({
+                            title: "Salvataggio effettuato",
+                            text: data.info,
+                            type: 'success',
+                            customClass: 'rai'
+                            });
+                            DecodLivCat(false, true);
+                        }
+                        else {
+                            swal({
+                            title: "Attenzione",
+                            text: data.errore,
+                            type: 'error',
+                            customClass: 'rai'
+                            });
+                        }
+                    }
+                });
+
+            });
+        }
+        function SalvaDatiCat(idDip) {
+
+            var savedata = {};
+            savedata.id_dip =@Model.Dipendente.ID_DIPENDENTE ;
+            savedata.id_simulazione =@(simu != null ? simu.ID_SIMULAZIONE : 0) ;
+            savedata.cat_prevista = "@(simu != null ? simu.CAT_ARRIVO :"")";
+            savedata.importi = [];
+            for (var i = 1; i <= 10; i++) {
+
+                var exist = $("#table-daticat tr[data-row-prov=" + i + "]").length;
+                if (exist == 0) continue;
+                var td1 = $("#table-daticat tr[data-row-prov=" + i + "] td")[1].innerText;
+                var td2 = $("#table-daticat tr[data-row-prov=" + i + "] td")[2].innerText;
+                var td3 = $("#table-daticat tr[data-row-prov=" + i + "] td")[3].innerText;
+
+                savedata.importi.push({ prov: i, importo1: td1, importo2: td2, importo3: td3 } );
+        }
+        var text = (JSON.stringify(savedata));
+
+        //swal({
+        //title: "Conferma",
+        //    type: 'question',
+        //    html: "Confermi di rendere permanente la categoria e gli importi visualizzati ?",
+        //    showCancelButton: true,
+        //    confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+        //    cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+        //    reverseButtons: true,
+        //    customClass: 'rai rai-confirm-cancel'
+        //}).then(function () {
+
+            $.ajax({
+            url: '/politicheretributive/saveSimulazione',
+                type: "POST",
+                dataType: "json",
+
+                data: { jsontext: text },
+                success: function (data) {
+                    if (data.esito == true) {
+                        swal({
+                            title: "Salvataggio effettuato",
+                            text: "Dati registrati correttamente",
+                            type: 'success',
+                            customClass: 'rai'
+                        }).then(function () { DecodLivCat(); });
+
+                    }
+                    else {
+                        swal({
+                            title: "Attenzione",
+                            text: data.errore,
+                            type: 'error',
+                            customClass: 'rai'
+                        });
+                    }
+
+                }
+            });
+
+       // });
+    }
+    /*
+     * Quando si seleziona una data superiore all'anno corrente
+     * il costo periodo deve diventare 0,00€
+     */
+    $('#data-decorrenza-select, #data-decorrenza-input').on('change', function () {
+
+        let valoreCorrente = $(this).val();
+        let idDipendente = @Model.Dipendente.ID_DIPENDENTE;
+        var idProv = $('[data-id-prov]:checked').attr('data-id-prov');
+        var piano = $('#piano-dip').val();
+        var catRich = $('#inputCatArrivo').val();
+        var isGestExt = $('#chkGestExt')[0].checked;
+        var idTemplate = $('#ID_TEMPLATE').val();
+        var codMansione = $('#COD_MANSIONE').val();
+        var statoLettera= $('#stato-lettera').val();
+        var livRich = $('#livPrevisto').val();
+        var list = [];
+
+        $('tr[data-row-prov][data-row-prov-custom]').each(function () {
+            var rowProv = $(this).attr('data-row-prov');
+
+            list.push({
+            ID_PROV: rowProv,
+                DIFF_RAL: $(this).find('#diffRal-' + rowProv).val(),
+                COSTO_ANNUO: $(this).find('#costoAnnuo-' + rowProv).val(),
+                COSTO_PERIODO: $(this).find('#costoPeriodo-'+rowProv).val()
+                //COSTO_PERIODO: $(this).find('#costoPeriodo-' + rowProv).data('costoperiodo')
+            });
+        });
+
+        $.ajax({
+        type: "POST",
+            cache: false,
+            async: false,
+            contentType: "application/json; charset=utf-8",
+            url: '@(Url.Action("AggiornaConteggioUtente", "PoliticheRetributive"))',
+            data: JSON.stringify({
+            idDip: idDipendente,
+                dataDecorrenza: valoreCorrente,
+                piano: piano,
+                idProv: idProv,
+                customProv: list,
+                catRich: catRich,
+                isGestExt: isGestExt,
+                idTemplate: idTemplate,
+                codMansione: codMansione,
+                statoLettera: statoLettera,
+                livRich:livRich
+            }),
+            success: function (response) {
+                $('#ModificaProvvedimentoContainer').html(response);
+                $('tr[data-row-prov][data-row-prov-custom]').each(function () {
+                    var rowProv = $(this).attr('data-row-prov');
+                    $(this).find('#diffRal-' + rowProv).blur();
+                });
+            },
+            error: function (err) {
+                alert(err);
+            }
+        });
+        });
+
+    $('#piano-dip').on('change', function(){
+        PRetribUpdateDec()
+    });
+
+    Array.prototype.customJoin = function(seperator,start,end){
+        if(!start) start = 0;
+        if(!end) end = this.length - 1;
+        end++;
+        return this.slice(start,end).join(seperator);
+    };
+
+    function ShowIndennita(indAcq, indPerse, indDelta)
+    {
+        var swalContent = "<br/>";
+
+        if (indAcq!=null && indAcq!=''){
+            swalContent+="<h4 class='text-primary text-left'>Indennità acquisite</h4><table class='table table-hover table-bordered table-responsive' role='grid' style='font-size:14px; text-align:left;'>";
+            var ary = indAcq.split(',');
+            ary.forEach(function(element){
+                var aryEuro = element.trim().split('€');
+                var aryCodDes = aryEuro[0].split(' ');
+                swalContent+="<tr><td style='width:10%;font-weight:500;'>"+aryCodDes[0]+"</td><td style='width:75%;font-weight:500;'>"+aryCodDes.customJoin(' ',1)+"</td><td class='text-success text-right' style='font-weight:500;'>"+aryEuro[1]+" €</td></tr>";
+            });
+            swalContent+="</table>";
+        }
+        if (indPerse!=null && indPerse!=''){
+            swalContent+="<h4 class='text-primary text-left'>Indennità perse</h4><table class='table table-hover table-bordered table-responsive' role='grid' style='font-size:14px; text-align:left;'>";
+            var ary = indPerse.split(',');
+            ary.forEach(function(element){
+                var aryEuro = element.trim().split('€');
+                var aryCodDes = aryEuro[0].split(' ');
+                swalContent+="<tr><td style='width:10%;font-weight:500;'>"+aryCodDes[0]+"</td><td style='width:75%;font-weight:500;'>"+aryCodDes.customJoin(' ',1)+"</td><td class='text-danger text-right' style='font-weight:500;'>"+aryEuro[1]+" €</td></tr>";
+            });
+            swalContent+="</table>";
+        }
+        if (indDelta!=null && indDelta!=''){
+            swalContent+="<h4 class='text-primary text-left'>Indennità modificate</h4><table class='table table-hover table-bordered table-responsive' role='grid' style='font-size:14px; text-align:left;'>";
+            var ary = indDelta.split(',');
+            ary.forEach(function(element){
+                var aryEuro = element.trim().split('€');
+                var aryCodDes = aryEuro[0].split(' ');
+                swalContent+="<tr><td style='width:10%;font-weight:500;'>"+aryCodDes[0]+"</td><td style='width:75%;font-weight:500;'>"+aryCodDes.customJoin(' ',1)+"</td><td class='text-right' style='font-weight:500;'>"+aryEuro[1]+" €</td></tr>";
+            });
+            swalContent+="</table>";
+        }
+
+        swal({
+            title: 'Dettaglio indennità',
+            text: "",
+            html: swalContent,
+            width: 500,
+            confirmButtonText: 'Ok'
+        });
+    }
+
+    function DecodLivCat(ripristinaHRDW, isFromComboChange) {
+        debugger
+        let catRich = $('#inputCatArrivo').val();
+
+        if (catRich) {
+            GestRefreshDipData(@Model.Dipendente.ID_DIPENDENTE, true, ripristinaHRDW, isFromComboChange);
+        }
+
+        $.ajax({
+            url: '/PoliticheRetributive/GetDesLivello',
+            type: 'POST',
+            data: {
+                codCat: catRich
+            },
+            dataType: "json",
+            success: function (data) {
+                if (data.found) {
+                    $('#livPrevisto').val(data.desLivello);
+                }
+            }
+        });
+    }
+     @*@if (Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta != null)
+     {
+     <text>
+    console.log("start");
+            var idsim =@(Model.DatiConsiderandoSimulazioni.EsisteSimulazioneIncompleta.ID_SIMULAZIONE) ;
+
+    var i = setInterval(function () {
+                        $("#wait.sim").show();
+        $.ajax({
+            url: '/PoliticheRetributive/SimCompleted',
+            type: 'POST',
+            data: {
+                idsim: idsim
+            },
+            dataType: "json",
+            success: function (data) {
+                debugger
+                console.log(JSON.stringify(data));
+                $("#wait.sim").hide();
+                if (data.esito) {
+                    clearInterval(i);
+                    DecodLivCat();
+                }
+            }
+        });
+                    }
+           , 1000);
+
+    </text>
+
+     }*@
+
+</script>

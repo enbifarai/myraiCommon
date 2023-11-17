@@ -1,0 +1,141 @@
+﻿<style>
+    label {
+    font-weight:bold;
+    }
+    /*.ct-line {
+    stroke:#f00!important;
+    }*/
+    .ct-label {
+    font-weight:bold;
+    font-size:11px!important;
+    }
+    .ct-series-a path {
+        stroke: #1c33a5 !important;
+    }
+    .ct-series-b path{
+        stroke: #0F0!important;
+    }
+    .ct-series-c path{
+        stroke: #00F!important;
+    }
+</style>
+<section class="panel">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblSitFeriePerm" aria-expanded="true"></a>
+        </div>
+        <h2 id="lblSitFeriePerm" class="panel-title">
+            Statistiche
+        </h2>
+      
+    </header>
+    <div class="panel-body" style="display: block; padding: 8px">
+        
+        <div class="row" style="padding-left:42px">
+            <div style="display:inline-block">
+                <label>Tabella</label>
+                <select id="tabella" name="tabella" class="form-control">
+                    <option value="MyRai_LogAzioni">MyRai_LogAzioni</option>
+                </select>
+            </div>
+
+
+            <div style="display:inline-block">
+                <label>Operazione</label>
+                <select id="operazione" name="operazione" class="form-control">
+                    <option value="SESSION_START">SESSION_START</option>
+                    <option value="GetAnalisiEccezioni-RESP">GetAnalisiEccezioni-RESP</option>
+                    
+                </select>
+            </div>
+
+            <div style="display:inline-block">
+                <label>Da</label>
+                <input required="" name="datada" type="text" class="form-control js-datetimepicker"
+                       data-locale="it" id="data-da" placeholder="Data...">
+            </div>
+
+
+            <div style="display:inline-block">
+                <label>A</label>
+                <input required="" name="dataa" type="text" class="form-control js-datetimepicker"
+                       data-locale="it" id="data-a" placeholder="Data...">
+            </div>
+
+            <div style="display:inline-block">
+                <label>Intervallo</label>
+                <select id="intervallo" name="intervallo" class="form-control">
+
+                    <option value="30">30 min</option>
+                    <option value="60">1 h</option>
+                    <option value="120">2 h</option>
+                    <option value="240">4 h</option>
+                    <option value="720">12 h</option>
+                    <option value="1440">24 h</option>
+
+                </select>
+            </div>
+            <div style="display:inline-block">
+                <button class="btn btn-primary" style="margin-bottom: 5px;" onclick="gf()">
+                    &gt;&gt;
+                </button>
+            </div>
+
+        </div>
+        <div class="row">
+            <div class="col-sm-12">
+                <div id="charter" style="width:100%;height:600px;padding:30px">
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+    <script>InitDatePicker();
+        var CH = null;
+
+        function gf() {
+            $.ajax({
+                url: '/stats/getdata',
+                type: "GET",
+                dataType: "json",
+                data: {
+                    tabella: $("#tabella").val()
+                    , operazione: $("#operazione").val()
+                    , intervallo: $("#intervallo").val(),
+                    datada: $("#data-da").val(),
+                    dataa: $("#data-a").val()
+                                    },
+                success: function (data) {
+                    CH = new Chartist.Line('#charter', {
+                        labels: data.labels,
+                        series: [
+                           data.serie
+                        ]
+                    }, {
+                            fullWidth: true,
+                            chartPadding: {
+                                right: 40
+                            }
+                        });
+
+
+                    CH.on('created', function (bar) {
+                        $('.ct-point').on('mouseover', function () {
+                            alert($(this).attr("ct:meta"));
+                            //$('#tooltip').html('<b>Selected Value: </b>' + $(this).attr('ct:value'));
+                        });
+
+                        $('.ct-point').on('mouseout', function () {
+                            $('#tooltip').html('<b>Selected Value:</b>');
+                        });
+                    });
+                }
+            });
+        }
+
+
+    </script>
+</section>

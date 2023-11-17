@@ -1,0 +1,364 @@
+﻿@using myRaiHelper;
+@model myRaiCommonModel.cvModels.cvModel.Experiences
+@{
+    myRai.Data.CurriculumVitae.cv_ModelEntities cvEnt = new myRai.Data.CurriculumVitae.cv_ModelEntities();
+
+    string dtaInizio, dtaFine;
+    string tmpInizio, tmpFine;
+    string isGiornalista;
+    int c_tmp;
+
+    isGiornalista = Model._isGiornalista;
+
+}
+
+@using (Html.BeginModal("Modifica esperienza Extra Rai"))
+{
+    <form class="mb-lg form-modificaExperiences" id="form-modificaExperiencesExtra" novalidate="novalidate" action="/CV_Online/ModificaExperiences" method="post">
+        <input type="hidden" id="_codLocalitaEsp" name="_codLocalitaEsp" value="-1" />
+        @Html.HiddenFor(x => x._matricola)
+        @Html.HiddenFor(x => x._prog)
+        <input type="hidden" name="_flagEspRai" value="@Model._flagEspRai" />
+        @using (Html.BeginPanel(PanelType.Panel, "Dettagli esperienza", false))
+        {
+            <div class="rai form-group">
+
+                <div class="row">
+
+                    <div class="col-md-6">
+                        <div class="col-md-12  no-padding">
+                            <label class="rai-caption">Dal <span class="campoObbligatorio">*</span></label>
+                        </div>
+                        <div class="col-md-4  push-10 day-box">
+                            <select id="_giornoInizio" name="_giornoInizio" class="rai form-control">
+                                @foreach (var item in Model.GetGiorni())
+                                {
+                                    <option value="@item.Value" @if (Model._giornoInizio != null && Model._giornoInizio.ToString() == item.Value) { @: selected
+                                            }>
+                                        @item.Text
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-4  push-10 month-box">
+                            <select id="_meseInizio" name="_meseInizio" class="rai form-control">
+                                @foreach (var item in Model.GetMesi())
+                                {
+                                    <option value="@item.Value" @if (Model._meseInizio != null && Model._meseInizio.ToString() == item.Value) { @: selected
+                                            }>
+                                        @item.Text
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-4  push-10 year-box">
+                            <input type="text" placeholder="Anno" class="js-datetimepicker rai form-control  start required-min"
+                                   data-format="YYYY" data-locale="it" id="_annoInizio" name="_annoInizio" value="@Model._annoInizio" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="col-md-12 no-padding">
+                            <label class="rai-caption">Al <span class="campoObbligatorio">*</span></label>
+                        </div>
+                        <div class="col-md-4  push-10 day-box">
+                            <select id="_giornoFine" name="_giornoFine" class="rai form-control">
+                                @foreach (var item in Model.GetGiorni())
+                                {
+                                    <option value="@item.Value" @if (Model._giornoFine != null && Model._giornoFine.ToString() == item.Value) { @: selected
+                                            }>
+                                        @item.Text
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-4  push-10 month-box">
+                            <select id="_meseFine" name="_meseFine" class="rai form-control">
+                                @foreach (var item in Model.GetMesi())
+                                {
+                                    <option value="@item.Value" @if (Model._meseFine != null && Model._meseFine.ToString() == item.Value) { @: selected
+                                            }>
+                                        @item.Text
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-4  push-10 year-box">
+                            <input type="text" placeholder="Anno" class="js-datetimepicker rai form-control  start required-min"
+                                   data-format="YYYY" data-locale="it" id="_annoFine" name="_annoFine" value="@Model._annoFine" />
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 push-10">
+                        @Html.LabelForRequiredObbl(model => model._societa, "Nome azienda", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(model => model._societa, new { @id = "_societa", @class = "rai form-control ", @placeholder = "Inserisci a testo libero" })
+                        @Html.ValidationMessageFor(model => model._societa)
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="push-10 col-md-12">
+                        <input type="hidden" id="_industry" name="_industry" value="@Model._industry" />
+                        <label for="_codIndustry" class="rai-caption">Settore</label>
+                        <select class="js-select2 rai form-control textable-select" id="_codIndustry" name="_codIndustry" style="width: 100%">
+                            <option></option>
+                            @{
+                                var industry = cvEnt.DTabellaCV.Where(x => x.NomeTabella == "Settore").OrderBy(y => y.Ordine).ToList();
+                                foreach (var elem in industry)
+                                {
+                                    string check = "";
+                                    if (Model._codIndustry == elem.Codice)
+                                    {
+                                        check = "selected=\"selected\"";
+                                    }
+                                    <option value="@elem.Codice" @check>@(elem.Descrizione)</option>
+                                }
+                                if (Model._codIndustry == "-1")
+                                {
+                                    string check = "selected=\"selected\"";
+                                    <option value="@Model._codIndustry" @check>@(Model._industry)</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="push-10 col-md-12">
+                        <input type="hidden" id="_figProExtra" name="_figProExtra" value="@Model._figProExtra" />
+                        <label for="_codFigProExtra" class="rai-caption">Figura Professionale</label>
+                        <select class="js-select2 rai form-control textable-select" id="_codFigProExtra" name="_codFigProExtra" style="width: 100%">
+                            <option></option>
+                            @{
+                                var figproextra = cvEnt.DTabellaCV.Where(x => x.NomeTabella == "FigProExtra").OrderBy(y => y.Ordine).ToList();
+                                foreach (var elem in figproextra)
+                                {
+                                    string check = "";
+                                    if (Model._codFigProExtra == elem.Codice)
+                                    {
+                                        check = "selected=\"selected\"";
+                                    }
+                                    <option value="@elem.Codice" @check>@(elem.Descrizione)</option>
+                                }
+                                if ((Model._codFigProExtra == "-1") && (Model._figProExtra != null) && (Model._figProExtra != ""))
+                                {
+                                    string check = "selected=\"selected\"";
+                                    <option value="@Model._codFigProExtra" @check>@(Model._figProExtra)</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+                @if (isGiornalista == "1")
+                {
+                    <div class="row">
+                        <div class="col-md-12 push-10">
+                            <label for="_codRedazione" class="rai-caption">Redazione</label>
+                            <select class="js-select2 rai form-control input-validation-error " data-val="true" data-val-required="Campo obbligatorio" id="_codRedazione" name="_codRedazione" style="width: 100%">
+                                <option></option>
+                                @{
+                                    var redazione = cvEnt.DRedazione.OrderBy(x => x.DesRedazione);
+                                    foreach (var elem in redazione)
+                                    {
+                                        string check = "";
+                                        if (Model._codRedazione == elem.CodRedazione)
+                                        {
+                                            check = "selected=\"selected\"";
+                                        }
+                                        <option value="@elem.CodRedazione" @check>@(elem.DesRedazione)</option>
+                                    }
+                                }
+                            </select>
+                            @Html.ValidationMessageFor(x => x._codRedazione)
+                        </div>
+                    </div>
+                }
+                <div class="row">
+                    <div class="col-md-6 push-10">
+                        <label for="_localitaEsp" class="rai-caption">Città</label>
+                        <input type="text" class="rai form-control " id="_localitaEsp" name="_localitaEsp" style="width: 100%" placeholder="Inserisci a testo libero" value="@Model._localitaEsp" />
+                    </div>
+                    <div class="col-md-6 push-10">
+                        <label for="_nazione" class="rai-caption">Paese</label>
+                        <select class="js-select2 rai form-control " id="_nazione" name="_nazione" style="width: 100%">
+                            <option></option>
+                            @{
+                                var nazione = cvEnt.DNazione.OrderBy(x => new { x.QTA_ORDINE, x.DES_NAZIONE });
+                                foreach (var elem in nazione)
+                                {
+                                    string check = "";
+                                    if (Model._nazione == elem.DES_NAZIONE)
+                                    {
+                                        check = "selected=\"selected\"";
+                                    }
+                                    <option value="@elem.DES_NAZIONE" @check>@CommonHelper.ToTitleCase(elem.DES_NAZIONE)</option>
+                                }
+                            }
+                        </select>
+
+                    </div>
+                </div>
+                @if (isGiornalista == "1")
+                {
+
+
+                    <div class="row">
+                        <div class="col-md-6 push-10">
+                            <label for="_codContinente" class="rai-caption">Continente</label>
+                            <select class="js-select2 rai form-control " id="_codContinente" name="_codContinente" style="width: 100%">
+                                <option></option>
+                                @{
+                                    var continente = cvEnt.DContinente;
+                                    foreach (var elem in continente)
+                                    {
+                                        string check = "";
+                                        if (Model._codContinente == elem.CodContinente)
+                                        {
+                                            check = "selected=\"selected\"";
+                                        }
+                                        <option value="@elem.CodContinente" @check>@(elem.DesContinente)</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                }
+                <div class="row">
+                    <div class="col-md-12 push-10">
+                        @Html.LabelForRequiredObbl(model => model._areaAtt, "Ambito di attività", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(model => model._areaAtt, new { @id = "_areaAtt", @class = "rai form-control ", @placeholder = "Inserisci a testo libero" })
+                        @Html.ValidationMessageFor(model => model._areaAtt)
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 push-10">
+                        @Html.LabelForRequiredObbl(model => model._ultRuolo, "Attivita", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(model => model._ultRuolo, new { @id = "_ultRuolo", @class = "rai form-control ", @placeholder = "Inserisci a testo libero" })
+                        @Html.ValidationMessageFor(model => model._ultRuolo)
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 push-10">
+                        <label for="_titoloEspQual" class="rai-caption">Titolo esperienza qualificante</label>
+                        <input type="text" class="rai form-control " style="width: 100%" id="_titoloEspQual" name="_titoloEspQual" placeholder="Inserisci a testo libero" value="@Model._titoloEspQual" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 push-10">
+                        <label for="_descrizioneEsp" class="rai-caption">Descrizione sintetica dell'esperienza</label>
+                        <textarea id="_descrizioneEsp" name="_descrizioneEsp" rows="5" class="rai form-control" style="width: 100%" placeholder="">@Model._descrizioneEsp</textarea>
+
+                    </div>
+                </div>
+
+                <div class="row">
+                    @{
+                        string chk00, chk01;
+                        string chk = "selected=\"selected\"";
+
+                        if (Model._procura == "0")
+                        {
+                            chk00 = chk;
+                        }
+                        else
+                        {
+                            chk00 = "";
+                        }
+                        if (Model._procura == "1")
+                        {
+                            chk01 = chk;
+                        }
+                        else
+                        {
+                            chk01 = "";
+                        }
+
+
+                    }
+                    <div class="push-10 col-md-6">
+                        <label for="_ultRuolo" class="rai-caption">Budget Gestito</label>
+                        <select class="js-select2 rai form-control " id="_budgetGest" name="_budgetGest" style="width: 100%" placeholder="Scegliere una opzione">
+                            <option></option>
+                            @{
+                                var budget = cvEnt.DTabellaCV.Where(x => x.NomeTabella == "Budget").OrderBy(y => y.Ordine).ToList();
+                                foreach (var elem in budget)
+                                {
+                                    string check = "";
+                                    if (Model._budgetGest == elem.Codice)
+                                    {
+                                        check = "selected=\"selected\"";
+                                    }
+                                    <option value="@elem.Codice" @check>@(elem.Descrizione)</option>
+                                }
+                                if (Model._codBudget == "-1")
+                                {
+                                    string check = "selected=\"selected\"";
+                                    <option value="@Model._codBudget" @check>@(Model._budgetGest)</option>
+                                }
+                            }
+                        </select>
+                        @*<input type="text" class="rai form-control" style="width: 100%" id="_budgetGest" name="_budgetGest" placeholder="Inserisci a testo libero" />*@
+                    </div>
+                    <div class="push-10 col-md-6">
+                        <label for="_ultRuolo" class="rai-caption">Procura</label>
+                        <select class="js-select2 rai form-control " id="_procura" name="_procura" style="width: 100%" placeholder="Scegliere una opzione">
+                            <option></option>
+                            <option value="0" @chk00>SI</option>
+                            <option value="1" @chk01>NO</option>
+                        </select>
+                        @*<input type="text" class="rai form-control" style="width: 100%" id="_procura" name="_procura" placeholder="Inserisci a testo libero" />*@
+                    </div>
+
+                    <div class="push-10 col-md-6">
+                        <label for="_ultRuolo" class="rai-caption">Risorse Gestite/Coordinate</label>
+                        <select class="js-select2 rai form-control " id="_risorseGest" name="_risorseGest" style="width: 100%" placeholder="Scegliere una opzione">
+                            <option></option>
+                            @{
+                                var risorse = cvEnt.DTabellaCV.Where(x => x.NomeTabella == "Risorse").OrderBy(y => y.Ordine).ToList();
+                                foreach (var elem in risorse)
+                                {
+                                    string check = "";
+                                    if (Model._risorseGest == elem.Codice)
+                                    {
+                                        check = "selected=\"selected\"";
+                                    }
+                                    <option value="@elem.Codice" @check>@(elem.Descrizione)</option>
+                                }
+                                if (Model._codRisorse == "-1")
+                                {
+                                    string check = "selected=\"selected\"";
+                                    <option value="@Model._codRisorse" @check>@(Model._risorseGest)</option>
+                                }
+                            }
+                        </select>
+                        @*<input type="text" class="rai form-control" style="width: 100%" id="_risorseGest" name="_risorseGest" placeholder="Inserisci a testo libero" />*@
+                    </div>
+
+                </div>
+
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="rai-btn-fill">
+                            <button type="button" class="btn rai-btn-secondary"><span onclick="ConfermaCancellazione_Experencies('@Model._matricola', '@Model._prog')">Elimina</span></button>
+                            <button class="btn rai-btn-primary" type="submit" onclick="submit_modificaExperiences(this, '#form-modificaExperiencesExtra','savedbmodExpExtra')"><i class=""></i>Salva</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div id="savedbmodExpExtra" class="alert alert-primary" style="position:fixed;bottom:10px;right:10px;display:none;z-index:100; width:250px;">
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                <i class="fa fa-refresh fa-spin"></i> Salvataggio in corso
+            </div>
+        }
+    </form>
+}
+
+<script>
+    $.validator.unobtrusive.parse("#form-modificaExperiencesExtra");
+</script>
+
+
+
+
+

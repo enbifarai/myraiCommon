@@ -1,0 +1,63 @@
+﻿@using myRaiCommonModel.Gestionale
+@model List<CorsoPianoSvil>
+
+@{
+    string baseUrlAca = "";
+
+    var dbTal = new myRaiDataTalentia.TalentiaEntities();
+    var param = dbTal.XR_ACA_PARAM.FirstOrDefault(x => x.COD_PARAM == "LinkCorso");
+    if (param != null)
+    {
+        baseUrlAca = param.COD_VALUE1;
+    }
+}
+
+@if (Model.Any())
+{
+    foreach (var item in Model)
+    {
+        string tooltip = item.CodCorso;
+        if (item.CorsiPacchetto != null && item.CorsiPacchetto.Any())
+        {
+            tooltip = "<div style='text-align:left;'>" + tooltip;
+            tooltip += ":<br/><ul>";
+            foreach (var sub in item.CorsiPacchetto)
+            {
+                tooltip += "<li>" + sub.CodCorso + "</li>";
+            }
+            tooltip += "</ul></div>";
+        }
+        <tbody class="rai-table-collapsable-header">
+            <tr>
+                @if (item.IdCorso > 0)
+                {
+                    <td style="max-width:200px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;" colspan="2">
+                        <a href="@baseUrlAca.Replace("#idCorso", item.IdCorso.ToString())" data-toggle="tooltip" data-html="true" title="@(tooltip)" data-container="body">@(item.CodCorso)</a>
+                    </td>
+                }
+                else
+                {
+                    <td>
+                        <em class="rai-font-md" data-toggle="tooltip" data-html="true" title="@(tooltip)" data-container="body">@item.CodCorso</em>
+                    </td>
+                    <td class="rai-table-td-toggle">
+                        <i class="fa fa-chevron-down"></i>
+                    </td>
+                }
+            </tr>
+        </tbody>
+        <tbody>
+            @if (item.IdCorso == 0)
+            {
+                foreach (var sub in item.CorsiPacchetto)
+                {
+                    <tr>
+                        <td style="max-width:200px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;" class="rai-font-md" colspan="2">
+                            <a class="push-5-l" href="@baseUrlAca.Replace("#idCorso", sub.IdCorso.ToString())" data-toggle="tooltip" data-html="true" title="@(sub.CodCorso)" data-container="body">@(sub.CodCorso)</a>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    }
+}

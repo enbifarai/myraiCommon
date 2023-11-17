@@ -1,0 +1,158 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiCommonModel
+@using myRaiHelper
+@model DettaglioDematerializzazioneVM
+
+@{
+    string title = "DETTAGLIO RICHIESTA";
+}
+
+@using ( Html.BeginModal( title ) )
+{
+    <div class="row">
+        <div class="col-sm-8">
+
+            @using ( Html.BeginPanel( myRaiHelper.PanelType.Panel , "Stato" , false ) )
+            {
+                <div class="row">
+                    <div class="col-sm-12">
+                        <span class="rai-font-md-neutral-bold"></span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div id="newwizard" style="margin-top:0px" class="rai wizard-progress wizard-progress-llg wiznew remove-margin-t" role="tablist">
+                            <ul class="wizard-steps">
+                                <li class="tabhead tabheadrich @(Model.Richiesta.Documento.Id_Stato < (int)StatiDematerializzazioneDocumenti.Accettato ? "disabled completed" : "active")" id="tab-dem-1" role="presentation" style="max-width:none">
+                                    <a role="tab" aria-label="Richiesta avviata" aria-controls="validation-classic-step1" id="hTab1" onclick="" href="#" data-toggle="tab" aria-selected="@(Model.Richiesta.Documento.Id_Stato < (int)StatiDematerializzazioneDocumenti.Accettato ? "true" : "false") " tabindex="0"><span>1</span>Richiesta avviata<br />@(Model.Richiesta.Documento.DataCreazione.ToString( "dd/MM/yyyy" ))</a>
+                                </li>
+                                <li class="tabhead tabheadrich @(Model.Richiesta.Documento.Id_Stato == (int)StatiDematerializzazioneDocumenti.Accettato ? "disabled completed" : "active")" id="tab-dem-2" role="presentation">
+                                    <a role="tab" tabindex="-1" aria-label="Approvazione" aria-controls="validation-classic-step2" id="hTab2" onclick="" href="#" data-toggle="tab" aria-selected="@(Model.Richiesta.Documento.Id_Stato == (int)StatiDematerializzazioneDocumenti.Accettato ? "true" : "false")"><span>2</span>Approvazione</a>
+                                </li>
+                                <li class="tabhead tabheadrich @(Model.Richiesta.Documento.Id_Stato == (int)StatiDematerializzazioneDocumenti.FirmatoDigitalmente ? "disabled completed" : "disabled")" id="tab-dem-3" role="presentation">
+                                    <a role="tab" tabindex="-1" aria-label="Firma" aria-controls="validation-classic-step2" id="hTab2" onclick="" href="#" data-toggle="tab" aria-selected="@(Model.Richiesta.Documento.Id_Stato == (int)StatiDematerializzazioneDocumenti.FirmatoDigitalmente ? "true" : "false")"><span>2</span>Firma</a>
+                                </li>
+                                <li class="tabhead tabheadrich @(Model.Richiesta.Documento.Id_Stato == (int)StatiDematerializzazioneDocumenti.InviatoAlDipendente ? "disabled completed" : "disabled")" id="tab-dem-4" role="presentation">
+                                    <a role="tab" tabindex="-1" aria-label="Chiusura pratica" aria-controls="validation-classic-step3" id="hTab3" onclick="" href="#" data-toggle="tab" aria-selected="@(Model.Richiesta.Documento.Id_Stato == (int)StatiDematerializzazioneDocumenti.InviatoAlDipendente ? "true" : "false")"><span>3</span>Chiusura pratica</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @using ( Html.BeginPanel( myRaiHelper.PanelType.Panel , "Anteprima documento" , false ) )
+            {
+                <div class="row">
+                    <div class="col-xs-12">
+                        <div class="col-xs-12" style="background-color:gray; overflow-y:auto;">
+                            <iframe style="width:100%; height:76vh!important;" src="@Url.Action("GetPDF","Dematerializzazione")?idDoc=@Model.Richiesta.Documento.Id"></iframe>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="col-sm-4">
+            <div class="row">
+                @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, "", false))
+                {
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <span class="rai-font-md-neutral-bold">Dettagli </span>
+                        </div>
+                    </div>
+                    if (!String.IsNullOrEmpty(Model.Richiesta.Documento.MatricolaDestinatario))
+                    {
+                        <div class="row">
+                            <div class="col-sm-12">
+                                @Html.Partial( "~/Views/Dematerializzazione/subpartial/_profiloimage.cshtml" , new myRaiCommonModel.ProfiloImageModel() {
+                                   Matricola= Model.Richiesta.Documento.MatricolaDestinatario,
+                                   Row1 = Model.NominativoUtenteDestinatario,
+                                   Row2 = "Matricola "+ Model.Richiesta.Documento.MatricolaDestinatario
+                               })
+                            </div>
+                        </div>
+                    }
+
+                    <div class="row" style="margin-top:20px">
+                        <div class="col-sm-12">
+                            <span class="rai-font-md-neutral-bold">Data richiesta</span>
+                        </div>
+                        <div class="col-sm-12">
+                            @Model.Richiesta.Documento.DataCreazione.ToString(
+                        </div>
+                    </div>
+
+                    <div class="row" style="margin-top:20px">
+                        <div class="col-sm-12">
+                            <span class="rai-font-md-neutral-bold">Incaricato firma</span>
+                        </div>
+                        <div class="col-sm-12">
+                            @Model.NominativoUtenteApprovatore
+                        </div>
+                    </div>
+
+                    <div class="row" style="margin-top:20px">
+                        <div class="col-sm-12">
+                            <span class="rai-font-md-neutral-bold">Documento</span>
+                        </div>
+                        <div class="col-sm-12">
+                            @(Model.Richiesta.Documento.XR_DEM_TIPI_DOCUMENTO.Descrizione)
+                        </div>
+                    </div>
+
+                    <div class="row" style="margin-top:20px">
+                        <div class="col-sm-12">
+                            <span class="rai-font-md-neutral">
+                                <a href="@Url.Action("ScaricaPDF","Dematerializzazione")?idDoc=@Model.Richiesta.Documento.Id" class="rai-font-md"><i class="fa fa-download"> </i> Scarica il documento</a>
+                            </span>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="row">
+                @using ( Html.BeginPanel( myRaiHelper.PanelType.NoHeader , "" , false ) )
+                {
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <span class="rai-font-md-neutral-bold">Note </span>
+                        </div>
+                    </div>
+
+
+                    if ( !String.IsNullOrEmpty( Model.Richiesta.Documento.Note ) )
+                    {
+                        <div class="row">
+                            <div class="col-sm-12">
+                                @Html.Partial( "~/Views/Dematerializzazione/subpartial/_profiloimage.cshtml" , new myRaiCommonModel.ProfiloImageModel() {
+                               Matricola= Model.Richiesta.Documento.MatricolaDestinatario,
+                               Row1 = Model.NominativoUtenteDestinatario,
+                               Row2 = "Matricola "+ Model.Richiesta.Documento.MatricolaDestinatario ,
+                               //InServizio =myRaiCommonManager.HomeManager.IsInServizio( Model.Richiesta.Documento.MatricolaDestinatario)
+                           })
+                            </div>
+                        </div>
+
+                        <div class="row" style="margin-top:20px">
+                            <div class="col-sm-12">
+                                @(Model.Richiesta.Documento.Note)
+                            </div>
+                            <br />
+                            <br />
+                            <br />
+                            <div class="col-sm-12 text-right">
+                                <div class="btn-action-icon-container">
+                                    <a class="btn-action-icon" href="#" onclick="" title="Modifica questa nota"><i class="fa fa-pencil"></i></a>
+                                    <a class="btn-action-icon" href="#" onclick="" title="Elimina questa nota"><i class="fa fa-trash"></i></a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                }
+            </div>
+        </div>
+    </div>
+}

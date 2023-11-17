@@ -1,0 +1,156 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model POHmodel
+
+<section class="panel" id="poh">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" tabindex="0" aria-labelledby="lblPoh" aria-expanded="true"></a>
+        </div>
+        <h2 id="lblPoh" class="panel-title">Permessi e recuperi orari</h2>
+    </header>
+
+
+
+    <div id="mieipermessi" class="block panel-body no-padding">
+
+        <div class="block-content tab-content">
+            <div data-toggle="slimscroll" data-height="50px" data-color="#46c37b" data-always-visible="true" style="overflow: hidden; width: auto;"
+                 class="tab-pane active" id="btab-poh">
+                <table class="js-table-sections table table-hover" id="tablepoh" style="margin-top:-16px" role="grid">
+                    <thead>
+                        <tr>
+                            <th style="width:5%"></th>
+                            <th style="width:20%"></th>
+                            <th style="width:45%"></th>
+                            <th style="width:10%"></th>
+                            <th style="width:20%"></th>
+                        </tr>
+                    </thead>
+                    @{
+                        DateTime DataChiusura;
+                        DateTime.TryParseExact( UtenteHelper.GetDateBackPerEvidenze( ) , "ddMMyyyy" , null , System.Globalization.DateTimeStyles.None , out DataChiusura );
+
+
+                    }
+
+                    @for ( int mese = 1 ; mese <=
+                                ( Model.Anno == null ? DateTime.Now.Month : 12 ) ;
+                                     mese++ )
+                    {
+
+                        int con = 0;
+                        int q = Model.GiorniPOH.Where( x => x.data.Month == mese && x.codice == "POH" ).Count( );
+                        int maxPOHmese = CommonHelper.GetParametro<int>( EnumParametriSistema.POHperMese );
+                        string meseRif = "";
+                        if ( Model.Anno == null )
+                        {
+                            meseRif = new DateTime( DateTime.Now.Year , mese , 1 ).ToString( "MMMM" );
+                        }
+                        else
+                        {
+                            meseRif = new DateTime( ( int ) Model.Anno , mese , 1 ).ToString( "MMMM" );
+                        }
+
+                        string ariaLabel = "";
+                        if ( q > 0 )
+                        {
+                            ariaLabel = "Hai usufruito di " + q + " permessi orari con recupero nel mese di " + meseRif;
+                        }
+                        else
+                        {
+                            ariaLabel = "Non hai usufruito di permessi orari con recupero nel mese di " + meseRif;
+                        }
+
+                        <tbody id="DDE30" class="js-table-sections-header" aria-expanded="false">
+                            <tr tabindex="@(mese==1?"0":"-1")" aria-label="@ariaLabel" role="row">
+                                <td style="width:40px;padding-top:16px" class="text-center">
+                                    <i class="fa fa-angle-right"></i>
+                                </td>
+                                <td colspan="2">
+                                    @if ( Model.Anno == null )
+                                    {
+                                        <h5><b>@(new DateTime( DateTime.Now.Year , mese , 1 ).ToString( "MMMM" ).Substring( 0 , 1 ).ToUpper( ) + new DateTime( DateTime.Now.Year , mese , 1 ).ToString( "MMMM yyyy" ).Substring( 1 ).ToLower( ) )</b></h5>
+                                    }
+                                    else
+                                    {
+                                        <h5><b>@(new DateTime( ( int ) Model.Anno , mese , 1 ).ToString( "MMMM" ).Substring( 0 , 1 ).ToUpper( ) + new DateTime( ( int ) Model.Anno , mese , 1 ).ToString( "MMMM yyyy" ).Substring( 1 ).ToLower( ) )</b></h5>
+
+                                    }
+
+                                </td>
+                                <td colspan="2" style="text-align:right">
+
+                                    @if ( q > 0 )
+                                    {
+
+                                        if ( q > maxPOHmese )
+                                        {
+                                            <h5 class="text-primary">@maxPOHmese POH</h5>
+                                            <h5 class="text-danger extra-poh"><em>+@(q - maxPOHmese) extra</em></h5>
+                                        }
+                                        else
+                                        {
+                                            <h5 class="text-primary">@q POH</h5>
+                                        }
+                                    }
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tbody>
+
+                            @foreach ( var item in Model.GiorniPOH.Where( x => x.data.Month == mese ).OrderBy( x => x.data ) )
+                            {
+                                if ( item.codice == "POH" )
+                                { con++; }
+
+                                string subAriaLabel = "";
+                                if ( item.codice == "POH" )
+                                {
+                                    subAriaLabel = "Permesso orario con recupero";
+                                }
+                                else if ( item.codice == "ROH" )
+                                {
+                                    subAriaLabel = "Recupero orario";
+                                }
+                                subAriaLabel += " di " + item.minuti + " minuti in data " + item.data.ToString( "d MMMM yyyy" );
+
+                                <tr class="@( item.codice=="POH" && con>maxPOHmese?"red-border":"")" tabindex="-1" role="row" aria-label="@subAriaLabel">
+                                    <td></td>
+                                    <td class="font-w600 text-muted">
+                                        @item.data.ToString( "d MMMM yyyy" )
+                                    </td>
+                                    <td>
+                                        <span class="font-w600 @(item.codice=="ROH"?"text-primary":"")" style="font-weight: bold;">
+                                            @(item.codice == "POH" ? "PERMESSO OR./CON RECUP." : item.codice == "ROH" ? "RECUPERO ORARIO" : "")
+                                        </span><br />
+                                        @item.minuti minuti
+                                    </td>
+                                    <td>
+                                        @Html.DisplayFor( a => item.IdStato , "IdStato" )
+                                    </td>
+                                    <td>
+                                        @if ( item.IdRichiesta != 0 && item.data >= DataChiusura )
+                                        {
+                                            <i class="icons icon-trash h4" style="cursor:pointer" onclick="CancellaRichiestaInApprovazione(@item.IdRichiesta)"></i>
+                                        }
+                                        <span class="bil-parziale @( item.SaldoAttualeCompresaEccezione==0?"text-success":"text-danger")">@(item.SaldoAttualeCompresaEccezione > 0 ? "-" : "")@item.SaldoAttualeCompresaEccezioneHHMM</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    }
+
+                </table>
+            </div>
+
+
+
+
+        </div>
+
+    </div>
+</section>

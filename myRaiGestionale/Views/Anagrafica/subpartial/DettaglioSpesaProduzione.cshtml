@@ -1,0 +1,527 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@model  List<SpeseProduzioneViewModel>
+@{
+    Layout = null;
+    string modalTitle = "Dettaglio spese di produzione " + " " + Model.FirstOrDefault().Id_FoglioSpese;
+    var ant = "";
+}
+
+@using (Html.BeginModal(modalTitle))
+{
+
+
+    if (Model.Count() == 0)
+    {
+        @* using (Html.BeginModal("Foglio Spese"))
+            {*@
+        @Html.Partial("~/Views/Shared/_NoDati.cshtml")
+        @* }*@
+    }
+    else
+    {
+
+        foreach (var item in Model)
+        {
+            @* using (Html.BeginModal("Foglio Spese numero " + item.Id_FoglioSpese))
+                {*@
+            @Html.Hidden("id", @item.Id_FoglioSpese)
+            @Html.Hidden("stato", @item.StatoRendiconto)
+
+            <div class="row">
+                <div class="col-sm-12">
+                    @if (item.SenzaAnticipo)
+                    {
+                        ant = "con anticipo";
+                    }
+                    else
+                    {
+                        ant = "senza anticipo";
+                    }
+                    <div id="" class="panel rai">
+                        <div class="panel-heading">
+                            <label class="rai-font-table-heading">DATI GENERALI</label>
+                        </div>
+                        <div class="panel-body">
+                            <div id="">
+                                <div class="rai-table-info">
+                                    <div class="row" id="">
+                                        <div class="col-xs-5"><span>Foglio Spese n </span></div>
+                                        <div class="col-xs-7"><span>@(item.Id_FoglioSpese)</span></div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-xs-5"><span>WBS</span></div>
+                                        <div class="col-xs-7"><span>@(item.WBS) - @(item.Titolo)</span></div>
+                                    </div>
+                                    <div class="row" id="">
+                                        <div class="col-xs-5"><span>Periodo </span></div>
+                                        <div class="col-xs-7"><span>Dal @(item.Periodo_Dal.Date.ToShortDateString())- Al @(item.Periodo_Al.Date.ToShortDateString())</span></div>
+                                    </div>
+                                    <div class="row" id="">
+                                        <div class="col-xs-5"><span>Destinazione </span></div>
+                                        <div class="col-xs-7"><span>@item.Località</span></div>
+                                    </div>
+                                    <div class="row" id="">
+                                        @if (item.TipoTarghetta.Equals("DI"))
+                                        {
+
+                                        }
+                                        else
+                                        {
+                                            <div class="col-xs-5"><span>Fase della lavorazione </span></div>
+
+                                            <div class="col-xs-7"><span>@(item.TipoTarghetta == "CO" ? "In contabilità" : item.TipoTarghetta == "SE" ? "In segreteria" : item.TipoTarghetta == "PE" ? "All'ufficio del personale" : "")</span></div>
+                                        }
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-xs-5"><span>Data consegna rendiconto </span></div>
+                                        <div class="col-xs-7"><span>@item.DataConsegna </span></div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-xs-5"><span>Procuratore anticipo</span></div>
+                                        <div class="col-xs-7"><span>@item.ProcuratoreAnticipo </span></div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-xs-5"><span>Procuratore rendiconto</span></div>
+                                        @if (string.IsNullOrEmpty(item.ProcuratoreRendiconto))
+                                        {
+                                            <div class="col-xs-7"><span>@item.ProcuratoreAnticipo </span></div>
+                                        }
+                                        else
+                                        {
+                                            <div class="col-xs-7"><span>@item.ProcuratoreRendiconto </span></div>
+                                        }
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+                    <!--Another partial-->
+                    <div id="dettaglioSpese">
+                        @{
+                            decimal totaleAnticipo = 0;
+                            decimal saldo = 0;
+                            decimal totaleRendiconto = 0;
+                            decimal costiRendiconti = 0;
+                            string tipologiaSaldoSegreteria = "";
+                        }
+
+
+                        @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Costi"))
+                        {
+                            using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, "", false))
+                            {
+
+                                <div class="rai block block-transparent block-content-table">
+                                    <div class="block-header">
+                                        <label class="block-title">Preventivo</label>
+                                    </div>
+                                    <div class="block-content">
+                                        <div class="rai-table-info">
+                                            @foreach (var desc in ViewBag.DescrizioniAndImportiAnticipi)
+                                            {
+                                                <div class="row">
+                                                    <div class="col-xs-8">
+                                                        <span>@desc.Descrizione</span>
+                                                    </div>
+                                                    <div class="col-xs-1 hidden"></div>
+                                                    <div class="col-xs-4 text-right">
+                                                        <span>@desc.MA_Importo_In_Euro</span>
+                                                    </div>
+                                                    @{
+                                                        totaleAnticipo = totaleAnticipo + desc.MA_Importo_In_Euro;
+                                                    }
+                                                </div>
+
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+
+
+
+
+                                <div class="rai block block-transparent block-content-table">
+
+
+                                    <div class="block-content">
+
+                                        <div class="row">
+                                            <div class="col-sm-12">
+                                                @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, "", false))
+                                                {
+                                                    if (ViewBag.TarghettaAndImportiRendicontiDipendente == null || (ViewBag.TarghettaAndImportiRendicontiDipendente as List<SpeseProduzioneViewModel>).Count() == 0)
+                                                    {
+                                                    }
+                                                    else
+                                                    {
+                                                        <table id="tableVoci" class="table rai-table rai-table-vcenter rai-table-collapsable" data-rai-table-collapsable-accordion="true">
+
+                                                            @if (ViewBag.VociRendicontiDipendente == null || (ViewBag.VociRendicontiDipendente as List<SpeseProduzioneViewModel>).Count() == 0)
+                                                            {
+                                                                <tr>
+                                                                    @Html.Partial("~/Views/Shared/_NoDatidiv.cshtml")
+                                                                </tr>
+                                                            }
+                                                            else
+                                                            {
+                                                                foreach (var descrizione in ViewBag.VociRendicontiDipendente)
+                                                                {
+                                                                    <tbody id="tbody@(descrizione.progressivoVoce)" class="rai-table-collapsable-header">
+                                                                        <tr data-target="rigaSpesa">
+                                                                            <td class="" style="/* padding-left:0px; */">
+                                                                                <span>@descrizione.Descrizione</span>
+                                                                            </td>
+                                                                            <td class="text-right">
+                                                                                <span>@descrizione.MA_Importo_In_Euro.ToString("N2")</span>
+                                                                            </td>
+                                                                            <td class="text-right">
+                                                                                <div class="btn-action-container">
+                                                                                    @if (descrizione.idFile > 0)
+                                                                                    {
+                                                                                        <div class="btn btn-action-icon"> <a target='_blank' href="~/Anagrafica/GetDoc?idFile=@descrizione.idFile" class="fa fa-file-text-o" aria-label="Scegli file" title="Visualizza"></a></div>
+                                                                                    }
+                                                                                    else
+
+                                                                                    {<div></div>}
+                                                                                </div>
+                                                                            </td>
+                                                                            @* <td class="rai-table-td-action">
+                                                                                    <button id="dettaglio_voce" class="btn btn-action-icon" onclick="visualizzaVoce(@descrizione.Id_FoglioSpese,@descrizione.progressivoVoce)">Visualizza</button>
+                                                                                </td>*@
+                                                                            <td class="rai-table-td-toggle">
+                                                                                <i class="fa fa-chevron-down" onclick="visualizzaVoce(this,@descrizione.Id_FoglioSpese,@descrizione.progressivoVoce)"></i>
+                                                                            </td>
+
+                                                                        </tr>
+                                                                    </tbody>
+                                                                    <tbody>
+                                                                        <tr id="tr@(descrizione.progressivoVoce)" data-target="dettaglioVoce">
+                                                                            <td colspan="4">
+                                                                                <div id="nav-abil-funz@(descrizione.progressivoVoce)" data-target=""></div>
+                                                                            </td>
+                                                                        </tr>
+                                                                    </tbody>
+                                                                    @*  </tbody>*@
+
+                                                                    {
+                                                                        costiRendiconti = costiRendiconti + descrizione.MA_Importo_In_Euro;
+                                                                    }
+
+
+                                                                }
+                                                            }
+                                                            <tbody>
+                                                                <tr>
+                                                                    <td style="/* padding-left:0px; */font-weight: bold;">Totale spese</td>
+                                                                    <td class="text-right">
+                                                                        <span class="" style="/* font-weight: bold; */font-weight: bold;color: #0a3247;">
+                                                                            @costiRendiconti.ToString("N2")
+                                                                        </span>
+                                                                    </td>
+                                                                    <td></td>
+                                                                </tr>
+                                                                @{ saldo = costiRendiconti;}
+                                                            </tbody>
+                                                        </table>
+                                                    }
+
+                                                    @* <div id="VisualizzaVoce"></div>*@
+                                                }
+                                            </div>
+                                        </div>
+
+
+
+                                    </div>
+                                    @if (item.TipoTarghetta.Equals("SE"))
+                                    {
+                                        <div class="block-content">
+                                            @if (ViewBag.TarghettaAndImportiRendicontiSegreteria == null || (ViewBag.TarghettaAndImportiRendicontiSegreteria as List<SpeseProduzioneViewModel>).Count() == 0)
+                                            {
+                                            }
+                                            else
+                                            {
+                                                <div class="row">
+                                                    <div class="col-sm-12">
+                                                        @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, "", false))
+                                                        {
+                                                            <p class=" rai-font-lg-bold" style="font-size:11px;"> IN SEGRETERIA</p>
+                                                            <div class="rai-table-info">
+                                                                @foreach (var rendiconto in ViewBag.TarghettaAndImportiRendicontiSegreteria)
+                                                                {
+                                                                    if (((ViewBag.VociRendicontiSegreteria as List<SpeseProduzioneViewModel>).Count() != 0) && (ViewBag.VociRendicontiDipendente as List<SpeseProduzioneViewModel>).Count() != 0)
+                                                                    {
+
+
+
+
+                                                                        <div class="col-xs-8" style="padding-left: 0px;">
+                                                                            <span>Anticipo</span>
+                                                                        </div>
+                                                                        <div class="col-xs-4 text-right">
+                                                                            <span>@totaleAnticipo.ToString("N2")</span>
+                                                                        </div>
+
+                                                                        <div class="col-xs-8" style="padding-left: 0px;">
+                                                                            <span>Spese</span>
+                                                                        </div>
+                                                                        <div class="col-xs-4 text-right">
+                                                                            <span>@costiRendiconti.ToString("N2")</span>
+                                                                            @*@{costiRendiconti = costiRendiconti + descrizione.MA_Importo_In_Euro;
+                                                                                }*@
+                                                                        </div>
+
+
+
+
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                    }
+
+                                                                    if (rendiconto.Saldo < 0)
+                                                                    {
+                                                                        tipologiaSaldoSegreteria = " a debito";
+                                                                        <div class="col-xs-8" style="padding-left:0px;">Saldo @tipologiaSaldoSegreteria</div>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        tipologiaSaldoSegreteria = " a credito";
+                                                                        <div class="col-xs-8" style="padding-left:0px;">Saldo @tipologiaSaldoSegreteria </div>
+                                                                    }
+                                                                    <div class="col-xs-1 hidden"></div>
+
+                                                                    <div class="col-xs-4 text-right">
+
+                                                                        <span>@rendiconto.Saldo.ToString("N2")</span><br />
+                                                                    </div>
+                                                                    saldo = rendiconto.Saldo;
+
+                                                                }
+
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else if (item.TipoTarghetta.Equals("PE"))
+                                    {
+                                        <div class="block-content">
+                                            @if (ViewBag.VociRendicontiPersonale == null || (ViewBag.VociRendicontiPersonale as List<SpeseProduzioneViewModel>).Count() == 0)
+                                            {
+
+                                            }
+                                            else
+                                            {
+                                                <div class="row">
+                                                    <div class="col-sm-12">
+                                                        @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, "", false))
+                                                        {
+                                                            <p class=" rai-font-lg-bold" style="font-size:11px;"> ALL'UFFICIO DEL PERSONALE</p>
+                                                            <div class="rai-table-info">
+                                                                @if ((ViewBag.VociRendicontiPersonale as List<SpeseProduzioneViewModel>).Count() != 0)
+                                                                {
+
+
+
+                                                                    <div class="col-xs-8" style="padding-left: 0px;">
+                                                                        <span>Anticipo</span>
+                                                                    </div>
+                                                                    <div class="col-xs-4 text-right">
+                                                                        <span>@totaleAnticipo.ToString("N2")</span>
+                                                                    </div>
+
+                                                                    <div class="col-xs-8" style="padding-left: 0px;">
+                                                                        <span>Spese</span>
+                                                                    </div>
+                                                                    <div class="col-xs-4 text-right">
+                                                                        <span>@costiRendiconti.ToString("N2")</span>
+                                                                    </div>
+
+
+
+                                                                    foreach (var rendiconto in ViewBag.TarghettaAndImportiRendicontiPersonale)
+                                                                    {
+
+                                                                        if (rendiconto.Saldo < 0)
+                                                                        {
+                                                                            tipologiaSaldoSegreteria = " a debito";
+                                                                            <div class="col-xs-8" style="padding-left:0px;">Saldo @tipologiaSaldoSegreteria</div>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            tipologiaSaldoSegreteria = " a credito";
+                                                                            <div class="col-xs-8" style="padding-left:0px;">Saldo @tipologiaSaldoSegreteria </div>
+                                                                        }
+                                                                        <div class="col-xs-1 hidden"></div>
+
+                                                                        <div class="col-xs-4 text-right">
+
+                                                                            <span>@rendiconto.Saldo.ToString("N2")</span><br />
+                                                                        </div>
+
+                                                                        saldo = rendiconto.Saldo;
+
+
+                                                                    }
+                                                                }
+                                                                else
+                                                                {
+                                                                    <div class="col-xs-8">Non ci sono spese da visualizzare</div>
+                                                                }
+
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="block-content">
+                                            @if (ViewBag.TarghettaAndImportiRendicontiContabilita == null || (ViewBag.TarghettaAndImportiRendicontiContabilita as List<SpeseProduzioneViewModel>).Count() == 0)
+                                            {
+
+                                            }
+                                            else
+                                            {
+                                                <div class="row">
+                                                    <div class="col-sm-12">
+                                                        @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, "", false))
+                                                        {
+                                                            <p class=" rai-font-lg-bold" style="font-size:11px;"> IN CONTABILITA'</p>
+                                                            <div class="rai-table-info">
+
+                                                                @if ((ViewBag.VociRendicontiContabilita as List<SpeseProduzioneViewModel>).Count() != 0)
+                                                                {
+                                                                    <div class="col-xs-8" style="padding-left: 0px;">
+                                                                        <span>Anticipo</span>
+                                                                    </div>
+                                                                    <div class="col-xs-4 text-right">
+                                                                        <span>@totaleAnticipo.ToString("N2")</span>
+                                                                    </div>
+
+                                                                    <div class="col-xs-8" style="padding-left: 0px;">
+                                                                        <span>Spese</span>
+                                                                    </div>
+                                                                    <div class="col-xs-4 text-right">
+                                                                        <span>@costiRendiconti.ToString("N2")</span>
+                                                                    </div>
+                                                                    {
+                                                                        //costiRendiconti = costiRendiconti + descrizione.MA_Importo_In_Euro;
+                                                                        totaleRendiconto = totaleRendiconto + costiRendiconti;
+                                                                    }
+
+
+
+                                                                }
+                                                                else
+                                                                {
+
+                                                                }
+                                                                @foreach (var rendiconto in ViewBag.TarghettaAndImportiRendicontiContabilita)
+                                                                {
+                                                                    @*<div class="col-xs-8" style="padding-left:0px;">Saldo</div>*@
+
+                                                                    if (rendiconto.Saldo < 0)
+                                                                    {
+                                                                        tipologiaSaldoSegreteria = " a debito";
+                                                                        <div class="col-xs-8" style="padding-left:0px;">Saldo @tipologiaSaldoSegreteria</div>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        tipologiaSaldoSegreteria = " a credito";
+                                                                        <div class="col-xs-8" style="padding-left:0px;">Saldo @tipologiaSaldoSegreteria </div>
+                                                                    }
+                                                                    <div class="col-xs-1 hidden"></div>
+
+                                                                    <div class="col-xs-4 text-right">
+
+                                                                        <span>@rendiconto.Saldo.ToString("N2")</span><br />
+                                                                    </div>
+
+                                                                    saldo = rendiconto.Saldo;
+
+
+                                                                }
+
+
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                                <div class="rai block block-transparent block-content-table">
+                                    <div class="block-header">
+                                        <label class="block-title">CONTEGGIO FINALE</label>
+                                    </div>
+                                    <div class="block-content">
+                                        <div class="">
+                                            <div class="row">
+                                                <div class="col-xs-8"><span class="rai-font-md-bold">Importo anticipo</span></div>
+                                                <div class="col-xs-4 text-right">
+                                                    <span class="rai-font-md-bold">@totaleAnticipo.ToString("N2")</span>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-xs-8"><span class="rai-font-md-bold">Totale costi</span></div>
+                                                <div class="col-xs-4 text-right ">
+                                                    <span class="rai-font-md-bold">@(costiRendiconti.ToString("N2"))</span>
+                                                </div>
+                                            </div>
+                                            <div class="row push-20-t">
+
+                                                <div class="col-xs-8"><span class="rai-font-lg-bold">SALDO @tipologiaSaldoSegreteria</span></div>
+
+
+
+                                                <div class="col-xs-4 text-right">
+                                                    <span class="rai-font-lg-bold">@saldo.ToString("N2")   </span>
+                                                </div>
+
+
+
+
+
+
+
+                                            </div>
+                                            <div class="row">
+                                                <!-- Se totale costi - anticipo < 0  Da addebbitare altrimenti da Accreditare se == 0 non mettere nulla-->
+                                                <div class="col-xs-8"><span class="rai-font-md-bold"></span></div>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                            }
+                        }
+                    </div>
+
+                </div>
+            </div>
+
+            @* }*@
+        }
+
+    }
+}
+<script type="text/javascript">
+    $(function () {
+        $('[data-toggle="popover"]').popover();
+    });
+</script>

@@ -1,0 +1,110 @@
+﻿@using myRaiData.Incentivi
+@using myRaiHelper
+@model List<XR_HRIS_ABIL_PROFILO>
+
+@{
+    RaiAttributes attributes = new RaiAttributes()
+{
+new RaiAttribute("class","panel-collapsed"),
+new RaiAttribute("bodystyle","display:none")
+};
+}
+
+@using (Html.BeginPanel(myRaiHelper.PanelType.PanelNoPadding, "Profili", panelAttributes: attributes))
+{
+    <div @*style="max-height:50vh;overflow:hidden;overflow-y:auto"*@>
+        <table class="table rai-table rai-table-vcenter rai-table-panel rai-table-collapsable">
+            @if (Model.Any())
+            {
+                foreach (var profilo in Model.OrderByDescending(x => x.IND_ATTIVO).ThenBy(x => x.COD_PROFILO))
+                {
+                    <tbody class="rai-table-collapsable-header">
+                        <tr>
+                            <td>
+                                <span class="rai-font-md-bold">@profilo.COD_PROFILO</span><span> - @profilo.DES_PROFILO</span>
+                            </td>
+                            <td class="rai-table-td-action">
+                                <button class="btn btn-action-icon" onclick="AbilProfiloDett(@profilo.ID_PROFILO, 'Profilo @profilo.COD_PROFILO - @profilo.DES_PROFILO')"><i class="fa fa-pencil"></i></button>
+                            </td>
+                            <td class="rai-table-td-toggle">
+                                <i class="fa fa-chevron-down"></i>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tbody>
+                        @if (profilo.XR_HRIS_ABIL_PROFILO_ASSOCIAZIONI.Any(x => x.ID_SUBFUNZ != null))
+                        {
+                            <tr>
+                                <td colspan="3" class="no-padding">
+                                    <table class="table rai-table rai-table-vcenter rai-table-panel rai-table-collapsable table-striped">
+                                        <tbody class="rai-table-collapsable-header">
+                                            <tr>
+                                                <td>
+                                                    <span class="">FUNZIONI</span>
+                                                </td>
+                                                <td class="text-right">
+                                                    <span class="rai-notification">@profilo.XR_HRIS_ABIL_PROFILO_ASSOCIAZIONI.Count(x => x.ID_SUBFUNZ != null)</span>
+                                                </td>
+                                                <td class="rai-table-td-toggle">
+                                                    <i class="fa fa-chevron-down"></i>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                        <tbody >
+                                            @foreach (var subFunz in profilo.XR_HRIS_ABIL_PROFILO_ASSOCIAZIONI.Where(x => x.ID_SUBFUNZ != null))
+                                            {
+                                                <tr>
+                                                    <td colspan="3">
+                                                        <span class="rai-font-sm-bold">@subFunz.XR_HRIS_ABIL_SUBFUNZIONE.XR_HRIS_ABIL_FUNZIONE.COD_FUNZIONE/@subFunz.XR_HRIS_ABIL_SUBFUNZIONE.COD_SUBFUNZIONE</span>
+                                                        <span class="rai-font-sm"> - @subFunz.XR_HRIS_ABIL_SUBFUNZIONE.XR_HRIS_ABIL_FUNZIONE.DES_FUNZIONE/@subFunz.XR_HRIS_ABIL_SUBFUNZIONE.DES_SUBFUNZIONE</span>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        }
+                        @if (profilo.XR_HRIS_ABIL_PROFILO_ASSOCIAZIONI.Any(x => x.ID_PROFILO_SUB != null))
+                        {
+                            <tr>
+                                <td colspan="3" class="no-padding">
+                                    <table class="table rai-table rai-table-vcenter rai-table-panel rai-table-collapsable table-striped">
+                                        <tbody class="rai-table-collapsable-header">
+                                            <tr>
+                                                <td>
+                                                    <span class="">PROFILI</span>
+                                                </td>
+                                                <td class="text-right">
+                                                    <span class="rai-notification">@profilo.XR_HRIS_ABIL_PROFILO_ASSOCIAZIONI.Count(x => x.ID_PROFILO_SUB != null)</span>
+                                                </td>
+                                                <td class="rai-table-td-toggle">
+                                                    <i class="fa fa-chevron-down"></i>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                        <tbody >
+                                            @foreach (var prof in profilo.XR_HRIS_ABIL_PROFILO_ASSOCIAZIONI.Where(x => x.ID_PROFILO_SUB != null))
+                                            {
+                                                <tr>
+                                                    <td colspan="3">
+                                                        <span class="rai-font-sm-bold">@prof.XR_HRIS_ABIL_PROFILO1.COD_PROFILO</span>
+                                                        <span class="rai-font-sm"> - @prof.XR_HRIS_ABIL_PROFILO1.DES_PROFILO</span>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                }
+            }
+            else
+            {
+                @Html.Partial("_NoDati")
+            }
+        </table>
+    </div>
+}

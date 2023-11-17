@@ -1,0 +1,48 @@
+﻿@using myRaiDataTalentia
+@using myRaiData.Incentivi
+@using myRaiHelper
+@model IEnumerable<XR_HRIS_ABIL>
+
+@{
+    ActionTemplate actionNew = new ActionTemplate()
+    {
+        OnClick = "AbilAddAbilSubFunc(0, 0, 'Nuova sottofunzione');",
+        Icon = "fa fa-plus"
+    };
+
+    var db = new IncentiviEntities();
+}
+
+@using (Html.BeginPanel(myRaiHelper.PanelType.PanelNoPadding, "Abilitazioni", false))
+{
+    <table class="table rai-table rai-table-panel rai-table-vcenter" id="table-abil">
+        @if (Model != null && Model.Any())
+        {
+            foreach (var abil in Model.OrderByDescending(x => x.IND_ATTIVO).ThenBy(x => x.MATRICOLA))
+            {
+                var sint = db.SINTESI1.FirstOrDefault(x => x.COD_MATLIBROMAT == abil.MATRICOLA);
+                <tr data-abil="@abil.ID_ABIL">
+                    <td>
+                        @Html.ProfileWidget(abil.MATRICOLA, sint.Nominativo())
+                    </td>
+                    <td>
+                        @if (!abil.IND_ATTIVO)
+                        {
+                            <span class="rai-label">Non attivo</span>
+                        }
+                    </td>
+                    <td class="rai-table-td-action">
+                        <button class="btn btn-action-icon" onclick="AbilAbilPers(@abil.ID_ABIL, @(abil.ID_SUBFUNZ.HasValue?abil.ID_SUBFUNZ.Value.ToString():"null"), @(abil.ID_PROFILO.HasValue?abil.ID_PROFILO.Value.ToString():"null"), @abil.MATRICOLA)"><i class="fa fa-pencil"></i></button>
+                    </td>
+                    <td class="rai-table-td-action">
+                        <button class="btn btn-action-icon" onclick="AbilRemoveAbil(@abil.ID_ABIL, @(abil.ID_SUBFUNZ.HasValue?abil.ID_SUBFUNZ.Value.ToString():"null"), @(abil.ID_PROFILO.HasValue?abil.ID_PROFILO.Value.ToString():"null"))"><i class="fa fa-times text-danger"></i></button>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            @Html.Partial("_NoDati")
+        }
+    </table>
+}

@@ -1,0 +1,100 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model IntervalloOsservazione
+<section class="panel">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblSitFeriePerm" aria-expanded="true"></a>
+        </div>
+        <h2 id="lblSitFeriePerm" class="panel-title">
+            Tempo medio di risposta Cics in ms oggi
+            @Model.avg1
+        </h2>
+    </header>
+    <div class="panel-body" style="display: block; padding: 8px">
+        <div class="chart chart-md" id="flotRealTime" style="padding: 0px; position: relative;"></div>
+    </div>
+</section>
+<script type="text/javascript">
+   var data = [],
+        totalPoints = 300;
+
+    function getRandomData() {
+        if( $('#flotRealTime').get(0) ) {
+            if (data.length > 0)
+                data = data.slice(1);
+
+            // Do a random walk
+            while (data.length < totalPoints) {
+                    y = @Model.avg1;
+
+                if (y < 0) {
+                    y = 0;
+                } else if (y > 2000) {
+                    y = 2000;
+                }
+
+                data.push(y);
+            }
+
+            // Zip the generated y values with the x values
+            var res = [];
+            for (var i = 0; i < data.length; ++i) {
+                res.push([i, data[i]])
+            }
+
+            return res;
+        }
+    }
+
+    if( $('#flotRealTime').get(0) ) {
+        var plot = $.plot('#flotRealTime', [getRandomData()], {
+            colors: ['#8CC9E8'],
+            series: {
+                lines: {
+                    show: true,
+                    fill: true,
+                    lineWidth: 1,
+                    fillColor: {
+                        colors: [{
+                            opacity: 0.45
+                        }, {
+                            opacity: 0.45
+                        }]
+                    }
+                },
+                points: {
+                    show: false
+                },
+                shadowSize: 0
+            },
+            grid: {
+                borderColor: 'rgba(0,0,0,0.1)',
+                borderWidth: 1,
+                labelMargin: 15,
+                backgroundColor: 'transparent'
+            },
+            yaxis: {
+                min: 0,
+                max: 2000,
+                color: 'rgba(0,0,0,0.1)'
+            },
+            xaxis: {
+                show: false
+            }
+        });
+    }
+
+    function update() {
+        if( $('#flotRealTime').get(0) ) {
+            plot.setData([getRandomData()]);
+
+            // Since the axes don't change, we don't need to call plot.setupGrid()
+            plot.draw();
+         setTimeout(update, $( 'html' ).hasClass( 'mobile-device' ) ? 1000 : 30 );
+        }
+    }
+    update();
+</script>

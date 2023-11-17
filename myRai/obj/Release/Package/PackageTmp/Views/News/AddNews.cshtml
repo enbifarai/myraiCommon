@@ -1,0 +1,207 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model MyRai_News_Shadow
+
+<div class="col-sm-12">
+    <div class="panel rai">
+        <div class="panel-body">
+            <form action="/News/SaveNews" method="post" id="form-news">
+
+    <div style="padding: 20px" id="news-f">
+        <div class="row" style="margin-bottom: 20px">
+
+            <h3>Destinatari</h3>
+
+        </div>
+        <div class="row">
+            <div class="col-sm-3 radio-custom radio-primary">
+                <input type="radio" name="tipodest" value="1"
+                       @if ( Model.destinatari_any ) { @: checked="checked"
+                       }>
+                <label>Tutti gli utenti</label>
+            </div>
+
+            <div class="col-sm-3 radio-custom radio-primary">
+                <input type="radio" name="tipodest" value="2"
+                       @if ( Model.destinatari_L1 == true ) { @: checked="checked"
+                       } />
+                <label>Tutti i Livelli 1</label>
+
+            </div>
+            <div class="col-sm-3 radio-custom radio-primary">
+                <input type="radio" name="tipodest" value="3"
+                       @if ( Model.destinatari_L2 == true ) { @: checked="checked"
+                       } />
+                <label>Tutti i Livelli 2</label>
+            </div>
+            <div class="col-sm-3">
+                @Html.DropDownListFor( m => m.priorita , Model.priorita_list , new { @class = "form-control" } )
+
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-3 radio-custom radio-primary">
+                <input type="radio" name="tipodest" value="4"
+                       @if ( !String.IsNullOrWhiteSpace( Model.destinatari_sedigapp ) ) { @: checked="checked"
+                       } />
+                <label>Queste sedi:</label>
+            </div>
+                        <div class="col-sm-9 no-padding-left mb-md">
+                            @Html.TextBoxFor(m => m.destinatari_sedigapp, new { @class = "rai form-control textfor-4", placeholder = "Sede1,Sede2,...." })
+            </div>
+        </div>
+
+
+
+        <div class="row">
+            <div class="col-sm-3  radio-custom radio-primary">
+                <input type="radio" name="tipodest" value="5"
+                       @if ( !String.IsNullOrWhiteSpace( Model.destinatari_matricole ) ) { @: checked="checked"
+                       } />
+                <label>Queste matricole:</label>
+            </div>
+                        <div class="col-sm-9 no-padding-left mb-md">
+                            @Html.TextBoxFor(m => m.destinatari_matricole, new { @class = "rai form-control textfor-5", placeholder = "Matricola1,Matricola2,...." })
+            </div>
+        </div>
+
+
+        <div class="row">
+            <div class="col-sm-3  radio-custom radio-primary">
+                <input type="radio" name="tipodest" value="6"
+                       @if ( !String.IsNullOrWhiteSpace( Model.destinatari_tipodip ) ) { @: checked="checked"
+                       } />
+                <label>Questi tipi dipendente:</label>
+            </div>
+                        <div class="col-sm-9 no-padding-left mb-md">
+                            @Html.TextBoxFor(m => m.destinatari_tipodip, new { @class = "rai form-control textfor-6", placeholder = "TipoDipendente1,TipoDipendente2,...." })
+            </div>
+        </div>
+
+
+        <div class="row">
+            <div class="col-sm-3 no-padding-left">
+                <label>Data inizio validità</label>
+            </div>
+            <div class="col-sm-9 no-padding-left">
+                <div class="input-group mb-md">
+                    <span class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                                @Html.TextBoxFor(m => m.validita_inizio, new { @class = "js-datetimepicker rai form-control form-control-value", style = "width: 100%", placeholder = "Data inizio validità", data_format = "DD/MM/YYYY", required = "required" })
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-3 no-padding-left">
+                <label>Data fine validità</label>
+            </div>
+            <div class="col-sm-9 no-padding-left">
+                <div class="input-group mb-md">
+                    <span class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                                @Html.TextBoxFor(m => m.validita_fine, new { @class = "js-datetimepicker rai form-control form-control-value", style = "width: 100%", placeholder = "Data fine validità", data_format = "DD/MM/YYYY", required = "required" })
+                </div>
+            </div>
+        </div>
+                    <div class="row">
+                        <div class="col-sm-3 no-padding-left">
+                            <label>Categoria</label>
+                        </div>
+                        <div class="col-sm-9 no-padding-left mb-md">
+                            <div>
+                                @Html.RaiSelectFor(model => model.categoria, myRai.Controllers.NewsController.GetCategorie("categorie"), "Seleziona una categoria", "Cerca",false,null,false, new { required = "required" })
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-3 no-padding-left">
+                            <label>Titolo</label>
+                        </div>
+                        <div class="col-sm-9 no-padding-left mb-md">
+                            @Html.TextAreaFor(m => m.titolo, new { @class = "rai form-control textfor-6", placeholder = "Titolo news", required = "required" })
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row" style="padding: 20px">
+            <h3>Contenuto</h3>
+        </div>
+        <div class="col-sm-12">
+                    @Html.TextAreaFor(m => m.contenuto, new { @class = "rai form-control html-editor", cols = "20", rows = "5" })
+
+        </div>
+
+
+
+        <div class="row" style="margin-bottom: 20px">
+            <div class="col-sm-12 text-center">
+                        <button id="news" type="submit" onclick="validateForm()" class="btn btn-primary">Conferma</button>
+            </div>
+
+        </div>
+
+
+
+    @Html.HiddenFor( m => m.id )
+    @Html.HiddenFor( m => m.controllo_aggiuntivo )
+
+</form>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+<script type="text/javascript">
+    InitDatePicker();
+    AttivaSummernoteNews();
+    tipodestChanged();
+    $(function () {
+
+    });
+    @*function objectifyForm(formArray) {
+        //serialize data function
+        var returnArray = {};
+        for (var i = 0; i < formArray.length; i++) {
+            returnArray[formArray[i]['name']] = formArray[i]['value'];
+        }
+       
+        return returnArray;
+    }
+    function saveNews() {
+         var formValueObj = objectifyForm($('#form-news').serializeArray());
+        console.log(formValueObj);
+            $.ajax({
+                type: "POST",
+                cache: false,
+                url: '@Url.Action("SaveNews","News")',
+                contentType: "application/json; charset=utf-8",
+                data: formValueObj,
+                dataType: "json",
+                success: function (data) {
+                    console.log(data);
+                },
+                error: function (a, b, c) {
+                    console.log(a, b, c);
+                }
+
+            });
+    }*@
+    function validateForm() {
+        var form = $('#form-news');
+        var validator = $(form).validate();
+
+        if (!$(form).valid()) {
+            validator.focusInvalid();
+            return false;
+        }
+    }
+</script>
+
+

@@ -1,0 +1,541 @@
+﻿@using myRaiData;
+@using myRaiHelper;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+@using MyRaiServiceInterface.it.rai.servizi.digigappws;
+
+@model ModelDash
+
+<section class="panel" id="persrichieste">
+    <header class="panel-heading">
+        <h2 id="lblPersRichieste" class="panel-title">Le mie richieste</h2>
+        <div class="panel-actions rai-panel-actions">
+            <button href="#" aria-label="Aggiorna le mie richieste" class="btn btn-action-icon" id="button-refresh-evid" type="button" data-toggle="block-option" data-action="refresh_toggle"
+               data-refreshurl="/home/refreshMieRichieste" data-parentdiv="persrichieste"
+               data-refreshelements="btabswo-static-home,btab4,tab1text,tab2text,InApprovazioneBadge"
+               data-action-mode="demo"><i class="fa fa-refresh"></i></button>
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-label="Le mie richieste" aria-expanded="true"></a>
+        </div>
+    </header>
+    <div id="mierichieste" class="block panel-body no-padding">
+        <!-- Block Tabs Justified Alternative Style -->
+        <ul class="nav nav-tabs nav-tabs-alt  nav-justified" data-toggle="tabs" role="tablist">
+            <li class="tabbianco active" role="presentation">
+                <a href="#btabswo-static-home" tabindex="0" role="tab" aria-controls="btabswo-static-home" style="border:0px;">
+                    In approvazione
+                    @{
+                        int tot = 0;
+                        if (Model.MieRichieste != null && Model.MieRichieste.Any())
+                        {
+                            tot = Model.MieRichieste.Count(r => r.IdStatoRichiesta.Equals((int)EnumStatiRichiesta.InApprovazione));
+                        }
+                    }
+                    <span id="InApprovazioneBadge" class="rai-badge-tab">
+                        @(tot)
+                    </span>
+                </a>
+            </li>
+            <li class=" tabbianco" role="presentation">
+                <a href="#btab4" tabindex="-1" role="tab" aria-controls="btab4" style="border:0px;">Esiti</a>
+            </li>
+        </ul>
+        <div class="block-content tab-content no-padding">
+            <div data-toggle="slimscroll" data-height="50px" data-color="#46c37b" data-always-visible="true" style="width: auto;" class="table-responsive tab-pane active " id="btabswo-static-home" role="tabpanel">
+                <table class="js-table-sections table table-hover rai-table rai-table-vcenter" role="grid" id="lemierichieste" aria-label="Richieste in approvazione" style="margin-top:0px !important">
+                    @if (Model.MieRichieste != null && Model.MieRichieste
+                        .Where(x => x.IdStatoRichiesta == (int)EnumStatiRichiesta.InApprovazione).Any())
+                    {
+                        int row = 0;
+
+                        foreach (var item in Model.MieRichieste.Where(x => x.IdStatoRichiesta == (int)EnumStatiRichiesta.InseritoSegreteria
+                            || x.IdStatoRichiesta == (int)EnumStatiRichiesta.InApprovazione
+                            || x.IdStatoRichiesta == (int)EnumStatiRichiesta.InProgressSegreteria
+                            ))
+                        {
+                            row++;
+
+                            if (item.IsStorno)
+                            {
+                                @Html.Raw("<tbody   class=\"js-table-sections-header\">")
+                            }
+
+                            string ariaLabel = " " + item.TestoRichiesta + " per il " + item.PeriodoRichiesta1 + " " + (!String.IsNullOrWhiteSpace(item.PeriodoRichiesta2) ? item.PeriodoRichiesta2 : "");
+
+                            <tr tabindex="@(row==1?"0":"-1")" aria-label="@ariaLabel" role="row" data-richparent="@item.IdRichiesta" data-ndocu="@item.NdocChildrenCsv" onfocus="onFocusRow(this)">
+                                <td>
+                                    <span class="rai-font-md-neutral">@item.PeriodoRichiesta1</span>
+                                </td>
+                                <td>
+                                    <span class="rai-font-md-bold">@item.TestoRichiesta</span>
+                                    <div class="text-warning font-w600">
+                                        @if (item.IsStorno)
+                                        {
+                                            <em>storno</em>
+                                        }
+                                    </div>
+                                    @if (!String.IsNullOrWhiteSpace(item.PeriodoRichiesta2))
+                                    {
+                                        <span class="rai-font-sm">@item.PeriodoRichiesta2</span> <br />
+                                    }
+                                    <span class="rai-font-sm"> Richiesto il @item.EccezioneCorrenteDaDB.MyRai_Richieste.data_richiesta.ToString("d MMMM yyyy")</span>
+                                    @if (!(String.IsNullOrWhiteSpace(item.EccezioneCorrenteDaDB.motivo_richiesta)))
+                                    {
+                                        <br /><span class="rai-font-sm-neutral">Nota: @item.EccezioneCorrenteDaDB.motivo_richiesta</span>
+                                    }
+                                </td>
+                                <td class="rai-table-td-toggle hidden-xs">
+                                    @Html.DisplayFor(a => item.IdStatoRichiesta, "IdStato")
+                                </td>
+                                <td class="rai-table-td-action">
+                                    @*Se inProgressSegreteria non puo cancellarla piu*@
+                                    @if (item.IdStatoRichiesta != (int)EnumStatiRichiesta.InProgressSegreteria)
+                                    {
+                                        <button aria-label="Cancella richiesta" class="btn btn-action-icon" onclick="CancellaRichiestaInApprovazione(@item.IdRichiesta)">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    }
+                                </td>
+                                <td class="rai-table-td-action">
+                                    @if (item.IdDocumentoAssociato != null)
+                                    {
+                                        <button aria-label="Mostra documento associato" class="btn btn-action-icon" onclick="ShowDoc(@item.IdDocumentoAssociato)">
+                                            <i class="icons icon-doc "></i>
+                                        </button>
+                                    }
+                                </td>
+                                <td class="rai-table-td-toggle text-center">
+                                    @if (item.IsStorno)
+                                    {
+                                        <i class="fa fa-angle-right"></i>
+                                    }
+                                </td>
+                            </tr>
+                            if (item.IsStorno)
+                            {
+                                @Html.Raw("</tbody>")
+                            }
+                            if (item.IsStorno)
+                            {
+                                <tbody class="tbodydata">
+                                    <tr data-idrichiesta="@item.IdRichiesta" data-stato="@item.IdStatoRichiesta" role="row">
+                                        <td colspan="6">
+                                            <ul class="">
+                                                @if (item.EccezioneDiRiferimentoPerStorno != null && item.EccezioneDiRiferimentoPerStorno.data_validazione_primo_livello != null)
+                                                {
+                                                    <li>
+                                                        <div class="">@(((DateTime)item.EccezioneDiRiferimentoPerStorno.data_validazione_primo_livello).ToString("dd/MM/yyyy alle HH:mm"))</div>
+                                                        <div class="">
+                                                            <p class="font-w600">Approvato da parte di @item.EccezioneDiRiferimentoPerStorno.nominativo_primo_livello </p>
+                                                            @if (!(String.IsNullOrWhiteSpace(item.EccezioneDiRiferimentoPerStorno.nota_rifiuto_o_approvazione)))
+                                                            {
+                                                                <p class="font-s13">Nota: @item.EccezioneDiRiferimentoPerStorno.nota_rifiuto_o_approvazione</p>
+                                                            }
+                                                        </div>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            }
+                        }
+                    }
+                    else
+                    {
+                        @Html.Partial("_nodati")
+                    }
+                </table>
+            </div>
+
+            <div class="tab-pane table-responsive" id="btab4" role="tabpanel">
+                <table class="js-table-sections table table-hover rai-table rai-table-vcenter" id="imieiesiti" tabindex="0" aria-label="Esiti" style="margin-top:0px !important">
+                    @if (Model.MieRichieste != null && Model.MieRichieste.Where(x =>
+                         x.IdStatoRichiesta == (int)EnumStatiRichiesta.Rifiutata
+                        || x.IdStatoRichiesta == (int)EnumStatiRichiesta.Approvata
+                        || x.IdStatoRichiesta == (int)EnumStatiRichiesta.Eliminata
+                         ).Any())
+                    {
+                        var lista = Model.MieRichieste.Where(x =>
+                            x.IdStatoRichiesta == (int)EnumStatiRichiesta.Rifiutata
+                        || x.IdStatoRichiesta == (int)EnumStatiRichiesta.Approvata
+                        || x.IdStatoRichiesta == (int)EnumStatiRichiesta.Eliminata);
+
+                        foreach (var item in lista)
+                        {
+                            string img = Url.Content("~/assets/img/up.png");
+                            string styles = "position:absolute; float:left; margin-top:-21px; margin-left:-20px;";
+
+                            string ariaLabel = " " + item.TestoRichiesta + " per il " + item.PeriodoRichiesta1 + " " + (!String.IsNullOrWhiteSpace(item.PeriodoRichiesta2) ? item.PeriodoRichiesta2 : "");
+
+                            if (item.IdStatoRichiesta == (int)EnumStatiRichiesta.Approvata)
+                            {
+                                ariaLabel = "Approvata richiesta " + ariaLabel;
+                                <tbody class="js-table-sections-header">
+                                    <tr data-id-rich="@item.EccezioneCorrenteDaDB.MyRai_Richieste.id_richiesta" tabindex="0" aria-label="@ariaLabel">
+                                        <td width="25%">
+                                            <span class="rai-font-md-neutral">
+                                                @item.PeriodoRichiesta1
+                                            </span>
+                                        </td>
+                                        <td width="75%">
+                                            <span class="rai-font-md-bold">@item.TestoRichiesta</span>
+                                            <div class="text-warning font-w600">
+                                                @if (item.IsStorno && item.EccezioneCorrenteDaDB.data_rifiuto_primo_livello == null)
+                                                {
+                                                    <em>storno</em>
+                                                }
+                                            </div>
+                                            @if (!String.IsNullOrWhiteSpace(item.PeriodoRichiesta2))
+                                            {
+                                                <span class="rai-font-sm">
+                                                    @item.PeriodoRichiesta2
+                                                </span><br />
+                                            }
+                                            <span class="rai-font-sm"> Richiesto il @item.EccezioneCorrenteDaDB.MyRai_Richieste.data_richiesta.ToString("d MMMM yyyy")</span>
+
+                                            @if (!(String.IsNullOrWhiteSpace(item.EccezioneCorrenteDaDB.motivo_richiesta)))
+                                            {
+                                                <br /><span class="rai-font-sm-neutral">Nota: @item.EccezioneCorrenteDaDB.motivo_richiesta</span>
+                                            }
+                                        </td>
+                                        <td class="rai-table-td-toggle">
+                                            <a data-toggle="tooltip" title="Approvato">
+                                                <i class="fa fa-circle circle-green" aria-hidden="true"></i>
+                                            </a>
+                                        </td>
+                                        <td class="rai-table-td-action">
+                                            @if (!item.IsStorno)
+                                            {
+                                                // Modificato in quanto non veniva più visualizzato il cestino nel caso di richieste per più giorni
+                                                // se la data è riferita ad un mese precedente convalidato allora non sarà possibile stornare la
+                                                // richiesta
+                                                if (item.EccezioneCorrenteDaDB.data_eccezione > Model.MieRichiesteVM.DataUltimaConvalida.Date)
+                                                {
+                                                    if (!item.no_corrispondenza_gapp)
+                                                    {
+                                                        <button class="btn btn-action-icon" aria-label="Cancella richiesta" onclick="CancellaRichiesta(@item.IdRichiesta)">
+                                                            <i class="icons icon-trash "></i>
+                                                        </button>
+                                                    }
+                                                }
+                                            }
+                                        </td>
+                                        <td class="rai-table-td-toggle text-center">
+                                            @if (item.IsStorno || true)
+                                            {
+                                                <i class="fa fa-angle-right"></i>
+                                            }
+                                        </td>
+                                    </tr>
+                                </tbody>
+
+                                <tbody class="tbodydata" style="background-color: #f5f5f5;">
+                                    @{
+                                        int countChilds = 0;
+                                        if (!item.IsStorno && item.EccezioneCorrenteDaDB.id_stato == (int)EnumStatiRichiesta.Approvata)
+                                        {
+                                            countChilds++;
+                                        }
+                                        if (item.EccezioneDiRiferimentoPerStorno != null)
+                                        {
+                                            countChilds++;
+                                        }
+                                        if (item.IsStorno && item.EccezioneCorrenteDaDB.id_stato == (int)EnumStatiRichiesta.Approvata)
+                                        {
+                                            countChilds++;
+                                        }
+                                        if (item.IsStorno && item.EccezioneCorrenteDaDB.id_stato == (int)EnumStatiRichiesta.Rifiutata)
+                                        {
+                                            countChilds++;
+                                        }
+                                        // azzero per nascondere la png
+                                        // da rimuovere per futura implementazione
+                                        //countChilds = 0;
+                                    }
+
+                                    <tr>
+                                        <td colspan="5" style="padding: 0px;">
+                                            <ul class="timeline" style="padding-bottom: 0px; padding-top: 0px;">
+                                                <li>
+                                                    <table class="js-table-sections table table-hover rai-table-vcenter" >
+                                                        <tbody>
+                                                            @if (!item.IsStorno && item.EccezioneCorrenteDaDB.id_stato == (int)EnumStatiRichiesta.Approvata)
+                                                            {
+                                                                <tr >
+                                                                    <td width="25%" class="@(countChilds > 1 ? "lineaCollegamento1": "")">
+                                                                        @if (item.EccezioneCorrenteDaDB.data_validazione_primo_livello != null)
+                                                                        {
+                                                                            <span class="rai-font-md-neutral">@(((DateTime)item.EccezioneCorrenteDaDB.data_validazione_primo_livello).ToString("d MMMM yyyy alle HH:mm"))</span>
+                                                                        }
+                                                                    </td>
+                                                                    <td width="75%">
+                                                                        <span class="rai-font-md" >
+                                                                            @if (item.EccezioneCorrenteDaDB.matricola_primo_livello == CommonHelper.GetCurrentUserMatricola())
+                                                                            {
+                                                                                @: Validata automaticamente
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                @: Approvata da parte di @item.EccezioneCorrenteDaDB.nominativo_primo_livello
+                                                                            }
+                                                                        </span>
+                                                                        <br/>
+                                                                        <span class="rai-font-sm">
+                                                                            @item.EccezioneCorrenteDaDB.nota_rifiuto_o_approvazione
+                                                                        </span>
+                                                                    </td>
+                                                                    <td class="rai-table-td-toggle" >
+                                                                        <a class="@(countChilds > 1 ? "lineaCollegamento": "")" data-toggle="tooltip" title="Approvato">
+                                                                            <i class="fa fa-circle circle-green smallCircle" aria-hidden="true"></i>
+                                                                        </a>
+                                                                    </td>
+                                                                    <td class="rai-table-td-action"><div style="width:32px"></div></td>
+                                                                    <td class="rai-table-td-toggle">&nbsp;</td>
+                                                                </tr>
+                                                                countChilds--;
+                                                            }
+
+                                                            @if (item.EccezioneDiRiferimentoPerStorno != null)
+                                                            {
+                                                                <tr >
+                                                                    <td width="25%" class=" @(countChilds > 1 ? "lineaCollegamento1": "")">
+                                                                        @if (item.EccezioneDiRiferimentoPerStorno.data_validazione_primo_livello != null)
+                                                                        {
+                                                                            <span class="rai-font-md-neutral">@(((DateTime)item.EccezioneDiRiferimentoPerStorno.data_validazione_primo_livello).ToString("d MMMM yyyy alle HH:mm"))</span>
+                                                                        }
+                                                                    </td>
+                                                                    <td width="75%">
+                                                                        <span class="rai-font-md">
+
+                                                                            @if (item.EccezioneDiRiferimentoPerStorno.matricola_primo_livello == CommonHelper.GetCurrentUserMatricola())
+                                                                            {
+                                                                                @: Validata automaticamente
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                @:  Approvata da parte di @item.EccezioneDiRiferimentoPerStorno.nominativo_primo_livello
+                                                                            }
+
+                                                                        </span>
+
+                                                                        @if (!(String.IsNullOrWhiteSpace(item.EccezioneDiRiferimentoPerStorno.nota_rifiuto_o_approvazione)))
+                                                                        {<br />
+                                                                            <span class="rai-font-sm">Nota: @item.EccezioneDiRiferimentoPerStorno.nota_rifiuto_o_approvazione</span>
+                                                                        }
+                                                                    </td>
+                                                                    <td class="rai-table-td-toggle" >
+                                                                        <a class="@(countChilds > 1 ? "lineaCollegamento": "")" data-toggle="tooltip" title="Approvato">
+                                                                            <i class="fa fa-circle circle-green smallCircle" aria-hidden="true"></i>
+                                                                        </a>
+                                                                    </td>
+                                                                    <td class="rai-table-td-action"><div style="width:32px;"></div></td>
+                                                                    <td class="rai-table-td-toggle">&nbsp;</td>
+                                                                </tr>
+                                                                countChilds--;
+                                                            }
+
+                                                            @if (item.IsStorno && item.EccezioneCorrenteDaDB.id_stato == (int)EnumStatiRichiesta.Approvata)
+                                                            {
+                                                                <tr >
+                                                                    <td width="25%" class=" @(countChilds > 1 ? "lineaCollegamento1": "")">
+                                                                        @if (item.EccezioneCorrenteDaDB.data_validazione_primo_livello != null)
+                                                                        {
+                                                                            <p class="">@(((DateTime)item.EccezioneCorrenteDaDB.data_validazione_primo_livello).ToString("d MMMM yyyy alle HH:mm"))</p>
+                                                                        }
+                                                                    </td>
+                                                                    <td width="75%">
+                                                                        <span class="rai-font-md">Storno approvato da parte di @item.EccezioneCorrenteDaDB.nominativo_primo_livello</span>
+
+                                                                        @if (!(String.IsNullOrWhiteSpace(item.EccezioneCorrenteDaDB.nota_rifiuto_o_approvazione)))
+                                                                        {
+                                                                            <br />
+                                                                            <span class="rai-font-sm-neutral">Nota: @item.EccezioneCorrenteDaDB.nota_rifiuto_o_approvazione</span>
+                                                                        }
+                                                                    </td>
+                                                                    <td class="rai-table-td-toggle" >
+                                                                        <a class="@(countChilds > 1 ? "lineaCollegamento": "")" data-toggle="tooltip" title="Approvato">
+                                                                            <i class="fa fa-circle circle-green smallCircle" aria-hidden="true"></i>
+                                                                        </a>
+                                                                    </td>
+                                                                    <td class="rai-table-td-action"><div style="width:32px;"></div></td>
+                                                                    <td class="rai-table-td-toggle">&nbsp;</td>
+                                                                </tr>
+                                                                countChilds--;
+                                                            }
+
+                                                            @if (item.IsStorno && item.EccezioneCorrenteDaDB.id_stato == (int)EnumStatiRichiesta.Rifiutata)
+                                                            {
+                                                                <tr >
+                                                                    <td width="25%" class="@(countChilds > 1 ? "lineaCollegamento1": "")">
+                                                                        @if (item.DataRifiutoLiv1 != null)
+                                                                        {
+                                                                            <span class="rai-font-md-neutral">@(((DateTime)item.EccezioneCorrenteDaDB.data_rifiuto_primo_livello.GetValueOrDefault()).ToString("d MMMM yyyy alle HH:mm"))</span>
+                                                                        }
+                                                                    </td>
+                                                                    <td width="75%">
+                                                                        <span class="rai-font-md">Storno rifiutato da parte di @item.EccezioneCorrenteDaDB.nominativo_primo_livello</span>
+
+                                                                        @if (!(String.IsNullOrWhiteSpace(item.EccezioneCorrenteDaDB.nota_rifiuto_o_approvazione)))
+                                                                        {
+                                                                            <br />
+                                                                            <span class="rai-font-md-neutral">Nota: @item.EccezioneCorrenteDaDB.nota_rifiuto_o_approvazione</span>
+                                                                        }
+                                                                    </td>
+                                                                    <td class="rai-table-td-toggle">
+                                                                        <a class="@(countChilds > 1 ? "lineaCollegamento": "")" data-toggle="tooltip" title="Rifiutato">
+                                                                            <i class="fa fa-circle circle-red smallCircle" aria-hidden="true"></i>
+                                                                        </a>
+                                                                    </td>
+                                                                    <td class="rai-table-td-action"><div style="width:32px;"></div></td>
+                                                                    <td class="rai-table-td-toggle">&nbsp;</td>
+                                                                </tr>
+                                                                countChilds--;
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </li>
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            }
+
+                            if (item.IdStatoRichiesta == (int)EnumStatiRichiesta.Rifiutata
+                                || item.IdStatoRichiesta == (int)EnumStatiRichiesta.Eliminata)
+                            {
+                                if (item.IdStatoRichiesta == (int)EnumStatiRichiesta.Rifiutata)
+                                {
+                                    ariaLabel = "Rifiutata richiesta " + ariaLabel;
+                                }
+                                else if (item.IdStatoRichiesta == (int)EnumStatiRichiesta.Eliminata)
+                                {
+                                    ariaLabel = "Eliminata richiesta " + ariaLabel;
+                                }
+
+                                img = Url.Content("~/assets/img/up.png");
+                                styles = "position:absolute; float:left; margin-top:-21px; margin-left:-20px;";
+
+                                <tbody class="js-table-sections-header">
+                                    <tr data-idrichiesta="@item.IdRichiesta" data-stato="@item.IdStatoRichiesta" tabindex="0" aria-label="@ariaLabel">
+                                        <td>
+                                            <span class="rai-font-md-neutral">@item.PeriodoRichiesta1</span>
+                                        </td>
+                                        <td>
+                                            <span class="rai-font-md-bold">@item.TestoRichiesta</span>
+                                            <div class="text-warning font-w600">
+                                                @if (item.IsStorno)
+                                                {
+                                                    <em>storno</em>
+                                                }
+                                            </div>
+                                            @*@item.Periodo*@
+                                            @if (!String.IsNullOrWhiteSpace(item.PeriodoRichiesta2))
+                                            {
+                                                <span class="rai-font-sm">@item.PeriodoRichiesta2</span> <br />
+                                            }
+                                            <span class="rai-font-sm"> Richiesto il @item.EccezioneCorrenteDaDB.MyRai_Richieste.data_richiesta.ToString("d MMMM yyyy")</span>
+
+                                            @if (!(String.IsNullOrWhiteSpace(item.TestoRichiesta)))
+                                            {
+                                                <br /><span class="rai-font-sm-neutral">Nota: @item.TestoRichiesta</span>
+                                            }
+                                        </td>
+                                        <td class="rai-table-td-action">
+                                            @Html.DisplayFor(m => item.IdStatoRichiesta, "IdStato")
+                                        </td>
+                                        <td></td>
+                                        <td class="rai-table-td-toggle">
+                                            <i class="fa fa-angle-right"></i>
+                                        </td>
+                                    </tr>
+                                </tbody>
+
+                                <tbody class="tbodydata" style="background-color: #f5f5f5;">
+                                    @{
+                                        int countChilds = 0;
+                                        if (!item.IsStorno && item.EccezioneCorrenteDaDB.id_stato == (int)EnumStatiRichiesta.Approvata)
+                                        {
+                                            countChilds++;
+                                        }
+                                        if (item.EccezioneDiRiferimentoPerStorno != null)
+                                        {
+                                            countChilds++;
+                                        }
+                                        if (item.IsStorno && item.EccezioneCorrenteDaDB.id_stato == (int)EnumStatiRichiesta.Approvata)
+                                        {
+                                            countChilds++;
+                                        }
+                                        if (item.IsStorno && item.EccezioneCorrenteDaDB.id_stato == (int)EnumStatiRichiesta.Rifiutata)
+                                        {
+                                            countChilds++;
+                                        }
+                                        // azzero per nascondere la png
+                                        // da rimuovere per futura implementazione
+                                        //countChilds = 0;
+                                    }
+                                    <tr>
+                                        <td>
+                                            <span class="rai-font-md">
+                                                @if (item.DataRifiutoLiv1 != null)
+                                                {
+                                                    @(((DateTime)item.DataRifiutoLiv1).ToString("d MMMM yyyy"))
+                                                    <br />
+                                                    @(((DateTime)item.DataRifiutoLiv1).ToString("alle HH:mm"))
+                                                }
+                                                else if (item.IdStatoRichiesta == (int)EnumStatiRichiesta.Eliminata && item.DataValidazioneLiv1 != null)
+                                                {
+                                                    @(((DateTime)item.DataValidazioneLiv1).ToString("d MMMM yyyy"))
+                                                    <br />
+                                                    @(((DateTime)item.DataValidazioneLiv1).ToString("alle HH:mm"))
+                                                }
+                                            </span>
+                                        </td>
+                                        <td class="">
+                                            @if (item.IdStatoRichiesta == (int)EnumStatiRichiesta.Rifiutata)
+                                            {
+                                                <span class="rai-font-sm">Rifiutata da parte di @item.NominativoLiv1 </span>
+                                                <br />
+                                                <span class="rai-font-sm-neutral">Nota: @item.NotaRifiutoOApprovazione</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="rai-font-sm">Eliminata su Gapp</span>
+                                                <br />
+                                                <span class="rai-font-sm-neutral">Nota: @item.TestoRichiesta</span>
+                                            }
+                                        </td>
+                                        <td class="" style="position:absolute;">
+                                            @if (item.IdStatoRichiesta == (int)EnumStatiRichiesta.Rifiutata)
+                                            {
+                                                <a data-toggle="tooltip" title="Rifiutato">
+                                                    <i class="fa fa-circle circle-red smallCircle" aria-hidden="true"></i>
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <a data-toggle="tooltip" title="" data-original-title="Eliminata su Gapp">
+                                                    <i class="fa fa-circle-thin circle-red smallCircle" style="font-weight: 900" aria-hidden="true"></i>
+                                                </a>
+                                            }
+                                        </td>
+                                        <td class="text-center" colspan="2"></td>
+                                        @{
+                                            img = Url.Content("~/assets/img/down.png");
+                                            styles = "float:left; margin-top:-80px; margin-left:-20px;";
+                                        }
+                                    </tr>
+                                </tbody>
+                            }
+                        }
+                    }
+                    else
+                    {
+                        @Html.Partial("_nodati")
+                    }
+                </table>
+            </div>
+        </div>
+    </div>
+</section>

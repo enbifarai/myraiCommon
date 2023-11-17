@@ -1,0 +1,298 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model myRaiData.MyRai_FormPrimario
+<section class="rai panel form-wizard" id="w4">
+    <header class="panel-heading">
+        <h2 id="labelFormTitle" class="panel-title">@Model.titolo</h2>
+        <input type="hidden" id="messaggio-feedback" value="@Model.messaggio_feedback" />
+        <input type="hidden" id="id-form" value="@Model.id" />
+        <input type="hidden" id="vedi-stat" value="@Model.vedi_stats.ToString()" />
+        <input type="hidden" id="id-tipologia" value="@Model.id_tipologia" />
+        <input type="hidden" id="form-albergo" value="@(Model.MyRai_FormTipologiaForm.tipologia=="Hotel"?"true":"false")" />
+
+    </header>
+    <div class="panel-body">
+        <div class="row push-10">
+            <div class="col-sm-12">
+                <span tabindex="0">@Html.Raw(Model.descrizione)</span>
+            </div>
+        </div>
+        @{
+            string m = myRaiHelper.CommonHelper.GetCurrentUserMatricola( );
+            string messaggio = null;
+            string c = "";
+            string icona = "";
+
+            if ( Model.MyRai_FormTipologiaForm.tipologia != "Hotel" && Model.MyRai_FormCompletati.Any( z => z.matricola == m ) && CommonHelper.IsProduzione( ) )
+            {
+                messaggio = "Hai già completato il questionario, grazie !";
+                c = "text-primary";
+                //icona = "glyphicon glyphicon-ok-circle";
+                icona = "icons icon-check";
+            }
+            if ( DateTime.Now < Model.data_inizio_validita || DateTime.Now > Model.data_fine_validita )
+            {
+                messaggio = "Data odierna non inclusa nel periodo di validità del form.";
+                c = "text-danger";
+                //icona = "glyphicon glyphicon-remove-circle";
+                icona = "icons icon-close";
+            }
+            if ( !Model.attivo )
+            {
+                messaggio = "Il form non è attivo";
+                c = "text-danger";
+                //icona = "glyphicon glyphicon-ban-circle";
+                icona = "icons icon-ban";
+            }
+        }
+
+        @if ( !String.IsNullOrWhiteSpace( messaggio ) )
+        {
+            <br />
+            <br />
+            <br />
+            <div class="row">
+                <div class="col-sm-12" style="text-align: center">
+                    <i class="@icona @c" style="font-size:70px"></i>
+                    <h4 class="@c" tabindex="0">@messaggio</h4>
+                    @if ( DateTime.Now > Model.data_fine_validita )
+                    {
+                        if ( !String.IsNullOrWhiteSpace( Model.messaggio_fine_validita ) )
+                        {
+                            <label tabindex="0">@Model.messaggio_fine_validita</label>
+                        }
+                        if ( !String.IsNullOrWhiteSpace( Model.azione_fine_validita ) )
+                        {
+                            <br />
+                            <a href="@Model.azione_fine_validita">Prosegui</a>
+                        }
+                    }
+                </div>
+            </div>
+            <br />
+            <br />
+            <br />
+            return;
+        }
+
+        <div class="rai wizard-progress wizard-progress-lg wizard-progress-center" role="tablist">
+            @*<div class="steps-progress">
+                <div class="progress-indicator" style="width: 66%;"></div>
+            </div>*@
+            <ul class="wizard-steps">
+                @{
+                    int counter = 0;
+                }
+                @foreach (var sez in Model.MyRai_FormSecondario.Where(x => x.attivo == true).OrderBy(x=>x.progressivo))
+                {
+                    counter++;
+                    <li class="@(counter == 1 ? "active" : "")" role="presentation">
+                        <a tabindex="@(counter==1?"0":"-1")" href="#sez-@sez.id" data-role="tab" aria-controls="#sez-@sez.id" data-toggle="tab" aria-expanded="@(counter == 1 ? "true" : "false")" aria-label="@sez.titolo"><span>@counter</span>@sez.titolo</a>
+
+                    </li>
+
+                }
+                <li role="presentation">
+                    <a tabindex="-1" href="#sez-riep" data-toggle="tab" aria-expanded="false"><span>@(counter + 1)</span>Riepilogo</a>
+                </li>
+            </ul>
+        </div>
+
+        <form id="form-savequest" method="post" class="form-horizontal" action="/formuser/save" novalidate="novalidate">
+            <input type="hidden" name="id_formprimario" value="@Model.id" tabindex="-1" />
+
+            <div class="tab-content" @*style="padding-left: 50px"*@>
+                @{ counter = 0;}
+                @foreach (var sez in Model.MyRai_FormSecondario.Where(x => x.attivo == true).OrderBy(x=>x.progressivo))
+                {
+                    counter++;
+                    <div id="sez-@sez.id" class="tab-pane @(counter == 1 ? "active" : "")" role="tabpanel" tabindex="0" aria-labelledby="lbl-sez-@sez.id">
+                        <span class="" id="lbl-sez-@sez.id">@Html.Raw(sez.descrizione)</span>
+
+                        <div class="row">
+                            <div class="col-sm-12" style="width: 100%; border-bottom: solid 1px #eee; margin-bottom: 20px; margin-top: 20px"></div>
+                        </div>
+
+                        @foreach ( var dom in sez.MyRai_FormDomande.Where( x => x.attiva && x.id_domanda_parent == null ).OrderBy( x => x.progressivo ) )
+                        {
+                            <div class="row">
+                                <div data-domanda-id="@dom.id"
+                                     data-domanda-tipologia="@dom.id_tipologia"
+                                     data-domanda-albergo="@(dom.max_scelte==999999?"true":"false")"
+                                     data-domanda-ob="@(dom.obbligatoria ? "true" : "false")"
+                                     class="col-sm-12 testo-domanda">
+                                    <b tabindex="0">@dom.titolo</b>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-12"><span tabindex="@(!String.IsNullOrWhiteSpace(dom.descrizione)|| (dom.max_scelte>0 && dom.max_scelte!=999999) ?"0":"-1")">@Html.Raw(dom.descrizione) <em>@(dom.max_scelte > 0 && dom.max_scelte != 999999 ? "(Indicare un massimo di " + dom.max_scelte + " risposte)" : "")</em></span></div>
+                            </div>
+
+                            <br />
+
+                            if ( dom.id_tipologia == ( int ) myRai.Controllers.EnumTipologiaDomanda.Risposta_Multipla_CheckBox )
+                            {
+                                @Html.Partial( "TipologieDomanda/MultiplaCheckbox" , dom )
+                            }
+                            if ( dom.id_tipologia == ( int ) myRai.Controllers.EnumTipologiaDomanda.MasterPerMatrixRating )
+                            {
+                                @Html.Partial( "TipologieDomanda/MasterSlave" , dom )
+                            }
+
+                            if ( dom.id_tipologia == ( int ) myRai.Controllers.EnumTipologiaDomanda.Risposta_singola_Lista_RadioButton )
+                            {
+                                <div class="row">
+                                    <div class="col-sm-12" role="radiogroup">
+                                        @{
+                                            int countRadio = 0;
+                                        }
+                                        @foreach ( var item in dom.MyRai_FormRispostePossibili )
+                                        {
+                                            <div class="rai-radio">
+                                                <input type="radio" id="radio-@item.id" @(dom.obbligatoria ? "required" : "")
+                                                       data-text="@item.item_risposta" class="radio-risposta" data-domandaid="@dom.id"
+                                                       name="dom-id-@dom.id" value="risp-id-@item.id" tabindex="@countRadio" aria-checked="false" role="radio">
+                                                <label for="radio-@item.id" id="label-@item.item_risposta"  role="presentation">@item.item_risposta</label>
+                                            </div>
+                                            countRadio = 1;
+                                        }
+                                        @if ( dom.permetti_altro )
+                                        {
+                                            <div class="rai-radio">
+                                                <input type="radio" id="radio-altro-@dom.id" @(dom.obbligatoria ? "required" : "")
+                                                       class="radio-altro" name="dom-id-@dom.id" value="" tabindex="0" aria-labelledby="label-@dom.id-altro" aria-checked="false">
+                                                <label for="radio-altro-@dom.id" id="label-@dom.id-altro" >Altro</label>
+                                                <input type="text" class="form-control" name="dom-id-@dom.id-altro" style="width:70%;display:none"
+                                                       id="tb-altro-@dom.id" required disabled="disabled" />
+                                            </div>
+
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            if ( dom.id_tipologia == ( int ) myRai.Controllers.EnumTipologiaDomanda.Risposta_Singola_Lista_Tendina )
+                            {
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <select id="select-@dom.id" name="dom-id-@dom.id" class="select-altro form-control" @(dom.obbligatoria ? "required" : "")>
+                                        <option value="">-- Selezionare un'opzione --</option>
+                                            @foreach ( var item in dom.MyRai_FormRispostePossibili )
+                                            {
+                                                <option value="risp-id-@item.id">@item.item_risposta</option>
+                                            }
+                                            @if ( dom.permetti_altro )
+                                            {
+                                                <option value="Altro">Altro</option>
+                                            }
+                                        </select>
+
+                                        @if ( dom.permetti_altro )
+                                        {
+                                            <input type="text" class="form-control" name="dom-id-@dom.id-altro" placeholder="La tua risposta"
+                                                   required style="width:100%;display:none;margin-top:6px" disabled="disabled" />
+                                        }
+
+                                    </div>
+                                </div>
+                            }
+
+                            if ( dom.id_tipologia == ( int ) myRai.Controllers.EnumTipologiaDomanda.Si_No )
+                            {
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="rai-radio">
+                                            <input type="radio" id="si-@dom.id" @(dom.obbligatoria ? "required" : "")
+                                                   data-text="SI" value="SI" name="dom-id-@dom.id" aria-checked="false">
+                                            <label for="si-@dom.id">SI</label>
+                                        </div>
+                                        <div class="rai-radio">
+                                            <input type="radio" id="no-@dom.id" @(dom.obbligatoria ? "required" : "")
+                                                   data-text="NO" value="NO" name="dom-id-@dom.id" aria-checked="false">
+                                            <label for="no-@dom.id">NO</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+
+                            if ( dom.id_tipologia == ( int ) myRai.Controllers.EnumTipologiaDomanda.LongText )
+                            {
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="form-group">
+                                            <textarea style="width:100%" id="textarea-@dom.id" @(dom.obbligatoria ? "required" : "")
+                                                      name="dom-id-@dom.id" class="form-control" rows="8"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+
+                            if ( dom.id_tipologia == ( int ) myRai.Controllers.EnumTipologiaDomanda.ShortText )
+                            {
+                                if ( dom.max_scelte != 999999 )
+                                {
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <div class="form-group">
+                                                <input type="text" style="width:100%" name="dom-id-@dom.id" id="tb-@dom.id" @(dom.obbligatoria ? "required" : "")
+                                                       class="form-control valid" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    ViewData.Add( "idDomanda" , dom.id );
+                                    @Html.Partial( "../Hotel/SelezioneHotel" , ( HotelModel ) ViewBag.Hotel , ViewData )
+                                }
+                            }
+
+                            if ( dom.id_tipologia == ( int ) myRai.Controllers.EnumTipologiaDomanda.Precompilato )
+                            {
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="form-group">
+                                            <input type="text" style="width:100%" name="dom-id-@dom.id" id="precomp-@dom.id"
+                                                   @(dom.obbligatoria ? "required" : "") data-precomp="@dom.MyRai_FormRispostePossibili.First().item_risposta"
+                                                   class="form-control tb-precomp" />
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            <div class="row">
+                                <div class="col-sm-12" style="width: 100%; border-bottom: solid 1px #eee; margin-bottom: 20px; margin-top: 20px"></div>
+                            </div>
+                        }
+                    </div>
+                }
+                <div id="sez-riep" class="tab-pane">
+                    <span class="text-primary nomesez"><b>Riepilogo</b></span>
+                    <br />
+                    <em>Rileggi le tue risposte e conferma tramite tasto 'Invia'</em>
+
+                    <div id="riepilogo">
+
+                        @*----------------- A RUNTIME ---------------*@
+
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="panel-footer">
+        <ul class="pager">
+            <li class="previous">
+                <a tabindex="0" href="#"><i class="fa fa-angle-left"></i>Precedente</a>
+            </li>
+            <li class="finish hidden pull-right">
+                <a tabindex="0" href="#">Invia</a>
+            </li>
+            <li class="next">
+                <a tabindex="0" href="#">Successivo <i class="fa fa-angle-right"></i></a>
+            </li>
+        </ul>
+    </div>
+</section>

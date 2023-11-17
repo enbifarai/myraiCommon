@@ -1,0 +1,114 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel.Gestionale
+@model List<MboScheda>
+
+@{
+    var persWOResp = Model.Count(x => x.IdPersonaResp == 0);
+}
+
+@*<div id="persWOResp" class="alert alert-warning" data-count="@persWOResp" style="@(persWOResp>0?"":"display:none;")">
+        <span><b>Schede senza responsabile</b></span><br />
+        <span style="font-size:12px;">Per alcune schede non è indicato il responsabile</span>
+    </div>*@
+
+<div class="form-group form-group-sm">
+    <div class="row push-5">
+        <div class="col-sm-6">
+            <label class="rai-caption">Nominativo</label>
+            <input type="text" class="form-control" data-search="elenco-master" data-search-multi="on" data-search-attr="nome" data-search-filter-type="StartsWith" />
+        </div>
+        <div class="col-sm-6">
+            <label class="rai-caption">Direzione</label>
+            <input type="text" class="form-control" data-search="elenco-master" data-search-multi="on" data-search-attr="dir" data-search-filter-type="StartsWith"  />
+        </div>
+    </div>
+    <div class="row form-button">
+        <div class="col-sm-12 text-right">
+            <a onclick="event.preventDefault();$('[data-search]').val(''); SearchOnChange();">Azzera filtri</a>
+            <button class="push-10-l btn rai-btn-small" onclick="event.preventDefault();SearchOnChange()">Cerca</button>
+        </div>
+    </div>
+</div>
+
+<div style="min-height:200px;max-height:450px;overflow:hidden; overflow-y:auto;">
+    <div class="row">
+        <div class="col-sm-12">
+            <table class="table rai-table rai-table-vcenter rai-table-panel">
+                <thead>
+                    <tr>
+                        <th>Nominativo</th>
+                        <th>Responsabile</th>
+                        <th>Importo</th>
+                        <th>&nbsp;</th>
+                    </tr>
+                </thead>
+
+
+                @foreach (var item in Model.Where(w=> w.PersValutato != null).OrderBy(x => x.PersValutato.Nominativo))
+                {
+                    <tr data-scheda-master="@item.Id" data-id-pers="@item.PersValutato.Id" data-id-resp="@(item.PersResp!=null?item.PersResp.Id:0)" data-imp="@item.ImportoTeorico" data-livello="@item.CodLivelloDir" data-hasOper="@item.HasOper"
+                        data-search="elenco-master" data-search-nome="@item.PersValutato.Nominativo" data-search-dir="@item.PersValutato.DesServizio">
+                        <td>
+                            @Html.ProfileWidget(item.PersValutato.Matricola, item.PersValutato.Nominativo, null, item.PersValutato.DesServizio)
+                        </td>
+                        <td>
+                            @if (item.PersResp != null)
+                            {
+                                <span>@item.PersResp.Cognome.TitleCase() @item.PersResp.Nome.TitleCase()</span>
+                                if (item.Interim)
+                                {
+                                    <br />
+                                    <span class="rai-label rai-label-warning">Interim</span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="rai-label rai-label-warning">Non assegnato</span>
+                            }
+                        </td>
+                        <td class="text-right">
+                            <span>
+                                @item.ImportoTeorico.ToString("N2") €
+                            </span>
+                        </td>
+                        <td class="text-right">
+                            <button class="btn rai-btn-small" onclick="MboModificaImportoScheda(this)">Modifica</button>
+                            <button class="btn btn-action-icon" onclick="MboEliminaScheda(this)"><i class="fa fa-trash"></i></button>
+                        </td>
+                    </tr>
+                }
+            </table>
+        </div>
+    </div>
+</div>
+
+
+<div class="row push-5-t">
+    <div class="col-sm-12 text-right">
+        <span class="text-italic rai-font-md-neutral" id="lblSearchLabel">@Model.Count() schede</span>
+    </div>
+</div>
+
+<script>
+    function SearchInit() {
+        $('input[data-search="elenco-master"]').val('');
+        SearchOnChange();
+    }
+
+    function SearchOnChange() {
+        RaiSearchDataMulti(this, 'elenco-master');
+        SearchShowFilter();
+    }
+    function SearchShowFilter() {
+        var tot = $('[data-search="elenco-master"][data-search-nome]').length;
+        var visible = $('[data-search="elenco-master"][data-search-nome][aria-hidden="false"]').length;
+
+        if (visible < tot) {
+            $('#lblSearchLabel').text(visible + " su " + tot+" schede");
+        } else {
+            $('#lblSearchLabel').text(tot + " schede");
+        }
+    }
+
+
+</script>

@@ -1,0 +1,84 @@
+﻿@model myRaiData.MyRai_FormDomande
+
+ <div class="row">
+        <div class="col-sm-12">
+            @{
+                int minLimit = 0;
+                int maxLimit = Model.max_scelte??0;   
+                string messageLimit = "";
+                if (minLimit>0 && maxLimit>0)
+                {
+                    messageLimit = "Indica da " + minLimit + " a " + maxLimit + " risposte";
+                }
+                else if (minLimit>0)
+                {
+                    messageLimit = "Indica almeno " + minLimit + " risposte";
+                }
+                else if (maxLimit>0)
+                {
+                    messageLimit = "Indica un massimo di " + maxLimit + " risposte";
+                }
+
+                var b = Model.MyRai_FormDomande1.FirstOrDefault();
+                var IsRating = (b != null && b.id_tipologia == (int)myRai.Controllers.EnumTipologiaDomanda
+                                                                                            .SlavePerRating_6);
+            }
+            <input tabindex="-1" type="text" id="matrix-@(Model.id)" style="visibility:hidden;position:absolute;top:-999px;" class="do-not-ignore" name="matrixQuestion" data-rule-checkradiolimit="true" data-msg-checkradiolimit="@messageLimit" data-min-select="@minLimit" data-max-select="@maxLimit"/>
+            <table style="width: 100%" class="table table-striped table-bordered">
+                <tr></tr>
+                @{
+
+                }
+
+                @if (IsRating)
+                {
+                    foreach (var item in Model.MyRai_FormDomande1.Where(x=>x.attiva).OrderBy(a=>a.progressivo))
+                    { 
+                         <tr>
+                            <td data-domanda-id="@item.id" data-domanda-tipologia="@item.id_tipologia"
+                                    class="testo-domanda">
+                                <span tabindex="0" style="width:100%">@item.titolo</span>
+                            </td>
+                            @foreach (var ris in item.MyRai_FormRispostePossibili)
+                            {
+                                <td class="rating-slave" style="width:40px;">
+                                    <div class="rai-radio">
+                                        <input type="radio" id="radio-@ris.id" @(item.obbligatoria ? "required" : "")
+                                                            data-text="@ris.item_risposta" name="dom-id-@item.id" value="risp-id-@ris.id" onclick="GestMatrixSlaveClick(this, @Model.id)" data-matrix-answer="true">
+                                        <label for="radio-@ris.id" >@ris.item_risposta</label>
+                                    </div>
+                                </td>
+                            }
+                        </tr>     
+                    }
+                }
+                else
+                { 
+                    <tr>
+                     @foreach (var item in Model.MyRai_FormDomande1.OrderBy(a=>a.progressivo))
+                     {
+                      <td style="vertical-align:top;width:@(Model.MyRai_FormDomande1.Count() > 0 ? (100 / Model.MyRai_FormDomande1.Count()).ToString() : "100")%">
+                            <div data-domanda-id="@item.id" data-domanda-tipologia="@item.id_tipologia"
+                                    class="testo-domanda">
+                                <b tabindex="0">@item.titolo</b>
+                            </div>
+
+                            @foreach (var ris in item.MyRai_FormRispostePossibili)
+                            {
+                                <div class="slave-dom">
+                                    <div class="rai-radio">
+                                        <input type="radio" id="radio-@ris.id" @(item.obbligatoria ? "required" : "")
+                                                            data-text="@ris.item_risposta" name="dom-id-@item.id" value="risp-id-@ris.id" onclick="GestMatrixSlaveClick(this, @Model.id)" >
+                                        <label for="radio-@ris.id" >@ris.item_risposta</label>
+                                    </div>
+                                </div>
+                            }
+                        </td>
+                     }
+                        </tr>
+                }
+               
+            </table>
+
+        </div>
+    </div>

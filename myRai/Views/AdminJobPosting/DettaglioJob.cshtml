@@ -1,0 +1,171 @@
+﻿@using myRaiHelper;
+@model myRaiCommonModel.AdminJobPosting.AdminDettaglioJobPostingVM
+
+@{
+    Layout = "~/Views/Shared/_Layout2.cshtml";
+}
+
+<section class="body">
+    @Html.Partial("../Shared/header2", new myRaiCommonModel.NotifichePopupModel(CommonHelper.GetCurrentUserMatricola()))
+    <div class="inner-wrapper">
+        @Html.Partial( "../Shared/sidebar" , myRaiHelper.UtenteHelper.getSidebarModel(  ) )
+        <section role="main" class="content-body">
+            <div class="row">
+                <div class="col-md-12">
+                    <section class="panel" id="">
+                        <header class="panel-heading">
+                            <div class="row">
+                                <h2 class="panel-title">Dettaglio JobPosting</h2>
+                            </div>
+                        </header>
+                        <div class="panel-body">
+                            <div id="JobPosting_Info_Container">
+                                <div class="row">
+                                    <div class="col-xs-2"><b>Produzione</b></div>
+                                    <div class="col-xs-10">@Model.JobPosting.produzione</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-xs-2"><b>Professionalità</b></div>
+                                    <div class="col-xs-10">@Model.JobPosting.professionalita</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-xs-2"><b>Luogo</b></div>
+                                    <div class="col-xs-10">@Model.JobPosting.luogo</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-xs-2"><b>Scadenza</b></div>
+
+                                    @{
+                                        DateTime? dtScadenza = null;
+                                        string scadenza = String.Empty;
+
+                                        try
+                                        {
+                                            string sgg, smm, saaaa, shh, smin, ssec;
+                                            int gg, mm, aaaa, hh, min, sec;
+
+                                            if ( !String.IsNullOrEmpty( Model.JobPosting.scadenza ) )
+                                            {
+                                                saaaa = Model.JobPosting.scadenza.Substring( 0 , 4 );
+                                                smm = Model.JobPosting.scadenza.Substring( 4 , 2 );
+                                                sgg = Model.JobPosting.scadenza.Substring( 6 , 2 );
+
+                                                shh = Model.JobPosting.scadenza.Substring( 9 , 2 );
+                                                smin = Model.JobPosting.scadenza.Substring( 11 , 2 );
+                                                ssec = Model.JobPosting.scadenza.Substring( 13 , 2 );
+
+                                                aaaa = int.Parse( saaaa );
+                                                mm = int.Parse( smm );
+                                                gg = int.Parse( sgg );
+                                                hh = int.Parse( shh );
+                                                min = int.Parse( smin );
+                                                sec = int.Parse( ssec );
+
+                                                dtScadenza = new DateTime( aaaa , mm , gg , hh , min , sec );
+
+                                                scadenza = dtScadenza.Value.ToString( "dd/MM/yyyy HH:mm:ss" );
+                                            }
+                                        }
+                                        catch ( Exception ex )
+                                        {
+                                            scadenza = String.Empty;
+                                        }
+                                    }
+                                    <div class="col-xs-10">@scadenza</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-xs-2"></div>
+                                    <div class="col-xs-10 text-right">
+                                        @{
+                                            if ( Model.Files != null && Model.Files.Any( ) )
+                                            {
+                                                <a class="btn btn-primary text-right" href="@Url.Action( "DownloadZip", "AdminJobPosting", new { idJob = Model.JobPosting.ID } )" target="_blank" title="Download zip">
+                                                    Scarica in formato zip <i class="fa fa-file-zip-o"></i>
+                                                </a>
+                                            }
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <br />
+                            <div id="JobPosting_Files_Container">
+                                <div class="table-responsive">
+                                    <table class="js-table-sections table table-hover" id="">
+                                        <thead>
+                                            <tr>
+                                                <td class="col-md-4 text-bold">Nominativo</td>
+                                                <td class="col-md-4 text-bold">Nome file</td>
+                                                <td class="col-md-2 text-bold">Data creazione</td>
+                                                <td class="col-md-2 text-bold">Azioni</td>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @{
+                                                if ( Model.Files == null || !Model.Files.Any( ) )
+                                                {
+                                                    <tr>
+                                                        <td colspan="5">
+                                                            @Html.Partial( "~/Views/Shared/_NoDati.cshtml" )
+                                                        </td>
+                                                    </tr>
+                                                }
+                                                else
+                                                {
+                                                    foreach ( var itm in Model.Files )
+                                                    {
+                                                        <tr id="file_@itm.Id">
+                                                            <td>
+                                                                <p class="">@itm.Nominativo</p>
+                                                            </td>
+                                                            <td>
+                                                                <p class="">@itm.Files.Name</p>
+                                                            </td>
+                                                            <td>
+                                                                <p class="">@itm.Files.CreationDate.ToString( "dd/MM/yyyy" )</p>
+                                                            </td>
+                                                            <td>
+                                                                <a href="#" class="fa fa-search" onclick="LoadJobCV(@(itm.Files.Id));" title="Visualizza"></a>
+                                                                <a class="fa fa-download" href="@Url.Action( "Download", "AdminJobPosting", new { idFile = itm.Files.Id } )" target="_blank" title="Download"></a>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                }
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </section>
+    </div>
+</section>
+
+<div class="modal right fade" id="modal-cvpdf" role="dialog">
+    <div class="modal-dialog">
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4><span class="fa fa-address-card"></span> Curriculum Vitae</h4>
+            </div>
+            <div class="modal-body" style="padding: 1px; height:90%">
+                <iframe id="CVFrame" style="width:100%; height:100%;" src=""/>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section afterjs { 
+<script type="text/javascript">
+
+    function LoadJobCV( idFile )
+    {
+        $( "#CVFrame" ).attr( "src", '@Url.Action("ShowCV", "AdminJobPosting")?idFile=' + idFile );
+        $( '#modal-cvpdf' ).modal( 'show' );
+    }
+</script>
+}

@@ -1,0 +1,73 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel.ess;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@{
+    string icon = "";
+    string message = "";
+    if (Model.daleggere == 0)
+    {
+        icon = "icons icon-flag";
+        message = "Hai letto tutti i tuoi documenti";
+    }
+    else if (Model.daleggere == 1)
+    {
+        icon = "icons icon-doc";
+        message = "Hai un documento da leggere";
+    }
+    else if (Model.daleggere > 1)
+    {
+        icon = "icons icon-docs";
+        message = "Hai ancora <b>" + Model.daleggere.ToString() + "</b> documenti da leggere";
+    }
+}
+
+@if (Model.daleggere == 0)
+{
+    @Html.RenderWidget(myRaiHelper.WidgetType.Normal, "Da leggere", icon, message, mainTextType: myRaiHelper.WidgetTextType.Html)
+}
+else
+{
+    @Html.RenderWidget(myRaiHelper.WidgetType.Normal, "Da leggere", icon, message, action: new myRaiHelper.ActionTemplate()
+                        {
+                            OnClick = "javascript:vediDocumentiNonLetti('DocumentiAmministrativi');void(0);",
+                            Text = "Vedi"
+                        })
+}
+
+
+<section class="panel">
+    <header class="panel-heading">
+        <h2 class="panel-title">
+            Tipologia
+        </h2>
+    </header>
+    <div class="panel-body">
+        <div class="row"></div>
+        <div class="widget-summary">
+            <table id="tabresoconti2" class="js-table-sections table table-hover">
+                <tbody class="js-table-sections-header">
+                    @{string dataco = "";
+                        string datacont = "";
+                        int pr = 0;
+                        List<myRai.it.rai.servizi.hrpaga.ListaDatiDocumenti> cedoliniAnnuali = null;}
+                    @foreach (IGrouping<string, myRai.it.rai.servizi.hrpaga.ListaDatiDocumenti> cedoliniRaggruppati in Model.elencoDocumentiperTipo)
+                    {
+                        cedoliniAnnuali = cedoliniRaggruppati.ToList();
+                        <tr>
+                            <td style="width:90%;">
+                                <a href="javascript:vediDocumenti('@DocumentiPersonaliManager.GettipofromDesc(cedoliniAnnuali[0].DescrittivaTipoDoc.ToString().Trim())','DocumentiAmministrativi');void(0);">
+                                    @cedoliniRaggruppati.Key
+                                </a>
+                            </td>
+                            <td style="width:10%;">
+                                <a href="javascript:vediDocumenti('@DocumentiPersonaliManager.GettipofromDesc(cedoliniAnnuali[0].DescrittivaTipoDoc.ToString().Trim())','DocumentiAmministrativi');void(0);">  <span style="margin-left: 5px;margin-top: -4px;" class="badge bg-primary">@cedoliniAnnuali.Count().ToString()</span></a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>

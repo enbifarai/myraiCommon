@@ -1,0 +1,353 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model ModelDash
+
+@{
+    ViewBag.Title = "Scrivania";
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    string[] mess = CommonHelper.GetParametri<string>(EnumParametriSistema.MessaggioChiusura);
+}
+<script src="@Url.Content("~/assets/js/myRaiV2.js")"></script>
+
+
+
+<section role="main" class="content-body">
+    @{
+        if (UtenteHelper.IsAbilitatoGapp())
+        {
+            int TotEvid = (UtenteHelper.GetQuadratura() == Quadratura.Settimanale ? @Model.TotaleEvidenzeDaGiustificareSoloAssIng : @Model.TotaleEvidenzeDaGiustificare);
+        }
+    }
+    <main id="main-container">
+        <div class="content ">
+                    <div class="rai-op-nav" id="nav-scrivania" style="margin-top:-20px;">
+                        <div class="row">
+                            <div class="col-xs-12">
+                                <div class="rai-op-breadcrumb" style="display: none;">
+                                    <span data-op-path="main" onclick="RaiOPGotoMain('nav-scrivania')">Scrivania</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rai-op-main">
+                            @*left-top-20*@
+            <div class="row">
+                @{
+                    bool GappChiuso = false;
+                    bool closed = true;
+                    string[] valori = CommonHelper.GetParametri<string>(EnumParametriSistema.OrariGapp);
+                    if ((Convert.ToInt32(DateTime.Now.Hour.ToString() + DateTime.Now.Minute.ToString().PadLeft(2, '0')) > Convert.ToInt32(valori[0]))
+                   && (Convert.ToInt32(DateTime.Now.Hour.ToString() + DateTime.Now.Minute.ToString().PadLeft(2, '0')) < Convert.ToInt32(valori[1])))
+                    {
+                        closed = false;
+                    }
+                                    //Se il sito è chiuso, non deve fare il controllo sull'anagrafica
+                }
+                                @if (!closed && (!myRai.Models.Utente.IsAnagraficaFromCICS() || String.IsNullOrWhiteSpace(myRai.Models.Utente.SedeGapp())))
+                                {
+                                    @Html.Partial("_gapp_nonabilitato")
+                                    GappChiuso = true;
+                                }
+                                else if (myRai.Models.Utente.GappChiuso() || closed)
+                {
+                    @Html.Partial("_cics_chiuso")
+                    GappChiuso = true;
+                }
+            </div>
+            <div class="row">
+                @{
+                    bool visibileana = @Model.SezioniVisibili.Where(x => x.Sigla_Sezione.TrimEnd() == "ANAG").Count() > 0;
+                }
+
+                @if (!GappChiuso)
+                {
+                    if (!String.IsNullOrWhiteSpace(Model.MessaggioHome))
+                    {
+                                <div class="row" style="">
+                                    <div class="col-sm-12">
+                            @Html.Raw(Model.MessaggioHome)
+                        </div>
+                                </div>
+                    }
+                                <div class="col-lg-8 col-sm-12">
+                                    @if ( Request.Browser.IsMobileDevice )
+                                    {
+                                        bool isFlat = CommonHelper.GetParametro<bool>( EnumParametriSistema.AbilitaSchermataFlat );
+                                        if ( !isFlat )
+                                        {
+                                            var smartWorkingWidget = new WidgetModuloBox( )
+                                            {
+                                                WidgetId = "WdgSmartWorking" ,
+                                                Anno = DateTime.Now.Year ,
+                                                GiaScelto = false ,
+                                                HaDiritto = true ,
+                                                Titolo = "" ,
+                                                Scelta = string.Empty ,
+                                                DataCompilazione = null ,
+                                                Bottoni = null
+                                            };
+                                            <div class="row">
+                                                <div id="ContainerDiv_@(smartWorkingWidget.WidgetId)" style="width: 100%;">
+                                                    @Html.Partial( "subpartial/boxModulo_skeleton" , smartWorkingWidget )
+                                                </div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div id="Bonus100ContainerDiv_Home">
+                                                    @Html.Partial( "subpartial/boxBonus100_skeleton" )
+                                                </div>
+                                            </div>
+
+                                                var prorogaSWWidget = new WidgetModuloBox()
+                                                {
+                                                    WidgetId = "WdgProrogaSmartWorking",
+                                                    Anno = DateTime.Now.Year,
+                                                    GiaScelto = false,
+                                                    HaDiritto = true,
+                                                    Titolo = "",
+                                                    Scelta = string.Empty,
+                                                    DataCompilazione = null,
+                                                    Bottoni = null,
+                                                    IsPreview = true
+                                                };
+
+                                                <div id="ContainerDiv_@(prorogaSWWidget.WidgetId)">
+                                                    @Html.Partial("subpartial/boxModulo_skeleton", prorogaSWWidget)
+                                                </div>
+
+                                                var rinunciaWidget = new WidgetModuloBox()
+                                                {
+                                                    WidgetId = "WdgRinuncia2020",
+                                                    Anno = DateTime.Now.Year,
+                                                    GiaScelto = false,
+                                                    HaDiritto = true,
+                                                    Titolo = "",
+                                                    Scelta = string.Empty,
+                                                    DataCompilazione = null,
+                                                    Bottoni = null,
+                                                    IsPreview = true
+                                                };
+
+                                                <div id="ContainerDiv_@(rinunciaWidget.WidgetId)">
+                                                    @Html.Partial("subpartial/boxModulo", rinunciaWidget)
+                                                </div>
+
+
+
+                                                var incentivazione012021Widget = new WidgetModuloBox()
+                                                {
+                                                    WidgetId = "WdgIncentivazione012021",
+                                                    Anno = DateTime.Now.Year,
+                                                    GiaScelto = false,
+                                                    HaDiritto = true,
+                                                    Titolo = "",
+                                                    Scelta = string.Empty,
+                                                    DataCompilazione = null,
+                                                    Bottoni = null,
+                                                    IsPreview = true
+                                                };
+
+                                                <div id="ContainerDiv_@(incentivazione012021Widget.WidgetId)">
+                                                    @Html.Partial("subpartial/boxModulo", incentivazione012021Widget)
+                                                </div>
+
+                                        }
+                                    }
+
+                                    <div class="row">
+                                        <div class="rai panel-card-container">
+                            @Html.Partial("Index_section1_parallel_load")
+                        </div>
+                                    </div>
+
+                                    @{
+                                        bool schermataFlat = CommonHelper.GetParametro<bool>( EnumParametriSistema.AbilitaSchermataFlat );
+
+                                        if ( !schermataFlat )
+                        {
+                                            if ( Model.SezioniVisibili.Where( x => x.Sigla_Sezione.TrimEnd( ) == "FERIE" ).Count( ) > 0 )
+                            {
+                                                <div class="row">
+                                                    @Html.Partial( "Index_section2" , new myRaiCommonModel.SectionMetersModel( ) { IsPreview = true } )
+                                                </div>
+                            }
+                        }
+                                    }
+
+                        <div class="row">
+                            @Html.Partial("Index_section4", new SituazioniEAnagraficaModel() { IsPreview = true, GappClosed = GappChiuso, Visibile = visibileana, Boxes = new List<BoxSituazioneModel>() { new BoxSituazioneModel() { Visibile = @Model.SezioniVisibili.Where(x => x.Sigla_Sezione.TrimEnd() == "TRASF").Count() > 0 }, new BoxSituazioneModel() { Visibile = @Model.SezioniVisibili.Where(x => x.Sigla_Sezione.TrimEnd() == "DEB").Count() > 0 }, new BoxSituazioneModel() { Visibile = @Model.SezioniVisibili.Where(x => x.Sigla_Sezione.TrimEnd() == "SIT?").Count() > 0 } } })
+                                    </div>
+                        </div>
+                            <div class="col-lg-4 col-sm-12">
+                                <div class="row">
+                                    @Html.Partial( "Index_section3" , new myRaiCommonModel.SectionDayModel( ) { IsPreview = true , GappClosed = GappChiuso , AttivitaVisibile = @Model.SezioniVisibili.Where( x => x.Sigla_Sezione.TrimEnd( ) == "ATTSET" ).Count( ) > 0 , BustaPagaVisibile = @Model.SezioniVisibili.Where( x => x.Sigla_Sezione.TrimEnd( ) == "BUSTA" ).Count( ) > 0 , CoseDaFareVisibile = @Model.SezioniVisibili.Where( x => x.Sigla_Sezione.TrimEnd( ) == "DAFARE" ).Count( ) > 0 , NotificaVisibile = @Model.SezioniVisibili.Where( x => x.Sigla_Sezione.TrimEnd( ) == "NOTIF" ).Count( ) > 0 , OrarioVisibile = @Model.SezioniVisibili.Where( x => x.Sigla_Sezione.TrimEnd( ) == "OGGI" ).Count( ) > 0 , TimbraturaVisibile = @Model.SezioniVisibili.Where( x => x.Sigla_Sezione.TrimEnd( ) == "TIMB" ).Count( ) > 0 } )
+                    </div>
+                    </div>
+                }
+                else
+                {
+                            <div class="col-sm-8">
+                        @Html.Partial("Index_section4", new SituazioniEAnagraficaModel() { IsPreview = true, GappClosed = GappChiuso })
+                    </div>
+                            <div class="col-sm-4">
+                        <div class="row">
+                            @Html.Partial("Index_section3", new SectionDayModel() { IsPreview = true, GappClosed = GappChiuso })
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+                        <div class="rai-op-sub" style="display:none;">
+
+                        </div>
+                    </div>
+                </div>
+
+
+    </main>
+    <!-- end: page -->
+</section>
+
+@Html.Partial("../Richieste/_motivoRifiuto")
+@Html.Partial("../Richieste/_nuovarichiesta", Model.Raggruppamenti)
+@Html.Partial("../Richieste/_popupInizialePreSelezione")
+
+@Html.RenderModal("valutazione-ext", myRaiHelper.ModalPosition.Right, myRaiHelper.ModalSize.Half)
+@Html.RenderModal("valutazione")
+@Html.RenderModal("mbo-half", myRaiHelper.ModalPosition.Right, myRaiHelper.ModalSize.Half)
+@Html.RenderModal("gest-half", myRaiHelper.ModalPosition.Right, myRaiHelper.ModalSize.Half)
+
+<div class="modal fade" id="modal-news" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false" style="display: none;">
+</div>
+
+
+
+
+@section afterjs
+{
+    <script>
+
+    @if ( Request.Browser.IsMobileDevice )
+    {
+        bool isFlat = CommonHelper.GetParametro<bool>( EnumParametriSistema.AbilitaSchermataFlat );
+        if (!isFlat)
+        {
+            <text>
+                $(function () {
+                    $('#ContainerDiv_WdgSmartWorking').load('/Scrivania/GetWidgetSW2020');
+                    $('#Bonus100ContainerDiv_Home').load('/Scrivania/GetWidgetBonus100');
+                    $('#ContainerDiv_WdgProrogaSmartWorking').load('/Scrivania/GetWidgetProrogaSW');
+                    $('#ContainerDiv_WdgRinuncia2020').load('/Scrivania/GetWidgetRinuncia2020');
+                });
+            </text>
+
+        }
+    }
+
+        function setAletWidgetHeight() {
+            var maxSize = 0;
+
+            $('section[class="rai panel panel-card"]').find('.panel-card-main').each(function () {
+                maxSize = (maxSize < $(this).height() ? $(this).height() : maxSize);
+            });
+
+            $('section[class="rai panel panel-card"]').find('.panel-card-main').each(function () {
+                $(this).height(maxSize);
+            });
+        }
+
+        $(document).ready(function () {
+            setAletWidgetHeight();
+
+            $(window).resize(function () {
+                setAletWidgetHeight();
+            });
+
+            var color = "#0088CC";
+
+            if (document.getElementsByClassName("bg-cdf").length) {
+                var style = window.getComputedStyle(document.getElementsByClassName("bg-cdf")[0], null);
+                if (style.length) {
+                    var rgb = style["background-color"];
+                    if (rgb.length) {
+                        var color = rgb.replace('rgb(', '').replace(')', '').split(',');
+
+                        var r, g, b;
+                        r = parseInt(color[0].trim());
+                        g = parseInt(color[1].trim());
+                        b = parseInt(color[2].trim());
+
+                        color = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+                    }
+                }
+            }
+            $('.chart').easyPieChart({
+                "barColor": color, "delay": 300, scaleColor: false, lineWidth: 7, size: 125
+            });
+            $('.chart-small').easyPieChart({
+                "barColor": color, "delay": 300, scaleColor: false, lineWidth: 4, size: 55
+            });
+            NewsBanner();
+        });
+        popupponeScrollData();
+        [
+            { id: "#Widget1", url: "/scrivania/Ajax_GetWidgetGiornateInEvidenza" },
+            { id: "#Widget2", url: "/scrivania/Ajax_GetWidgetQuadratura" },
+        { id: "#Widget3", url: "/scrivania/Ajax_GetWidgetDaApprovare" },
+        { id: "#Widget4", url: "/scrivania/Ajax_GetWidgetDaFirmare" },
+        { id: "#Widget5", url: "/scrivania/Ajax_GetWidgetApprovatoreProduzione" }
+        ].forEach(function (item, index) {
+                    if ($(item.id).length) {
+                $.ajax({
+                            url: item.url,
+                    type: "GET",
+                    dataType: "html",
+                    data: {},
+                    async: true,
+                    success: function (data) {
+                                var t = $(item.id);
+                        $(t).replaceWith(data);
+                                if (item.id == "#Widget3") AggiornaRes();
+
+                                if (item.id = "#Widget1") {
+                            $("#giornateinevidenza").focus();
+                                    console.log("fatto");
+                                }
+                            }
+                        });
+                    }
+                });
+
+        function AggiornaRes()
+        {
+            $("#counter-appr").addClass("approv-pulse");
+
+            $.ajax({
+                        url: '/scrivania/Ajax_GetResocontiDaApprovare',
+                type: "GET",
+                dataType: "json",
+                data: {},
+                success: function (data) {
+                    $("#wait-res").hide();
+                    $("#counter-appr").removeClass("approv-pulse");
+                            if (data.totale > 0) {
+                                var to = parseInt($("#counter-appr").html());
+                                to += data.totale;
+                        $("#counter-appr").html(to.toString());
+                            }
+                        },
+                error: function () {
+                    $("#wait-res").hide();
+                    $("#counter-appr").removeClass("approv-pulse");
+                        }
+                    });
+            }
+    </script>
+}
+
+<div id="pg-visible-xs" class="visible-xs"></div>
+<div id="pg-visible-sm" class="visible-sm"></div>
+<div id="pg-visible-md" class="visible-md"></div>
+<div id="pg-visible-lg" class="visible-lg"></div>

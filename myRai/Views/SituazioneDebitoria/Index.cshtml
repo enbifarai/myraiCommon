@@ -1,0 +1,70 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel.SituazioneDebitoria.ESS;
+@using MVCProject.Custom_Helpers;
+
+@model SituazioneDebitoriaVM
+
+@{
+    ViewBag.Title = "Situazione Debitoria";
+    Layout = "~/Views/Shared/_LayoutContent.cshtml";
+}
+
+@{
+    DateTime dataCorrente = Model.CurrentDate;
+}
+
+<section role="main" class="content-body">
+    <div class="row">
+        <div class="col-md-9">
+            <section class="rai panel" id="elencodebiti">
+                <header class="panel-heading">
+                    <h2 class="panel-title">Situazione debitoria</h2>
+                </header>
+                <div class="panel-body no-padding" id="tblSituazioneDebitoriaContainer">
+                    @Html.AsyncPartial("SituazioneDebitoria", "LoadTableDebiti", "~/Views/SituazioneDebitoria/subpartial/TblSituazioneDebitoria_skeleton.cshtml", TempData)
+                </div>
+            </section>
+        </div>
+        <div class="col-md-3">
+            <section class="rai panel" id="panelRicercaDebito">
+                <header class="panel-heading">
+                    <h2 class="panel-title">Riepilogo</h2>
+                </header>
+                <div class="panel-body">
+                    @Html.AsyncPartial("SituazioneDebitoria", "RiepilogoSpese", "~/Views/SituazioneDebitoria/subpartial/SpesaMensile_skeleton.cshtml", TempData, "initChart();")
+                </div>
+            </section>
+        </div>
+    </div>
+</section>
+
+@section afterjs {
+    @Html.Raw(TempData["script"])
+
+    <script type="text/javascript">
+        function initChart() {
+            var color = "#0088CC";
+
+            if (document.getElementsByClassName("bg-cdf").length) {
+                var style = window.getComputedStyle(document.getElementsByClassName("bg-cdf")[0], null);
+                if (style.length) {
+                    var rgb = style["background-color"];
+                    if (rgb.length) {
+                        var color = rgb.replace('rgb(', '').replace(')', '').split(',');
+
+                        var r, g, b;
+                        r = parseInt(color[0].trim());
+                        g = parseInt(color[1].trim());
+                        b = parseInt(color[2].trim());
+
+                        color = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+                    }
+                }
+            }
+
+            $('.chart').easyPieChart({
+                "barColor": color, "delay": 300, scaleColor: false, lineWidth: 7, size: 125
+            });
+        }
+    </script>
+}

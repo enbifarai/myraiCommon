@@ -1,0 +1,306 @@
+﻿@using myRaiCommonModel
+@using myRaiHelper
+@model AnagraficaRedditi
+
+<style>
+    .table-cedo td {
+        padding: 4px 8px !important;
+    }
+</style>
+
+@{
+    int maxAnni = 10;
+
+    decimal lastImport = 25000;
+    List<RedditoModel> redditi = null;
+    var db = new myRaiData.Incentivi.IncentiviEntities();
+    var recAbil = db.XR_HRIS_PARAM.FirstOrDefault(x => x.COD_PARAM == "DatiSensibiliAnagrafica");
+    if (recAbil != null && (recAbil.COD_VALUE1 == "TRUE" || (recAbil.COD_VALUE1 == "LIMITED" && recAbil.COD_VALUE2.Contains(CommonHelper.GetCurrentRealUsername()))))
+    {
+        redditi = Model.Redditi;
+    }
+    else
+    {
+        redditi = new List<RedditoModel>();
+
+        for (int i = 0; i < maxAnni; i++)
+        {
+            RedditoModel reddito = new RedditoModel()
+            {
+                Anno = DateTime.Today.AddYears(-i).Year,
+                Ral_media = i % 2 == 0 ? lastImport - (123 * i) : lastImport
+            };
+            lastImport = reddito.Ral_media.Value;
+
+            redditi.Add(reddito);
+        }
+    }
+}
+
+
+@if (redditi.Any())
+{
+    <div class="row push-10">
+        <div class="col-sm-12">
+            <span class="rai-font-sm text-italic">Ultimi 10 anni</span>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-12">
+            <div id="chart-reddito" style="width:100%;height:200px;" class="rai-chart">
+                @*...CHART*@
+            </div>
+        </div>
+    </div>
+    <div id="tooltip-chart" class="tooltip " style="position:fixed;"><div class="tooltip-inner"></div></div>
+}
+else
+{
+    @*<div class="row push-10-t">
+        <div class="col-sm-12 text-center">
+            <span class="rai-font-md-neutral">Non ci sono dati da visualizzare</span>
+        </div>
+    </div>*@
+}
+
+<div class="row push-20-t">
+
+</div>
+
+@using (Html.BeginBlock(BlockType.ContentTable, "Retribuzione mensile"))
+{
+    if (Model.DatiTE.ImportiMensili != null)
+    {
+    <div class="row ">
+        <div class="col-sm-12">
+            <table class="table rai-table rai-table-vcenter rai-table-borderless table-striped table-cedo">
+                <thead>
+                    <tr>
+                        <th>Totale</th>
+                        <th class="text-right"><span class="rai-font-md-bold">@Model.DatiTE.ImportiMensili.stipendio_mensile.ToString("N2") €</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Minimo</td>
+                        <td class="text-right">@Model.DatiTE.ImportiMensili.minimo.ToString("N2") €</td>
+                    </tr>
+                    @if (Model.DatiTE.ImportiMensili.aumen_biennali > 0)
+                    {
+                        <tr>
+                            <td>Aumenti biennali</td>
+                            <td class="text-right">@Model.DatiTE.ImportiMensili.aumen_biennali.ToString("N2") €</td>
+                        </tr>
+                    }
+                    @if (Model.DatiTE.ImportiMensili.aum_25_anni > 0)
+                    {
+                        <tr>
+                            <td>Aumento per 25° anno</td>
+                            <td class="text-right">@Model.DatiTE.ImportiMensili.aum_25_anni.ToString("N2") €</td>
+                        </tr>
+                    }
+                    @if (Model.DatiTE.ImportiMensili.impo_aum_merito > 0)
+                    {
+                        <tr>
+                            <td>Aumenti di merito</td>
+                            <td class="text-right">@Model.DatiTE.ImportiMensili.impo_aum_merito.ToString("N2") €</td>
+                        </tr>
+                    }
+                    @if (Model.DatiTE.ImportiMensili.impo_merito_ult_co > 0)
+                    {
+                        <tr>
+                            <td>Aumenti di merito ult. conc.</td>
+                            <td class="text-right">@Model.DatiTE.ImportiMensili.impo_merito_ult_co.ToString("N2") €</td>
+                        </tr>
+                    }
+                    @if (Model.DatiTE.ImportiMensili.impo_merito_gar_co > 0)
+                    {
+                        <tr>
+                            <td>Aumenti di merito gar. contr.</td>
+                            <td class="text-right">@Model.DatiTE.ImportiMensili.impo_merito_gar_co.ToString("N2") €</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    }
+    else
+    {
+        <div class="row">
+            @Html.Partial("_NoDatiDiv")
+        </div>
+    }
+}
+
+@using (Html.BeginBlock(BlockType.ContentTable, "Indennità"))
+{
+    <div class="row">
+        <div class="col-sm-12">
+            <table class="table rai-table rai-table-vcenter  rai-table-borderless table-striped table-cedo">
+                <thead>
+                    <tr>
+                        <th>Totale</th>
+                        <th>Decorrenza</th>
+                        <th class="text-right"><span class="rai-font-md-bold">@Model.DatiTE.Indennita.Sum(x => x.importo_inden).ToString("N2") €</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.DatiTE.Indennita)
+                    {
+                        <tr>
+                            <td>@item.cod_indennita - @item.desc_indennita.UpperFirst()</td>
+                            <td>@item.DataInizio.ToString("dd/MM/yyyy")</td>
+                            <td class="text-right">@item.importo_inden.ToString("N2") €</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@using (Html.BeginBlock(BlockType.ContentTable, "Retribuzione annuale"))
+{
+    if (Model.DatiTE.Annualita != null)
+    {
+    <div class="row">
+        <div class="col-sm-12">
+            <table class="table rai-table rai-table-vcenter  rai-table-borderless table-striped table-cedo">
+                <thead>
+                    <tr>
+                        <th>Retribuzione fissa teorica</th>
+                        <th class="text-right"><span class="rai-font-md-bold">@Model.DatiTE.Annualita.tot_retrib_annua.ToString("N2") €</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Stipendio X 12</td>
+                        <td class="text-right">@((Model.DatiTE.Annualita.tot_retrib_annua - Model.DatiTE.Annualita.xiii_mensilita - Model.DatiTE.Annualita.xiv_mensilita - Model.DatiTE.Annualita.premio_produzione).ToString("N2")) €</td>
+                    </tr>
+                    <tr>
+                        <td>XIII mensilità</td>
+                        <td class="text-right">@Model.DatiTE.Annualita.xiii_mensilita.ToString("N2") €</td>
+                    </tr>
+                    <tr>
+                        <td>XIV mensilità</td>
+                        <td class="text-right">@Model.DatiTE.Annualita.xiv_mensilita.ToString("N2") €</td>
+                    </tr>
+                    <tr>
+                        <td>Premio prod.</td>
+                        <td class="text-right">@Model.DatiTE.Annualita.premio_produzione.ToString("N2") €</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    }
+    else
+    {
+        <div class="row">
+            @Html.Partial("_NoDatiDiv")
+        </div>
+    }
+}
+
+@using (Html.BeginBlock(BlockType.ContentTable, "Variabili"))
+{
+    <div class="row">
+        <div class="col-sm-12">
+            <table class="table rai-table rai-table-vcenter  rai-table-borderless table-striped table-cedo">
+                <thead>
+                    <tr>
+                        <th>Totale</th>
+                        <th class="text-right"><span class="rai-font-md-bold">@Model.DatiTE.Variabili.Sum(x => x.Importo).ToString("N2") €</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.DatiTE.Variabili != null && Model.DatiTE.Variabili.Any())
+                    {
+                        foreach (var item in Model.DatiTE.Variabili)
+                        {
+                            <tr>
+                                <td>@item.desc_voce_cedolino</td>
+                                <td class="text-right">@item.Importo.ToString("N2") €</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            @Html.Partial("_NoDati")
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@if (redditi.Any())
+{
+    string vociReperibilità = "26D,280,262";
+
+    var tmp = redditi.OrderByDescending(x => x.Anno).Take(10).OrderBy(x => x.Anno);
+    var serieMagg = String.Join(",", tmp.Select(x => Convert.ToInt32(x.Maggiorazioni.Where(z => !vociReperibilità.Contains(z.cod_voce_cedolino)).Sum(y => y.Importo))));
+    var serieReperibilita = String.Join(",", tmp.Select(x => Convert.ToInt32(x.Maggiorazioni.Where(z => vociReperibilità.Contains(z.cod_voce_cedolino)).Sum(y => y.Importo))));
+
+    //var tmp = Model.Redditi.OrderBy(x => x.Anno);
+    var cc = "26D%''280%''262%' ";
+
+    <script type="text/javascript">
+    var labels = ['@Html.Raw(String.Join("','", tmp.Select(x => x.Anno)))'];
+    var serieRal = [@String.Join(",", tmp.Select(x => Convert.ToInt32(x.Ral_media)))];
+    var serieProvv = [];
+    var serieMagg = [@serieMagg];
+    var serieRep = [@serieReperibilita];
+
+    var chart2 = new Chartist.Line('#chart-reddito', {
+        labels: labels,
+        series: [{ name: 'Ral', data: serieRal }]
+        }, {
+            fullWidth: true,
+            chartPadding: { right: 10 },
+            series: {
+                'Ral': {
+                    lineSmooth: Chartist.Interpolation.none({
+                        fillHoles: false
+                    }),
+                    showPoint: true
+                }
+            }
+        }
+    );
+
+    var $chart = $('#chart-reddito');
+
+    $chart.on('mouseenter', '.ct-point', function () {
+            var $point = $(this),
+                value = $point.attr('ct:value'),
+                seriesName = $point.parent().attr('ct:series-name');
+
+            var index = $point.parent().find('.ct-point').index($point);
+
+            var tooltipContent = '<table class="table rai-table rai-table-vcenter">' +
+                '<tr><td class="text-left">RAL</td><td class="text-right">' + serieRal[index] + ' €</td></tr>' +
+                (serieMagg[index] > 0 ? '<tr><td class="text-left">Variabili</td><td class="text-right">' + serieMagg[index] + ' €</td></tr>' : '') +
+                (serieRep[index] > 0 ? '<tr><td class="text-left">Reperibilità</td><td class="text-right">' + serieRep[index] + ' €</td></tr>' : '') +
+                '</table>';
+
+            $('#tooltip-chart .tooltip-inner').html(tooltipContent);
+            $('#tooltip-chart').addClass('in');
+        });
+
+    $chart.on('mouseleave', '.ct-point', function () {
+        $('#tooltip-chart').removeClass('in');
+        });
+
+    $chart.on('mousemove', function (event) {
+            $('#tooltip-chart').css({
+            left: event.clientX + 2,
+                top: event.clientY + 2
+            });
+        });
+
+    </script>
+}

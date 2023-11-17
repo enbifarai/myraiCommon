@@ -1,0 +1,216 @@
+﻿@using myRaiCommonModel;
+@using myRaiHelper;
+@model myRaiCommonModel.ElencoPianiFormativi
+
+@{
+    if (Model == null)
+    {
+
+        Html.RenderPartial("~/Views/Shared/_NoDati.cshtml");
+    }
+    else
+    {
+
+        if (Model.tab.IsEmpty() || Model.tab.ToLower() == "p")
+        {
+            if (Model.pianificati != null && Model.pianificati.Any())
+            {
+                foreach (var item in Model.pianificati)
+                {
+                    <tr style="cursor: pointer;" data-target="pianificati">
+                        <td>
+                            <span class="rai-font-md-bold">@item.Matricola</span>
+                        </td>
+                        <td>
+                            <span class="rai-font-md">@item.Nominativo.TitleCase()</span>
+                        </td>
+                        <td>
+
+                            <span class="rai-font-md">
+                                @if (item.DataInizioApprendistato.HasValue)
+                                {
+                                    @item.DataInizioApprendistato.Value.ToShortDateString()
+                                }
+                            </span>
+
+                        </td>
+                        <td>
+                            <span class="rai-font-md">
+                                @if (item.DataInizioContratto.HasValue)
+                                {
+                                    @item.DataInizioContratto.Value.ToShortDateString()
+                                }
+                            </span>
+                        </td>
+                        <td class="text-right">
+
+                            @if (item.Cessato)
+                            {
+                                <button id="modifica-imm" class="btn btn-action-icon modifica" disabled onclick="modificaPianoFormativo(' @item.IdPersona')"><i class="fa fa-pencil"></i></button>
+                                <button id="eliminazione" class="btn btn-action-icon eliminazione" disabled onclick="eliminaPianoFormativo('@item.IdPersona','@item.IdJobAssign')"> <i class="fa fa-trash-o"></i></button>
+                                <button class="btn btn-action-icon" disabled><i class="fa fa-file-word-o"></i></button>
+                            }
+                            else
+                            {
+                                <button id="modifica-imm" class="btn btn-action-icon modifica" onclick="modificaPianoFormativo(' @item.IdPersona')"><i class="fa fa-pencil"></i></button>
+                                <button id="eliminazione" class="btn btn-action-icon eliminazione" onclick="eliminaPianoFormativo('@item.IdPersona','@item.IdJobAssign')"> <i class="fa fa-trash-o"></i></button>
+                                <a href="@Url.Action("GeneraWordPianoFormativoIndividuale", "PianoFormativo", new { idPersona = item.IdPersona })" class="btn btn-action-icon" target="_blank"><i class="fa fa-file-word-o"></i></a>
+                            }
+                            <button id="dettaglio-imm" class="btn rai-btn-small dettaglio" onclick="dettaglioPianoFormativo(' @item.IdPersona')">Visualizza</button>
+
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr style="cursor: pointer;" data-target="pianificati">
+                    @Html.Partial("_NoDati")
+                </tr>
+            }
+        }
+        if (Model.tab.IsEmpty() || Model.tab.ToLower() == "d")
+        {
+            if (Model.daPianificare != null && Model.daPianificare.Any())
+            {
+                foreach (var item in Model.daPianificare)
+                {
+                    <tr style="cursor: pointer;" data-target="daPianificare">
+                        <td>
+                            <span class="rai-font-md-bold">@item.Matricola</span>
+                        </td>
+                        <td>
+                            <span class="rai-font-md">@item.Nominativo.TitleCase()</span>
+                        </td>
+                        <td>
+
+                            <span class="rai-font-md">
+                                @if (item.DataImmatricolazione.HasValue)
+                                {
+                                    @item.DataImmatricolazione.Value.ToShortDateString()
+                                }
+                            </span>
+
+                        </td>
+                        <td>
+                            <span class="rai-font-md">
+                                @if (item.DataInizioContratto.HasValue)
+                                {
+                                    @item.DataInizioContratto.Value.ToShortDateString()
+                                }
+                            </span>
+                        </td>
+                        <td></td>
+                        @{ if (!item.IsRuoloAggreg)
+                            {
+                                <td class="text-right">
+                                    @if (item.Cessato)
+                                    {
+                                        <button id="pianificazioneAttivita" class="btn btn-sm rai-btn-small pianificazione" disabled onclick="pianificaAttivitaPianoFormativo(' @item.IdPersona')">Pianifica</button>
+                                    }
+                                    else
+                                    {
+                                        <button id="pianificazioneAttivita" class="btn btn-sm rai-btn-small pianificazione" onclick="pianificaAttivitaPianoFormativo(' @item.IdPersona')">Pianifica</button>
+                                    }
+                                </td>
+                            }
+                        }
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr style="cursor: pointer;" data-target="daPianificare">
+                    @Html.Partial("_NoDati")
+                </tr>
+            }
+        }
+    }
+
+}
+
+
+<script type="text/javascript">
+    function switchTabifIsDaPianificareOrNot(tab, hasNext) {
+        var righePianificati = $('*[data-target="pianificati"]');
+        var righeDaPianificare = $('*[data-target="daPianificare"]');
+        switch (tab) {
+            case "p":
+                $('#listaPF_Pianificati').empty();
+                $("#listaPF_Pianificati").append(righePianificati.clone()).html();
+                break;
+            case "d":
+                $('#listaPF_DaPianificare').empty();
+                $("#listaPF_DaPianificare").append(righeDaPianificare.clone()).html();
+                break;
+            default:
+                $('#listaPF_DaPianificare').empty();
+                $("#listaPF_DaPianificare").append(righeDaPianificare.clone()).html();
+                $('#listaPF_Pianificati').empty();
+                $("#listaPF_Pianificati").append(righePianificati.clone()).html();
+                break;
+        }
+
+        if (tab === '' || tab == 'p') {
+            if ($('#hrefTab2').attr('data-target')==='true') {
+                console.log("entro");
+                $('#btnAltriPianiFormativi').show();
+            }
+            else {
+                $('#btnAltriPianiFormativi').hide();
+            }
+        }
+        if (tab === '' || tab == 'd') {
+            if ($('#hrefTab1').attr('data-target')==='true') {
+                $('#btnAltriPianiFormativiDaPian').show();
+            }
+            else {
+                $('#btnAltriPianiFormativiDaPian').hide();
+            }
+        }
+
+
+    }
+    $(function () {
+       var tabactive = $('.active').children('*[role="tab"]');
+        let hasNext = false;
+        @{
+            var tab = Model.tab.ToLower();
+
+
+        }
+        var testab="@tab";
+        if (testab == "" || testab == "d") {
+              var strd = "@Model.daPianificare.HasNext.ToString().ToLower()";
+            $('#hrefTab1').attr('data-target', strd);
+           $('#totDaPianificare').text("@Model.totDaPianificare.ToString()");
+
+        }
+        if (testab == "" || testab == "p") {
+
+        var strp = "@Model.pianificati.HasNext.ToString().ToLower()";
+            $('#hrefTab2').attr('data-target', strp);
+            $('#totPianificati').text("@Model.totPianificati.ToString()");
+
+
+        }
+        @*
+        var strd = "@Model.daPianificare.HasNext.ToString().ToLower()";
+        var strp = "@Model.pianificati.HasNext.ToString().ToLower()";
+
+        $('#hrefTab2').attr('data-target', strp);
+        $('#hrefTab1').attr('data-target', strd);*@
+        var str = tabactive.attr("data-target");
+        hasNext = (str === 'true');
+
+        switchTabifIsDaPianificareOrNot('@tab', hasNext);
+
+        @if (Model.totDaPianificare==0 && Model.totPianificati > 0)
+        {
+            <text>
+            $('#hrefTab2').click();
+            </text>
+        }
+    });
+
+</script>

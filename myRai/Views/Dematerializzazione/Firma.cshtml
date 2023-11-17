@@ -1,0 +1,689 @@
+﻿@model myRai.Models.DematerializzazioneModel
+@{
+    Layout = "~/Views/Shared/_Layout2.cshtml";
+}
+<div id="page-loaderR"><span class="loaderR"><span class="loader-innerR"></span></span></div>
+<section class="body">
+    @Html.Partial("../Shared/header2" , new myRai.Models.NotifichePopupModel( ))
+    <div class="inner-wrapper">
+        @Html.Partial("../Shared/sidebar3" , myRai.Models.Utente.getSidebarModel( ))
+        <section role="main" class="content-body">
+            <main id="main-container">
+                <div class="content">
+                    <div class="row">
+                        <div class="col-sm-8" id="div-tabella-documenti-firma">
+                            @Html.Partial("~/Views/Dematerializzazione/subpartial/elencoDocumenti_skeleton.cshtml")
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="row">
+                                <div class="col-sm-12" id="div-carrello-container">
+                                    @Html.Partial("~/Views/Dematerializzazione/subpartial/carrello_skeleton.cshtml")
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-12" id="div-filtri-documenti-firma">
+                                    @Html.Partial("~/Views/Dematerializzazione/subpartial/filtri_skeleton.cshtml")
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </section>
+    </div>
+</section>
+
+<div id="pg-visible-xs" class="visible-xs"></div>
+<div id="pg-visible-sm" class="visible-sm"></div>
+<div id="pg-visible-md" class="visible-md"></div>
+<div id="pg-visible-lg" class="visible-lg"></div>
+
+@Html.RenderModal("DEM-dettaglio-richiesta" , size: myRaiHelper.ModalSize.Full)
+@Html.RenderModal("DEM-viewer-allegati" , size: myRaiHelper.ModalSize.Full)
+@Html.RenderModal("DEM-viewer-infirma" , size: myRaiHelper.ModalSize.Full)
+@Html.RenderModal("DEM-modal-firmadocs" , size: myRaiHelper.ModalSize.Full)
+
+@section afterjs {
+    @Html.Raw(TempData["script"])
+
+<script type="text/javascript">
+    function Dematerializzazione_OpenDettaglioFirma(idDoc, forceReset) {
+        if (forceReset == null || forceReset == "" || typeof (forceReset) == "undefined") {
+            forceReset = false;
+        }
+
+        RaiOpenAsyncModal('modal-DEM-dettaglio-richiesta', '/Dematerializzazione/GetDettaglioRichiestaInFirma', { idDoc: idDoc, forceReset: forceReset }, null, 'GET');
+    }
+
+    function Dematerializzazione_GetDocumento(idCurrent) {
+        $('#dem-corpo-wizardfirma').addClass('rai-loader');
+        $.ajax({
+            url: '@Url.Action( "GetDettaglioRichiestaInFirma" , "Dematerializzazione" )',
+            type: "GET",
+            async: true,
+            cache:false,
+            data: {
+                idDoc: idCurrent,
+                forceReset: false
+            },
+            contentType: "application/json; charset=utf-8",
+            dataType: 'html',
+            success: function (data) {
+                $('#modal-DEM-dettaglio-richiesta-internal').html(data);
+            },
+            error: function (xhr, status) {
+                swal({
+                    title: xhr.statusText,
+                    type: 'error',
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+            },
+            complete: function () {
+                $('#dem-corpo-wizardfirma').removeClass('rai-loader');
+            }
+        });
+    }
+
+    function Dematerializzazione_PrevDocumento(idCurrent) {        
+        $('#dem-corpo-wizardfirma').addClass('rai-loader');
+        $.ajax({
+            url: '@Url.Action( "GetDettaglioRichiestaInFirmaPrev" , "Dematerializzazione" )',
+            type: "GET",
+            async: true,
+            cache:false,
+            data: {
+                idDoc: idCurrent
+            },
+            contentType: "application/json; charset=utf-8",
+            dataType: 'html',
+            success: function (data) {
+                $('#modal-DEM-dettaglio-richiesta-internal').html(data);
+            },
+            error: function (xhr, status) {
+                swal({
+                    title: xhr.statusText,
+                    type: 'error',
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+            },
+            complete: function () {
+                $('#dem-corpo-wizardfirma').removeClass('rai-loader');
+            }
+        });
+    }
+
+    function Dematerializzazione_NextDocumento(idCurrent, canRestartIndex) {
+        if (canRestartIndex == null || canRestartIndex == "" || typeof (canRestartIndex) == "undefined") {
+            canRestartIndex = false;
+        }
+        $('#dem-corpo-wizardfirma').addClass('rai-loader');
+        $.ajax({
+            url: '@Url.Action( "GetDettaglioRichiestaInFirmaNext" , "Dematerializzazione" )',
+            type: "GET",
+            async: true,
+            cache: false,
+            data: {
+                idDoc: idCurrent,
+                canRestartIndex: canRestartIndex
+            },
+            contentType: "application/json; charset=utf-8",
+            dataType: 'html',
+            success: function (data) {
+                $('#modal-DEM-dettaglio-richiesta-internal').html(data);
+            },
+            error: function (xhr, status) {
+                swal({
+                    title: xhr.statusText,
+                    type: 'error',
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+            },
+            complete: function () {
+                $('#dem-corpo-wizardfirma').removeClass('rai-loader');
+            }
+        });
+    }
+
+    function Dematerializzazione_RifiutaDocumento(idDoc) {
+        var motivo = $('#noteAlDocumento').val();
+
+        if (motivo == null || motivo == "" || $.trim(motivo) == "") {
+            if ($('#div-switch-abilita-inserimento-note').hasClass('ios-switch off')) {
+                $('#div-switch-abilita-inserimento-note').click();
+            }
+            $('#messaggio-attesa-nota').show();
+            $('#block-footer').css('height', '360px');
+
+            return false;
+        }
+
+        swal({
+            title: 'Sicuro di voler rifiutare la pratica selezionata?',
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sì, rifiuta!',
+            cancelButtonText: 'Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+
+            var motivo = $('#noteAlDocumento').val();
+
+            if (motivo == null || motivo == "" || $.trim(motivo) == "") {
+                swal({
+                    title: 'Il motivo del rifiuto è obbligatorio',
+                    type: 'error',
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+                return false;
+            } 
+            $('#dem-corpo-wizardfirma').addClass('rai-loader');
+            $.ajax({
+                url: "/Dematerializzazione/RifiutaDocumento",
+                type: "POST",
+                async: true,
+                data: JSON.stringify({
+                    idDoc: idDoc,
+                    motivo: motivo
+                }),
+                contentType: "application/json; charset=utf-8",
+                dataType: 'html',
+                success: function (data) {
+                    $('#dem-corpo-wizardfirma').removeClass('rai-loader');
+                    Dematerializzazione_GetDocumento(idDoc);
+                },
+                error: function (xhr, status) {
+                    swal({
+                        title: xhr.statusText,
+                        type: 'error',
+                        confirmButtonClass: "btn btn-primary btn-lg",
+                        showConfirmButton: true,
+                        confirmButtonText: 'Ok',
+                        customClass: 'rai'
+                    });
+                },
+                complete: function () {
+                    $('#div-tabella-documenti-firma').load("/Dematerializzazione/CaricaTabellaDocumentiInFirma");
+                }
+            });
+        });
+    }
+
+    function Dematerializzazione_VisualizzaFilePrincipale(idAllegato) {
+        RaiOpenAsyncModal('modal-DEM-viewer-allegati', '/Dematerializzazione/VisualizzatoreAllegato', { idAllegato: idAllegato }, null, 'GET');
+    }
+
+    function Dematerializzazione_SaltaDocumento(idCurrent) {
+        //$('#modal-DEM-dettaglio-richiesta').addClass('rai-loader');
+        $('#dem-corpo-wizardfirma').addClass('rai-loader');
+        $.ajax({
+            url: '@Url.Action( "SaltaDocumento" , "Dematerializzazione" )',
+            type: "GET",
+            async: true,
+            cache: false,
+            data: {
+                idDoc: idCurrent
+            },
+            contentType: "application/json; charset=utf-8",
+            dataType: 'html',
+            success: function (data) {
+                data = $.parseJSON(data);
+                if (data.success) {
+                    if (data.Id > 0) {
+                        Dematerializzazione_GetDocumento(data.Id);
+                    } else {
+                        $('#modal-DEM-dettaglio-richiesta-internal').html('');
+                        $('#modal-DEM-dettaglio-richiesta').modal('hide');
+                    }
+                } else {
+                    swal({
+                        title: data.message,
+                        type: 'error',
+                        confirmButtonClass: "btn btn-primary btn-lg",
+                        showConfirmButton: true,
+                        confirmButtonText: 'Ok',
+                        customClass: 'rai'
+                    });
+                }
+            },
+            error: function (xhr, status) {
+                swal({
+                    title: xhr.statusText,
+                    type: 'error',
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+            },
+            complete: function () {
+                $('#dem-corpo-wizardfirma').removeClass('rai-loader');
+                //$('#modal-DEM-dettaglio-richiesta').removeClass('rai-loader');
+            }
+        });
+    }
+
+    function Dematerializzazione_MettiInFirma(idDoc) {
+        var motivo = $('#noteAlDocumento').val();
+        $('#dem-corpo-wizardfirma').addClass('rai-loader');
+        $.ajax({
+            url: "/Dematerializzazione/MettiInFirma",
+            type: "POST",
+            async: true,
+            data: JSON.stringify({
+                idDoc: idDoc,
+                motivo: motivo
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: 'html',
+            success: function (data) {   
+                $('#dem-corpo-wizardfirma').removeClass('rai-loader');
+                if (data == "0") {
+                    // vai alla pagina del carrello
+                    $('#modal-DEM-dettaglio-richiesta-internal').html('');
+                    $('#modal-DEM-dettaglio-richiesta').modal('hide');
+                    Dematerializzazione_OpenModaleFirmaDocs();
+                }
+                else {
+                    Dematerializzazione_NextDocumento(idDoc, true);
+                }
+            },
+            error: function (xhr, status) {
+                swal({
+                    title: xhr.statusText,
+                    type: 'error',
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+            },
+            complete: function () {
+                $('#div-tabella-documenti-firma').load("/Dematerializzazione/RefreshTabellaDocumentiDaLavorare");
+            }
+        });
+    }
+
+    function Dematerializzazione_OpenModaleFirmaDocs() {
+        RaiOpenAsyncModal('modal-DEM-modal-firmadocs', '/Dematerializzazione/GetModalFirmaDocs', null, null, 'GET');
+    }
+
+    function Dematerializzazione_ApplicaFirmaDocumenti_Internal() {
+        var pwd = $('#pwd').val();
+        var otp = $('#otp').val();
+
+        if (pwd == null || pwd == "" || $.trim(pwd) == "") {
+            swal({
+                title: 'Il campo Password non può essere vuoto',
+                type: 'error',
+                confirmButtonClass: "btn btn-primary btn-lg",
+                showConfirmButton: true,
+                confirmButtonText: 'Ok',
+                customClass: 'rai'
+            });
+            return false;
+        }
+
+        if (otp == null || otp == "" || $.trim(otp) == "") {
+            swal({
+                title: 'Il campo One Time Password non può essere vuoto',
+                type: 'error',
+                confirmButtonClass: "btn btn-primary btn-lg",
+                showConfirmButton: true,
+                confirmButtonText: 'Ok',
+                customClass: 'rai'
+            });
+            return false;
+        }
+        $('#dem-div-caricamento').addClass('rai-loader');
+        $('#dem-messaggio-firma-in-corso').show();    
+    
+        $.ajax({
+            url: "/Dematerializzazione/FirmaDocumentiNelCarrello",
+            type: "POST",
+            async: true,
+            cache: false,
+            contentType: "application/json; charset=utf-8",
+            dataType: 'json',
+            data: JSON.stringify({
+                otp: otp,
+                pwd: pwd,
+                pmatr: '',
+                nom: ''
+            }),
+            success: function (data) {
+                var tipo = "success";
+
+                if (data.result == "KO") {
+                    tipo = "error";
+                }
+
+                if (data.result == "ERRORI") {
+                    tipo = "warning";
+                }
+
+                if (data.result == "OK") {
+                    if ($("#ricordami").prop("checked") == true) {
+                        setCookie(w);
+                    }
+                }
+                swal({
+                    title: 'Esito firma',
+                    type: tipo,
+                    html: "<label id='dem-label-elaborazione' class='rai-font-md'></label><br/><textarea id='dem-text-esito-firma' cols='80' rows='10' disabled>" + data.infoAggiuntive + "</textarea>",
+                    showCancelButton: false,
+                    showConfirmButtonButton: false,
+                    confirmButtonText: 'Continua',
+                    cancelButtonText: 'Annulla',
+                    reverseButtons: true,
+                    inputPlaceholder: "Esito",
+                    customClass: 'rai rai-confirm-cancel'
+                });
+
+                $('div[class="swal2-modal rai rai-confirm-cancel swal2-show"]').css('width', '680px');
+                $('#dem-div-caricamento').removeClass('rai-loader');
+                $('#dem-messaggio-firma-in-corso').hide();
+
+                Dematerializzazione_LoadElencoInFirma();
+                CaricamentoDatiPaginaFirma();
+            },
+            error: function (xhr, status) {
+                swal({
+                    title: xhr.statusText,
+                    type: 'error',
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+                $('#dem-div-caricamento').removeClass('rai-loader');
+                $('#dem-messaggio-firma-in-corso').hide();
+                CaricamentoDatiPaginaFirma();
+            }
+        });
+    }
+
+    function Dematerializzazione_ApplicaFirmaDocumenti() {     
+        swal({
+            title: 'Sicuro di voler procedere con la firma dei documenti nel carrello?',
+            type: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sì, firma',
+            cancelButtonText: 'Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function (result) {
+            if (result) {
+                swal.close;
+                Dematerializzazione_ApplicaFirmaDocumenti_Internal();
+            }
+        }, function () {
+            return false;
+        });
+    }
+
+    function Dematerializzazione_RimuoviDaCarrello(idCurrent, azione) {
+        $('#dem-div-caricamento').addClass('rai-loader');
+        $.ajax({
+            url: '@Url.Action("RimuoviDaCarrello" , "Dematerializzazione" )',
+            type: "GET",
+            async: true,
+            cache: false,
+            data: {
+                idDoc: idCurrent
+            },
+            contentType: "application/json; charset=utf-8",
+            dataType: 'html',
+            success: function (data) {
+                data = $.parseJSON(data);
+                if (data.success) {
+                    if (azione == "RELOADINFIRMA") {
+                        Dematerializzazione_LoadElencoInFirma();
+                    }
+                    else {
+                        if (data.Id > 0) {
+                            Dematerializzazione_GetDocumento(data.Id);
+                        } else {
+                            $('#modal-DEM-dettaglio-richiesta-internal').html('');
+                            $('#modal-DEM-dettaglio-richiesta').modal('hide');
+                        }
+                    }
+                } else {
+                    swal({
+                        title: data.message,
+                        type: 'error',
+                        confirmButtonClass: "btn btn-primary btn-lg",
+                        showConfirmButton: true,
+                        confirmButtonText: 'Ok',
+                        customClass: 'rai'
+                    });
+                }
+            },
+            error: function (xhr, status) {
+                swal({
+                    title: xhr.statusText,
+                    type: 'error',
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+            },
+            complete: function () {
+                $('#dem-div-caricamento').removeClass('rai-loader');
+            }
+        });
+    }
+
+    function Dematerializzazione_LoadElencoInFirma() {
+        $('#dem_carrello_docs_infirma').addClass('rai-loader');
+        $.ajax({
+            url: '@Url.Action("LoadElencoInFirma" , "Dematerializzazione" )',
+            type: "GET",
+            async: false,
+            cache:false,
+            data: {
+            },
+            contentType: "application/json; charset=utf-8",
+            dataType: 'html',
+            success: function (data) {
+                $('#dem-elenco-in-firma').html(data);
+            },
+            error: function (xhr, status) {
+                swal({
+                    title: xhr.statusText,
+                    type: 'error',
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+            },
+            complete: function () {
+                $('#dem_carrello_docs_infirma').removeClass('rai-loader');
+                //$('#dem-elenco-in-firma').removeClass("rai-loader");
+            }
+        });
+    }
+
+    function CaricamentoDatiPaginaFirma() {
+        $('#div-dem-documenti').addClass("rai-loader");
+        $('#dem-div-carrello').addClass("rai-loader");
+        $('#dem-div-filtri').addClass("rai-loader");
+
+        $.ajax({
+            url: '@Url.Action( "CaricaDati" , "Dematerializzazione" )',
+            type: "POST",
+            async: true,
+            data: JSON.stringify({
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: 'html',
+            success: function (data) {
+                $('#div-tabella-documenti-firma').load("/Dematerializzazione/CaricaTabellaDocumentiDaLavorare");
+                $('#div-carrello-container').load("/Dematerializzazione/CaricaDocumentiInFirma");
+                $('#div-filtri-documenti-firma').load("/Dematerializzazione/CaricaFiltriInFirma");
+                $('#div-dem-documenti').removeClass("rai-loader");
+                $('#dem-div-carrello').removeClass("rai-loader");
+                $('#dem-div-filtri').removeClass("rai-loader");
+            },
+            error: function (xhr, status) {
+                swal({
+                    title: xhr.statusText,
+                    type: 'error',
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+            },
+            complete: function () {
+            }
+        });
+    }
+
+    $(document).ready(function () {
+        CaricamentoDatiPaginaFirma();
+    });
+
+    $('#modal-DEM-dettaglio-richiesta').on('hidden.bs.modal', function () {
+        CaricamentoDatiPaginaFirma();
+    });
+
+    $('#modal-DEM-viewer-infirma').on('hidden.bs.modal', function () {
+        CaricamentoDatiPaginaFirma();
+    });
+
+    $('#modal-DEM-modal-firmadocs').on('hidden.bs.modal', function () {
+        CaricamentoDatiPaginaFirma();
+    });
+
+
+    function Dematerializzazione_ApplicaFirmaDocumentiREST() {
+        swal({
+            title: 'Sicuro di voler procedere con la firma dei documenti nel carrello?',
+            type: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sì, firma',
+            cancelButtonText: 'Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function (result) {
+            if (result) {
+                swal.close;
+                Dematerializzazione_ApplicaFirmaDocumenti_InternalREST();
+            }
+        }, function () {
+            return false;
+        });
+    }
+
+    function Dematerializzazione_ApplicaFirmaDocumenti_InternalREST() {
+        var pwd = $('#pwd').val();
+        var otp = $('#otp').val();
+
+        if (pwd == null || pwd == "" || $.trim(pwd) == "") {
+            swal({
+                title: 'Il campo Password non può essere vuoto',
+                type: 'error',
+                confirmButtonClass: "btn btn-primary btn-lg",
+                showConfirmButton: true,
+                confirmButtonText: 'Ok',
+                customClass: 'rai'
+            });
+            return false;
+        }
+
+        if (otp == null || otp == "" || $.trim(otp) == "") {
+            swal({
+                title: 'Il campo One Time Password non può essere vuoto',
+                type: 'error',
+                confirmButtonClass: "btn btn-primary btn-lg",
+                showConfirmButton: true,
+                confirmButtonText: 'Ok',
+                customClass: 'rai'
+            });
+            return false;
+        }
+        $('#dem-div-caricamento').addClass('rai-loader');
+        $('#dem-messaggio-firma-in-corso').show();
+
+        $.ajax({
+            url: "/Dematerializzazione/FirmaDocumentiNelCarrelloREST",
+            type: "POST",
+            async: true,
+            cache: false,
+            contentType: "application/json; charset=utf-8",
+            dataType: 'json',
+            data: JSON.stringify({
+                otp: otp,
+                pwd: pwd,
+                pmatr: '',
+                nom: ''
+            }),
+            success: function (data) {
+                var tipo = "success";
+
+                if (data.result == "KO") {
+                    tipo = "error";
+                }
+
+                if (data.result == "ERRORI") {
+                    tipo = "warning";
+                }
+
+                if (data.result == "OK") {
+                    if ($("#ricordami").prop("checked") == true) {
+                        setCookie(w);
+                    }
+                }
+                swal({
+                    title: 'Esito firma',
+                    type: tipo,
+                    html: "<label id='dem-label-elaborazione' class='rai-font-md'></label><br/><textarea id='dem-text-esito-firma' cols='80' rows='10' disabled>" + data.infoAggiuntive + "</textarea>",
+                    showCancelButton: false,
+                    showConfirmButtonButton: false,
+                    confirmButtonText: 'Continua',
+                    cancelButtonText: 'Annulla',
+                    reverseButtons: true,
+                    inputPlaceholder: "Esito",
+                    customClass: 'rai rai-confirm-cancel'
+                });
+
+                $('div[class="swal2-modal rai rai-confirm-cancel swal2-show"]').css('width', '680px');
+                $('#dem-div-caricamento').removeClass('rai-loader');
+                $('#dem-messaggio-firma-in-corso').hide();
+
+                Dematerializzazione_LoadElencoInFirma();
+                CaricamentoDatiPaginaFirma();
+            },
+            error: function (xhr, status) {
+                swal({
+                    title: xhr.statusText,
+                    type: 'error',
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+                $('#dem-div-caricamento').removeClass('rai-loader');
+                $('#dem-messaggio-firma-in-corso').hide();
+                CaricamentoDatiPaginaFirma();
+            }
+        });
+    }
+
+</script>
+}

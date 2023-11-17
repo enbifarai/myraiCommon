@@ -1,0 +1,98 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model List<FormStatisticsModel>
+
+<!-- Icone -->
+@{
+    ViewBag.Title = "Statistiche Form";
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+}
+
+
+
+<section role="main" class="content-body">
+
+    <!-- start: page -->
+    <!-- Main Container -->
+
+    <main id="main-container">
+
+        <div class="content">
+
+            <div class="row">
+                <div class="col-sm-12">
+
+                    @{
+                        bool GappChiuso = false;
+                    }
+
+                    @if (!UtenteHelper.GappChiuso())
+                    {
+                        int c = 0;
+                        foreach (var item in Model)
+                        {
+                            c++;
+                            @Html.Partial("GetSingleStats", item, new ViewDataDictionary() { { "modelIndex", c } })
+                        }
+                    }
+                    else
+                    {
+                        @Html.Partial("_cics_chiuso")
+                        GappChiuso = true;
+                    }
+
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- end: page -->
+</section>
+
+
+
+
+@section afterjs {
+    @Html.Raw(TempData["script"])
+    <script type="text/javascript">
+
+        @{ int c = 0;}
+        @foreach (var subModel in Model)
+        {
+            c++;
+            int i = 0;
+            foreach (var item in subModel.items)
+            {
+                i++;
+                if (item.domanda.MyRai_FormDomande1.Count() > 0)
+                {
+                    continue;
+                }
+                <text>
+        var flotPieData_@(c+"_"+i) =@Html.Raw(item.JsonPieItems) ;
+        $.plot($("#pie-@c-@i"), flotPieData_@(c+"_"+i), {
+            series: {
+                pie: {
+                    show: true,
+                    label: {
+                        show: true,
+                        formatter: labelFormatter,
+                        threshold: 0.1
+                    }
+                }
+            },
+            legend: {
+                show: false
+            }
+        });
+        </text>
+            }
+        }
+    </script>
+
+}

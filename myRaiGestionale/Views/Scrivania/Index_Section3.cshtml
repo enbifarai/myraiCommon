@@ -1,0 +1,229 @@
+﻿@model myRaiCommonModel.SectionDayModel
+
+<div style="width: 100%" data-async="/scrivania/index_section3?GappClosed=@Model.GappClosed">
+
+    @if ( !Request.Browser.IsMobileDevice )
+    {
+        @Html.Partial( "~/Views/Scrivania/Section_Annuncio.cshtml" )
+    }
+
+    @{
+        if ( Model.IsPreview )
+        {
+            if ( !Model.GappClosed )
+            {
+                @Html.Partial( "subpartial/trasfertePrecedenti_skeleton" )
+            }
+        }
+        else
+        {
+            if ( !Model.GappClosed )
+            {
+                @Html.Partial( "subpartial/trasfertePrecedenti" , Model.TrasfertePrecedenti )
+            }
+        }
+    }
+
+
+    @{
+        if ( Model.IsPreview )
+        {
+            if ( !Model.GappClosed )
+            {
+                @Html.Partial( "subpartial/boxDetassazione_skeleton" )
+            }
+        }
+        else
+        {
+            if ( !Model.GappClosed && Model.DetassazioneVM.HaDiritto ||
+                !Model.GappClosed && Model.DetassazioneVM.GiaScelto )
+            {
+                @Html.Partial( "subpartial/boxDetassazione" , Model.DetassazioneVM )
+            }
+        }
+    }
+
+    @if ( Model.PianoFerieVisible )
+    {
+        <section class="panel">
+            <header class="panel-heading bg-primary">
+                <div class="panel-actions" style="width:300px;text-align:right">
+                    <div style="width:100%;text-align:right"></div>
+                </div>
+                <h2 class="panel-title text-white">Piano Ferie 2019</h2>
+            </header>
+            <div class="panel-body remove-padding">
+                <div class="row">
+                    @{
+
+                        string stato = "";
+
+
+                        if ( Model.MyPianoFerieSede != null && Model.MyPianoFerieSede.data_firma != null )
+                        {
+                            stato = "<label class='titleElements text-primary text-italic' for='Scelta_piano'>Convalidato</label>";
+                        }
+                        else if ( Model.MyPianoFerieSede != null && Model.MyPianoFerieSede.data_approvata != null )
+                        {
+                            stato = "<label class='titleElements text-primary text-italic' for='Scelta_piano'>Approvato</label>";
+                        }
+                        else if ( Model.MyPianoFerie != null && Model.MyPianoFerie.data_consolidato != null )
+                        {
+                            stato = "<label class='titleElements text-primary text-italic' for='Scelta_piano'>In approvazione</label>";
+                        }
+                        if ( Model.MyPianoFerie != null && !String.IsNullOrWhiteSpace( Model.MyPianoFerie.nota_responsabile ) )
+                        {
+                            if ( stato == "" )
+                            {
+                                stato = "<label class='text-bold'>È presente <span class='text-primary text-bold'>1</span> nota</label>";
+                            }
+                            else
+                            {
+                                stato += " <br> <label class='text-bold'>È presente <span class='text-primary text-bold'>1</span> nota</label";
+                            }
+                        }
+                    }
+                    <!--span class="title-Elements text-primary text-italic" id="stato-pfer">
+
+
+
+
+                    </span-->
+
+                    <div class="col-xs-7">
+                        @Html.Raw( stato )
+                        <br />
+                        <!--span class="title-Elements text-primary text-italic" id="stato-pfer">
+
+
+
+
+                        </span-->
+                        <div style="vertical-align: middle; padding-bottom:5px;">
+
+                            @{
+                                string buttonCaption = "GESTISCI LE TUE FERIE";
+                                if ( !Model.AbilitatoGestionePianoFerie )
+                                {
+                                    buttonCaption = "VEDI LE TUE FERIE";
+                                }
+                            }
+
+                            <a style="width:150px;" href="javascript:showCalAnnualePF(@DateTime.Now.Year)" aria-label="Gestisci le tue ferie"
+                               class="btn btn-default btn-scriv text-uppercase bg-puls_dash">@buttonCaption</a>
+
+                        </div>
+                    </div>
+                    <div class="col-xs-5" style="padding-right:5px;">
+                        <input id="esentato-ferie" type="hidden" value="@(Model.EsentatoPianoFerie?"1":"0")" />
+                        <a href="javascript:showCalAnnualePF(@DateTime.Now.Year)" style="text-align: right;">
+                            <img style="    margin-top: -40px;width: 87px;height: 100%;float: right; margin-right: 20px;" src="/assets/img/cal.png">
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    }
+
+    @if ( Model.IsPreview )
+    {
+        if ( !Model.GappClosed )
+        {
+            if ( @Model.OrarioVisibile )
+            {
+                @Html.Partial( "subpartial/orario_skeleton" )
+
+            }
+            if ( @Model.ScelteVisibile )
+            {
+                @Html.Partial( "subpartial/scelte_skeleton" )
+            }
+        }
+
+        if ( Model.WeekPlanVisibile && myRaiHelper.UtenteHelper.GestitoSirio( ) )
+        {
+            @Html.Partial( "subpartial/weekplan_skeleton" )
+        }
+
+        if ( !Model.GappClosed )
+        {
+            if ( @Model.TimbraturaVisibile )
+            {
+                @Html.Partial( "subpartial/timbrature_skeleton" )
+            }
+            if ( myRaiHelper.UtenteHelper.IsAbilitatoGapp( ) )
+            {
+                @Html.Partial( "subpartial/calendario_skeleton" )
+            }
+        }
+        if ( @Model.NotificaVisibile && ( myRaiHelper.UtenteHelper.IsBoss( ) || myRaiHelper.UtenteHelper.IsBossLiv2( ) || myRaiHelper.UtenteHelper.IsAbilitatoGapp( ) ) )
+        {
+            @Html.Partial( "subpartial/notifiche_skeleton" )
+        }
+        if ( @Model.AttivitaVisibile )
+        {
+            @Html.Partial( "subpartial/att_settimanali_skeleton" )
+        }
+        if ( @Model.CoseDaFareVisibile )
+        {
+            @Html.Partial( "subpartial/cosedafare_skeleton" )
+        }
+        if ( @Model.BustaPagaVisibile )
+        {
+            @Html.Partial( "subpartial/bustapaga_skeleton" )
+        }
+    }
+    else
+    {
+        if ( !Model.GappClosed )
+        {
+            if ( @Model.OrarioVisibile )
+            {
+                @Html.Partial( "subpartial/orario" , Model.DayResponse )
+            }
+            if ( @Model.ScelteVisibile )
+            {
+                @Html.Partial( "subpartial/scelte" )
+            }
+        }
+
+        if ( Model.WeekPlanVisibile && myRaiHelper.UtenteHelper.GestitoSirio( ) && myRaiHelper.UtenteHelper.IsAbilitatoGapp( ) )
+        {
+            @Html.Partial( "subpartial/weekplan" , Model.WeekPlan )
+        }
+
+        if ( !Model.GappClosed )
+        {
+            if ( @Model.TimbraturaVisibile )
+            {
+                @Html.Partial( "subpartial/timbrature" , Model.DayResponse )
+            }
+            if ( myRaiHelper.UtenteHelper.IsAbilitatoGapp( ) && Model.CalendarioModel != null )
+            {
+                @Html.Partial( "~/Views/FeriePermessi/subpartial/CalendarioNoFerie.cshtml" , Model.CalendarioModel );
+            }
+        }
+
+        if ( @Model.NotificaVisibile && ( myRaiHelper.UtenteHelper.IsBoss( ) || myRaiHelper.UtenteHelper.IsBossLiv2( ) || myRaiHelper.UtenteHelper.IsAbilitatoGapp( ) ) )
+        {
+            @Html.Partial( "subpartial/notifiche_new" , Model.Notifiche )
+        }
+
+        if ( @Model.AttivitaVisibile )
+        {
+            @Html.Partial( "subpartial/att_settimanali" )
+        }
+        if ( @Model.CoseDaFareVisibile )
+        {
+            @Html.Partial( "subpartial/cosedafare" )
+        }
+        if ( @Model.BustaPagaVisibile )
+        {
+            @Html.Partial( "subpartial/bustapaga" )
+        }
+
+
+    }
+
+</div>

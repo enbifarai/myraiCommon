@@ -1,0 +1,168 @@
+﻿@model myRaiCommonModel.cvModels.cvModel
+@using myRaiHelper;
+
+@{
+    var lista = Model.areeInteresse;
+
+}
+
+<section class="rai panel">
+    <header class="panel-heading bg-primary">
+        <h2 class="panel-title text-white">
+            Aree di interesse Aziendale
+            <span tabindex="-1" id="popInteressi" data-popover-content="#myPopover" class="push-5-l" data-toggle="popover" data-html="true" data-container="body" data-placement="right" title="" data-content="Indica la disponibilità a cambiare, eventualmente, la tua area di attività nel Gruppo Rai" data-original-title="&nbsp;" data-trigger="focus">
+                <i id="" class="fa fa-info-circle"></i>
+            </span>
+        </h2>
+        <div class="panel-actions rai-panel-actions">
+            <button  class="btn-action-icon" data-toggle="modal" data-target="#modalAreeInteresseInserimnento" onclick="ResetFormData(); InizializzaTuttoDopoAjax()"><span class="fa fa-plus"></span></button>
+        </div>
+    </header>
+
+    <div class="panel-body panel-body-nopadding-xs ">
+        <table class="js-table-sections table table-hover rai-table rai-table-vcenter">
+            <tbody class="">
+                @{
+                    int index_max;
+                    int count_lista;
+                    int i;
+                    int j = -1;
+                    string not_primo_elemento = "";
+
+                    count_lista = lista.Count;
+                    if (count_lista < 3)
+                    {
+                        index_max = count_lista;
+                    }
+                    else
+                    {
+                        index_max = 3;
+                    }
+
+                    for (i = 0; i < index_max; i++)
+                    {
+                        <tr>
+                            <td class="text-left">
+                                @{
+                                    string trattino_a = "";
+                                    string profilo_a = "";
+                                    if ((lista[i]._areeIntDispo != "") && (lista[i]._areeIntDispo != null))
+                                    {
+                                        trattino_a = "-";
+                                    }
+                                    else
+                                    {
+                                        trattino_a = "";
+                                    }
+
+                                    if ((lista[i]._profIntDispo != "") && (lista[i]._profIntDispo != null))
+                                    {
+                                        profilo_a = "Profilo/i: ";
+                                    }
+                                    else
+                                    {
+                                        profilo_a = "";
+                                    }
+                                }
+                                <p class="text-bold ">
+                                    @*@lista[i]._descAreaOrg*@
+                                    @lista[i].AreaInteresseItems.Where(a => a.Value == lista[i]._codAreaOrg).Select(a => a.Text).FirstOrDefault()
+
+                                    @*                            </p><p class="">@lista[i]._descServizio @trattino_a @lista[i]._areeIntDispo</p><p class="text-italic ">@profilo_a @lista[i]._profIntDispo</p>*@
+
+                                </p><p class="">@lista[i]._areeIntDispo</p><p class="text-italic ">@profilo_a @lista[i]._profIntDispo</p>
+                            </td>
+                            <td class="text-right" style="vertical-align:top!important">
+                                <div class="btn-action-icon-container">
+                                    <a class="btn-action-icon" onclick="ConfermaCancellazione_AreeInteresse('@lista[i]._matricola',@lista[i]._prog)"><i class="fa fa-trash"></i> </a>
+                                    <a class="btn-action-icon" onclick="ModificaAreeInteresse(@Json.Encode(lista[i]))"><i class="fa fa-pencil"></i></a>
+                                </div>
+                            </td>
+                        </tr>
+
+                    }
+
+                }
+            </tbody>
+        </table>
+        @if (i < count_lista)
+        {
+            <div class="collapse" id="collAreeInteresse">
+                <table class="js-table-sections table table-hover rai-table rai-table-vcenter">
+                    <tbody>
+                        @for (j = i; j < count_lista; j++)
+                        {
+                            <tr>
+                                <td class="text-left">
+                                    @{
+                                        string trattino_b = "";
+                                        string profilo_b = "";
+                                        if ((lista[j]._areeIntDispo != "") && (lista[j]._areeIntDispo != null))
+                                        {
+                                            trattino_b = "-";
+                                        }
+                                        else
+                                        {
+                                            trattino_b = "";
+                                        }
+
+                                        if ((lista[j]._profIntDispo != "") && (lista[j]._profIntDispo != null))
+                                        {
+                                            profilo_b = "Profilo/i: ";
+                                        }
+                                        else
+                                        {
+                                            profilo_b = "";
+                                        }
+                                    }
+                                    <p class="text-bold ">@lista[j]._descAreaOrg</p><p class="">@lista[j]._descServizio @trattino_b @lista[j]._areeIntDispo</p><p class="text-italic ">@profilo_b @lista[j]._profIntDispo</p>
+                                </td>
+                                <td class="text-right" style="vertical-align:top!important">
+                                    <div  class="btn-action-icon-container">
+                                        <a class="btn-action-icon" onclick="ConfermaCancellazione_AreeInteresse('@lista[j]._matricola',@lista[j]._prog)"><i class="fa fa-trash"></i> </a>
+                                        <a class="btn-action-icon" onclick="ModificaAreeInteresse(@Json.Encode(lista[j]))"><i class="fa fa-pencil"></i></a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            if (j > -1)
+            {
+                <div class="rai section-bottom">
+                    <a id="toggle-areeInteresse" data-toggle="collapse" data-target="#collAreeInteresse" class="apri-panel" onclick="toggleAngle('toggle-areeInteresse')"><i class="fa fa-2x push-5-t font-w600 fa-angle-down text-white"></i></a>    @* onclick="togglePanel('toggle-competenzeRai', 'tabella-espandibile')"  *@
+                </div>
+            }
+        }
+        @if (count_lista == 0)
+        {
+            @Html.Partial("~/Views/CV_Online/partials/_no_elements.cshtml");
+        }
+    </div>
+</section>
+
+@* FREAK - MODALE PER INSERIMENTO AREE INTERESSE *@
+@Html.Partial("AreeInteresse/partials/_modalInserimento", new myRaiCommonModel.cvModels.cvModel.AreeInteresse(CommonHelper.GetCurrentUserMatricola()))
+@* ******************************************************* *@
+
+@* FREAK - DIV per Modale di Modifica *@
+<div class="rai modal right fade modalCheck" role="dialog" aria-hidden="true"  id="frkModificaAreeInteresse">
+    <div class="modal-dialog modal-dialog-popin">
+        <div class="rai modal-content">
+            <div id="frkModificaAreeInteresse-internal" data-modal-wrapper=""></div>
+        </div>
+    </div>
+</div>
+
+@* ********************************** *@
+<script>
+    $('[data-toggle="popover"]').popover({
+        template: '<div class="popover"><div class="arrow"></div><div><span style="float:left; width:100%; display:inline;" class="popover-title"></span><span class="customPopOverCloser" style="float:right; width:5%; margin-top: -30px; margin-left: -3px; dispay:inline; cursor:pointer;">x</span></div><div class="clearfix"></div><div class="popover-content"></div></div>',
+        html: true
+    });
+
+    function ResetFormData() {
+        document.getElementById("form-insertareainteresse").reset();
+    }
+</script>

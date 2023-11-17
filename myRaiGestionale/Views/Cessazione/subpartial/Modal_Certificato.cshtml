@@ -1,0 +1,347 @@
+﻿@using myRaiHelper
+@model CessazioneCertServizio
+
+@using (Html.BeginModal("Certificato di servizio - " + Model.Sintesi.Nominativo()))
+{
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="panel">
+                <div class="panel-body">
+                    @if (Model.CertServInGenerazione)
+                    {
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <div class="alert alert-info">
+                                    <b>Generazione in corso</b><br />
+                                    Il certificato sarà disponibile a breve per l'invio.
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (Model.MailDataInvio.HasValue)
+                    {
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <div class="alert alert-info">
+                                    <b>Certificato inviato</b><br />
+                                    @String.Format("Il certificato è stato inviato da {0} il {1:dd/MM/yyyy} alle {1:HH:mm}.", CezanneHelper.GetNominativoByMatricola(Model.MailUtenteInvio), Model.MailDataInvio)
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="row push-20-t push-20">
+                        <div class="col-sm-12">
+                            @if (!String.IsNullOrWhiteSpace(Model.Protocollo))
+                            {
+                                <label class="">@Model.Protocollo</label>
+                            }
+                            else
+                            {
+                                <label class=""><em>Protocollo*</em></label>
+                            }
+                        </div>
+                    </div>
+                    <div class="row push-20-t push-20">
+                        <div class="col-sm-12">
+                            @if (Model.DataGenerazione.HasValue)
+                            {
+                                <label class="">Roma, @Model.DataGenerazione.Value.ToString("dd/MM/yyyy")</label>
+                            }
+                            else
+                            {
+                                <label class="">Roma, <em>dd/MM/yyyy*</em></label>
+                            }
+                        </div>
+                    </div>
+                    <div class="row push-10-t push-20">
+                        <div class="col-sm-12 text-center text-uppercase ">
+                            <strong><u>Certificato di servizio</u></strong>
+                        </div>
+                    </div>
+                    @if (!Model.DataGenerazione.HasValue && !Model.CertServInGenerazione)
+                    {
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                @Html.TextAreaFor(m => m.PrimoParagrafo, new { @class = "form-control text-justify", rows = "5" })
+                            </div>
+                        </div>
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                @Html.TextAreaFor(m => m.SecondoParagrafo, new { @class = "form-control text-justify", rows = "5" })
+                            </div>
+                        </div>
+                        <div class="row push-10 push-20-t">
+                            <div class="col-sm-12">
+                                <p class="text-justify">@Model.TerzoParagrafo</p>
+                            </div>
+                        </div>
+                        <div class="row push-10 push-20-t">
+                            <div class="col-sm-12">
+                                <em>* Il protocollo e la data saranno generati con il file</em>
+                            </div>
+                        </div>
+
+                        <div class="row form-button">
+                            <div class="col-sm-12 rai-btn-fill">
+                                <button class="btn rai-btn-primary" onclick="IncGeneraCertificato()">Genera certificato</button>
+                            </div>
+                        </div>
+
+                    }
+                    else
+                    {
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                <p class="text-justify">@Model.PrimoParagrafo</p>
+                            </div>
+                        </div>
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                <p class="text-justify">@Model.SecondoParagrafo</p>
+                            </div>
+                        </div>
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                <p class="text-justify">@Model.TerzoParagrafo</p>
+                            </div>
+                        </div>
+                        if (Model.HasPDF)
+                        {
+                            using (Html.BeginBlock(BlockType.ContentTable, "Informazioni mail"))
+                            {
+                                <div class="form-group">
+                                    <div class="row push-10">
+                                        <div class="col-sm-12">
+                                            <label class="rai-caption">Indirizzi cc aggiuntivi</label>
+                                            <div class="input-group">
+                                                @Html.TextBoxFor(m => m.MailCC, new { @class = "form-control", @readonly = "readonly" })
+                                                <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <label class="rai-caption">Testo</label>
+                                            @if (Model.MailDataModifica.HasValue)
+                                            {
+                                                <i class="rai-font-sm-neutral">
+                                                    @String.Format("Ultima modifica di {0} il {1:dd/MM/yyyy} alle {1:HH:mm}", CezanneHelper.GetNominativoByMatricola(Model.MailUtenteModifica), Model.MailDataModifica)
+                                                    @if (!Model.MailDataInvio.HasValue)
+                                                    {
+                                                        <span>-Per ripristinare la mail standard<a onclick="RestoreDefaultTemplateMailCert()"> clicca qui</a>.</span>
+                                                    }
+                                                </i>
+                                            }
+                                            @if (Model.MailDataInvio.HasValue)
+                                            {
+                                                @Html.TextAreaFor(m => m.MailTesto, new { @class = "form-control html-editor", cols = "20", rows = "5", @readonly = "readonly" })
+                                            }
+                                            else
+                                            {
+                                                @Html.TextAreaFor(m => m.MailTesto, new { @class = "form-control html-editor", cols = "20", rows = "5" })
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            <div class="row">
+                                <div class="col-sm-12 rai-btn-fill push-5">
+                                    <a class="btn rai-btn-small"
+                                       target="_blank"
+                                       href="/Cessazione/DownloadCertificato/file/@(String.Format("Certificato di servizio {0} - {1}.pdf", Model.Dipendente.MATRICOLA, Model.Dipendente.SINTESI1.Nominativo().TitleCase()))?id=@Model.Dipendente.ID_DIPENDENTE">
+                                        Consulta PDF
+                                    </a>
+                                </div>
+
+                                @if (!Model.MailDataInvio.HasValue)
+                                {
+                                    <div class="col-sm-12 rai-btn-fill">
+                                        <button class="btn rai-btn-secondary" onclick="ModificaCertificato()">Modifica certificato</button>
+                                        <button class="btn rai-btn-secondary" onclick="SalvaMailCert()">Salva bozza</button>
+                                        <button class="btn rai-btn-primary" onclick="InviaCertificato()">Invia mail</button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.HasPDF)
+{
+    <script>
+        $(".html-editor").summernote({
+            height: 200,
+            toolbar: [
+                ['style', ['bold', 'italic', 'underline', 'clear']],
+                ['font', ['strikethrough', 'superscript', 'subscript']],
+                ['fontsize', ['fontsize']],
+                ['color', ['color']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['height', ['height']],
+                //['view', ['fullscreen', 'codeview', 'help']],
+            ]
+        });
+    </script>
+
+    if (Model.MailDataInvio.HasValue)
+    {
+        <script>
+
+            $(".html-editor").summernote('disable');
+
+        </script>
+    }
+}
+
+
+<script>
+    function ModificaCertificato() {
+        let idDip = @Model.Dipendente.ID_DIPENDENTE;
+        RaiOpenAsyncModal("modal-cert-servizio", '/Cessazione/ModificaCertificato', { idDip: idDip }, null, 'POST')
+    }
+
+
+    function IncGeneraCertificato() {
+        event.preventDefault();
+        swal({
+            title: 'Sei sicuro?',
+            text: "Vuoi generare il certificato?",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sì!',
+            cancelButtonText: 'Annulla',
+            reverseButtons: 'true'
+        }).then(function () {
+            let primo = $('#PrimoParagrafo').val();
+            let secondo = $('#SecondoParagrafo').val();
+            let terzo = $('#TerzoParagrafo').val();
+
+            $.ajax({
+                url: "/Cessazione/GeneraCertificatoServizio",
+                type: "POST",
+                dataType: "json",
+                data: { idDip: @Model.Dipendente.ID_DIPENDENTE, primo:primo, secondo: secondo, terzo:terzo },
+                cache: false,
+                success: function (data) {
+                    if (data.esito) {
+                        swal("Generazione richiesta", "Il certificato sarà disponibile a breve", 'success');
+                        RaiOpenAsyncModal("modal-cert-servizio", '/Cessazione/GestioneCertServ', { idDip: @Model.Dipendente.ID_DIPENDENTE }, null, 'POST');
+                    }
+                    else {
+                        swal("Ops...", data, 'error');
+                    }
+                },
+                error: function () {
+                    swal("Ops...", "Si è verificato un errore durante la generazione del file", 'error');
+                }
+            });
+        })
+    }
+
+    function InviaCertificato() {
+        event.preventDefault();
+        swal({
+            title: 'Sei sicuro?',
+            text: "Vuoi inviare il certificato?",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sì!',
+            cancelButtonText: 'Annulla',
+            reverseButtons: 'true'
+        }).then(function () {
+            $.ajax({
+                url: '/Cessazione/SaveTemplateMailCert',
+                type: 'POST',
+                cache: false,
+                dataType: 'html',
+                data: { idDip: @Model.Dipendente.ID_DIPENDENTE, testo: $('#MailTesto').val() },
+                success: function (data1) {
+                    switch (data1) {
+                        case "OK":
+                            $.ajax({
+                                url: "/Cessazione/InviaCertServ",
+                                type: "POST",
+                                dataType: "json",
+                                data: { idDip: @Model.Dipendente.ID_DIPENDENTE },
+                                cache: false,
+                                success: function (data) {
+                                    if (data.esito) {
+                                        swal("Invio certificato", "Il certificato è stato inviato", 'success');
+                                        LoadCertificato(@Model.Dipendente.ID_DIPENDENTE);
+                                    }
+                                    else {
+                                        swal("Ops...", data, 'error');
+                                    }
+                                },
+                                error: function () {
+                                    swal("Ops...", "Si è verificato un errore durante l'invio del file", 'error');
+                                }
+                            });
+                            break;
+                        default:
+                            swal("Oops...", data1, 'error');
+                    }
+                },
+                error: function (a, b, c) {
+                    swal("Oops...", c, 'error')
+                }
+            })
+
+        })
+    }
+
+    function RestoreDefaultTemplateMailCert() {
+        $.ajax({
+            url: '/Cessazione/RestoreDefaultTemplateCert',
+            type: 'POST',
+            cache: false,
+            dataType: 'html',
+            data: { idDip: @Model.Dipendente.ID_DIPENDENTE },
+            success: function (data) {
+                switch (data) {
+                    case "OK":
+                        swal("OK", "Mail ripristinata con successo", 'success');
+                        RaiOpenAsyncModal("modal-cert-servizio", '/Cessazione/GestioneCertServ', { idDip: @Model.Dipendente.ID_DIPENDENTE }, null, 'POST');
+                        break;
+                    default:
+                        swal("Oops...", data, 'error');
+                }
+            },
+            error: function (a, b, c) {
+                swal("Oops...", c, 'error')
+            }
+        })
+    }
+
+    function SalvaMailCert() {
+        $.ajax({
+            url: '/Cessazione/SaveTemplateMailCert',
+            type: 'POST',
+            cache: false,
+            dataType: 'html',
+            data: { idDip: @Model.Dipendente.ID_DIPENDENTE, testo: $('#MailTesto').val() },
+            success: function (data) {
+                switch (data) {
+                    case "OK":
+                        swal("OK", "Mail salvata con successo", 'success');
+                        RaiOpenAsyncModal("modal-cert-servizio", '/Cessazione/GestioneCertServ', { idDip: @Model.Dipendente.ID_DIPENDENTE }, null, 'POST');
+                        break;
+                    default:
+                        swal("Oops...", data, 'error');
+                }
+            },
+            error: function (a, b, c) {
+                swal("Oops...", c, 'error')
+            }
+        })
+    }
+</script>

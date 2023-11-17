@@ -1,0 +1,362 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model sidebarModel
+
+<style>
+    /*.ulRelease {
+        list-style: none;
+        padding-left: 0px !important;
+    }
+
+    #releaseNoteLink {
+        font-size: 1.2rem;
+        cursor: pointer;
+        color: #7c8589;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        padding: 12px 3px;
+        text-decoration: none;
+        margin-top: -7px;
+    }
+
+    .li-release {
+        padding: 14px 13px;
+        line-height: 22px;
+    }
+
+    #countNews {
+        margin-left: 20px !important;
+    }*/
+
+    /*
+    #sidebar-left{
+        padding-bottom: 0px!important;
+    }
+    .nano-content{
+        padding-bottom: 0px!important;
+    }
+
+    .guidaUtilizzo{
+        margin-top:3px;
+    }
+    html.no-overflowscrolling .nano{
+        height: 90%!important;
+    }*/
+
+    #sidebar-left{
+        display:flex;
+        flex-direction: column;
+        padding-bottom: 0px;
+    }
+</style>
+
+@helper MenuRaiPerMe ( )
+{
+    Model.sezioni = Model.sezioni.Where( s => s.Titolo != null && !s.Titolo.StartsWith( "*" ) ).ToList( );
+
+    if ( Model.sezioni.Any( a => a.codiceMy == "MY" ) )
+    {
+        foreach ( var sez in Model.sezioni.Where( a => a.codiceMy == "MY" ).OrderBy( x => x.progressivo ) )
+        {
+            //Sezioni
+            if ( sez.customView == null )
+            {
+            }
+            else
+            {
+
+                string s = "";
+
+                if ( sez.attivo )
+                {
+                    s = "active";
+                }
+
+                <li role="presentation">
+                    <a role="menuitem" tabindex="1000" class="@s nav-active rai-sidebar-item" href="@sez.customView">
+                        <i class="fa fa-home" aria-hidden="true"></i>
+                        <span class="rai-text-normal">@sez.nomeSezione</span>
+                    </a>
+                </li>
+            }
+        }
+    }
+
+    if ( Model.sezioni.Any( a => a.codiceMy == "DATI" ) )
+    {
+        @VoceMenuRaiPerMe( "I miei dati" , "DATI" , "fa fa-user" )
+    }
+
+    if (Model.sezioni.Any(a => a.codiceMy == "DASH"))
+    {
+        @VoceMenuRaiPerMe("DASHBOARD", "DASH", "icon-speedometer")
+    }
+
+    if ( Model.sezioni.Any( a => a.codiceMy == "LAVO" ) )
+    {
+        @VoceMenuRaiPerMe( "Approvazioni" , "LAVO" , "fa fa-check-square")
+    }
+
+    if ( Model.sezioni.Any( a => a.codiceMy == "PRESE" ) )
+    {
+        @VoceMenuRaiPerMe( "Le mie presenze" , "PRESE" , "fa fa-clock-o")
+    }
+
+    if ( Model.sezioni.Any( a => a.codiceMy == "PLACE" ) )
+    {
+        @VoceMenuRaiPerMe( "Le mie app" , "PLACE" , "fa fa-desktop")
+    }
+
+    if (Model.sezioni.Any(a => a.codiceMy == "RICH"))
+    {
+        @VoceMenuRaiPerMe("LE MIE RICHIESTE", "RICH", "icon-pencil")
+    }
+
+    if ( Model.sezioni.Any( a => a.codiceMy == "DOCU" ) )
+    {
+        @VoceMenuRaiPerMe( "I miei documenti" , "DOCU" , "fa fa-folder-open")
+    }
+
+    if ( Model.sezioni.Any( a => a.codiceMy == "SITUA" ) )
+    {
+        @VoceMenuRaiPerMe( "La mia situazione" , "SITUA" , "icon icon-wallet text-bold")
+    }
+
+    if ( Model.sezioni.Any( a => a.codiceMy == "ATTIVI" ) )
+    {
+        @VoceMenuRaiPerMe( "Le mie attività" , "ATTIVI" , "fa fa-bookmark")
+    }
+
+
+
+    if (Model.sezioni.Any(a => a.codiceMy == "SETTINGS"))
+    {
+        foreach (var sez in Model.sezioni.Where(a => a.codiceMy == "SETTINGS").OrderBy(x => x.progressivo))
+        {
+            //Sezioni
+            if (sez.customView == null)
+            {
+            }
+            else
+            {
+
+                string s = "";
+
+                if (sez.attivo)
+                {
+                    s = "active";
+                }
+
+                <li role="presentation">
+                    <a role="menuitem" tabindex="1000" class="@s nav-active" href="@sez.customView">
+                        <i class="fa fa-cog text-primary" aria-hidden="true"></i>
+                        <span>@sez.nomeSezione.ToUpper()</span>
+                    </a>
+                </li>
+            }
+        }
+        <li role="presentation">
+            <hr role="presentation" style="background-color: #2e3b42; margin-right: 35px; margin-top: 10px; margin-bottom: 8px;">
+        </li>
+    }
+
+
+}
+
+
+
+@helper VoceMenuRaiPerMe ( string menuTitle , string menuCode , string menuIcon )
+{
+    <li class="nav-parent" role="presentation">
+        <a role="menuitem" aria-haspopup="true" tabindex="1010" class="rai-sidebar-item">
+            <i class="@menuIcon" aria-hidden="true"></i>
+            <span class="rai-text-normal">@menuTitle</span>
+        </a>
+        <ul role="menu" class="nav nav-children">
+
+            @{
+                bool authRifornimenti = myRai.Controllers.RifornimentiController.checkAuth_VedereRifornimenti( myRaiHelper.CommonHelper.GetCurrentUserMatricola( ) );
+            }
+
+            @foreach ( var sez in Model.sezioni.Where( a => a.codiceMy == menuCode ).OrderBy( x => x.progressivo ) )
+            {
+                // Filtro per non mostrare la voce del menu 'Rifornimenti' ai non dirigenti o ai dipendeti che non hanno rif negli ultimi 2 anni. Gianluca
+                if ( sez.nomeSezione == "Rifornimenti" && authRifornimenti == false )
+                { continue; }
+
+                if ( sez.vociMenu.Count > 0 )
+                {
+                    <li class="nav-parent " role="presentation">
+                        <a role="menuitem" aria-label="@sez.nomeSezione" aria-haspopup="true" tabindex="1011" class="rai-sidebar-item ">
+                            <span class="rai-text-subitem">@sez.nomeSezione</span>
+                        </a>
+                        <ul role="menu" class="nav nav-children">
+                            @foreach ( var voce in sez.vociMenu.OrderBy( x => x.progressivo ) )
+                            {
+                                <li role="presentation">
+                                    <a role="menuitem" aria-label="@sez.nomeSezione" href="@voce.customView" class="rai-sidebar-item "><span class="pad-left-15">@voce.nomeSezione</span></a>
+                                </li>
+                            }
+                        </ul>
+                    </li>
+                }
+                else
+                {
+                    string s = "";
+                    if ( sez.attivo )
+                    {
+                        s = "nav-active";
+                    }
+
+                    <li role="presentation">
+                        <a role="menuitem" aria-label="@sez.nomeSezione" tabindex="1020" class="@s rai-sidebar-item gapp-rich-@sez.RichiedeGapp.ToString()  gapp-chiuso-@UtenteHelper.GappChiuso().ToString()" href="@sez.customView">
+                            <span class="rai-text-subitem">@sez.nomeSezione</span>
+                        </a>
+                    </li>
+                }
+            }
+        </ul>
+    </li>
+}
+
+<!-- start: sidebar -->
+<aside id="sidebar-left" class="rai-sidebar rai-sidebar-dark sidebar-left sidebar-left">
+
+    <div class="nano">
+        <div class="nano-content">
+            <nav id="menu" class="nav-main" role="navigation">
+
+
+                @{
+                    if ( !Model.HeaderName.Equals( "Svil_Header" , StringComparison.InvariantCultureIgnoreCase ) )
+                    {
+                        <ul role="menubar" aria-label="Navigazione" class="nav nav-main  visible-xs">
+                            @{
+                                if ( Model.HeaderMenu != null )
+                                {
+                                    foreach ( var voce in Model.HeaderMenu.Where( m => m.MinimizedModeEnabled ).ToList( ) )
+                                    {
+                                        <li role="presentation">
+                                            <a role="menuitem" tabindex="1030" class="nav-active rai-sidebar-item" href="@(voce.Link)" title="@(voce.Title)">
+                                                <i class="icons text-primary" aria-hidden="true"></i>
+                                                <span class="rai-text-normal">@(voce.Descrizione)</span>
+                                            </a>
+                                        </li>
+                                    }
+                                }
+                            }
+
+                            <li class="nav-parent nav-expanded" role="presentation">
+                                <a role="menuitem" tabindex="1040" class="nav-active rai-sidebar-item">
+                                    <i class="fa fa-home text-primary" aria-hidden="true"></i>
+                                    <span>RAI PER ME</span>
+                                </a>
+
+                                <ul role="menu" class="nav nav-children">
+                                    @if ( Model.sezioni != null )
+                                    {
+                                        @MenuRaiPerMe( )
+                                    }
+                                </ul>
+
+                            </li>
+                        </ul>
+                    }
+                }
+
+                <ul role="menubar" aria-label="Navigazione" aria-orientation="vertical" class="nav nav-main @( !Model.HeaderName.Equals("Svil_Header", StringComparison.InvariantCultureIgnoreCase) ? "hidden-xs" : "")">
+                    @if ( Model.sezioni != null )
+                    {
+                        @MenuRaiPerMe( )
+                    }
+                </ul>
+            </nav>
+
+
+        </div>
+    </div>
+    @if (Model.sezioni.Any(a => a.codiceMy == "NEWS"))
+    {
+        foreach (var sez in Model.sezioni.Where(a => a.codiceMy == "NEWS").OrderBy(x => x.progressivo))
+        {
+            if (sez.customView == null) { }
+            else
+            {
+                string s = "";
+
+                if (sez.attivo) { s = "active"; }
+
+                int releaseDaLeggere = 0;
+                releaseDaLeggere = releaseDaLeggere + ScrivaniaManager.GetRaipermeNewsModel("Release notes", false).NewsItems.Count(x => x.isNew);
+                <div @*style="margin-top: -14px;"*@>
+                    <ul class="ulRelease nav nav-main">
+                        <li role="presentation" class="li-release">
+                            <a role="menuitem" tabindex="1000" class="@s nav-active" href="@sez.customView"
+                               id="releaseNoteLink">
+                                <i class="fa fa-bullhorn text-primary" style="margin-right: 10px;" aria-hidden="true"></i>
+                                <span>@sez.nomeSezione.ToUpper()</span>
+                                @if (releaseDaLeggere > 0)
+                                {
+                                    <span class="rai-notification primary" id="countNews">
+                                        @releaseDaLeggere
+                                    </span>
+                                }
+                            </a>
+
+                        </li>
+                    </ul>
+                </div>
+            }
+        }
+    }
+    @if ( @ViewData["viewhelp"] != null )
+    {
+        <div>
+            <ul class="nav nav-main ">
+                <li>
+                    <a id="guida" tabindex="1100" class="nav-active rai-sidebar-help" href="javascript:Info('@ViewData["viewhelp"]');">
+                        <span class="interactive-primary-color rai-text-normal text-center">Guida all'utilizzo</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    }
+
+</aside>
+<!-- end: sidebar -->
+@*<li role="presentation">
+        <hr role="presentation" style="background-color: #2e3b42; margin-right: 35px; margin-top: 10px; margin-bottom: 8px;">
+    </li>*@
+
+
+@section afterjs {
+
+    <script type="text/javascript">
+        //Prendi in considerazione la scroll DELLA SIDEBAR
+        // all'open della modale tolgo il numero dalla variabile
+
+        $(function () {
+            debugger;
+            $(windows).scroll(function () {
+                debugger;
+                stickyMenuItem();
+            });
+
+        });
+
+        function stickyMenuItem() {
+            var sidebarItem = document.getElementsByClassName("stickyCustom");
+            debugger;
+            if ($('li.nav-parent').hasClass('nav-parent')) {
+                sidebarItem.css("position", "sticky");
+            } else {
+                sidebarItem.css("position", "");
+            }
+        }
+    </script>
+
+
+}

@@ -1,0 +1,190 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model myRaiData.MyRai_FormPrimario
+
+<!-- Icone -->
+@{
+    ViewBag.Title = Model.titolo;
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+}
+
+
+<section role="main" class="content-body">
+    <main id="main-container">
+        <div class="content">
+            <div class="row">
+                <div class="col-sm-12">
+                    @{
+                        bool GappChiuso = false;
+                    }
+
+                    @if (!UtenteHelper.GappChiuso())
+                    {
+
+                        bool formAbilitato = true;
+                        bool filtroGruppo = false;
+                        if (!String.IsNullOrWhiteSpace(Model.filtro_gruppo) && Model.filtro_gruppo != "*")
+                        {
+                            filtroGruppo = true;
+                            var p = CommonHelper.GetProfiliAdatti(CommonHelper.GetCurrentUserMatricola(), ApplicationType.RaiPerMe);
+                            if (!p.Any(x => x.nome_profilo == Model.filtro_gruppo))
+                            {
+                                formAbilitato = false;
+                            }
+                        }
+
+                        if (!String.IsNullOrWhiteSpace(Model.filtro_matricola) && Model.filtro_matricola != "*")
+                        {
+                            if (!filtroGruppo || (filtroGruppo && !formAbilitato))
+                            {
+                                formAbilitato = Model.filtro_matricola.Contains(myRaiHelper.CommonHelper.GetCurrentUserMatricola());
+                            }
+                        }
+
+                        if (!formAbilitato)
+                        {
+                            @Html.Partial("~/Views/Shared/NonAbilitatoError2.cshtml")
+                        }
+                        else
+                        {
+                            @Html.Partial("formuser", Model)
+                        }
+                    }
+                    else
+                    { @Html.Partial("_cics_chiuso")
+                    GappChiuso = true;
+                }
+
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- end: page -->
+</section>
+
+
+@section afterjs {
+    @Html.Raw(TempData["script"])
+    <script>
+        $.validator.addMethod("checkradiolimit", function (value, element) {
+            return CheckRadioLimit(value, element);
+        }, "Controllare il numero di risposte");
+
+        var $w4finish = $('#w4').find('ul.pager li.finish'),
+            $w4validator = $("#w4 form").validate({
+                //ignore: [":hidden:not(do-not-ignore)"],
+                rules: {
+                    matrixQuestion: {
+                        checkradiolimit: true
+                    }
+                },
+                highlight: function (element) {
+                    $(element).closest('.form-group').removeClass('has-success').addClass('has-error');
+                },
+                success: function (element) {
+                    $(element).closest('.form-group').removeClass('has-error');
+                    $(element).remove();
+                },
+                errorPlacement: function (error, element) {
+                if ($(element).data('matrix-answer') == true) {
+                    $(element).closest('tr').find('td').first().append(error);
+                }
+                else {
+                    element.parent().append(error);
+                }
+		    }
+            });
+
+        $w4finish.on('click', function (ev) {
+            ev.preventDefault();
+            var validator = $('#w4 form').validate();
+            var validated = $('#w4 form').valid();
+            if (validated) {
+                $("#w4 form").submit();
+                //new PNotify({
+                //    title: 'Congratulations',
+                //    text: 'You completed the wizard form.',
+                //    type: 'custom',
+                //    addclass: 'notification-success',
+                //    icon: 'fa fa-check'
+                //});
+            }
+            else {
+                validator.focusInvalid();
+            }
+        });
+
+        $('#w4').bootstrapWizard({
+            tabClass: 'wizard-steps',
+            nextSelector: 'ul.pager li.next',
+            previousSelector: 'ul.pager li.previous',
+            firstSelector: null,
+            lastSelector: null,
+            onNext: function (tab, navigation, index, newindex) {
+                Riepilogo();
+                var validator = $('#w4 form').validate();
+                var validated = $('#w4 form').valid();
+                if (!validated) {
+                    validator.focusInvalid();
+                    return false;
+                }
+            },
+            onTabClick: function (tab, navigation, index, newindex) {
+                if (newindex == index + 1) {
+                    return this.onNext(tab, navigation, index, newindex);
+                } else if (newindex > index + 1) {
+                    return false;
+                } else {
+                    return true;
+                }
+            },
+            onTabChange: function (tab, navigation, index, newindex) {
+                var $total = navigation.find('li').length - 1;
+                $w4finish[newindex != $total ? 'addClass' : 'removeClass']('hidden');
+                $('#w4').find(this.nextSelector)[newindex == $total ? 'addClass' : 'removeClass']('hidden');
+
+                var currentElement = navigation.find('li.active');
+                $(currentElement)[0].scrollIntoView();
+            },
+            onTabShow: function (tab, navigation, index) {
+                var $total = navigation.find('li').length - 1;
+                var $current = index;
+                var $percent = Math.floor(($current / $total) * 100);
+                $('#w4').find('.progress-indicator').css({ 'width': $percent + '%' });
+                tab.prevAll().addClass('completed');
+                tab.nextAll().removeClass('completed');
+                $(navigation.find('li')[index]).find('a').focus();
+            }
+        });
+    </script>
+}
+
+@*@Html.Partial("../Richieste/_nuovarichiesta", Model.Raggruppamenti)
+
+    @Html.Partial("../Richieste/richiestapermesso")
+    @Html.Partial("../Richieste/_motivoRifiuto")
+    @Html.Partial("../Richieste/_validarifiutatutti")
+    @Html.Partial("../Richieste/richiestamaggiorazione")
+
+    @Html.Partial("../Richieste/_popupInizialePreSelezione")*@
+
+
+
+
+
+
+<!-- FINE Partial view per modali -->
+
+<div id="pg-visible-xs" class="visible-xs"></div>
+<div id="pg-visible-sm" class="visible-sm"></div>
+<div id="pg-visible-md" class="visible-md"></div>
+<div id="pg-visible-lg" class="visible-lg"></div>
+
+
+

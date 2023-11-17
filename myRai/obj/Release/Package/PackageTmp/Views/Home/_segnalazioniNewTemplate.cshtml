@@ -1,0 +1,98 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model ModelDash
+
+<section class="panel">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle></a>
+
+        </div>
+
+        <h2 class="panel-title">Segnalazioni presenti</h2>
+
+
+    </header>
+    <div class="panel-body">
+
+        <table class="table table-striped" id="table-segnalazioni">
+
+            @if ( Model.dettaglioGiornata != null && Model.dettaglioGiornata.eccezioni != null && Model.dettaglioGiornata.eccezioni.Count( ) > 0 )
+            {
+                <thead>
+                    <tr>
+
+                        <th>Segnalazione</th>
+                        <th class="hidden-xs text-center" style="width: 15%;">Durata</th>
+                        <th class="hidden-xs text-center" style="width: 100px;">Stato</th>
+                        <th class="text-center">Azioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    @foreach ( MyRaiServiceInterface.it.rai.servizi.digigappws.Eccezione eccezione in Model.dettaglioGiornata.eccezioni )
+                    {
+
+                        <tr data-codice-ecc="@eccezione.cod.Trim()" data-ndoc-segn="@eccezione.ndoc" data-idecc-rich="@eccezione.IdEccezioneRichiesta" data-idric-parent="@eccezione.IdRichiestaPadre">
+
+                            <td class="va-middle">
+                                @eccezione.descrittivaConCodice<p><small>(@EccezioniManager.decodificaStatoEccezione( eccezione ))</small></p>
+                                @if ( eccezione.EsisteStorno )
+                                {
+
+                                    <em class="text-warning">Richiesta di storno @(eccezione.IdStatoStorno == 1 ? "in approvazione" : "approvata")</em>
+
+                                }
+                                @if ( eccezione.IdStato == 1 )
+                                {
+                                    <span class="label visible-xs label-warning">In approvazione</span>
+                                }
+                                @if ( eccezione.IdStato == 2 )
+                                {
+                                    <span class="label visible-xs label-success"><i class="fa fa-check"></i>Approvato</span>
+                                }
+                            </td>
+                            <td class="va-middle hidden-xs text-center">
+                                <span class="label label-gray col-xs-8 col-md-offset-2" style="padding: 7px">@eccezione.qta</span><br />
+                                @if ( @eccezione.dalle != null && @eccezione.dalle.Trim( ) != "00:00" )
+                                {
+                                    <span class="smaller">@eccezione.dalle.Trim( )/@eccezione.alle.Trim( )</span>
+                                }
+                            </td>
+                            <td class="va-middle hidden-xs text-center">
+                                @if ( eccezione.IdStato == 1 )
+                                {
+                                    <span class="label label-warning"><i class="fa fa-refresh fa-spin"></i>In approvazione</span>
+                                }
+                                @if ( eccezione.IdStato == 2 )
+                                {
+                                    <span class="label label-success"><i class="fa fa-check"></i>Approvato</span>
+                                }
+                            </td>
+                            <td class="va-middle">
+                                @if ( eccezione.IdEccezioneRichiesta != 0 && eccezione.IdStato < 60 )
+                                {
+                                    <button onclick="CancellaRichiestaDaSegnalazioni( @eccezione.IdRichiestaPadre,false )" class="js-swal-confirm btn btn-lg btn-default push-5-r" type="button">
+                                        <i class="fa fa-trash text-danger"></i>
+                                    </button>
+                                }
+
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+
+            }
+            else
+            {
+                @Html.Partial( "_nodati" )
+            }
+        </table>
+
+
+    </div>
+
+</section>

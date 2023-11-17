@@ -1,0 +1,131 @@
+﻿@using myRaiHelper;
+@using MVCProject.Custom_Helpers;
+@model myRaiCommonModel.Gestionale.ValutazioniPermission
+
+@{
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    ViewBag.Title = "HRIS - Valutazioni";
+
+    var permission = myRaiCommonManager.ValutazioniManager.GetPermission(CommonHelper.GetCurrentUserMatricola());
+}
+
+<link rel="stylesheet" href="~/assets/js/plugins/treant-js-master/Treant.css" />
+<script src="~/assets/js/plugins/treant-js-master/Treant.js"></script>
+<script src="~/assets/js/plugins/treant-js-master/vendor/raphael.js"></script>
+
+
+<style>
+    .manager-view {
+        height: 250px;
+        overflow-y: scroll;
+        overflow-x: hidden;
+        padding-right: 10px;
+        /*padding-left: 10px;*/
+    }
+</style>
+<section role="main" class="content-body" style="padding-top:10px;">
+
+
+    <!-- start: page -->
+    <!-- Main Container -->
+
+    <main id="main-container">
+
+        <div class="content">
+            @using (Html.BeginOnePageNav("valutazioni", "Valutazioni"))
+            {
+                <div class="row">
+                    <div class="col-sm-8">
+                        @Html.AsyncPartial("Valutazioni", "Elenco_Valutazioni", "~/Views/_RaiDesign/Widget_skeleton.cshtml", TempData, "manageAccordionCollapse();")
+                    </div>
+                    <div class="col-sm-4">
+                        <div style="display:none;">
+                            @Html.AsyncPartial("Valutazioni", "Widget_Schede", "~/Views/_RaiDesign/Widget_skeleton.cshtml", TempData)
+                        </div>
+                        @if (Model.Campaign)
+                        {
+                            @Html.AsyncPartial("Valutazioni", "Widget_Campagne", "~/Views/_RaiDesign/Widget_skeleton.cshtml", TempData, null, "Iniziative")
+                        }
+                        @Html.RenderAsyncPanel(PanelType.Panel, "Ricerca", "Widget_RicercaValutazione", "Valutazioni")
+                    </div>
+                </div>
+            }
+        </div>
+    </main>
+
+    <!-- end: page -->
+</section>
+
+
+
+@Html.RenderModal("campagna", size: ModalSize.Half)
+
+@Html.RenderModal("campagna-scheda", size: ModalSize.Half)
+
+@Html.RenderModal("valutazione")
+
+@Html.RenderModal("scheda-gest")
+
+@Html.RenderModal("cambio-valutatore", size: ModalSize.Half)
+
+@Html.RenderModal("sviluppo")
+
+<div class="modal fade" id="tree2" role="dialog" aria-hidden="true">
+    <div style="overflow-x:hidden;overflow-y:auto">
+        <div class="modal-dialog modal-dialog-popin" style="width:90%; ">
+            <div class="modal-content ">
+                <div id="tree2-internal" data-modal-wrapper="">
+                    <div class="block block-themed block-transparent no-margin-bottom">
+                        <div class="block-header" style="height: 58px; border-radius: 6px 6px 0px 0px; text-align:center">
+                            <label class="rai-font-modal-heading  text-center">Struttura Aziendale</label>
+                            <div class="block-options">
+                                <button data-dismiss="modal" class="btn btn-action-icon"><i class="glyphicon glyphicon-remove"></i></button>
+                            </div>
+                        </div>
+                        <div class="block-content">
+                            <section class="panel">
+                                <div class="panel-body">
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <button class="btn-action-icon" onclick="zoomIn()"><i class="fa fa-plus"></i></button>
+                                            <button class="btn-action-icon" onclick="zoomOut()"><i class="fa fa-minus"></i></button>
+                                        </div>
+                                    </div>
+                                    <div style="width:100%; height: 700px;">
+                                        <div id="organigramma2" style="width:100%; height: 100%;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function zoomIn() {
+        var org = $('#organigramma2');
+        var currentValue = $(org).data('zoom') + 25;
+        $(org).css('zoom', currentValue + '%');
+        $(org).data('zoom', currentValue);
+    }
+    function zoomOut() {
+        var org = $('#organigramma2');
+        var currentValue = $(org).data('zoom');
+        if (currentValue > 25)
+            currentValue = currentValue - 25;
+        $(org).css('zoom', currentValue + '%');
+        $(org).data('zoom', currentValue);
+    }
+
+    function test() {
+        RaiOpenAsyncModal("modal-sviluppo", "/Valutazioni/test");
+    }
+</script>
+
+@section afterjs {
+    @Html.Raw(TempData["script"])
+}

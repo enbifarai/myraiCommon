@@ -1,0 +1,105 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model JobPostingModel
+
+@{
+    Layout = "~/Views/Shared/_Layout3.cshtml";
+}
+
+<section role="main" class="content-body" style="margin-left:0px;">
+    <div class="modal" id="modalcvpdf" role="dialog" style="display:block;">
+        <div class="modal-dialog" style="width:100%; height:90%;">
+            <!-- Modal content-->
+            <div class="modal-content" style="height:95%;">
+                <div class="modal-header">
+                    <div class="row">
+                        <div class="col-xs-3">
+                            <h4><span class="fa fa-address-card"></span> Curriculum Vitae</h4>
+                        </div>
+                        <div class="col-xs-9 text-right">
+                            <button id="btnModificaCV" onclick="GoToModificaCV();" type="button" class="btn btn-secondary">Modifica curriculum</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-body" style="padding: 1px; height:80%">
+                    <iframe id="CVFrame" style="width:100%; height:100%;" src="@Url.Action("CreateCVPdf", "JobPosting")?idJob=@(Model.IdJob)&numerojp=@(Model.NumeroJP)"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section afterjs {
+    <script type="text/javascript">
+
+    function GoToModificaCV()
+    {
+        window.location = '@Url.Action( "Index", "CV_Online")';
+    }
+
+    function SendMyApplication( idJob, numeroJP )
+    {
+        $.ajax( {
+            url: "/JobPosting/SendMyApplication",
+            type: "POST",
+            data: {
+                idJob: idJob,
+                numerojp: numeroJP
+            },
+            cache: false,
+            async: false,
+            dataType: 'json',
+            success: function ( data )
+            {
+                if ( !data.success )
+                {
+                    var errorMessage = 'Si è verificato un errore!';
+                    if ( $.trim( data.errorMessage ).length > 0 )
+                    {
+                        errorMessage = data.errorMessage;
+                    }
+
+                    swal( 'Oops...',
+                        errorMessage,
+                        'error'
+                    )
+                    return false;
+                }
+
+                if ( $.trim( data.errorMessage ).length > 0 )
+                {
+                    swal(
+                            'Candidatura inviata correttamente!',
+                            $.trim( data.errorMessage ),
+                            'success'
+                        ).then( function ( result )
+                        {
+                            if ( result )
+                            {
+                                window.close();
+                            }
+                        } );
+                }
+                else
+                {
+                    swal(
+                        'Candidatura inviata correttamente!',
+                        '',
+                        'success'
+                    ).then( function ( result )
+                    {
+                        if ( result )
+                        {
+                            window.close();
+                        }
+                    } );
+                }
+
+            }
+        } );
+    }
+    </script>
+}

@@ -1,0 +1,61 @@
+﻿@using MVCProject.Custom_Helpers;
+@model Arturo.SectionTemplate
+
+@{
+    bool hasContent = !Model.OnlyHeader && !Model.OnlyFooter;
+
+    string classBlock = "";
+    switch (Model.BlockType)
+    {
+        case Arturo.BlockType.ContentTable:
+            classBlock = "block-content-table";
+            break;
+        default:
+            break;
+    }
+}
+
+@if (hasContent || Model.OnlyHeader)
+{
+    @Html.Raw("<div class=\"block block-transparent " + (classBlock) + "\">")
+    if (!String.IsNullOrWhiteSpace(Model.Title))
+    {
+        <div class="block-header block-content-mini">
+            <label class="rai-font-table-heading">@Model.Title</label>
+            @if (Model.Actions != null && Model.Actions.Any())
+            {
+                <div class="block-options">
+                    @foreach (var item in Model.Actions)
+                    {
+                        <button onclick="@item.OnClick" title="@item.Title" class="bnt btn-action-icon @(!String.IsNullOrWhiteSpace(item.Text)?"btn-action-icon-text":"")"><i class="@item.Icon"></i>@item.Text</button>
+                    }
+                </div>
+            }
+        </div>
+    }
+    @Html.Raw("<div class=\"block-content block-content-mini\">")
+    @Html.Raw("<div " + (!String.IsNullOrWhiteSpace(Model.ContentId) ? "id=\"" + Model.ContentId + "\"" : "") + ">")
+}
+
+@if (hasContent)
+{
+    if (Model.Async)
+    {
+        @Html.AsyncPartial(Model.Controller, Model.Action, "~/Views/_RaiDesign/BlockTemplateSkeleton.cshtml", TempData, Model.AsyncCallBack)
+    }
+    else if (Model.DrawSkeleton)
+    {
+        @Html.Partial("~/Views/_RaiDesign/BlockTemplateSkeleton.cshtml")
+    }
+    else if (!String.IsNullOrWhiteSpace(Model.ViewUrl))
+    {
+        @Html.Partial(Model.ViewUrl, Model.Model)
+    }
+}
+
+@if (hasContent || Model.OnlyFooter)
+{
+    @Html.Raw("</div>")
+    @Html.Raw("</div>")
+    @Html.Raw("</div>")
+}

@@ -1,0 +1,259 @@
+﻿@using myRaiCommonModel
+
+@model ModuloVM
+
+<div class="block block-themed block-transparent remove-margin-b">
+
+    <div class="block-header">
+        <label class="rai-font-modal-heading">
+            RINUNCIA AL TRATTAMENTO INTEGRATIVO E ALL’ULTERIORE DETRAZIONE
+        </label>
+        <div class="block-options">
+            <button id="@(Model.WidgetId)_ChiudiModale" data-dismiss="modal" class="btn btn-action-icon"><i class="glyphicon glyphicon-remove"></i></button>
+        </div>
+    </div>
+
+    <div class="row no-margin-left-right">
+        <!-- Colonna -->
+        <div class="col-sm-12 no-pad-left no-pad-right border-right ">
+            <div class="block-content block-content-full boxdate" style="margin-bottom: 0px; padding-bottom:5px; overflow-y: auto; height: 80vh">
+                <div class="row">
+                    <div class="col-xs-12" id="modulo-content-body" style="margin-left:5%; width:90%;">
+                        <br />
+                        <br />
+                        <div class="row">
+                            <span class="rai-font-text-heading">
+                                <center>
+                                    <b>
+                                        RINUNCIA AL TRATTAMENTO INTEGRATIVO E ALL’ULTERIORE DETRAZIONE <br />
+                                        (artt. 1 e 2 del DL n. 3 del 5.2.2020 conv, con Legge n. 21 del 2.4.2020)
+                                    </b>
+                                </center>
+                            </span>
+                        </div>
+                        <br />
+                        <br />
+                        <div class="row">
+                            <span class="rai-font-text-heading">
+                                @{
+                                    string txSott = "";
+                                    string txSott1 = "nato";
+                                    string dtNascita = "";
+
+                                    if (Model.DataNascita.HasValue)
+                                    {
+                                        dtNascita = Model.DataNascita.GetValueOrDefault().ToString("dd/MM/yyyy");
+                                    }
+
+                                    if (Model.Sesso == "M")
+                                    {
+                                        txSott = "Il sottoscritto";
+                                        txSott1 = "nato";
+                                    }
+                                    else
+                                    {
+                                        txSott = "La sottoscritta";
+                                        txSott1 = "nata";
+                                    }
+                                }
+                                @(txSott) @(Model.Nominativo), matricola @(Model.Matricola), @(txSott1) il @(dtNascita) a @(Model.LuogoNascita) codice fiscale @(Model.CodiceFiscale)
+                            </span>
+                        </div>
+                        <br />
+                        <br />
+                        <div class="row">
+                            <span class="rai-font-text-heading">
+                                <center>dichiara sotto la propria responsabilità</center>
+                            </span>
+                        </div>
+                        <br />
+                        <br />
+                        <div class="row">
+                            <span class="rai-font-text-heading">
+                                <b>di voler rinunciare</b> in quanto NON in possesso dei requisiti reddituali:
+                            </span>
+                            <ul>
+                                <li class="rai-font-text-heading">
+                                    al <u>trattamento integrativo</u> per il reddito complessivo fino a 28.000,00 euro
+                                    (art. 1 DL n. 3 del 5.2.2020) e all’<u>ulteriore detrazione</u> per il reddito complessivo
+                                    da 28.000,01 a 40.000,00 euro (art. 2 DL n. 3 del 5.2.2020).
+                                </li>
+                            </ul>
+                        </div>
+
+                        @{
+                            if (Model.GiaScelto)
+                            {
+                                <br />
+                                <br />
+                                <br />
+                                <div class="row">
+                                    <span class="rai-font-text-heading">Hai rifiutato in data, @(Model.DataCompilazione.GetValueOrDefault().ToString("dd/MM/yyyy"))</span>
+                                </div>
+                                <br />
+                                <br />
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Fine colonna -->
+    </div>
+</div>
+<div class="modal-footer" style="width:100%;height:60px;position:absolute;bottom:0px;text-align:center;border-top:none;">
+    @{
+        if (Model.GiaScelto)
+        {
+            if (Model.BtnAnnullaSceltaEnabled)
+            {
+                <button type="button" class="btn rai-btn-primary" onclick="AnnullaScelta();">@Model.BtnAnnullaSceltaText</button>
+            }
+
+            <button type="button" class="btn rai-btn-secondary" data-dismiss="modal" style="min-height:32px; padding: 6px 12px;">Chiudi</button>
+        }
+        else
+        {
+            <button type="button" class="btn rai-btn-primary" onclick="ConfermaScelta();">Rinuncio</button>
+        }
+    }
+</div>
+
+<script type="text/javascript">
+    function ConfermaScelta() {
+        swal({
+            title: 'Conferma selezione',
+            html: "<br><p class='rai-font-md'>Sicuro di voler continuare?</p><p class='rai-font-md'>Si ricorda che non è possibile modificare la scelta.</p>",
+            showCancelButton: true,
+            confirmButtonClass: "btn btn-primary btn-lg",
+            confirmButtonText: "Si",
+            cancelButtonClass: "btn btn-secondary btn-lg",
+            cancelButtonText: "No",
+            closeOnConfirm: true,
+            customClass: 'rai',
+            reverseButtons: true
+        }).then(function () {
+            $.ajax({
+                url: '@Url.Action("SalvaSceltaModuloRinuncia", "Moduli")',
+                type: "POST",
+                dataType: "html",
+                data: {
+                    annoRif: '@(Model.Anno)'
+                },
+                success: function (data) {
+                    switch (data) {
+                        case "OK":
+                            $('#@(Model.WidgetId)_ChiudiModale').click();
+                            $.ajax({
+                                type: "POST",
+                                cache: false,
+                                async: false,
+                                contentType: "application/json; charset=utf-8",
+                                dataType: 'html',
+                                url: '@Url.Action( "RicaricaModuloRinuncia2020" , "Moduli")',
+                                success: function (data) {
+                                    $('#ContainerDiv_WdgRinuncia2020').html(data);
+                                },
+                                error: function (parm1, parm2, parm3) {
+                                }
+                            });
+                            swal({
+                                title: 'Modulo compilato con successo',
+                                type: 'success',
+                                confirmButtonClass: "btn btn-primary btn-lg",
+                                showConfirmButton: true,
+                                confirmButtonText: 'Ok',
+                                customClass: 'rai'
+                            })
+                            break;
+                        default:
+                            swal({
+                                title: data,
+                                type: 'error',
+                                confirmButtonClass: "btn btn-primary btn-lg",
+                                confirmButtonText: 'Ok',
+                                customClass: 'rai'
+                            })
+                            break;
+                    }
+                },
+                error: function (parm1, parm2, parm3) {
+                }
+            });
+        });
+    }
+
+    @{
+        if (Model.BtnAnnullaSceltaEnabled)
+        {
+
+        <text>
+            function AnnullaScelta() {
+                swal({
+                    title: @Html.Raw( Json.Encode( Model.BtnAnnullaSceltaTitleMessage ) ),
+                    html: @Html.Raw( Json.Encode( Model.BtnAnnullaSceltaConfirmMessage ) ),
+                    showCancelButton: true,
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    confirmButtonText: "Si",
+                    cancelButtonClass: "btn btn-secondary btn-lg",
+                    cancelButtonText: "No",
+                    closeOnConfirm: true,
+                    customClass: 'rai',
+                    reverseButtons: true
+                }).then(function () {
+                    $.ajax({
+                        url: '@Url.Action("AnnullaSceltaModuloRinuncia", "Moduli")',
+                        type: "POST",
+                        dataType: "html",
+                        data: {
+                            annoRif: '@(Model.Anno)'
+                        },
+                        success: function (data) {
+                            switch (data) {
+                                case "OK":
+                                    $('#@(Model.WidgetId)_ChiudiModale').click();
+                                    $.ajax({
+                                        type: "POST",
+                                        cache: false,
+                                        async: false,
+                                        contentType: "application/json; charset=utf-8",
+                                        dataType: 'html',
+                                        url: '@Url.Action( "RicaricaModuloRinuncia2020" , "Moduli")',
+                                        success: function (data) {
+                                            $('#ContainerDiv_WdgRinuncia2020').html(data);
+                                        },
+                                        error: function (parm1, parm2, parm3) {
+                                        }
+                                    });
+                                    swal({
+                                        title: 'Modulo annullato con successo',
+                                        type: 'success',
+                                        confirmButtonClass: "btn btn-primary btn-lg",
+                                        showConfirmButton: true,
+                                        confirmButtonText: 'Ok',
+                                        customClass: 'rai'
+                                    })
+                                    break;
+                                default:
+                                    swal({
+                                        title: data,
+                                        type: 'error',
+                                        confirmButtonClass: "btn btn-primary btn-lg",
+                                        confirmButtonText: 'Ok',
+                                        customClass: 'rai'
+                                    })
+                                    break;
+                            }
+                        },
+                        error: function (parm1, parm2, parm3) {
+                        }
+                    });
+                });
+            }
+
+        </text>
+
+        }
+    }
+
+</script>

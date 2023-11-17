@@ -1,0 +1,142 @@
+﻿@model myRaiCommonModel.cvModels.cvModel
+@using myRaiHelper;
+@using MVCProject.Custom_Helpers
+@{
+    int count_corsiRai, count_corsiPrivati;
+    string hide_corsiRai, hide_corsiPrivati;
+    var listaPrivati = Model.formazione;
+
+    myRai.Data.CurriculumVitae.cv_ModelEntities cvEnt = new myRai.Data.CurriculumVitae.cv_ModelEntities();
+    string matricola = myRaiHelper.UtenteHelper.EsponiAnagrafica()._matricola;
+    List<myRai.Data.CurriculumVitae.V_CVCorsiRai> listaRai = new List<myRai.Data.CurriculumVitae.V_CVCorsiRai>();
+    //listaRai = cvEnt.V_CVCorsiRai.Where(m => m.matricola == matricola).OrderByDescending(x => x.DataInizioDate).ToList();
+    listaRai = myRai.Business.RaiAcademyManager.GetCorsiFatti(matricola).OrderBy(x => x.DataInizioDate).ToList();
+
+    count_corsiRai = listaRai.Count;
+    count_corsiPrivati = listaPrivati.Count;
+
+    hide_corsiRai = (count_corsiRai == 0) ? "hide" : "";
+    hide_corsiPrivati = (count_corsiPrivati == 0) ? "hide" : "";
+}
+<section class="rai panel">
+    <header class="panel-heading">
+        <h2 class="panel-title ">
+            Corsi di Formazione
+            <span tabindex="-1" id="popCorsiFormazione" data-popover-content="#myPopover" class="push-5-l" data-toggle="popover" data-html="true" data-container="body" data-placement="right" title="" data-content="<ul><li>Nella sezione Corsi Rai sono visibili i corsi di formazione già fruiti e certificati dall'Azienda. Se hai dubbi contatta Rai Academy; se il corso è stato effettuato nelle Consociate contatta gli uffici di pertinenza</li><li>Nella sezione Corsi Extra Rai è possibile inserire i corsi effettuati fuori dall’Azienda.</li></ul>" data-original-title="&nbsp;" data-trigger="focus">
+                <i id="" class="fa fa-info-circle"></i>
+            </span>
+        </h2>
+        <div class="panel-actions rai-panel-actions">
+            <button class="btn-action-icon" data-toggle="modal" data-target="#modalFormazioneInserimento" onclick="InizializzaTuttoDopoAjax()"><span class="fa fa-plus"></span></button>
+        </div>
+    </header>
+
+    <div class="panel-body ">
+        <!-- -->
+        <div class="rai panel-group removebottom" id="accexperiences">
+            <div class="panel rai panel-accordion rai ">
+                <!-- pull-b-5  -->
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a class="accordion-toggle collapsed  " data-toggle="collapse" data-parent="#accordion" href="#formaz1" aria-expanded="false">
+                            <!-- padding-25 -->
+                            Corsi Rai
+                        </a>
+                    </h4>
+                    <div class="panel-actions @hide_corsiRai">
+                        <img src="~/assets/img/ico-lock.png"
+                             data-tourdb="tour-index-lock"
+                             @Html.IntroTourAttributes(Model.TourElements, "tour-index-lock") />
+                        <span  class="badge">@count_corsiRai</span>
+                    </div>
+                </div>
+                <div id="formaz1" class="accordion-body collapse" aria-expanded="false" style="height: 0px;">
+                    <div class="panel-body panel-body-nopadding-xs">
+                        @if (count_corsiRai == 0)
+                        {
+                            @Html.Partial("~/Views/CV_Online/partials/_no_elements.cshtml");
+                        }
+                        <table class="js-table-sections table table-hover rai-table rai-table-vcenter" id="rai-table">
+                            <tbody class="">
+                                @{
+                                    foreach (var elem in listaRai)
+                                    {
+                                        <tr>
+                                            <td class="text-left">
+                                                <p class="text-bold ">@elem.TitoloCorso</p><p class="">@elem.Societa</p><p class="text-italic ">@(elem.DataInizio == "" || elem.DataInizio == null ? "" : "Dal") @elem.DataInizio  @(elem.DataFine == "" || elem.DataFine == null ? "" : "Al") @elem.DataFine</p>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                        @Html.Partial("limitaTR", new myRaiCommonModel.limitaTRmodel("rai-table", "box-Formazione", 3, listaRai.Count()))
+
+                    </div>
+                </div>
+            </div>
+	        <div class="panel rai panel-accordion rai">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a class="accordion-toggle collapsed  " data-toggle="collapse" data-parent="#accordion" href="#formaz2" aria-expanded="false">
+                            Corsi Extra Rai
+                        </a>
+                    </h4>
+                    <div class="panel-actions @hide_corsiPrivati">
+                        <span  class="badge">@count_corsiPrivati</span>
+                    </div>
+                </div>
+                <div id="formaz2" class="accordion-body collapse" aria-expanded="false">
+                    <div class="panel-body panel-body-nopadding-xs">
+                        @if (count_corsiPrivati == 0)
+                        {
+                            @Html.Partial("~/Views/CV_Online/partials/_no_elements.cshtml");
+                        }
+                        <table class="js-table-sections table table-hover rai-table rai-table-vcenter" id="privati-table">
+                            <tbody class="">
+                                @{
+                                    string not_primo_elemento = "";
+                                    foreach (var elem in listaPrivati)
+                                    {
+                                        <tr>
+                                            <td class="text-left">
+                                                <p class="text-bold">@elem._corso</p><p>@elem._presso</p><p class="text-italic">Anno conseguimento: @elem._anno  @(elem._durata == "" || elem._durata == null ? "" : "Durata:") @elem._durata</p>
+                                            </td>
+                                            <td class="text-right" style="vertical-align:top!important">
+                                                <div class="btn-action-icon-container">
+                                                    <a class="btn-action-icon" onclick="ConfermaCancellazione_Formazione('@elem._matricola', '@elem._prog')"><i class="fa fa-trash"></i></a>
+                                                    <a class="btn-action-icon"  onclick="ModificaFormazione(@myRaiHelper.CommonHelper.TransformDates(Json.Encode(elem)), 'frk_modificaFormazione')"><i class="fa fa-pencil"></i></a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                        @Html.Partial("limitaTR", new myRaiCommonModel.limitaTRmodel("privati-table", "box-Formazione", 3, listaPrivati.Count()))
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+@Html.Partial("Formazione/partials/_modalInserimento", new myRaiCommonModel.cvModels.cvModel.Formazione(CommonHelper.GetCurrentUserMatricola()))
+
+<div class="rai modal right fade modalCheck" role="dialog" aria-hidden="true"  id="frk_modificaFormazione">
+    <div class="modal-dialog modal-dialog-popin">
+        <div class="rai modal-content">
+            <div id="frk_modificaFormazione-internal" data-modal-wrapper=""></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $('[data-toggle="popover"]').popover({
+        template: '<div class="popover"><div class="arrow"></div><div><span style="float:left; width:100%; display:inline;" class="popover-title"></span><span class="customPopOverCloser" style="float:right; width:5%; margin-top: -30px; margin-left: -3px; dispay:inline; cursor:pointer;">x</span></div><div class="clearfix"></div><div class="popover-content"></div></div>',
+        html: true
+    });
+</script>

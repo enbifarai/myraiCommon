@@ -1,0 +1,98 @@
+﻿@using myRaiData.Incentivi
+@using myRaiHelper
+@using myRai.Helpers;
+
+@model List<XR_DEM_DOCUMENTI>
+@{
+    System.Web.Script.Serialization.JavaScriptSerializer ser = new System.Web.Script.Serialization.JavaScriptSerializer( );
+    string json = "";
+}
+<script>
+    @Html.Raw("var jsmodel=" + json)
+</script>
+
+<section id="daapprovare" class="rai panel">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+        </div>
+        <h2 class="panel-title">Documenti dematerializzati</h2>
+    </header>
+    <div class="panel-body no-padding">
+        <div class="block" id="my-block" style="margin-bottom:0px;">
+            <div id="appr" class="block-content">
+                <div class="tab-pane active" id="tab-1">
+                    <div id="approv">
+                        @if ( ViewBag.ricercati != null && ViewBag.ricercati != "" && ViewBag.ricercati != "STATO S" )
+                        {
+                            <div class="row" style="height: 50px;border: none;padding-top:10px">
+                                <div class="col-sm-9" style="text-align:left">Hai cercato <b> @ViewBag.ricercati</b></div>
+                                <div class="col-sm-3" style="text-align:right"><a href="javascript:ResetRicercaPdf()">TORNA ALL'ELENCO</a></div>
+                            </div>
+                        }
+                            <table id="tabapp" class="js-table-sections table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 2%;"></th>
+                                        <th style="width: 20%;"></th>
+                                        <th class="hidden-xs" style="width: 20%;"></th>
+                                        <th style="width: 15%;"></th>
+                                        <th class="text-center" style="width: 25%;"></th>
+                                    </tr>
+                                </thead>
+                                @if ( Model != null && Model.Any( ) )
+                                {
+                                    var destinatari = Model.DistinctBy( w => w.IdPersonaDestinatario ).ToList( ).Select( w => new { w.MatricolaDestinatario , w.DataLettura } );
+
+                                    if ( destinatari != null && destinatari.Any( ) )
+                                    {
+                                        foreach ( var destinatario in destinatari )
+                                        {
+                                            <tbody id="@(destinatario.MatricolaDestinatario)" class="js-table-sections-header">
+                                                <tr>
+                                                    <td style="width:40px"
+                                                        class="text-center">
+                                                        <i class="fa fa-angle-right"></i>
+                                                    </td>
+                                                    <td colspan="4">
+                                                        <h5><b>@destinatario.MatricolaDestinatario</b> - @destinatario.MatricolaDestinatario </h5>
+                                                    </td>
+                                                    <td style="width:100px">
+                                                        @if ( Model.Where( w => w.MatricolaDestinatario.Equals( destinatario.MatricolaDestinatario ) ).Any( w => w.DataLettura == default( DateTime ) ) )
+                                                        {
+                                                            <i class="font80 m-r-4 fa fa-circle green"></i>
+                                                        }
+                                                        else
+                                                        {
+                                                            <i class="font80 m-r-4 fa fa-circle-thin"></i>
+                                                        }
+                                                        <span class="text-info">@Model.Where( w => w.MatricolaDestinatario.Equals( destinatario.MatricolaDestinatario ) ).Count( )  doc@(Model.Where( w => w.MatricolaDestinatario.Equals( destinatario.MatricolaDestinatario ) ).Count( ) > 1 ? "s" : "")</span>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                            <tbody class="tbodydata">
+                                                @{
+                                                    var pdfs = Model.Where( w => w.MatricolaDestinatario.Equals( destinatario.MatricolaDestinatario ) ).ToList( );
+                                                    if ( pdfs != null && pdfs.Any( ) )
+                                                    {
+                                                        foreach ( var pdf in pdfs )
+                                                        {
+                                                            @Html.Partial( "~/Views/Responsabile/_TRdafirmareDematerializzazione.cshtml" , pdf )
+                                                        }
+                                                    }
+                                                }
+                                            </tbody>
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    @Html.Partial( "_nodati" );
+                                }
+                            </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

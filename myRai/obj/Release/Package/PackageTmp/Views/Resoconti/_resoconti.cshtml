@@ -1,0 +1,504 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonModel.ess;
+@using MVCProject.Custom_Helpers;
+@using MyRaiServiceInterface.it.rai.servizi.digigappws;
+
+@model ResocontiModel
+
+<style>
+    .popover {
+        max-width: 425px;
+    }
+
+    .js-table-sections-header tr {
+        height: 56px;
+    }
+</style>
+
+<section class="panel">
+    <header class="panel-heading">
+        <div class="row">
+            <h2 id="lblResSett" class="panel-title">Resoconti settimanali</h2>
+            <div class="panel-actions rai-panel-actions">
+                <div class="hidden-xs btn-action-icon-switch" style="margin-right:10px">
+                    <button class="btn-action-icon active" data-resoconti="sede" title="Vista per sede" href="#" onclick="changeResocontiView(this)"><i class="fa fa-comment-o"></i></button>
+                    <button class="btn-action-icon" href="#" data-resoconti="reparto" title="Vista per sede/reparto" onclick="changeResocontiView(this)"><i class="fa fa-calendar-o"></i></button>
+                </div>
+                <a href="#" aria-expanded="true" aria-labelledby="lblResSett" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+            </div>
+        </div>
+    </header>
+    <div class="panel-body  bg-base" style="padding:0px;">
+        <table id="tabresoconti" class="js-table-sections table  rai-table" role="grid">
+
+            @{
+                bool firstRow = true;
+            }
+
+            @if (Model.SediPresenze != null && Model.SediPresenze.Any())
+            {
+                foreach (var sede in Model.SediPresenze)
+                {
+                    if (sede.CodiceSede == "5TD30")
+                    {
+                        int a = 5;
+                    }
+                    if (sede.presenze == null || sede.presenze.periodi == null || !sede.presenze.periodi.Any() &&
+                        (sede.PDFdaRigenerare || sede.ConteggioPDFDaRigenerare > 0 || sede.PdfAncoraDaGenerare > 0))
+                    {
+
+                        <tbody class="tbodydata" id="tbody-@sede.CodiceSede">
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding-top: 15px; padding-bottom: 15px;">
+
+                                    <a href="javascript:ResSettimanaleScorri(false, 'tbody-@sede.CodiceSede','@sede.DataDa.ToString("dd/MM/yyyy")','@sede.DataA.ToString("dd/MM/yyyy")','per-@sede.CodiceSede')" style="margin-right:10px">
+                                        <span style="font-size: 10px" class="glyphicon glyphicon-triangle-left text-muted"></span>
+                                    </a>
+
+                                    <span id="per-@sede.CodiceSede">@sede.DataDa.ToString("dd MMMM") - @sede.DataA.ToString("dd MMMM yyyy")</span>
+
+                                    @if (@sede.IsNextWeekBrowsable)
+                                    {
+                                        <a href="javascript:ResSettimanaleScorri(true, 'tbody-@sede.CodiceSede','@sede.DataDa.ToString("dd/MM/yyyy")','@sede.DataA.ToString("dd/MM/yyyy")','per-@sede.CodiceSede')" style="margin-left:10px">
+                                            <span style="font-size: 10px" class="glyphicon glyphicon-triangle-right text-muted"></span>
+                                        </a>
+                                    }
+                                </td>
+                            </tr>
+                            @Html.Partial("~/Views/Shared/_NoDati.cshtml")
+
+                            @if (!sede.IsCurrentWeekPrimaDelBlocco && sede.IsPDFapprovabile)
+                            {
+                                <tr>
+                                    <td colspan="5" style="text-align: center">
+                                        @{
+                                            string statoPulsante = "";
+                                            string labelPulsante = "RESOCONTO VISIONATO, PREDISPONI PER LA FIRMA";
+                                            if (!sede.IsPDFpresent)
+                                            {
+                                                if (sede.SonoResponsabileDiReparti)
+                                                {
+                                                    if (sede.MieiRepartiGiaVisionati)
+                                                    {
+                                                        statoPulsante = "disable";
+                                                        labelPulsante = "IN ATTESA VISIONE ALTRI REPARTI";
+                                                    }
+                                                }
+                                                <a id="button-@sede.CodiceSede" href="javascript:GeneraPdfPresenze('@sede.CodiceSede','@sede.DataDa.ToString("ddMMyyyy")','@sede.DataA.ToString("ddMMyyyy")','button-@sede.CodiceSede','totale-@sede.CodiceSede')"
+                                                   class="@statoPulsante btn btn-default btn-scriv text-uppercase bg-puls_dash">
+                                                    @Html.Raw(
+                                                    //sede.IsPDFpresent && sede.DataPDFfirmato != null ?
+                                                    //"PDF FIRMATO IN DATA " + ((DateTime)sede.DataPDFfirmato).ToString("dd/MM/yyyy") :
+
+                                                    //sede.IsPDFpresent && sede.DataPDFgenerato != null ?
+                                                    //"PDF GENERATO IN DATA " + ((DateTime)sede.DataPDFgenerato).ToString("dd/MM/yyyy") :
+                                                    labelPulsante)
+                                                </a>
+                                            }
+                                            else if (sede.PDFdaRigenerare)
+                                            {
+                                                <a id="button-@sede.CodiceSede" href="javascript:GeneraPdfPresenze('@sede.CodiceSede','@sede.DataDa.ToString("ddMMyyyy")','@sede.DataA.ToString("ddMMyyyy")','button-@sede.CodiceSede','totale-@sede.CodiceSede')"
+                                                   class="@statoPulsante btn btn-default btn-scriv text-uppercase bg-puls_dash">
+                                                    @Html.Raw(
+                                                    sede.IsPDFpresent && sede.DataPDFfirmato != null ?
+                                                    "PDF FIRMATO IN DATA " + ((DateTime)sede.DataPDFfirmato).ToString("dd/MM/yyyy") + " DA RIGENERARE" :
+
+                                                    sede.IsPDFpresent && sede.DataPDFgenerato != null ?
+                                                    "PDF GENERATO IN DATA " + ((DateTime)sede.DataPDFgenerato).ToString("dd/MM/yyyy") + " DA RIGENERARE" :
+                                                    "")
+                                                </a>
+                                            }
+                                            else if (sede.DataPDFfirmato.HasValue || sede.DataPDFgenerato.HasValue)
+                                            {
+                                                <a id="button-@sede.CodiceSede" href="@(Url.Action("GetPDFPerSede","Approvazione"))?sede=@sede.CodiceSede&dataDa=@sede.DataDa.ToString("ddMMyyyy")&dataA=@sede.DataA.ToString("ddMMyyyy")" target="_blank" class="btn btn-default btn-scriv text-uppercase bg-puls_dash">
+                                                    @Html.Raw(
+                                                    sede.IsPDFpresent && sede.DataPDFfirmato != null ?
+                                                    "PDF FIRMATO IN DATA " + ((DateTime)sede.DataPDFfirmato).ToString("dd/MM/yyyy") :
+
+                                                    sede.IsPDFpresent && sede.DataPDFgenerato != null ?
+                                                    "PDF GENERATO IN DATA " + ((DateTime)sede.DataPDFgenerato).ToString("dd/MM/yyyy") :
+                                                    "")
+                                                </a>
+                                            }
+
+                                        }
+                                    </td>
+                                </tr>
+                            }
+
+
+                        </tbody>
+
+
+
+
+                        continue;
+                    }
+                    <tbody id="@sede.CodiceSede" class="js-table-sections-header">
+                        <tr role="row" tabindex="@(firstRow?"0":"-1")" aria-label="Per la sede @sede.CodiceSede hai @sede.PdfAncoraDaGenerare PDF da esaminare">
+                            <td style="padding-top: 16px;" class="interactive-primary-color text-center">
+                                <i class="fa fa-angle-right"></i>
+                            </td>
+                            <td colspan="4" class="no-padding-left">
+                                <div class="row">
+                                    <div class="col-xs-12 col-sm-8 no-padding-left">
+                                        @*<h5><b class="cod-sede">@sede.CodiceSede </b><- @sede.DescrizioneSede</h5>*@
+                                        <h5><span class="rai-font-md-bold">@sede.CodiceSede</span><span class="rai-font-md"> - @CommonHelper.ToTitleCase(sede.DescrizioneSede)</span></h5>
+                                    </div>
+                                    <div class="col-xs-12 col-sm-4 text-right" style="padding-top: 10px" id="div-tot-@sede.CodiceSede">
+                                        @if (Model.onlypreview)
+                                        {
+                                            <i class="fa fa-spinner fa-spin" style="margin-right: 3px;"></i> <span style="font-size:10px">Verifica pregresso in corso...</span>
+                                        }
+                                        @if ((sede.PdfAncoraDaGenerare > 0 && sede.presenze != null && sede.presenze.periodi != null && sede.presenze.periodi.Length > 0) ||
+                                            sede.PDFdaRigenerare)
+                                        {
+                                            if (sede.PdfAncoraDaGenerare + sede.ConteggioPDFDaRigenerare == 1 && sede.DataInizioPDFseUnoSoloDaGenerare != null)
+                                            {
+                                                DateTime DendBefore = ((DateTime)sede.DataInizioPDFseUnoSoloDaGenerare).AddDays(-1);
+                                                DateTime DStartBefore = ((DateTime)sede.DataInizioPDFseUnoSoloDaGenerare).AddDays(-7);
+                                                <a class="stop-prop-execute" data-execute="ResSettimanaleScorri(true,'tbody-@sede.CodiceSede','@DStartBefore.ToString("dd/MM/yyyy")','@DendBefore.ToString("dd/MM/yyyy")','per-@sede.CodiceSede')">
+                                                    @if (sede.PdfAncoraDaGenerare + sede.ConteggioPDFDaRigenerare > 0)
+                                                    {
+                                                        <span id="totale-@sede.CodiceSede" class="base-text text-center rai-text-bold-12 rai-alert-dot">
+                                                            @(sede.PdfAncoraDaGenerare + sede.ConteggioPDFDaRigenerare) da esaminare
+                                                        </span>
+                                                    }
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                string tooltip = "";
+                                                if (sede.DateConPDFDaRigenerareOFirmare != null && sede.DateConPDFDaRigenerareOFirmare.Any())
+                                                {
+                                                    tooltip = "<span>Periodi in evidenza:</span><br>";
+
+                                                    foreach (var myDate in sede.DateConPDFDaRigenerareOFirmare)
+                                                    {
+
+                                                        tooltip += "<br><span>" + String.Format("dal {0} al {1}\r\n", myDate.ToString("dd/MM/yyyy"), myDate.AddDays(6).ToString("dd/MM/yyyy")) + "</span>";
+                                                    }
+                                                }
+                                                if (sede.PdfAncoraDaGenerare + sede.ConteggioPDFDaRigenerare > 0)
+                                                {
+                                                    <span id="totale-@sede.CodiceSede" data-html="true" data-toggle="tooltip" title="@(tooltip)" class="rai-text-bold-12 base-text text-center rai-alert-dot">
+                                                        @(sede.PdfAncoraDaGenerare + sede.ConteggioPDFDaRigenerare) da esaminare
+                                                    </span>
+                                                }
+                                                @*<span id="totale-@sede.CodiceSede" data-html="true" data-toggle="tooltip" title="@(tooltip)" class="rai-text-bold-12 base-text text-center rai-alert-dot">
+                                                    @if (sede.PdfAncoraDaGenerare + sede.ConteggioPDFDaRigenerare > 0)
+                                                    {
+                                                        @(sede.PdfAncoraDaGenerare + sede.ConteggioPDFDaRigenerare ) @:da esaminare
+                                                    }
+                                                </span>*@
+                                            }
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tbody class="tbodydata" id="tbody-@sede.CodiceSede">
+                        <tr>
+                            <td colspan="5" class="bg-neutrals-xl-10" style="padding: 15px; padding-left:30px; ">
+
+                                <a href="javascript:ResSettimanaleScorri(false, 'tbody-@sede.CodiceSede','@sede.DataDa.ToString("dd/MM/yyyy")','@sede.DataA.ToString("dd/MM/yyyy")','per-@sede.CodiceSede')" style="margin-right:10px">
+                                    @*<span style="font-size: 10px" class="glyphicon glyphicon-triangle-left text-muted"></span>*@
+                                    <span class="icon icon-arrow-left-circle scrolling-icon text-primary"></span>
+                                </a>
+
+                                <span class="scrolling-text" id="per-@sede.CodiceSede">@sede.DataDa.ToString("dd MMMM") - @sede.DataA.ToString("dd MMMM yyyy")</span>
+
+                                @if (sede.IsNextWeekBrowsable)
+                                {
+                                    <a href="javascript:ResSettimanaleScorri(true, 'tbody-@sede.CodiceSede','@sede.DataDa.ToString("dd/MM/yyyy")','@sede.DataA.ToString("dd/MM/yyyy")','per-@sede.CodiceSede')" style="margin-left:10px">
+                                        @*<span style="font-size: 10px" class="glyphicon glyphicon-triangle-right text-muted"></span>*@
+                                        <span class="icon icon-arrow-right-circle text-muted scrolling-icon text-primary"></span>
+                                    </a>
+                                }
+                                @if (sede.DataPDFgenerato == null && sede.DataPDFgenerato == null)
+                                {
+                                    <button class="btn rai-btn-small" onclick="AggiornaResoconti('@sede.CodiceSede','@sede.DataDa.ToString("dd/MM/yyyy")','@sede.DataA.ToString("dd/MM/yyyy")')" aria-label="Aggiorna dati" title="Aggiorna dati" style="min-width:80px;float:right">Aggiorna dati</button>
+                                }
+
+                            </td>
+
+                        </tr>
+
+
+                        <tr id="tr-tot-@sede.CodiceSede">
+                            @if (Model.onlypreview)
+                            {
+                                <td colspan="5" style="text-align:center">
+                                    <i class="fa fa-spinner fa-spin" style="margin-right: 3px;"></i>
+                                    <span style="font-size:10px">Verifica pregresso in corso...</span>
+                                </td>
+                            }
+                            @if (sede.DateConPDFDaRigenerareOFirmare != null && sede.DateConPDFDaRigenerareOFirmare.Any())
+                            {
+                                var dateOrdinate = sede.DateConPDFDaRigenerareOFirmare.OrderByDescending(w => w).ToList();
+                                DateTime primaDataUtile = dateOrdinate.Where(w => w.Date < sede.DataDa.Date).FirstOrDefault();
+                                if (primaDataUtile != null && primaDataUtile.Date != DateTime.MinValue.Date)
+                                {
+
+                                    <td colspan="5" style="text-align: center; padding-top: 15px; padding-bottom: 15px;">
+                                        <a href="javascript:ResSettimanaleScorri(false, 'tbody-@sede.CodiceSede','@primaDataUtile.AddDays(7).ToString("dd/MM/yyyy")','@primaDataUtile.AddDays(13).ToString("dd/MM/yyyy")','per-@sede.CodiceSede')" style="margin-right:10px">
+                                            <span>Visualizza il periodo dal @(primaDataUtile.ToString("dd/MM/yyyy")) al @(primaDataUtile.AddDays(6).ToString("dd/MM/yyyy"))</span>
+                                        </a>
+                                    </td>
+
+                                }
+                                else
+                                {
+                                    primaDataUtile = dateOrdinate.Max(w => w);
+                                    if (primaDataUtile.Date != sede.DataDa.Date)
+                                    {
+
+                                        <td colspan="5" style="text-align: center; padding-top: 15px; padding-bottom: 15px;">
+                                            <a href="javascript:ResSettimanaleScorri(false, 'tbody-@sede.CodiceSede','@primaDataUtile.AddDays(7).ToString("dd/MM/yyyy")','@primaDataUtile.AddDays(13).ToString("dd/MM/yyyy")','per-@sede.CodiceSede')" style="margin-right:10px">
+                                                <span>Visualizza il periodo dal @(primaDataUtile.ToString("dd/MM/yyyy")) al @(primaDataUtile.AddDays(6).ToString("dd/MM/yyyy"))</span>
+                                            </a>
+                                        </td>
+
+                                    }
+                                }
+                            }
+                        </tr>
+                        <tr>
+                            <td colspan="5" style="padding:6px;line-height:0.1em">
+                                <div class="row visible-md visible-lg">
+                                    <div class="col-sm-6 col-md-3 col-lg-3">&nbsp;</div>
+                                    @*<div class="col-md-7 col-lg-7 col-xl-6 text-right no-padding-right">*@
+                                    @for (int i = 0; i < 7; i++)
+                                    {
+                                        <div class="col-sm-1">
+                                            @*<b>@sede.DataDa.ToString("dd") </b><br />@sede.DataDa.ToString("ddd")*@
+                                            <div class="row rectangle-day push-10">
+                                                <div class="col-xs-12 no-padding">
+                                                    <span class="rai-font-md-bold">@sede.DataDa.AddDays(i).ToString("dd")</span>
+                                                </div>
+                                                <div class="col-xs-12 no-padding">
+                                                    <span class="rai-font-sm-neutral">@sede.DataDa.AddDays(i).ToString("ddd")</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                    @*</div>*@
+                                    <div class="col-sm-2">&nbsp;</div>
+                                </div>
+                            </td>
+                        </tr>
+                        @if (sede.presenze != null && sede.presenze.periodi != null)
+                        {
+                            <tr class="rai-resoconti rai-resoconti-sede rai-resoconti-visible">
+                                <td colspan="5" class="no-padding">
+                                    <table class="table rai-table-vcenter" style="margin:0px;">
+                                        @foreach (var p in sede.presenze.periodi)
+                                        {
+                                            if (sede.MieiReparti.Count() == 0 || sede.MieiReparti.Contains(p.dipendente.reparto))
+                                            {
+                                                @Html.Partial("_dipendenteTR", p)
+                                            }
+                                        }
+                                    </table>
+                                </td>
+                            </tr>
+                            <tr class="rai-resoconti rai-resoconti-reparto">
+                                <td colspan="5" class="no-padding">
+                                    <table class="js-table-sections table table-hover rai-table" style="margin:0px !important;">
+                                        @foreach (var rep in sede.presenze.periodi.GroupBy(x => x.dipendente.reparto).OrderBy(x => x.Key))
+                                        {
+                                            if (sede.MieiReparti.Count() > 0 && !sede.MieiReparti.Contains(rep.Key))
+                                            {
+                                                continue;
+                                            }
+
+                                            if (rep.Key != "00" && rep.Key != null)
+                                            {
+                                                var desRep = "";
+                                                if (!sede.MieiRepartiDes.TryGetValue(rep.Key, out desRep))
+                                                {
+                                                    desRep = "Descrizione non trovata";
+                                                }
+
+                                                <tr>
+                                                    <td colspan="5" class="bg-base-alternate">
+                                                        <div class="row">
+                                                            <div class="col-sm-12">
+                                                                <h5><span class="rai-font-md-bold">@rep.Key</span><span class="rai-font-md"> - @desRep</span></h5>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            }
+                                            foreach (var p in rep)
+                                            {
+                                                @Html.Partial("_dipendenteTR", p)
+                                            }
+                                        }
+                                    </table>
+                                </td>
+                            </tr>
+                        }
+
+                        <tr>
+                            <td colspan="5" style="text-align: center">
+                                @if (!sede.IsCurrentWeekPrimaDelBlocco && sede.IsPDFapprovabile &&
+                                    sede.presenze != null && sede.presenze.periodi != null &&
+                                    sede.presenze.periodi.Length > 0)
+                                {
+                                    string statoPulsante = "";
+                                    string labelPulsante = "RESOCONTO VISIONATO, PREDISPONI PER LA FIRMA";
+                                    if (!sede.IsPDFpresent)
+                                    {
+                                        if (sede.SonoResponsabileDiReparti)
+                                        {
+                                            if (sede.MieiRepartiGiaVisionati)
+                                            {
+                                                statoPulsante = "disable";
+                                                labelPulsante = "IN ATTESA VISIONE ALTRI REPARTI";
+                                            }
+                                        }
+                                        <a id="button-@sede.CodiceSede" href="javascript:GeneraPdfPresenze('@sede.CodiceSede','@sede.DataDa.ToString("ddMMyyyy")','@sede.DataA.ToString("ddMMyyyy")','button-@sede.CodiceSede','totale-@sede.CodiceSede')"
+                                           class="@statoPulsante btn btn-default btn-scriv text-uppercase bg-puls_dash">
+                                            @Html.Raw(
+                                            //sede.IsPDFpresent && sede.DataPDFfirmato != null ?
+                                            //"PDF FIRMATO IN DATA " + ((DateTime)sede.DataPDFfirmato).ToString("dd/MM/yyyy") :
+
+                                            //sede.IsPDFpresent && sede.DataPDFgenerato != null ?
+                                            //"PDF GENERATO IN DATA " + ((DateTime)sede.DataPDFgenerato).ToString("dd/MM/yyyy") :
+                                            labelPulsante)
+                                        </a>
+                                    }
+                                    else if (sede.PDFdaRigenerare)
+                                    {
+                                        <a id="button-@sede.CodiceSede" href="javascript:GeneraPdfPresenze('@sede.CodiceSede','@sede.DataDa.ToString("ddMMyyyy")','@sede.DataA.ToString("ddMMyyyy")','button-@sede.CodiceSede','totale-@sede.CodiceSede')"
+                                           class="@statoPulsante btn btn-default btn-scriv text-uppercase bg-puls_dash">
+                                            @Html.Raw(
+                                            sede.IsPDFpresent && sede.DataPDFfirmato != null ?
+                                            "PDF FIRMATO IN DATA " + ((DateTime)sede.DataPDFfirmato).ToString("dd/MM/yyyy") + " DA RIGENERARE" :
+
+                                            sede.IsPDFpresent && sede.DataPDFgenerato != null ?
+                                            "PDF GENERATO IN DATA " + ((DateTime)sede.DataPDFgenerato).ToString("dd/MM/yyyy")  + " DA RIGENERARE":
+                                            "")
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <a id="button-@sede.CodiceSede" href="@(Url.Action("GetPDFPerSede","Approvazione"))?sede=@sede.CodiceSede&dataDa=@sede.DataDa.ToString("ddMMyyyy")&dataA=@sede.DataA.ToString("ddMMyyyy")" target="_blank" class="btn btn-default btn-scriv text-uppercase bg-puls_dash">
+                                            @Html.Raw(
+                                            sede.IsPDFpresent && sede.DataPDFfirmato != null ?
+                                            "PDF FIRMATO IN DATA " + ((DateTime)sede.DataPDFfirmato).ToString("dd/MM/yyyy") :
+
+                                            sede.IsPDFpresent && sede.DataPDFgenerato != null ?
+                                            "PDF GENERATO IN DATA " + ((DateTime)sede.DataPDFgenerato).ToString("dd/MM/yyyy") :
+                                            "")
+                                        </a>
+                                    }
+                                }
+                            </td>
+                        </tr>
+                    </tbody>
+                    firstRow = false;
+                }
+            }
+            else
+            {
+                @Html.Partial("~/Views/Shared/_NoDati.cshtml")
+            }
+
+            @{
+                int sedi = Model.SediPresenze.Count();
+                int sediVuote1 = Model.SediPresenze.Where(s => s.presenze == null).Count();
+                int sediVuote2 = Model.SediPresenze.Where(s => s.presenze.periodi == null).Count();
+                int sediVuote3 = Model.SediPresenze.Where(s => s.presenze.periodi != null && s.presenze.periodi.Any()).Count();
+
+                if ((sediVuote1 == sedi) ||
+                    (sedi == sediVuote2) ||
+                    sediVuote3 == 0)
+                {
+                    @Html.Partial("~/Views/Shared/_NoDatidiv.cshtml")
+                }
+            }
+        </table>
+    </div>
+</section>
+<script>
+    function AggiornaResoconti(sede, datada, dataa) {
+
+        $.ajax({
+            url: '/resoconti/aggiornaresoconti',
+            type: "GET",
+            dataType: "json",
+            data: { sede: sede, datada: datada, dataa:dataa },
+            success: function (data) {
+                if (data.esito == true) {
+                    ResSettimanaleScorri(false, 'tbody-' + sede, data.data1, data.data2, 'per-' + sede);
+                }
+            }
+        });
+
+    }
+    function showPopover2(div, matr, data) {
+
+        $('[data-toggle="popover"]').popover("hide");
+        var d = data;
+
+        $.ajax({
+            url: '/ajax/getTimbratureAjaxView',
+            type: "GET",
+            dataType: "html",
+            data: { date: data, matr: matr },
+            success: function (data) {
+
+                //var popContent = $(data);
+                var popContent = document.createElement('div');
+                popContent.innerHTML = data;
+
+                $(popContent).find(".panel").css({ "margin-bottom": "0px", "width": "325px" });
+                $(popContent).find(".panel-body").css({ "border": "none", "box-shadow": "none", "-webkit-box-shadow": "none" });
+                $(popContent)
+                    .find(".icons.icon-login").removeClass("fa-2x").css("font-size", "")
+                    .find(".text-success").addClass("feedback-success-color").removeClass("text-success");
+                $(popContent)
+                    .find(".icons.icon-logout").removeClass("fa-2x").css("font-size", "")
+                    .find(".text-success").addClass("feedback-success-color").removeClass("text-success");
+                $(popContent).find(".timbratura").addClass("rai-font-md-bold").css("font-size", "");
+
+                $(popContent).find(".timbratura-row>div")
+                    .find("div:eq(2)").addClass("rai-font-sm-neutral").addClass("no-padding").removeClass("font-w500").css("font-size", "");
+
+                $(popContent).find(".timbratura-row>div>div").css({ "padding-top": "0px", "margin-top": "0px" })
+
+                var actions = $(popContent).find(".panel-actions");
+                $(actions).html('<a onclick="hidePopover()" class="panel-action panel-action-dismiss interactive-primary-color" ></a>')
+
+                var title = $(popContent).find(".panel-title");
+                $(title).text("Timbrature del " + d);
+                $(title).addClass("rai-caption").addClass("rai-caption-popover").parent().addClass("bg-base");
+
+                var cont = $(popContent).find("#timbraturetoday");
+                var codOrario = $(cont).attr("data-codice-orario");
+                var desOrario = $(cont).attr("data-desc-turno");
+
+                var content = $(popContent).find("#timbraturecontent");
+                $(content).prepend('<div class="row push-10-t push-10"><div class="col-sm-12 text-center"><label class="rai-label">' + codOrario + ' - ' + desOrario + '</label></div></div>');
+
+                $(div).attr('data-content', $(popContent).html());
+
+                $(div).popover('show')
+
+                $(".popover-content").css("padding", "0px");
+
+                //var topValue = parseInt($(".popover").css("top").replace("px", "")) + 15;
+                //$(".popover").css("top", topValue + "px");
+            }
+        });
+    }
+
+    CompletaResoconti();
+    $(".fa-exclamation-triangle").tooltip({ container: 'body' });
+
+</script>

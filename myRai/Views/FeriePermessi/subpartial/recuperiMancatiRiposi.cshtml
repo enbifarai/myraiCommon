@@ -1,0 +1,204 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model FerieDipendente
+<section class="panel">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" tabindex="0" aria-label="Recuperi mancati riposi" aria-expanded="true"></a>
+        </div>
+        <h2 class="panel-title">RR - Recuperi Riposi</h2>
+    </header>
+    <div class="panel-body panel-body-nopadding">
+        @Html.Partial( "~/Views/FeriePermessi/subpartial/IntestazioneBlocco.cshtml" , Model )
+
+        @{
+            var DettaglioPianificate = Model.GiorniFerie.Where( x => x.data > DateTime.Now || x.Stato == 10 );
+            var DettaglioUsufruite = Model.GiorniFerie.Where( x => x.data < DateTime.Now && x.Stato != 10 );
+            int TotalePianificate = DettaglioPianificate.Count( );
+            int TotaleUsufruite = DettaglioUsufruite.Count( );
+            int count = 1;
+        }
+        <div class="block" style="border-top: solid 1px #eee; margin-top: 8px; margin-bottom: 0px !important;">
+            <ul id="myul-rr" class="nav nav-tabs nav-tabs-alt nav-justified" data-toggle="tabs" role="tablist">
+                <li class="" role="presentation">
+                    <a role="tab" class="font-w600 rai-badge-anchor" tabindex="-1" aria-selected="false" aria-controls="permessiexusu" href="#permessiexusu" aria-expanded="false">
+                        USUFRUITI
+                        <div class="rai-badge-tab bg-neutrals-xl-10">
+                            <span class="text-smaller text-bold ">
+                                @TotaleUsufruite
+                            </span>
+                        </div>
+                    </a>
+                </li>
+                <li class="active" role="presentation">
+                    <a role="tab" class="font-w600 rai-badge-anchor" tabindex="-1" aria-selected="false" aria-controls="permessiexpia" href="#permessiexpia" aria-expanded="true">
+                        PIANIFICATI
+                        <div class="rai-badge-tab bg-neutrals-xl-10">
+                            <span class="text-smaller text-bold ">
+                                @TotalePianificate
+                            </span>
+                        </div>
+                    </a>
+                </li>
+            </ul>
+            <div class="block-content tab-content" style="border:0px;">
+                <div id="permessiexpia" class="tab-pane active" role="tabpanel">
+                                @{
+                        if ( DettaglioPianificate != null && DettaglioPianificate.Any( ) )
+                        {
+                            foreach ( var item in DettaglioPianificate )
+                            {
+                                <div class="row" role="row" style=" @(count > 1 ?"border-top: 1px solid lightgray;":"") padding:10px;">
+                                    <div class="col-xs-5 col-md-5">
+                                        <div class="rai-profile-widget">
+                                            <div class="rai-profile-info">
+                                                <span class="rai-font-md-neutral">@item.data.ToString( "d MMMM yyyy, dddd" )</span>
+                                                <br>
+                                                <span class="rai-font-sm">@item.Provenienza</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-xs-4 col-md-4">
+                                        <div class="rai-profile-info">
+                                            <span class="rai-font-md-bold ">
+                                                @if ( item.codiceVisualizzazione == "MR" || item.codiceVisualizzazione == "RR" )
+                                                {
+                                                    @: (@item.codiceVisualizzazione)
+                                                }
+                                                @if ( item.codiceVisualizzazione == "MR" || item.codiceVisualizzazione == "RR" )
+                                                {
+                                                    @: Giornata intera
+                                                }
+                                                else
+                                                {
+                                                    @item.Frazione
+                                                }
+                                            </span>
+                                            <br>
+                                            <span class="rai-font-sm"><i>@item.StatoDescrizione</i></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-xs-1 col-md-1">
+                                        @if ( item.Stato != -1 )
+                                        {
+                                            @Html.DisplayFor( e => item.Stato , "IdStato" )
+                                }
+                                    </div>
+                                    <div class="col-xs-2 col-md-2">
+                                        @if ( item.ShowDelete )
+                                {
+                                            <i class="icons icon-trash h4" style="cursor:pointer"></i>
+                                }
+                    </div>
+                </div>
+                                count++;
+                            }
+                        }
+                        else
+                        {
+                            <div class="row push-10">
+                                @Html.Partial( "~/Views/Shared/_NoDatidiv.cshtml" )
+                            </div>
+                        }
+                    }
+                </div>
+
+                <div id="permessiexusu" class="tab-pane" role="tabpanel">
+                                @{
+                        count = 1;
+                                }
+
+                    @{
+                        if ( DettaglioUsufruite != null && DettaglioUsufruite.Any( ) )
+                        {
+                            foreach ( var item in DettaglioUsufruite )
+                                {
+                                <div class="row" role="row" style=" @(count > 1 ?"border-top: 1px solid lightgray;":"") padding:10px;">
+                                    <div class="col-xs-5 col-md-5">
+                                        <div class="rai-profile-widget">
+                                            <div class="rai-profile-info">
+                                                <span class="rai-font-md-neutral ">@item.data.ToString( "d MMMM yyyy, dddd" )</span>
+                                                <br>
+                                                <span class="rai-font-sm">@item.Provenienza</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-xs-4 col-md-4">
+                                        <div class="rai-profile-info">
+                                            <span class="rai-font-md-bold ">
+                                                @if ( item.codiceVisualizzazione == "MR" || item.codiceVisualizzazione == "RR" )
+                                                {
+                                                    @: (@item.codiceVisualizzazione)
+                                                }
+                                                @if ( item.codiceVisualizzazione == "MR" || item.codiceVisualizzazione == "RR" )
+                                                {
+                                                    @: Giornata intera
+                                                }
+                                                else
+                                                {
+                                                    @item.Frazione
+                                }
+                                            </span>
+                                            <br>
+                                            <span class="rai-font-sm"><i>@item.StatoDescrizione</i></span>
+                                        </div>
+                    </div>
+                                    <div class="col-xs-1 col-md-1">
+                                        @if ( item.Stato != -1 )
+                                        {
+                                            @Html.DisplayFor( e => item.Stato , "IdStato" )
+                                        }
+                                    </div>
+                                    <div class="col-xs-2 col-md-2">
+                                        @if ( item.ShowDelete )
+                                        {
+                                            <i class="icons icon-trash h4" style="cursor:pointer"></i>
+                                        }
+                                    </div>
+                                </div>
+                                count++;
+                            }
+                        }
+                        else
+                        {
+                            <div class="row push-10">
+                                @Html.Partial( "~/Views/Shared/_NoDatidiv.cshtml" )
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="modal fade" id="gSpettantiModal_MR" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-cdf">
+                <h5 class="modal-title" id="exampleModalLabel">MR - Recuperi Mancati Riposi Spettanti</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="js-table-sections table table-hover" id="" role="grid">
+                    <tbody class="js-table-sections-header">
+                        @{
+                            bool firstRow = true;
+                        }
+                        @foreach ( var item in DettaglioUsufruite )
+                        {
+                            @Html.Partial( "~/Views/feriepermessi/subpartial/ModalFeriePermessiTR.cshtml " , item , new ViewDataDictionary( ) { { "FirstRow" , firstRow } } )
+                            firstRow = false;
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default btn-scriv text-uppercase bg-puls_dash" data-dismiss="modal">Chiudi</button>
+            </div>
+        </div>
+    </div>
+</div>

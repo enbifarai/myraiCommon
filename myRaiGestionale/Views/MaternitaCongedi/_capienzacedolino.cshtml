@@ -1,0 +1,704 @@
+﻿@model myRaiCommonModel.DettaglioAmministrazioneModel
+
+@{
+    int counter = 0;
+    bool OperazioniAncoraDaAvviare = !Model.Richiesta.XR_MAT_TASK_IN_CORSO.Any();
+}
+
+@if (Model.RaccoltaMesePrec != null)
+{
+
+    var ListaEccezioni = new myRaiData.digiGappEntities().L2D_ECCEZIONE.ToList();
+
+    <div class="row" style="padding-top:20px;padding-bottom:16px;">
+        <table class="js-table-sections table  rai-table" role="grid">
+            <tbody class="js-table-sections-header">
+                <tr role="row" tabindex="0">
+                    <td colspan="4" class="no-padding-left">
+                        <div class="row">
+                            <div class="col-sm-6">
+                                @{
+                                    string labelmese = "Raccolta mese di " + new DateTime(Model.RaccoltaMesePrec.Anno, Model.RaccoltaMesePrec.Mese, 1)
+                                        .ToString("MMMM yyyy");
+                                    double cestinate= (double)Model.RaccoltaMesePrec.Response.Eccezioni.Where(x => x.StatoEccezione == "C1").Count() * (double)1.2;
+                                    if (cestinate > 0)
+                                    {
+                                        cestinate = Math.Round(cestinate, 2);
+                                    }
+                                    double tg =Math.Round(Convert.ToDouble(Model.RaccoltaMesePrec.TotaleGiorni),2);
+                                    double totaliMesePrecedente =tg - cestinate;
+                                    if (totaliMesePrecedente < 0)
+                                    {
+                                        totaliMesePrecedente = 0;
+                                    }
+                                }
+                                <label class="rai-font-md-bold">@labelmese</label>
+                            </div>
+                            <div class="col-sm-6" style="text-align:right">
+                                <label class=" rai-font-md-bold">@totaliMesePrecedente/26</label>
+                                giorni
+                            </div>
+                        </div>
+                    </td>
+                    <td style="padding-top: 9px;width:20px" class="interactive-primary-color text-center">
+                        <i class="fa fa-angle-down" style="font-size:20px"></i>
+                    </td>
+                </tr>
+            </tbody>
+            <tbody class="tbodydata" style="border:none">
+
+                @if (Model.RaccoltaMesePrec.Response.Eccezioni == null || Model.RaccoltaMesePrec.Response.Eccezioni.Any() == false)
+                {
+                    <tr>
+                        <td>
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <span class="rai-font-md-neutral-bold">Nessun dato</span>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    <tr>
+                        <td>
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <span class="rai-font-md-neutral-bold">Tipologia congedo</span>
+                                </div>
+                                <div class="col-sm-6" style="text-align:right;padding-right:0px">
+                                    <span class="rai-font-md-neutral-bold">Giorni</span>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="5" class="no-padding-left">
+                            <div id="giorni-racc-prec">
+                                @foreach (var item in Model.RaccoltaMesePrec.Response.Eccezioni)
+                                {
+                                    bool Sospesa = myRaiCommonManager.MaternitaCongediManager.IsEccezioneSospesa(item.StatoEccezione);
+                                    bool Cestinata = myRaiCommonManager.MaternitaCongediManager.IsEccezioneCestinata(item.StatoEccezione);
+                                    string sosp = "none";
+                                    string cest = "none";
+                                    string valuex12 = "";
+                                    <div class="row row-cedo ">
+                                        <div class="col-sm-4">
+                                            @if (Sospesa)
+                                            {
+                                                sosp = "inline";
+                                            }
+                                            @if (Cestinata)
+                                            {
+                                                cest = "inline";
+                                            }
+
+                                            <span class="rai-font-md-bold">@item.CodiceEccezione</span>
+                                            <span style="display:@sosp" class="ecc-sospesa rai-label">Sospesa</span>
+                                            <span style="display:@cest" class="ecc-cestinata rai-label">Cestinata</span>
+                                            <br />
+
+                                            <span class="rai-font-sm">@(ListaEccezioni.Where(x => x.cod_eccezione == item.CodiceEccezione).Select(x => x.desc_eccezione).FirstOrDefault())</span>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span>@item.DataDocumento.ToString("dd/MM/yyyy")</span>
+                                            <span>  -  </span>
+                                            <br>
+                                            @if (Model.Richiesta.PIANIFICAZIONE_BASE_ORARIA == true)
+                                            {
+                                                if (myRaiCommonManager.MaternitaCongediManager.IsHalf( Model.Richiesta.ECCEZIONE))
+                                                {
+                                                    valuex12 = "0.6";
+                                                    <span class="rai-font-sm" style="font-style:italic">0.5 giorni in 30esimi</span>
+                                                }
+                                                else if (Model.Richiesta.ECCEZIONE.EndsWith("Q"))
+                                                {
+                                                    valuex12 = "0.3";
+                                                    <span class="rai-font-sm" style="font-style:italic">0.25 giorni in 30esimi</span>
+                                                }
+                                                else
+                                                {
+                                                    valuex12 = "1.2";
+                                                    <span class="rai-font-sm" style="font-style:italic">1 giorno in 30esimi</span>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                valuex12 = "1.2";
+                                                <span class="rai-font-sm" style="font-style:italic">1 giorno in 30esimi</span>
+                                            }
+
+                                        </div>
+                                        <div class="col-sm-4" style="text-align:right">
+                                            <span class="rai-font-md-neutral-bold" style="margin-right:6px"></span>
+                                            <span class="rai-font-md-neutral-bold"> </span> <label class="num-giorni">@valuex12</label>
+                                            @if (Model.InCaricoAMe)
+                                            {
+                                                <div class="btn-group flex-wrap dropleft">
+                                                    <button type="button" class="btn btn-default btn-scriv text-uppercase bg-puls_dash dropdown-toggle icons icon-options-vertical text-primary" style="padding-top: 3px;padding-bottom: 0px;height: 36px;margin-top: -2px;min-height: 20px; width: 36px;border: solid 1px #eee;" data-toggle="dropdown" aria-expanded="false" tabindex="-1" role="link"></button>
+                                                    <div class="dropdown-menu" style="background: #f3f3f3!important; font-weight:700; min-width:110px; margin-left:-75px;">
+
+                                                        <button type="button" class=" butt-sosp btn btn-default    bg-puls_dash dropdown-item rai-font-md" onclick="SospendiEccezione(@Model.Richiesta.ID, '@item.CodiceEccezione', '@item.DataDocumento.ToString("dd/MM/yyyy")', this)"
+                                                                style="display: @(Sospesa?"none":"inherit"); margin: 4px 2px;border: none;width: 100%;color: inherit!important;text-align: left;padding-left: 20px;">
+                                                            Sospendi
+                                                        </button>
+
+                                                        <button type="button" class="butt-ripr btn btn-default  bg-puls_dash dropdown-item rai-font-md" onclick="RipristinaEccezione(@Model.Richiesta.ID, '@item.CodiceEccezione', '@item.DataDocumento.ToString("dd/MM/yyyy")',this)"
+                                                                style="display: @(Sospesa||Cestinata?"inherit":"none");margin: 4px 2px;border: none; width: 100%; color: inherit!important;text-align: left;padding-left: 20px;">
+                                                            Ripristina
+                                                        </button>
+
+                                                        <button type="button" class="butt-elim btn btn-default  bg-puls_dash dropdown-item rai-font-md" onclick="EliminaEccezione(@Model.Richiesta.ID, '@item.CodiceEccezione', '@item.DataDocumento.ToString("dd/MM/yyyy")',this)"
+                                                                style="display: @(Cestinata?"none":"inherit"); margin: 4px 2px;border: none; width: 100%; color: inherit!important;text-align: left;padding-left: 20px;">
+                                                            Elimina
+                                                        </button>
+
+
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+
+            </tbody>
+        </table>
+    </div>
+}
+@foreach (var mese in Model.ElencoGiorniPerMese)
+{
+    DateTime PrimoDelMeseAttuale = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+
+    bool MesePassato = (mese.RiferimentoPrimoDelMese < PrimoDelMeseAttuale);
+    counter++;
+    <div class="row" style="padding-top:20px;padding-bottom:16px;">
+        <table id="cap-ced-@mese.RiferimentoPrimoDelMese.ToString("dd-MM-yyyy")" data-compreso="@(mese.CompresoTotalmente ? "1" : "")"
+               class="js-table-sections table  rai-table cap-ced" role="grid">
+
+            <tbody class="js-table-sections-header">
+                <tr role="row" tabindex="0">
+                    <td colspan="4" class="no-padding-left">
+                        <div class="row">
+                            <div class="col-sm-6">
+                                @{
+                                    string meseLabel = mese.RiferimentoPrimoDelMese.ToString("MMMM yyyy")
+                                        .Substring(0, 1).ToUpper() +
+                                        mese.RiferimentoPrimoDelMese.ToString("MMMM yyyy")
+                                        .Substring(1);
+                                }
+                                <label class="rai-font-md-bold">Capienza cedolino - @meseLabel</label>
+                            </div>
+                            <div class="col-sm-6" style="text-align:right">
+                                @{
+                                    int inco = mese.ElencoGiorni.Where(x => !x.Stornato && !x.Storno &&
+                                    (x.NonPresenteSuGetAnalisiEccezioni || x.NonPresenteSuGetRuoli)).Count();
+                                }
+                                @if (inco == 1 && MesePassato)
+                                {
+                                    <span id="giorni-incongruenti" data-giorni="@inco" class="text-warning rai-font-sm"
+                                          style="margin-right: 20px;">1 valore incongruente</span>
+                                }
+                                @if (inco > 1 && MesePassato)
+                                {
+                                    <span id="giorni-incongruenti" data-giorni="@inco"
+                                          class="text-warning rai-font-sm"
+                                          style="margin-right: 20px;">@(inco) valori incongruenti</span>
+                                }
+                                @{
+                                    float giorni26mi = myRaiCommonManager.MaternitaCongediManager.ControllaSe26(mese.RiferimentoPrimoDelMese.Year, mese.RiferimentoPrimoDelMese.Month, mese.TotaleGiorni, Model.Richiesta);
+                                    string limite = "26";
+                                    if (Model.Richiesta.GIORNI_DEFAULT26 != null)
+                                    {
+                                        if (Model.Richiesta.GIORNI_DEFAULT26 == (int)Model.Richiesta.GIORNI_DEFAULT26)
+                                        {
+                                            limite = ((int)Model.Richiesta.GIORNI_DEFAULT26).ToString();
+                                        }
+                                        else
+                                        {
+                                            limite = Model.Richiesta.GIORNI_DEFAULT26.ToString();
+                                        }
+                                    }
+                                }
+                                @{ 
+                                    giorni26mi = myRaiCommonManager.MaternitaCongediManager.ControllaSospeseCestinate(Model.ElencoGiorniPerMese, mese.RiferimentoPrimoDelMese.Year, mese.RiferimentoPrimoDelMese.Month, mese.TotaleGiorni, Model.Richiesta);
+                                }
+                                <label id="tot-giorni" data-totale-giorni="@Math.Round(giorni26mi,2)" 
+                                       data-meseanno="@mese.RiferimentoPrimoDelMese.ToString("MM/yyyy")"
+                                       class="tot-giorni rai-font-md-bold">@(Math.Round(giorni26mi, 2))/@limite</label>
+                                giorni
+                            </div>
+                        </div>
+                    </td>
+                    <td style="padding-top: 9px;width:20px" class="interactive-primary-color text-center">
+                        <i class="fa fa-angle-down" style="font-size:20px"></i>
+                    </td>
+
+                </tr>
+            </tbody>
+            <tbody class="tbodydata" style="border:none">
+                <tr>
+                    <td>
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <span class="rai-font-md-neutral-bold">Tipologia congedo</span>
+                            </div>
+                            <div class="col-sm-6" style="text-align:right;padding-right:0px">
+                                <span class="rai-font-md-neutral-bold">Giorni</span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="5" class="no-padding-left">
+                        <div id="giorni-cont">
+                            <form action="/maternitaCongedi/salvaeccezioniCongedi" method="POST" id="ecc-con-@counter">
+
+
+
+                                @{
+                                    int i = -1;
+                                    var list = mese.ElencoGiorni.OrderBy(x => x.DataDa).ThenBy(x => x.CodiceEccezione).ToList();
+                                }
+
+                                @for (int index = 0; index < list.Count(); index++)
+                                {
+                                    i++;
+                                    bool overlap = false;
+                                    bool needIntest = false;
+
+                                    var g = list[index];
+                                    string dayweek = g.DataDa.DayOfWeek.ToString();
+                                  //  if (g.CodiceOrario.StartsWith("9") && g.DataDa.DayOfWeek
+                                    bool MeseOld = (new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1) > g.DataDa);
+                                    bool Sospesa = myRaiCommonManager.MaternitaCongediManager.IsEccezioneSospesa(g.StatoEccez);
+                                    bool Cestinata = myRaiCommonManager.MaternitaCongediManager.IsEccezioneCestinata(g.StatoEccez);
+                                    for (int index2 = 0; index2 < list.Count(); index2++)
+                                    {
+                                        if (index == index2)
+                                        {
+                                            continue;
+                                        }
+                                        var periodo = list[index2];
+
+
+                                        overlap = g.DataDa == periodo.DataDa || (g.DataDa <= periodo.DataA && periodo.DataDa <= g.DataA);
+                                        if (overlap)
+                                        {
+                                            needIntest = index < index2;
+                                            break;
+                                        }
+                                    }
+
+
+                                    //for (int indexMinori = 0; indexMinori < index; indexMinori++)
+                                    //{
+                                    //    var periodo = list[indexMinori];
+                                    //    overlap = g.DataDa <= periodo.DataA && periodo.DataDa <= g.DataA;
+                                    //    if (overlap)
+                                    //    {
+                                    //        break;
+                                    //    }
+                                    //    //tStartA < tEndB && tStartB < tEndA;
+                                    //}
+
+                                    if (overlap && needIntest)
+                                    {
+                                        <div class="row bleft-orange" style="margin-top:10px">
+                                            <div class="col-sm-4">
+                                                <span class="text-warning rai-font-sm"> Periodi sovrapposti</span>
+                                            </div>
+                                        </div>
+                                    }
+
+                                    <div data-progr="@g.DataDa.ToString("ddMMyyyy")" class=" row row-cedo @(overlap ? "bleft-orange" : "")">
+                                        <input type="hidden" name="model[@i].meserif" value="@mese.RiferimentoPrimoDelMese.ToString("dd/MM/yyyy")" />
+                                        <input type="hidden" name="model[@i].idrichiesta" value="@Model.Richiesta.ID" />
+                                        <input type="hidden" name="model[@i].eccezione" value="@g.CodiceEccezione" />
+                                        <input class="stato-ecc" type="hidden" name="model[@i].statoeccezione" value="@g.StatoEccez" />
+                                        <input type="hidden" name="model[@i].datada" value="@g.DataDa.ToString("dd/MM/yyyy")" />
+                                        <input type="hidden" name="model[@i].dataa"
+                                               value="@(g.DataA == null ? "" : g.DataA.Value.ToString("dd/MM/yyyy"))" />
+                                        <input type="hidden" name="model[@i].giorni_old" value="@g.NumeroGiorniRuoli" class="giorni_old" />
+                                        @*<input type="hidden" name="model[@i].cestinata" value="@(Cestinata?"1":"0")*@
+                                        <div class="col-sm-4">
+                                            <span  class="codice-ecc rai-font-md-bold">@g.CodiceEccezione</span>
+                                            @{
+                                                string sosp = "none";
+                                                string cest = "none";
+                                            }
+                                            @if (Sospesa)
+                                            {
+                                                sosp = "inline";
+                                            }
+                                            @if (Cestinata)
+                                            {
+                                                cest = "inline";
+                                            }
+                                            <span style="display:@sosp" class="ecc-sospesa rai-label">Sospesa</span>
+                                            <span style="display:@cest" class="ecc-cestinata rai-label">Cestinata</span>
+                                            <br />
+                                            <span class="rai-font-sm">@g.DescEccezione</span>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            @{ 
+                                                string gsett = "";
+                                                if (g.DataA == null || g.DataA == g.DataDa)
+                                                {
+                                                    gsett = g.DataDa.ToString("ddd");
+                                                    gsett = gsett.Substring(0, 1).ToUpper() + gsett.Substring(1) + " ";
+                                                }
+                                           }
+                                            <span>@gsett@g.DataDa.ToString("dd/MM/yyyy")    </span>
+                                            @if (g.DataA == null)
+                                            {
+                                                <span>  -  </span>
+                                            }
+                                            else
+                                            {
+                                                <span>  -  @g.DataA.Value.ToString("dd/MM/yyyy") </span>
+                                            }
+                                            <br />
+                                            @if (g.DataA == null)
+                                            {
+                                                if (Model.Richiesta.PIANIFICAZIONE_BASE_ORARIA == true)
+                                                {
+                                                    if (myRaiCommonManager.MaternitaCongediManager.IsHalf(Model.Richiesta.ECCEZIONE))
+                                                    {
+                                                        <span class="rai-font-sm" style="font-style:italic">0.5 giorni in 30esimi</span>
+                                                    }
+                                                    else if (Model.Richiesta.ECCEZIONE.EndsWith("Q"))
+                                                    {
+                                                        <span class="rai-font-sm" style="font-style:italic">0.25 giorni in 30esimi</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="rai-font-sm" style="font-style:italic">1 giorno in 30esimi</span>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <span class="rai-font-sm" style="font-style:italic">1 giorno in 30esimi</span>
+                                                }
+
+                                            }
+                                            else
+                                            {
+
+                                                TimeSpan t = g.DataA.Value - g.DataDa;
+                                                <span class="rai-font-sm" style="font-style:italic">@(t.TotalDays + 1) giorni in 30esimi</span>
+
+                                            }
+
+                                        </div>
+                                        <div class="col-sm-4" style="text-align:right">
+                                            <span class="rai-font-md-neutral-bold" style="margin-right:6px"></span>
+                                            @if (Model.InCaricoAMe && g.NumeroGiorniRuoli != 0)
+                                            {
+                                                if (OperazioniAncoraDaAvviare && Model.EccezioneRisultante ==
+                                                    g.CodiceEccezione)
+                                                {
+                                                    if (overlap)
+                                                    {
+                                                        <span class="rai-font-md-neutral-bold">Raccolta</span>
+                                                    }
+
+                                                    <input name="model[@i].giorni" type="text" 
+                                                           
+                                                           data-giornosett="@g.DataDa.DayOfWeek"
+                                                           data-codiceorario="@g.CodiceOrario"
+                                                           @if (g.NonPresenteSuGetAnalisiEccezioni || g.NonPresenteSuGetRuoli) { @: style="border: solid 1px if;"
+                                                           }
+                                                           class="form-control voci-giorni" value="@g.NumeroGiorniRuoli">
+                                                }
+                                                else
+                                                {
+                                                    if (overlap)
+                                                    {
+                                                        <span class="rai-font-md-neutral-bold">Raccolta</span>
+                                                    }
+                                                    <label data-labelgiornosett="@g.DataDa.DayOfWeek"  data-codiceorario="@g.CodiceOrario" class="num-giorni">@g.NumeroGiorniRuoli</label>
+
+                                                    <input type="hidden" name="model[@i].giorni" value="@g.NumeroGiorniRuoli" />
+                                                }
+                                                if (MeseOld && !g.Stornato && !g.Storno)
+                                                {
+                                                    <div class="btn-group flex-wrap dropleft open">
+                                                        <button type="button" class="btn btn-default btn-scriv text-uppercase bg-puls_dash dropdown-toggle icons icon-options-vertical text-primary"
+                                                                style="padding-top: 3px;padding-bottom: 0px;height: 36px;margin-top: -2px;min-height: 20px; width: 36px;border: solid 1px #eee;"
+                                                                data-toggle="dropdown" aria-expanded="true" tabindex="-1" role="link"></button>
+                                                        <div class="dropdown-menu" style="background: #f3f3f3!important; font-weight:700; min-width:110px; margin-left:-75px;">
+
+                                                            <button type="button" class=" butt-sosp btn btn-default    bg-puls_dash dropdown-item rai-font-md" onclick="SospendiEccezione(@Model.Richiesta.ID, '@g.CodiceEccezione', '@g.DataDa.ToString("dd/MM/yyyy")', this)"
+                                                                    style="display: @(Sospesa?"none":"inherit"); margin: 4px 2px;border: none;width: 100%;color: inherit!important;text-align: left;padding-left: 20px;">
+                                                                Sospendi
+                                                            </button>
+
+                                                            <button type="button" class="butt-ripr btn btn-default  bg-puls_dash dropdown-item rai-font-md" onclick="RipristinaEccezione(@Model.Richiesta.ID, '@g.CodiceEccezione', '@g.DataDa.ToString("dd/MM/yyyy")',this)"
+                                                                    style="display: @(Sospesa||Cestinata?"inherit":"none"); margin: 4px 2px;border: none; width: 100%; color: inherit!important;text-align: left;padding-left: 20px;">
+                                                                Ripristina
+                                                            </button>
+
+                                                            <button type="button" class="butt-elim btn btn-default  bg-puls_dash dropdown-item rai-font-md" onclick="EliminaEccezione(@Model.Richiesta.ID, '@g.CodiceEccezione', '@g.DataDa.ToString("dd/MM/yyyy")',this)"
+                                                                    style="display: @(Cestinata?"none":"inherit"); margin: 4px 2px;border: none; width: 100%; color: inherit!important;text-align: left;padding-left: 20px;">
+                                                                Elimina
+                                                            </button>
+
+                                                        </div>
+                                                    </div>
+                                                }
+
+                                            }
+                                            else
+                                            {
+                                                if (g.NonPresenteSuGetRuoli)
+                                                {
+                                                    if (overlap)
+                                                    {
+                                                        <span class="rai-font-md-neutral-bold">Gapp</span>
+                                                    }
+                                                    if (Model.InCaricoAMe)
+                                                    {
+                                                        if (OperazioniAncoraDaAvviare)
+                                                        {
+                                                            <input name="model[@i].giorni" type="text" data-giornosett="@g.DataDa.DayOfWeek"
+                                                                    data-codiceorario="@g.CodiceOrario"
+                                                                   @if (g.NonPresenteSuGetAnalisiEccezioni || g.NonPresenteSuGetRuoli) { @: style="border: solid 1px #EE9600;"
+                                                                   }
+                                                                   class="form-control voci-giorni"
+                                                                   value="@g.NumeroGiorniGapp">
+                                                        }
+                                                        else
+                                                        {
+                                                            <label data-labelgiornosett="@g.DataDa.DayOfWeek" 
+                                                                    data-codiceorario="@g.CodiceOrario" class="num-giorni">@g.NumeroGiorniGapp</label>
+
+                                                            <input type="hidden" name="model[@i].giorni"
+                                                                   value="@g.NumeroGiorniGapp" />
+
+                                                        }
+
+                                                    }
+                                                    else
+                                                    {
+                                                        <label data-labelgiornosett="@g.DataDa.DayOfWeek" 
+                                                                data-codiceorario="@g.CodiceOrario" class="num-giorni">@g.NumeroGiorniGapp</label>
+                                                    }
+
+
+                                                }
+                                                else
+                                                {
+                                                    <span class="rai-font-md-neutral-bold">Raccolta</span>
+                                                    <label data-labelgiornosett="@g.DataDa.DayOfWeek" 
+                                                            data-codiceorario="@g.CodiceOrario" class="num-giorni">@g.NumeroGiorniRuoli</label>
+                                                }
+
+                                            }
+
+                                            @if (!g.Stornato && !g.Storno)
+                                            {
+                                                if (g.AggiuntoForzato)
+                                                {
+                                                    <br />
+                                                    <span class="text-warning rai-font-sm">Aggiunto dal sistema</span>
+                                                }
+                                                else if (g.NonPresenteSuGetAnalisiEccezioni)
+                                                {
+                                                    <br />
+                                                    <span class="text-warning rai-font-sm">Valore incongruente con Gapp</span>
+                                                }
+                                                else if (g.NonPresenteSuGetRuoli && MesePassato)
+                                                {
+                                                    <br />
+                                                    <span class="text-warning rai-font-sm">Valore incongruente con Raccolta</span>
+                                                }
+                                            }
+
+                                        </div>
+                                    </div>
+                                }
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+
+
+        </table>
+    </div>
+}
+
+<script>
+    function SospendiEccezione(idrichiesta, ecc, data, puls) {
+
+        swal({
+            title: "Conferma sospensione",
+            type: 'question',
+            html: "Confermi di sospendere il " + data + " ?",
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+
+            $.ajax({
+                url: '/MaternitaCongedi/SetStatoEccezioneSospesa',
+                type: "GET",
+                data: { data: data, eccezione: ecc, idrichiesta: idrichiesta },
+                dataType: "json",
+                complete: function () { },
+                success: function (data) {
+                    debugger
+                    if (data.esito == true) {
+                        swal({
+                            title: 'Eccezione sospesa correttamente',
+                            type: "success",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                        $(puls).closest(".row-cedo").find(".ecc-sospesa").show();
+                        $(puls).closest(".row-cedo").find(".ecc-cestinata").hide();
+                        $(puls).closest(".row-cedo").find(".butt-sosp").hide();
+                        $(puls).closest(".row-cedo").find(".butt-ripr").show();
+                        $(puls).closest(".row-cedo").find(".butt-elim").show();
+                        $(puls).closest(".row-cedo").attr("data-sospesa", "1");
+                        $(puls).closest(".row-cedo").find(".stato-ecc").val("SOSPESA");
+
+                        var parentTable = $(puls).closest("table");
+                        SriviTotaleGiorni(parentTable);
+                    }
+                    else {
+                        swal({
+                            title: 'Operazione non riuscita - ' + data.errore,
+                            type: "error",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                    }
+                }
+            });
+        });
+    }
+    function RipristinaEccezione(idrichiesta, ecc, data, puls) {
+        swal({
+            title: "Conferma ripristino",
+            type: 'question',
+            html: "Confermi di ripristinare il " + data + " ?",
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+            $.ajax({
+                url: '/MaternitaCongedi/SetStatoEccezioneRipristina',
+                type: "GET",
+                data: { data: data, eccezione: ecc, idrichiesta: idrichiesta },
+                dataType: "json",
+                complete: function () { },
+                success: function (data) {
+                    debugger
+                    if (data.esito == true) {
+                        swal({
+                            title: 'Eccezione ripristinata correttamente',
+                            type: "success",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                        $(puls).closest(".row-cedo").find(".ecc-cestinata").hide();
+                        $(puls).closest(".row-cedo").find(".ecc-sospesa").hide();
+                        $(puls).closest(".row-cedo").find(".butt-sosp").show();
+                        $(puls).closest(".row-cedo").find(".butt-ripr").hide();
+                        $(puls).closest(".row-cedo").find(".butt-elim").show();
+                        $(puls).closest(".row-cedo").removeAttr("data-sospesa");
+
+                        var rowIntera = $(puls).closest(".row-cedo");
+                        $(rowIntera).find(".voci-giorni").each(function () {
+                            $(this).val($(this).attr("oldval"));
+                        })
+
+                        var parentTable = $(puls).closest("table");
+                        SriviTotaleGiorni(parentTable);
+                    }
+                    else {
+                        swal({
+                            title: 'Operazione non riuscita - ' + data.errore,
+                            type: "error",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                    }
+                }
+            });
+
+
+
+        });
+    }
+
+    function EliminaEccezione(idrichiesta, ecc, data, puls) {
+        debugger
+        
+        
+
+        swal({
+            title: "Conferma eliminazione",
+            type: 'question',
+            html: "Confermi di eliminare il " + data + " ?",
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+
+
+            $.ajax({
+                url: '/MaternitaCongedi/SetStatoEccezioneEliminata',
+                type: "GET",
+                data: { data: data, eccezione: ecc, idrichiesta: idrichiesta },
+                dataType: "json",
+                complete: function () { },
+                success: function (data) {
+                    if (data.esito == true) {
+                        swal({
+                            title: 'Eccezione eliminata correttamente',
+                            type: "success",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                        $(puls).closest(".row-cedo").find(".ecc-sospesa").hide();
+                        $(puls).closest(".row-cedo").find(".ecc-cestinata").show();
+                        $(puls).closest(".row-cedo").find(".butt-sosp").show();
+                        $(puls).closest(".row-cedo").find(".butt-ripr").show();
+                        $(puls).closest(".row-cedo").find(".butt-elim").hide();
+                        $(puls).closest(".row-cedo").removeAttr("data-sospesa");
+
+                        var rowIntera = $(puls).closest(".row-cedo");
+                        $(rowIntera).find(".voci-giorni").each(function () {
+                            $(this).attr("oldval", $(this).val());
+                            $(this).val("0");
+                        })
+
+                        var parentTable = $(puls).closest("table");
+                        SriviTotaleGiorni(parentTable);
+                    }
+                    else {
+                        swal({
+                            title: 'Operazione non riuscita - ' + data.errore,
+                            type: "error",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                    }
+                }
+            });
+        });
+    }
+</script>

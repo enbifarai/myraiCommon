@@ -1,0 +1,1022 @@
+﻿@using myRaiHelper
+@using System.Globalization;
+@using myRaiCommonModel;
+
+@{
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    ViewBag.Title = "Politiche Retributive - Budget";
+    var cultureInfo = CultureInfo.GetCultureInfo("it-IT");
+}
+
+<style>
+    table > th > p {
+        word-wrap: break-word;
+    }
+
+    /* Absolute Center Spinner */
+    .loading {
+        background-color: transparent;
+        position: fixed;
+        z-index: 12000;
+        height: 2em;
+        width: 2em;
+        overflow: visible;
+        margin: auto;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+    }
+
+        /* Transparent Overlay */
+        .loading:before {
+            content: '';
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.3);
+        }
+
+    .NoData {
+        display: none;
+    }
+
+    .NoDataDisabled {
+    }
+
+    .subDirezione {
+        border: 3px solid lightsalmon;
+    }
+</style>
+
+<script src="@Url.Content("~/assets/vendor/d3/d3.js")"></script>
+<script src="@Url.Content("~/assets/vendor/chartist/chartist.js")"></script>
+
+@model BudgetVM
+
+
+<div id="loading" class="loading rai-loader hide"></div>
+
+
+<section role="main" class="content-body">
+    <main id="main-container" class="main-container-class">
+        <div class="content">
+            @{
+
+                @Html.Partial("~/Views/Budget/Rapid/_fixedPanel.cshtml", Model)
+
+                var aree = Model.InfoCampagna.DettaglioCampagna.OrderBy(w => w.NomeArea);
+                foreach (var myArea in aree)
+                {
+                    <div class="row" id="divRow-@(myArea.IdArea)">
+                        <div class="col-sm-12">
+                            <section class="panel" id="panel-@(myArea.NomeArea)-container">
+                                <header class="panel-heading">
+                                    <h2 class="panel-title">@myArea.NomeArea.TitleCase()</h2>
+                                </header>
+                                <div class="panel-body" id="panel-@(myArea.NomeArea)-container-body">
+                                    <div class="row">
+                                        <div class="col-sm-6">
+                                            <div class="my-card-loading-block"></div>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <div class="my-card-loading-block"></div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <table id="table-direzioni-@myArea.IdArea" class="js-table-sections table table-hover" style="width: 100%">
+                                                <tbody class="js-table-sections-header">
+                                                    <tr>
+                                                        <td class="text-center" style="width: 40%">
+                                                            <figure class="profile-picture my-card-loading-block" style="height:100px;"></figure>
+                                                        </td>
+                                                        <td class="text-left" style="width: 60%">
+                                                            <p class="text-bold my-card-loading-block"></p>
+                                                            <p></p>
+                                                            <p class="text-italic my-card-loading-block"></p>
+                                                            <p class="text-italic my-card-loading-block"></p>
+                                                        </td>
+                                                        <td class="" style="width: 10%; vertical-align:top!important"></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </main>
+</section>
+
+@Html.Partial("~/Views/Budget/Rapid/_Modal_Export_Document.cshtml", Model)
+
+<!-- Modal -->
+<div class="modal right fade" id="modal-dettaglio-direzione" tabindex="-1" role="dialog" aria-labelledby="myModalLabel2">
+    <div class="modal-dialog modal-dialog-popin" role="document">
+        <div class="modal-content">
+            <div data-modal-wrapper="">
+                <div class="block block-transparent no-margin-bottom">
+                    <div class="block-header">
+                        <label class="modal-title" id="titoloModaleDirezione">Dettaglio direzione</label>
+                        <div class="block-options">
+                            <button data-dismiss="modal" class="btn btn-action-icon"><i class="glyphicon glyphicon-remove"></i></button>
+                        </div>
+                    </div>
+
+                    <div id="modal-dettaglio-direzione-body" data-isdirty="false">
+
+                    </div>
+                </div>
+            </div>
+        </div><!-- modal-content -->
+    </div><!-- modal-dialog -->
+</div><!-- modal -->
+@*<div class="modal right fade" id="modal-pratica" role="dialog" aria-hidden="true" style="display: none;">
+        <div id="modal-pratica-internal"></div>
+    </div>*@
+@Html.RenderModal("pratica")
+
+<div class="rai-bg-primary" style="display:none;"></div>
+<div class="modal fade" id="modal-modifica-lettera" role="dialog" aria-hidden="true" style="display: none;">
+    <div id="modal-modifica-lettera-internal" style="overflow-x:hidden;overflow-y:auto"></div>
+</div>
+
+<!-- Modal -->
+
+<div class="modal fade in" id="modal-selezione-piano-export" role="dialog" aria-hidden="false" style="display: none;">
+    <div class="modal-backdrop fade in"></div>
+    <div id="modal-selezione-piano-export-internal" style="overflow-x:hidden;overflow-y:auto">
+        <div class="modal-dialog modal-dialog-popin">
+            <div class="modal-content ">
+                <div class="block block-themed block-transparent no-margin-bottom">
+                    <div class="block-header" style="height: 58px; border-radius: 6px 6px 0px 0px">
+                        <label class="rai-font-modal-heading">Seleziona i piani da esportare</label>
+                        <div class="block-options">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        </div>
+                    </div>
+                    <div class="block-content">
+                        <section class="panel">
+                            <div class="panel-body">
+                                <div class="rai-checkbox-container" id="dirContainer">
+                                    @*<div class="col-sm-12 no-padding">
+                                            <div class="rai-checkbox" data-search="direzione-scheda" data-search-name="">
+                                                <input id="chkSelectAllDir" type="checkbox" data-check-group-all="dir-filter" />
+                                                <label class="rai-caption" for="chkSelectAllDir">Seleziona tutti</label>
+                                            </div>
+                                        </div>*@
+                                    @foreach (var item in Model.Campagne.Where(w => w.Id > 2))
+                                    {
+                                        <div class="col-sm-12 no-padding" data-search="direzione-scheda" data-search-name="@item.NomeCampagna">
+                                            <div class="rai-checkbox">
+                                                <input id="filter@(item.Id)" type="checkbox" data-check-group="dir-filter" value="@item.Id" checked="checked" />
+                                                <label class="rai-caption" for="filter@(item.Id)">@item.NomeCampagna</label>
+                                            </div>
+                                        </div>
+                                    }
+
+                                    <div class="col-sm-12 no-padding">
+                                        <br />
+                                        <div class="rai-btn-fill" style="padding-bottom:15px; padding-top:15px;">
+                                            <a id="EsportaSelezione" class="btn full-width rai-btn-primary" title="Avvia esportazione" href="#" target="_blank">Avvia esportazione</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade in" id="modal-selezione-anno-export" role="dialog" aria-hidden="false" style="display: none;">
+    <div class="modal-backdrop fade in"></div>
+    <div id="modal-selezione-anno-export-internal" style="overflow-x:hidden;overflow-y:auto">
+        <div class="modal-dialog modal-dialog-popin">
+            <div class="modal-content ">
+                <div class="block block-themed block-transparent no-margin-bottom">
+                    <div class="block-header" style="height: 58px; border-radius: 6px 6px 0px 0px">
+                        <label class="rai-font-modal-heading">Seleziona le decorrenze da esportare</label>
+                        <div class="block-options">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        </div>
+                    </div>
+                    <div class="block-content">
+                        <section class="panel">
+                            <div class="panel-body">
+                                <div class="rai-checkbox-container" id="dirContainer">
+                                    @foreach (var item in Model.InfoCampagna.Decorrenze.OrderBy(w => w).Select(w => w.Year).Distinct())
+                                    {
+                                        <div class="col-sm-12 no-padding">
+                                            <div class="rai-checkbox">
+                                                <input id="filter-year-@(item)" data-check-group="year-filter" type="checkbox" value="@item" checked="checked" />
+                                                <label class="rai-caption" for="filter-year-@(item)">@item</label>
+                                            </div>
+                                        </div>
+                                    }
+                                    <div class="col-sm-12 no-padding">
+                                        <br />
+                                        <div class="rai-btn-fill" style="padding-bottom:15px; padding-top:15px;">
+                                            <a class="btn full-width rai-btn-primary" title="Avvia esportazione" href="#" target="_blank" onclick="EsportaProvvAnno()">Avvia esportazione</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class=" modal fade in" id="modal-lettere-export" role="dialog" aria-hidden="false" style="display: none;">
+    <div class="modal-backdrop fade in"></div>
+    <div id="modal-lettere-export-internal" style="overflow-x:hidden;overflow-y:auto">
+        <div class="modal-dialog modal-dialog-popin">
+            <div class="modal-content ">
+                <div class=" block block-themed block-transparent no-margin-bottom">
+                    <div class="block-header" style="height: 58px; border-radius: 6px 6px 0px 0px">
+                        <label class="rai-font-modal-heading">Seleziona i parametri per il download</label>
+                        <div class="block-options">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        </div>
+                    </div>
+                    <div class="block-content">
+                        <section class="panel">
+                            <div class="panel-body">
+                                <div class="row">
+                                    <div class="col-sm-4">
+                                        <label class="rai-caption">Provvedimenti</label>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        <div class="rai-checkbox-container" id="provvContainer">
+                                            <div class="col-sm-12">
+                                                <div class="rai-checkbox">
+                                                    <input id="filterProm" type="checkbox" data-check-group="prov-filter" value="1" checked="checked" />
+                                                    <label class="rai-caption" for="filterProm">Promozioni</label>
+                                                </div>
+                                                <div class="rai-checkbox">
+                                                    <input id="filterMeriti" type="checkbox" data-check-group="prov-filter" value="2" checked="checked" />
+                                                    <label class="rai-caption" for="filterMeriti">Aumenti di merito</label>
+                                                </div>
+                                                <div class="rai-checkbox">
+                                                    <input id="filterGratifiche" type="checkbox" data-check-group="prov-filter" value="3" checked="checked" />
+                                                    <label class="rai-caption" for="filterGratifiche">Gratifiche</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-12 no-padding">
+                                        <br />
+                                        <div class="rai-btn-fill" style="padding-bottom:15px; padding-top:15px;">
+                                            <a id="ScaricaLettere" class="btn full-width rai-btn-primary" title="Avvia download" href="#" target="_blank">Avvia download</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section afterjs{
+
+    <script type="text/javascript">
+        $(function () {
+            $('#EsportaSelezione').on('click', function (event) {
+                var link = '@Url.Action("ReportPoliticheRetributiveSelected", "Budget")?selezione=';
+                var stringaSelezione = "";
+                $('input[data-check-group="dir-filter"]:checked').each(function () {
+                    stringaSelezione += $(this).val() + ",";
+                });
+
+                stringaSelezione = stringaSelezione.slice(0, -1)
+
+                link = link + stringaSelezione;
+                event.currentTarget.href = link;
+            });
+        });
+
+        $('#pianoExportSelected').on('click', function () {
+            $('#modal-selezione-piano-export').modal('show');
+        });
+
+    var color = "#1d92f5";
+
+    if (document.getElementsByClassName("rai-bg-primary").length) {
+        var style = window.getComputedStyle(document.getElementsByClassName("rai-bg-primary")[0], null);
+        if (style.length) {
+            var rgb = style["background-color"];
+            if (rgb.length) {
+                var color = rgb.replace('rgb(', '').replace(')', '').split(',');
+
+                var r, g, b;
+                r = parseInt(color[0].trim());
+                g = parseInt(color[1].trim());
+                b = parseInt(color[2].trim());
+
+                color = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+            }
+        }
+    }
+
+    var redColor = "#e8001d";
+
+    $(function () {
+
+        @{
+
+            foreach (var myArea in aree)
+            {
+
+                <text>
+                $.ajax({
+                    url: '@Url.Action("GetAreaData", "Budget")',
+                    type: "POST",
+                    cache: false,
+                    data: JSON.stringify({
+                        idArea: @(myArea.IdArea),
+                        idCamp: @(Model.InfoCampagna.Id)
+                    }),
+                    contentType: "application/json; charset=utf-8",
+                    success: function (response) {
+                        $("#divRow-@(myArea.IdArea)").html(response);
+                },
+                    error: function (err) {
+                }
+            });
+                </text>
+            }
+        }
+
+        var color = "#1d92f5";
+        var redColor = "#e8001d";
+
+        var config1Color = $('#meter1').data('color');
+        var fontColor = "#d8d8d8";
+        var borderColor = "";
+        var backgroundColor = "";
+        var riempimento = "";
+
+        if (config1Color != "red") {
+            borderColor = color;
+            fontColor = "#d8d8d8";
+            backgroundColor = "#F9F9F9";
+            riempimento = color;
+        }
+        else {
+            borderColor = redColor;
+            fontColor = "#d8d8d8";
+            backgroundColor = "#F9F9F9";
+            riempimento = "#fb888b";
+        }
+
+        if ($('#meter1').get(0)) {
+            $('#meter1').liquidMeter({
+                shape: 'circle',
+                color: riempimento,
+                background: backgroundColor,
+                fontSize: '40px',
+                fontWeight: '600',
+                stroke: borderColor,
+                textColor: fontColor,
+                liquidOpacity: 0.9,
+                liquidPalette: ['#333'],
+                speed: 2000,
+                attributeScale: '0 0 250 250',
+                paperText1: '50%',
+                paperText2: '50%',
+                percentuale: $('#meter1').attr('value'),
+                animate: !$.browser.mobile
+            });
+        }
+
+        var config2Color = $('#meter2').data('color');
+        var fontColor = "#d8d8d8";
+        var borderColor = "";
+        var backgroundColor = "";
+        var riempimento = "";
+
+        if (config2Color != "red") {
+            borderColor = color;
+            fontColor = "#d8d8d8";
+            backgroundColor = "#F9F9F9";
+            riempimento = color;
+        }
+        else {
+            borderColor = redColor;
+            fontColor = "#d8d8d8";
+            backgroundColor = "#F9F9F9";
+            riempimento = "#fb888b";
+        }
+
+        if ($('#meter2').get(0)) {
+            $('#meter2').liquidMeter({
+                shape: 'circle',
+                color: riempimento,
+                background: backgroundColor,
+                fontSize: '40px',
+                fontWeight: '600',
+                stroke: borderColor,
+                textColor: fontColor,
+                liquidOpacity: 0.9,
+                liquidPalette: ['#333'],
+                speed: 2000,
+                attributeScale: '0 0 250 250',
+                paperText1: '50%',
+                paperText2: '50%',
+                percentuale: $('#meter2').attr('value'),
+                animate: !$.browser.mobile
+            });
+        }
+    });
+
+    function showPos(gruppo) {
+        var tipo = "trPos";
+        $('#table-direzioni-' + gruppo + ' > tbody > tr').each(function () {
+            if (!$(this).hasClass(tipo)) {
+                $(this).hide();
+            }
+            else {
+                $(this).show();
+            }
+        });
+    }
+
+    function showNeg(gruppo) {
+        var tipo = "trNeg";
+        $('#table-direzioni-' + gruppo + ' > tbody > tr').each(function () {
+            if (!$(this).hasClass(tipo)) {
+                $(this).hide();
+            }
+            else {
+                $(this).show();
+            }
+        });
+    }
+
+    function showAll(gruppo) {
+        $('#table-direzioni-' + gruppo + ' > tbody > tr').each(function () {
+            $(this).show();
+        });
+    }
+
+    function showAllData(gruppo) {
+        $('#table-direzioni-' + gruppo + ' > tbody > tr').each(function () {
+            if ($(this).hasClass('NoData')) {
+                $(this).hide();
+            }
+            else {
+                $(this).show();
+            }
+        });
+    }
+
+    function consolidaDirezione(item)
+    {
+        var idDirezione = $(item).data('iddirezione');
+        var idCamp = $(item).data('idcampagna');
+
+        swal({
+            title: "I dati verranno salvati e consolidati.\nSicuro di voler continuare?",
+            html: "",
+            type: 'question',
+            showCloseButton: true,
+            showCancelButton: true,
+            confirmButtonText: ' SI',
+            cancelButtonText: ' NO'
+        }).then(function () {
+
+            var tbl = new Array();
+            debugger
+            $('div[data-tabella-azioni=""]').each(function () {
+                debugger
+                var idDip = $(this).data('iddipendente');
+                //$('option[id^="azione_"]:selected').val()
+
+                //$('a[id^="azione_' + idDip + '_"]').each(function () {
+                $('option[id^="azione_' + idDip + '_"]:selected').each(function () {
+                    //if ($(this).hasClass('text-primary')) {
+                        var current = new Object();
+                        current.IdDipendente = idDip;
+                        current.IdTipologia = $(this).val();// $(this).data('idprovv');
+                        tbl.push(current);
+                    //}
+                });
+            });
+
+            $.ajax({
+                url: '@(Url.Action("ConsolidaSimulazione", "Budget"))',
+                type: "POST",
+                cache: false,
+                async: false,
+                data: JSON.stringify({
+                    idDir: idDirezione,
+                    idCamp: idCamp,
+                    rows: tbl
+                }),
+                contentType: "application/json; charset=utf-8",
+                dataType:'json',
+                success: function (response) {
+                    if (response.Esito)
+                    {
+                        swal({
+                            title: "Dati salvati con successo",
+                            text: '',
+                            type: 'success',
+                            confirmButtonText: 'Ok',
+                            confirmButtonClass: 'btn btn-lg btn-primary',
+                            buttonsStyling: false
+                        });
+                        $('#modal-dettaglio-direzione-body').data('isdirty', true);
+                        _resetTblUtenti(idDirezione, idCamp);
+                    }
+                    else
+                    {
+                        swal({
+                            title: "Si è verificato un errore\n",
+                            text: response.Errore,
+                            type: 'error',
+                            confirmButtonText: 'Ok',
+                            confirmButtonClass: 'btn btn-lg btn-primary',
+                            buttonsStyling: false
+                        });
+                    }
+                },
+                error: function (err) {
+                    swal({
+                        title: "Si è verificato un errore\n",
+                        text: '',
+                        type: 'error',
+                        confirmButtonText: 'Ok',
+                        confirmButtonClass: 'btn btn-lg btn-primary',
+                        buttonsStyling: false
+                    });
+                }
+            });
+        });
+    }
+
+    $('#selezioneCampagna').on('change', function () {
+        $('#loading').removeClass('hide');
+        var idCamp = $(this).val();
+        var url = '@(Url.Action("IndexRapido", "Budget"))?idCamp=' + idCamp;
+        window.location = url;
+    });
+
+    $('#modal-pratica').on('hidden.bs.modal', function () {
+        var idDip = $('#modal-pratica').data('iddip');
+        var idDir = $('#modal-pratica').data('iddir');
+        var idCamp = $('#modal-pratica').data('idcamp');
+
+        $.ajax({
+            url: '@(Url.Action("AggiornaDatiUtente","Budget"))',
+            type: "POST",
+            cache: false,
+            async: false,
+            data: JSON.stringify({
+                idDirezione: idDir,
+                idCamp: idCamp,
+                idDip: idDip
+            }),
+            contentType: "application/json; charset=utf-8",
+            success: function (response) {
+                $('tr[data-iddipendente="' + idDip + '"]').replaceWith(response);
+            },
+            error: function (err) {
+                alert("errore");
+            }
+        });
+
+        ricalcolaBudget();
+    });
+
+    $("a#DownloadXLSX").on("click", function (e) {
+        e.preventDefault();
+    });
+
+    function Esporta(idDir, idCamp, anno)
+    {
+        var tbl = new Array();
+
+        $('div[data-tabella-azioni=""]').each(function () {
+            var idDip = $(this).data('iddipendente');
+            $('a[id^="azione_' + idDip + '_"]').each(function () {
+                if ($(this).hasClass('text-primary')) {
+                    var current = new Object();
+                    current.IdDipendente = idDip;
+                    current.IdTipologia = $(this).data('idprovv');
+                    tbl.push(current);
+                }
+            });
+        });
+
+        $.ajax({
+            url: '@(Url.Action("PreparaEsportazioneXLSX", "Budget"))',
+            type: "POST",
+            cache: false,
+            async: false,
+            data: JSON.stringify({
+                idDir: idDir,
+                idCamp: idCamp,
+                anno: anno,
+                rows: tbl
+            }),
+            contentType: "application/json; charset=utf-8",
+            success: function (data) {
+            },
+            error: function (err) {
+            }
+        });
+    }
+
+    function setIdDipendente(idDip, idDir, idCamp)
+    {
+        $('#modal-pratica').data('iddip', idDip);
+        $('#modal-pratica').data('iddir', idDir);
+        $('#modal-pratica').data('idcamp', idCamp);
+    }
+
+    function resetTblUtenti(item)
+    {
+        var idDirezione = $(item).data('iddirezione');
+        var idCamp = $(item).data('idcampagna');
+        var anno = $(item).data('anno');
+
+        swal({
+            title: "I dati verranno ripristinati alle condizioni iniziali.\nSicuro di voler continuare?",
+            html: "",
+            type: 'question',
+            showCloseButton: true,
+            showCancelButton: true,
+            confirmButtonText: ' SI',
+            cancelButtonText: ' NO'
+        }).then(function () {
+            _resetTblUtenti(idDirezione, idCamp, anno);
+        });
+    }
+
+    function _resetTblUtenti(idDirezione, idCamp, anno)
+    {
+        $.ajax({
+            url: '@(Url.Action("ResetTblUtenti","Budget"))',
+            type: "POST",
+            cache: false,
+            async: false,
+            data: JSON.stringify({
+                idDirezione: idDirezione,
+                idCamp: idCamp,
+                anno: anno
+            }),
+            contentType: "application/json; charset=utf-8",
+            success: function (response) {
+                $('#pn_tblUtenti').html(response);
+              debugger
+                $.ajax({
+                    url: '@(Url.Action("RicalcolaBudget", "Budget"))',
+                    type: "POST",
+                    cache: false,
+                    async: false,
+                    data: JSON.stringify({
+                        idDirezione: idDirezione,
+                        idCamp: idCamp,
+                        anno: anno
+                    }),
+                    contentType: "application/json; charset=utf-8",
+                    success: function (response) {
+                        $('#pn_budget').html(response);
+                    },
+                    error: function (err) {
+                        alert("errore");
+                    }
+                });
+
+            },
+            error: function (err) {
+
+            }
+        });
+    }
+
+    function salvaSimulazine(item)
+    {
+        var idDirezione = $(item).data('iddirezione');
+        var idCamp = $(item).data('idcampagna');
+        var anno = $(item).data('anno');
+
+        swal({
+            title: "Sicuro di voler salvare la simulazione attuale?",
+            html: "",
+            type: 'question',
+            showCloseButton: true,
+            showCancelButton: true,
+            confirmButtonText: ' SI',
+            cancelButtonText: ' NO'
+        }).then(function () {
+
+            var tbl = new Array();
+
+            $('div[data-tabella-azioni=""]').each(function () {
+                var idDip = $(this).data('iddipendente');
+                $('a[id^="azione_' + idDip + '_"]').each(function () {
+                    if ($(this).hasClass('text-primary')) {
+                        var current = new Object();
+                        current.IdDipendente = idDip;
+                        current.IdTipologia = $(this).data('idprovv');
+                        tbl.push(current);
+                    }
+                });
+            });
+
+            $.ajax({
+                url: '@(Url.Action("SalvaSimulazione", "Budget"))',
+                type: "POST",
+                cache: false,
+                async: false,
+                data: JSON.stringify({
+                    idDir: idDirezione,
+                    idCamp: idCamp,
+                    anno: anno,
+                    rows: tbl
+                }),
+                contentType: "application/json; charset=utf-8",
+                dataType:'json',
+                success: function (response) {
+                    if (response.Esito)
+                    {
+                        swal({
+                            title: "Dati salvati con successo",
+                            text: '',
+                            type: 'success',
+                            confirmButtonText: 'Ok',
+                            confirmButtonClass: 'btn btn-lg btn-primary',
+                            buttonsStyling: false
+                        });
+                        $('#modal-dettaglio-direzione-body').data('isdirty', true);
+                    }
+                    else
+                    {
+                        swal({
+                            title: "Si è verificato un errore\n",
+                            text: response.Errore,
+                            type: 'error',
+                            confirmButtonText: 'Ok',
+                            confirmButtonClass: 'btn btn-lg btn-primary',
+                            buttonsStyling: false
+                        });
+
+                    }
+                },
+                error: function (err) {
+                    swal({
+                        title: "Si è verificato un errore\n",
+                        text: '',
+                        type: 'error',
+                        confirmButtonText: 'Ok',
+                        confirmButtonClass: 'btn btn-lg btn-primary',
+                        buttonsStyling: false
+                    });
+                }
+            });
+        });
+    }
+
+    function setProvvedimento(item)
+    {
+        var idDip = $(item).data('iddipendente');
+        var idProvv = $(item).val();
+        //var idProvv = $(item).data('idprovv');
+
+        //$('a[id^="azione_' + idDip + '_"]').each(function () {
+        //    $(this).removeClass('text-primary');
+        //    $(this).addClass('text-muted');
+        //});
+
+        //$('#azione_' + idDip + '_' + idProvv).removeClass('text-muted');
+        //$('#azione_' + idDip + '_' + idProvv).addClass('text-primary');
+
+        var costo = $('#azione_' + idDip + '_' + idProvv).data('costo');
+        var straordinario = $('#azione_' + idDip + '_' + idProvv).data('costo-straordinario');
+        var periodo = $('#azione_' + idDip + '_' + idProvv).data('costo-periodo');
+
+        var v1 = parseFloat(costo);
+        var v2 = parseFloat(straordinario);
+
+        var diff = v1 - v2;
+
+        if (diff > 0) {
+            $('#costo-straordinario-' + idDip).removeClass('text-danger');
+            $('#costo-straordinario-' + idDip).addClass('text-success');
+        }
+        else if (diff < 0) {
+            $('#costo-straordinario-' + idDip).removeClass('text-success');
+            $('#costo-straordinario-' + idDip).addClass('text-danger');
+        }
+        else {
+            $('#costo-straordinario-' + idDip).removeClass('text-danger');
+            $('#costo-straordinario-' + idDip).removeClass('text-success');
+        }
+
+        costo = parseFloat(costo).toLocaleString("it-IT", { minimumFractionDigits: 2 })
+        straordinario = parseFloat(straordinario).toLocaleString("it-IT", { minimumFractionDigits: 2 })
+        periodo = parseFloat(periodo).toLocaleString("it-IT", { minimumFractionDigits: 2 })
+        diff = parseFloat(diff).toLocaleString("it-IT", { minimumFractionDigits: 2 })
+
+        $('#costo-anno-' + idDip).text('€ ' + costo);
+        $('#costo-straordinario-' + idDip).text('€ ' + diff);
+        $('#costo-periodo-' + idDip).text('€ ' + periodo);
+
+        ricalcolaBudget();
+    }
+
+    function ricalcolaBudget()
+    {
+        var elementi = new Array();
+        var idDirezione = 0;
+        var idCamp = 0;
+        $('div[data-tabella-azioni=""]').each(function () {
+            var idDip = $(this).data('iddipendente');
+            idDirezione = $(this).data('iddirezione');
+            idCamp = $(this).data('idcampagna');
+
+            var idProvv = $('select[data-iddipendente="'+idDip+'"]').val();
+            var current = new Object();
+            current.IdDipendente = idDip;
+            current.Valore = $('#azione_'+idDip+'_'+idProvv).data('costo');
+            elementi.push(current);
+
+            //$('a[id^="azione_' + idDip + '_"]').each(function () {
+            //    if ($(this).hasClass('text-primary'))
+            //    {
+            //        var current = new Object();
+            //        current.IdDipendente = idDip;
+            //        current.Valore = $(this).data('costo');
+
+            //        elementi.push(current);
+            //    }
+            //});
+        });
+
+        $.ajax({
+            url: '@(Url.Action("RicalcolaBudget", "Budget"))',
+            type: "POST",
+            cache: false,
+            async: false,
+            data: JSON.stringify({
+                idDirezione: idDirezione,
+                idCamp: idCamp,
+                elementi: elementi
+            }),
+            contentType: "application/json; charset=utf-8",
+            success: function (response) {
+                $('#pn_budget').html(response);
+            },
+            error: function (err) {
+
+            }
+        });
+    }
+
+    function showProvvedimenti(idDip)
+    {
+        $.ajax({
+            type: "GET",
+            cache: false,
+            async: false,
+            url: '@(Url.Action("GetProvvedimenti","Budget"))?idDipendente=' + idDip,
+            success: function (response) {
+                swal({
+                    title: 'Elenco provvedimenti',
+                    text: "",
+                    html: response,
+                    width: 700,
+                    confirmButtonText: 'Ok',
+                    confirmButtonClass: 'btn btn-primary btn-lg',
+                    buttonsStyling: false
+                });
+            },
+            error: function (err) {
+                location.reload();
+            }
+        });
+    }
+
+    function initBudgetChart()
+    {
+        $('#chart-delta-direzione').easyPieChart({
+            "barColor": function (percent) {
+                return (percent > 100 ? '#cb3935' : color);
+            },
+            "delay": 300,
+            scaleColor: false,
+            lineWidth: 7,
+            size: 125
+        });
+    }
+
+    $('#modal-dettaglio-direzione').on('hidden.bs.modal', function () {
+        var isDirty = $('#modal-dettaglio-direzione-body').data('isdirty');
+        if (isDirty)
+        {
+            $('#modal-dettaglio-direzione-body').data('isdirty', false);
+            window.location.reload(true);
+        }
+    });
+
+    function sbloccaDirezione(item)
+    {
+        var idDirezione = $(item).data('iddirezione');
+        var idCamp = $(item).data('idcampagna');
+
+        swal({
+            title: "Sicuro di voler sbloccare i dati della direzione corrente?",
+            html: "",
+            type: 'question',
+            showCloseButton: true,
+            showCancelButton: true,
+            confirmButtonText: ' SI',
+            cancelButtonText: ' NO'
+        }).then(function () {
+
+            $.ajax({
+                url: '@(Url.Action("SbloccaSimulazione", "Budget"))',
+                type: "POST",
+                cache: false,
+                async: false,
+                data: JSON.stringify({
+                    idDir: idDirezione,
+                    idCamp: idCamp
+                }),
+                contentType: "application/json; charset=utf-8",
+                dataType:'json',
+                success: function (response) {
+                    if (response.Esito)
+                    {
+                        swal({
+                            title: "Direzione sbloccata con successo",
+                            text: '',
+                            type: 'success',
+                            confirmButtonText: 'Ok',
+                            confirmButtonClass: 'btn btn-lg btn-primary',
+                            buttonsStyling: false
+                        });
+                        $('#modal-dettaglio-direzione-body').data('isdirty', true);
+                        _resetTblUtenti(idDirezione, idCamp);
+                    }
+                    else
+                    {
+                        swal({
+                            title: "Si è verificato un errore\n",
+                            text: response.Errore,
+                            type: 'error',
+                            confirmButtonText: 'Ok',
+                            confirmButtonClass: 'btn btn-lg btn-primary',
+                            buttonsStyling: false
+                        });
+                    }
+                },
+                error: function (err) {
+                    swal({
+                        title: "Si è verificato un errore\n",
+                        text: '',
+                        type: 'error',
+                        confirmButtonText: 'Ok',
+                        confirmButtonClass: 'btn btn-lg btn-primary',
+                        buttonsStyling: false
+                    });
+                }
+            });
+        });
+    }
+
+        function  EsportaProvvAnno(){
+            var link = '@Url.Action("EsportaRiepiloProvv", "Budget")?anni=';
+            var stringaSelezione = "";
+            $('input[data-check-group="year-filter"]:checked').each(function () {
+                stringaSelezione += $(this).val() + ",";
+            });
+
+            stringaSelezione = stringaSelezione.slice(0, -1)
+
+            link = link + stringaSelezione;
+            event.currentTarget.href = link;
+        }
+    </script>
+}

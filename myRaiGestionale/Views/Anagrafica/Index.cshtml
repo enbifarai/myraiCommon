@@ -1,0 +1,323 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+@using MVCProject.Custom_Helpers
+@model AnagraficaModel
+
+@{
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    ViewBag.Title = "HRIS - Anagrafica Dipendente";
+}
+
+<script src="~/assets/js/plugins/jquery-validation/additional-methods.min.js"></script>
+<section role="main" class="content-body">
+    <main id="main-container">
+        <div class="content">
+            <div class="row">
+                <div class="col-md-8">
+                    <div id="anag-container">
+                        @Html.Partial("~/Views/_RaiDesign/PanelNoHeader_skeleton.cshtml")
+                    </div>
+                    @*@Html.AsyncPartial("Anagrafica", "View_DatiDipendente", , TempData, routeValues: new { m = Model.Matricola, idPersona = Model.IdPersona, isNeoMatr = Model.IsNeoMatr })*@
+                </div>
+                <div class="col-md-4">
+                    @if (!Model.IsNeoMatr)
+                    {
+                        <div class="panel">
+                            <div class="panel-body">
+                                <div class="row">
+                                    <div class="col-sm-8">
+                                        <label class="push-5-t"><b>Cerca un altro dipendente</b></label>
+                                    </div>
+                                    <div class="col-sm-4 text-right">
+                                        <button class="btn rai-btn-small" onclick="AnagRicercaDip()">Cerca</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    <div id="widget-container">
+                        @Html.Partial("~/Views/_RaiDesign/PanelNoHeader_skeleton.cshtml")
+                    </div>
+                    @if (Model.ShowPFI)
+                    {
+                        string text = "Predisponi piano formativo";
+                        if (Model.HasPFI)
+                        {
+                            text = "Mostra piano formativo";
+                        }
+
+                        @Html.RenderWidget(WidgetType.Normal, "Piano Formativo", "fa fa-briefcase", "Pianifica le attività di formazione", action: new ActionTemplate()
+                        {
+                            Text = text,
+                            Href = @Url.Action("Index","PianoFormativo", new { id = Model.IdPersona })
+                        })
+                    }
+
+                    @if (!Model.IsNeoMatr)
+                    {
+                        using (Html.BeginPanel(PanelType.PanelNoPadding, "Richieste in corso"))
+                        {
+                            <div id="notifiche-container">
+
+                            </div>
+
+                            @*<div class="row">
+                                    <div class="col-sm-12">
+                                        <button class="btn rai-btn-small" onclick="OpenModalRichiesteDematerializzazione(@Model.Matricola, @Model.IdPersona)">Apri modale nuova richiesta</button>
+                                    </div>
+                                </div>*@
+                            @*<div class="row">
+                                    <div class="col-sm-12">
+                                        <button class="btn rai-btn-small" onclick="OpenModalInserimentoDOC(@Model.Matricola, @Model.IdPersona)">Modale creazione nuovo documento</button>
+                                    </div>
+                                </div>*@
+                            @*<div class="row">
+                                    <div class="col-sm-12">
+                                        <button class="btn rai-btn-small" onclick="OpenModalviewer(@Model.Matricola, @Model.IdPersona, 1)">Apri modale viewer</button>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <a href="@Url.Action("ScaricaPDF","Dematerializzazione")?idDoc=6" class="btn rai-btn-small" >Scarica file</a>
+                                    </div>
+                                </div>*@
+                        }
+                        @*@Html.RenderAsyncPanel(PanelType.PanelNoPadding, "Richieste in corso", "GetRichieste", "Anagrafica", routeValues: new { m = Model.Matricola })*@
+
+                        if (Model.Cose_Da_Fare != null && Model.Cose_Da_Fare.Any())
+                        {
+                            using (Html.BeginPanel(PanelType.PanelNoPadding, "Da fare"))
+                            {
+                                DateTime oggi = DateTime.Now;
+                                <table class="table rai-table rai-table-vcenter rai-table-panel rai-table-high-row">
+                                    @foreach (var item in Model.Cose_Da_Fare)
+                                    {
+                                        bool scaduto = oggi > item.DataFineValidita;
+
+                                        if (scaduto)
+                                        {
+                                            continue;
+                                        }
+
+                                        bool inScadenzaTra7GG = (item.DataFineValidita.Subtract(oggi).TotalDays <= 7);
+                                        string dtScadenza = inScadenzaTra7GG ? "in scadenza il " + item.DataFineValidita.ToString("dd/MM/yyyy") : "";
+                                        string stileWarning = "border-left-width: 4px; border-left-style: solid; border-left-color: #EF9700;";
+                                        <tr>
+                                            <td class="full-width" style="@(inScadenzaTra7GG ? stileWarning: "")">
+
+                                                @{
+                                                    string url = "#";
+                                                    string onclick = "";
+
+
+                                                    if (!String.IsNullOrEmpty(item.Url))
+                                                    {
+                                                        url = item.Url;
+                                                    }
+                                                    else if (!String.IsNullOrEmpty(item.Azione) &&
+                                                            !String.IsNullOrEmpty(item.Controller))
+                                                    {
+                                                        string param = "";
+                                                        if (!String.IsNullOrEmpty(item.Parametri))
+                                                        {
+                                                        }
+
+                                                        url = Url.Action(item.Azione, item.Controller, param);
+                                                    }
+                                                    else if (!String.IsNullOrEmpty(item.AzioneJavascript))
+                                                    {
+                                                        if (!String.IsNullOrEmpty(item.Parametri))
+                                                        {
+                                                            int numeroParametri = item.Parametri.Split('|').Count();
+                                                            List<string> parametri = item.Parametri.Split('|').ToList();
+                                                            string txFX = "";
+                                                            txFX = item.AzioneJavascript.Replace("(", "").Replace(")", "");
+                                                            for (int i = 1; i < numeroParametri; i++)
+                                                            {
+                                                                if (i > 1)
+                                                                {
+                                                                    txFX += ",";
+                                                                }
+                                                                txFX += "'" + parametri[i - 1] + "'";
+                                                            }
+                                                            onclick = String.Format("{0}({1});", item.AzioneJavascript, txFX);
+                                                        }
+                                                        else
+                                                        {
+                                                            onclick = String.Format("{0}", item.AzioneJavascript);
+                                                        }
+                                                    }
+                                                }
+
+                                                <a href="@url" title="@item.Descrizione" onclick="@onclick">@item.Descrizione</a>
+                                                @if (inScadenzaTra7GG)
+                                                {
+                                                    <br />
+                                                    <span class="rai-font-sm">@(dtScadenza )</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </table>
+                            }
+                        }
+                        else
+                        {
+                            using (Html.BeginPanel(PanelType.PanelNoPadding, "Da fare"))
+                            {
+                                <div id="CoseDaFare-container">
+                                    <div class="row push-10-t push-10">
+                                        <div class="col-xs-12 text-center">
+                                            <span class="rai-font-md-neutral">Non ci sono dati da visualizzare</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+
+                        if (CommonHelper.GetCurrentUserMatricola() == "103650" @*"909317"*@)
+{
+using (Html.BeginPanel(PanelType.NoHeader))
+{
+<div class="row">
+    <div class="col-sm-12">
+        <button class="btn rai-btn-small" onclick="HrisModalAnagDip('@Model.Matricola')">Apri modale standard</button>
+        <button class="btn rai-btn-small" onclick="TestModal('@Model.Matricola')">Apri modale test</button>
+    </div>
+</div>
+}
+}
+
+using (Html.BeginPanel(PanelType.PanelNoPadding, "Gestisci dipendente"))
+{
+<div id="gestione-container">
+
+</div>
+}
+}
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- end: page -->
+</section>
+<div class="modal right fade" id="modal-sez" role="dialog" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-popin modal-half-dialog">
+        <div class="modal-content">
+            <div id="modal-sez-internal" data-modal-wrapper="" style="padding:24px">
+
+
+            </div>
+            <div id="modal-dip-internal" style="padding-bottom:24px;padding-left:24px;padding-right:24px">
+
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal right fade" id="modal-incarichi" role="dialog" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-popin modal-half-dialog">
+        <div class="modal-content">
+            <div id="modal-incarichi-internal" data-modal-wrapper="">
+
+
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function TestModal(matricola) {
+        let parm = {
+            m: matricola,
+            sezList: ["Anagrafici", "TipoContratti", "Sedi", "Servizi", "Qualifiche", "Ruoli", "Retribuzione", "Struttura", "Cedolini", "Trasferte", "SpeseProduzione"]
+        };
+        HrisModalAnagDipParams(parm);
+    }
+    function PopupDipendenti(sezione) {
+
+        $.ajax({
+            url: "/StrutturaOrganizzativa/getDipendentiFromAnagrafica",
+            type: 'GET',
+            data: { sezione: sezione },
+            dataType: "html",
+            success: function (data) {
+                //$("#dipendenti-container").html(data);
+                $("#modal-dip-internal").html(data);
+
+            }
+        });
+    }
+    function CreaNuovoIncaricoDaAnagrafica(matricola, cognome, nome) {
+        $.ajax({
+            url: "/StrutturaOrganizzativa/getDettaglioIncaricoNew",
+            type: 'GET',
+            cache: false,
+            data: { idsezione: 0, matricola: matricola, cognome: cognome, nome: nome, fromAnagrafica: true },
+            dataType: "html",
+            success: function (data) {
+                $("#modal-incarichi-internal").html(data);
+                $("#modal-incarichi").modal("show");
+            }
+        });
+
+        //todo
+    }
+    function PopupSezione(nomesezione) {
+        $("#modal-sez").modal("show");
+        $("#modal-sez-internal").html("<div style='height:200px' class='rai-loader'></div>");
+        $("#modal-dip-internal").html("<div style='height:200px' class='rai-loader'></div>");
+
+        $.ajax({
+            url: '/StrutturaOrganizzativa/GetDettaglioByNomeStruttura',
+            type: "GET",
+            contentType: false,
+            data: { nomeSezione: nomesezione },
+            dataType: "html",
+            complete: function () { },
+            success: function (data) {
+
+                $("#modal-sez-internal").html(data);
+                PopupDipendenti(nomesezione);
+            }
+        });
+    }
+</script>
+
+@Html.RenderModal("anagrafica", size: ModalSize.Half)
+@Html.RenderModal("recapiti", size: ModalSize.Half)
+@Html.RenderModal("indirizzo")
+@Html.RenderModal("stati-rapporto", size: ModalSize.Half)
+@Html.RenderModal("iban")
+@Html.RenderModal("studio")
+
+@Html.RenderModal("richiesta", size: ModalSize.Half)
+
+@Html.RenderModal("storico", size: ModalSize.Half)
+
+@*Modali per gestioni*@
+@Html.RenderModal("add-dip", size: ModalSize.Half)
+@Html.RenderModal("dettaglioInc", size: ModalSize.Half)
+@Html.RenderModal("pratica")
+
+@Html.RenderModal("edit-daticontr", size: ModalSize.Half)
+
+@Html.RenderModal("richiestaDematerializzazione", size: ModalSize.Half)
+
+
+@*@Html.RenderModal( "viewerDoc" , size: ModalSize.Half )*@
+
+@section afterjs {
+    <script>
+        RaiUpdateWidget('anag-container', '@Url.Action("View_DatiDipendente", "Anagrafica")', 'html', { m: '@Model.Matricola', idPersona: @Model.IdPersona, isNeoMatr:@(Model.IsNeoMatr ? "true" : "false") }, false, null, true);
+        RaiUpdateWidget('widget-container', '@Url.Action("Widget_DatiDipendente", "Anagrafica")', 'html', { m: '@Model.Matricola', idPersona: @Model.IdPersona, isNeoMatr:@(Model.IsNeoMatr ? "true" : "false"), actionState:true }, false, null, true);
+    </script>
+    @if (!Model.IsNeoMatr)
+    {
+        <script>
+            RaiUpdateWidget('notifiche-container', '@Url.Action("GetRichieste", "Anagrafica")', 'html', { m: '@Model.Matricola' }, false, null, true);
+            RaiUpdateWidget('gestione-container', '@Url.Action("GetGestioni","Anagrafica")', 'html', { m: '@Model.Matricola' }, false, null, true);
+        </script>
+    }
+
+    @Html.Raw(TempData["script"])
+}

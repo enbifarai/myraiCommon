@@ -1,0 +1,92 @@
+﻿@using myRaiHelper
+@using myRaiGestionale.Controllers
+
+@{ 
+    var listaStati = new List<SelectListItem>()
+    {
+        new SelectListItem(){Value="SW", Text="Smart working"}
+    };
+}
+
+@using (Html.BeginModal("Importazione dati"))
+{
+    using (Html.BeginPanel(PanelType.Panel, "Definizione dati", false))
+    {
+        string formId = "import-form";
+
+        using (Html.BeginForm("CaricaDati", "StatiRapporto", null, FormMethod.Post, new { @id = formId }))
+        {
+            <div class="form-group">
+                <div class="row push-10">
+                    <div class="col-sm-12">
+                        <label class="rai-caption">Tipologia</label>
+                        @Html.RaiSelect("importType", listaStati, attributes: new { name = "importType" }, hideSearch: true)
+                    </div>
+                </div>
+                <div class="row push-10">
+                    <div class="col-sm-12">
+                        <label class="rai-caption">File da importare</label>
+                        @Html.RaiUploader("importFile", UploaderAccept.Custom, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    </div>
+                </div>
+                <div class="row push-10">
+                    <div class="col-sm-12">
+                        <div class="rai-btn-fill">
+                            <input type="submit" class="btn rai-btn-secondary" value="Carica dati" onclick="ImportSubmit()"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="row push-20-t">
+            <div class="col-sm-12">
+                <div style="">
+                    <div id="import-data">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="rai-btn-fill">
+                    <button class="btn rai-btn-primary" style="display:none;">Importa</button>
+                </div>
+            </div>
+        </div>
+        
+    }
+}
+
+
+<script>
+    function ImportSubmit() {
+        event.preventDefault();
+
+        $('#import-data').html('');
+        $('#import-data').addClass('rai-loader');
+
+        var obj = $("#importFile")[0].files[0];
+        var tipo = $('#importType').val();
+
+        var formData = new FormData();
+        formData.append('importFile', obj);
+        formData.append('importType', tipo);
+        $.ajax({
+            url: "/StatiRapporto/CaricaDati",
+            type: "POST",
+            cache: false,
+            dataType: 'html',
+            contentType: false,
+            processData: false,
+            data: formData,
+            success: function (data) {
+                $('#import-data').html(data);
+                $('#import-data').removeClass('rai-loader');
+            }
+        });
+
+
+    }
+</script>

@@ -1,0 +1,176 @@
+﻿@using myRaiHelper
+@model myRaiCommonModel.MaternitaDettagliRichiestaGestioneModel
+
+<div class="row"><div class="col-sm-12"><span class="rai-font-md-neutral-bold">Dipendente </span></div></div>
+<div class="row">
+    @*<div class="rai-profile-widget" style="margin-top:20px">
+            <div class="rai-profile-image">
+                <img src="@(myRaiHelper.CommonHelper.GetUrlFotoExternal(Model.Richiesta.MATRICOLA))" class="">
+            </div>
+            <div class="rai-profile-info">
+
+                <span class="rai-font-md-bold ">@Model.Richiesta.NOMINATIVO</span>
+
+                <br>
+                <span class="rai-font-sm">Matricola @Model.Richiesta.MATRICOLA</span>
+            </div>
+
+        </div>*@
+    <div class="col-sm-12">
+        @Html.Partial("_profiloimage", new myRaiCommonModel.ProfiloImageModel() {
+                                        Matricola= Model.Richiesta.MATRICOLA,
+                                        Row1 = Model.Richiesta.NOMINATIVO,
+                                        Row2 = "Matricola "+Model.Richiesta.MATRICOLA,
+                                        InServizio=myRaiCommonManager.HomeManager.IsInServizio(Model.Richiesta.MATRICOLA)
+
+    })
+    </div>
+</div>
+
+<div class="row" style="margin-top:20px">
+    <div class="col-sm-12">
+        <span class="rai-font-md-neutral-bold">Data invio</span>
+    </div>
+    <div class="col-sm-12">
+        @Model.Richiesta.DATA_INVIO_RICHIESTA.ToString("dd/MM/yyyy")
+    </div>
+</div>
+
+<div class="row" style="margin-top:20px">
+    <div class="col-sm-12">
+        <span class="rai-font-md-neutral-bold">Tipologia</span>
+    </div>
+    <div class="col-sm-12">
+        @if (Model.Richiesta.XR_MAT_CATEGORIE.CAT == "MAT")
+        {
+            @:Maternità
+        }
+        else if (Model.Richiesta.XR_MAT_CATEGORIE.CAT == "SW")
+        {
+            @:Smart Working
+        }
+        else
+        {
+            @:Congedo parentale
+        }
+    </div>
+</div>
+
+@if (Model.Richiesta.DATA_SCADENZA.HasValue)
+{
+    <div class="row" style="margin-top:20px">
+        <div class="col-sm-12">
+            <span class="rai-font-md-neutral-bold">Scadenza</span>
+        </div>
+        <div class="col-sm-12">
+            @(((DateTime)Model.Richiesta.DATA_SCADENZA).ToString("dd/MM/yyyy"))
+        </div>
+    </div>
+}
+
+@{
+    var Sintesi = myRaiHelper.UtenteHelper.SintesiInfo(Model.Richiesta.MATRICOLA);
+}
+<div class="row" style="margin-top:20px">
+    <div class="col-sm-12">
+        <span class="rai-font-md-neutral-bold">Direzione</span>
+    </div>
+    <div class="col-sm-12">
+        @if (Sintesi != null)
+        {
+            @Sintesi.DES_SERVIZIO
+        }
+    </div>
+</div>
+<div class="row" style="margin-top:20px">
+    <div class="col-sm-12">
+        <span class="rai-font-md-neutral-bold">Inquadramento</span>
+    </div>
+    <div class="col-sm-12">
+        @if (Sintesi != null)
+        {
+            @Sintesi.DES_QUALIFICA
+        }
+    </div>
+</div>
+<div class="row" style="margin-top:20px">
+    <div class="col-sm-12">
+        <span class="rai-font-md-neutral-bold">Tipo contratto</span>
+    </div>
+    <div class="col-sm-12">
+        @if (Sintesi != null)
+        {
+            @Sintesi.DES_TPCNTR
+        }
+    </div>
+</div>
+<div class="row" style="margin-top:20px">
+    <div class="col-sm-12">
+        <span class="rai-font-md-neutral-bold">Sede</span>
+    </div>
+    <div class="col-sm-12">
+        @if (Sintesi != null)
+        {
+            @Sintesi.DES_SEDE
+        }
+    </div>
+</div>
+
+@if (myRaiHelper.MaternitaCongediHelper.EnabledToMaternitaCongediUfficioAnyRole(myRaiHelper.MaternitaCongediHelper.MaternitaCongediUffici.Personale))
+{
+    <div class="row" style="margin-top:20px">
+        <div class="col-sm-12">
+            <span class="rai-font-md-neutral-bold">Ins. giustificativi</span>
+        </div>
+        <div class="col-sm-12">
+            @{
+                var taskServizio = Model.Richiesta.XR_MAT_TASK_DI_SERVIZIO.Where(x => x.XR_MAT_ELENCO_TASK.NOME_TASK == "INSERIMENTO ECCEZIONI" && x.TERMINATA == true && x.ERRORE_BATCH == null).FirstOrDefault();
+
+            }
+            @if (taskServizio != null)
+            {
+                <i class="fa fa-fw fa-check text-success"></i><span>Eseguito</span>
+                if (taskServizio.DATA_ULTIMO_TENTATIVO != null)
+                {
+                    <span class="rai-font-sm">@taskServizio.DATA_ULTIMO_TENTATIVO.Value.ToString("dd/MM/yyyy")</span>
+                }
+            }
+            else
+            {
+                @*<i class="glyphicon glyphicon-remove text-danger"></i>*@
+                <span>Non eseguito</span>
+            }
+        </div>
+    </div>
+}
+@if (Model.Richiesta.ECCEZIONE != null && (Model.Richiesta.ECCEZIONE.StartsWith("AF")
+    || Model.Richiesta.ECCEZIONE.StartsWith("BF")
+    || Model.Richiesta.ECCEZIONE.StartsWith("CF")))
+{
+    <div class="row" style="margin-top:20px">
+        <div class="col-sm-12">
+            <a href="javascript:ShowPeriodi(@Model.Richiesta.ID)" title="Vedi contatori giorni">Vedi contatori giorni</a>
+        </div>
+
+    </div>
+}
+
+@if (Model.Richiesta.XR_MAT_CATEGORIE.CAT == "SW")
+{
+    var dbSt = new myRaiData.Incentivi.IncentiviEntities();
+    var listWkfStati = dbSt.XR_MAT_STATI.ToList();
+    var oper = Model.Richiesta.XR_WKF_MATCON_OPERSTATI.FirstOrDefault(x => x.ID_STATO == 20);
+
+    if (oper != null && !String.IsNullOrWhiteSpace(oper.NOMINATIVO))
+    {
+        <div class="row push-20-t">
+            <div class="col-sm-12">
+                <span class="rai-font-md-neutral-bold">Approvatore</span>
+            </div>
+            <div class="col-sm-12">
+                @oper.NOMINATIVO.TitleCase()
+            </div>
+        </div>
+    }
+}
+

@@ -1,0 +1,397 @@
+﻿@using myRai.Models
+@using myRai.Business
+
+@model DettaglioDematerializzazioneVM
+
+@{
+    string title = "Documenti da firmare";
+    int idDoc = Model.Navigazione.IdDocumentoCorrente;
+}
+
+<div class="rai block block-transparent no-margin-bottom">
+    <div class="block-header">
+        <label class="rai-font-modal-heading">@(title)</label>
+        <div class="block-options">
+            <button data-dismiss="modal" class="btn btn-action-icon" onclick="$(this).parent('.modal').css('z-index', '');"><i class="glyphicon glyphicon-remove"></i></button>
+        </div>
+    </div>
+    <div id="dem-corpo-wizardfirma">
+        <div class="block block-subheader">
+            <ul class="nav nav-tabs nav-tabs-alt  nav-justified" data-toggle="tabs" role="tablist">
+                <li class="tabbianco active" role="presentation">
+                    <a href="#dem-tab-1-firma" tabindex="0" role="tab" aria-controls="btabswo-static-home" style="border:0px;">
+                        ANTEPRIMA DOCUMENTO
+                    </a>
+                </li>
+                <li class=" tabbianco" role="presentation">
+                    <a href="#dem-tab-2-firma" tabindex="-1" role="tab" aria-controls="btab4" style="border:0px;">
+                        DETTAGLI E NOTE
+                        <span style="margin-left: 5px;margin-top: -4px;" class=" rai-badge-tab">
+                            @{
+                                int numeroNote = 0;
+                                if (!String.IsNullOrEmpty(Model.Richiesta.Documento.Note))
+                                {
+                                    numeroNote++;
+                                }
+
+                                if (!String.IsNullOrEmpty(Model.Richiesta.Documento.NotaApprovatore))
+                                {
+                                    numeroNote++;
+                                }
+                            }
+                            @(numeroNote)
+                        </span>
+                    </a>
+                </li>
+            </ul>
+
+        </div>
+        <div id="corpo-modale" class="block-content block-body-modal" style="padding: 2px 4px 1px; top: 107px !important;">
+            <div class="block block-transparent no-padding" style="margin-bottom:0px;">
+                <div class="block block-transparent tab-content" style="    margin-bottom: 0px; padding: 0px;">
+                    <div id="dem-tab-1-firma" role="tabpanel" class="tab-pane tab-filtro active">
+                        @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, "", false))
+                        {
+                            <div class="row push-10">
+                                <div class="col-xs-12">
+                                    <div class="col-xs-12" style="background-color:gray; overflow-y:auto;">
+                                        <iframe style="width:100%; height:76vh!important;" src="@Url.Action("GetAllegatoPerIframeByIdDoc","Dematerializzazione")?idDocumento=@idDoc"></iframe>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div id="dem-tab-2-firma" role="tabpanel" class="tab-pane tab-filtro">
+                        <br />
+                        <div class="row">
+                            <div class="col-sm-7">
+                                <div class="block block-content-table block-transparent">
+                                    <div class="block-header">
+                                        <label class="block-title">Note</label>
+                                    </div>
+                                    <div class="block-content">
+                                        @if (!String.IsNullOrEmpty(Model.Richiesta.Documento.Note))
+                                        {
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <label class="rai-font-sm-neutral-bold margine-10-sx">@Model.Richiesta.Documento.DataCreazione.ToString("dd MMMM yyyy")</label>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <div class="rai panel remove-margin-bottom">
+                                                        <div class="panel-body">
+                                                            <div class="">
+                                                                <div class="row push-30">
+                                                                    <div class="col-sm-8">
+                                                                        @Html.Partial( "~/Views/Dematerializzazione/subpartial/_profiloimage.cshtml" , new ProfiloImageModel() {
+                                                                       Matricola= Model.Richiesta.Documento.MatricolaCreatore,
+                                                                       Row1 = Model.NominativoUtenteCreatore,
+                                                                       Row2 = "Matricola "+ Model.Richiesta.Documento.MatricolaCreatore ,
+                                                                       RemoveMarginTop = true,
+                                                                       InServizio = HomeManager.IsInServizio( Model.Richiesta.Documento.MatricolaCreatore )
+                                                                    })
+                                                                    </div>
+                                                                    <div class="col-sm-4">
+                                                                        <label class="rai-font-sm-neutral-bold">Ha creato il documento</label>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row push-20">
+                                                                    <div class="col-sm-12">
+                                                                        <label class="rai-font-sm-neutral">Nota</label>
+                                                                    </div>
+                                                                    <div class="col-sm-12">
+                                                                        <label class="rai-font-md">@Model.Richiesta.Documento.Note</label>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+
+                                        @if (!String.IsNullOrEmpty(Model.Richiesta.Documento.NotaApprovatore))
+                                        {
+                                            <br />
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <label class="rai-font-sm-neutral-bold margine-10-sx">@Model.Richiesta.Documento.DataApprovazione.GetValueOrDefault().ToString("dd MMMM yyyy")</label>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <div class="rai panel remove-margin-bottom">
+                                                        <div class="panel-body">
+                                                            <div class="">
+                                                                <div class="row push-30">
+                                                                    <div class="col-sm-8">
+                                                                        @Html.Partial( "~/Views/Dematerializzazione/subpartial/_profiloimage.cshtml" , new ProfiloImageModel() {
+                                                                       Matricola= Model.Richiesta.Documento.MatricolaApprovatore,
+                                                                       Row1 = Model.NominativoUtenteApprovatore,
+                                                                       Row2 = "Matricola "+ Model.Richiesta.Documento.MatricolaApprovatore ,
+                                                                       RemoveMarginTop = true ,
+                                                                       InServizio = HomeManager.IsInServizio( Model.Richiesta.Documento.MatricolaApprovatore )
+                                                                   })
+                                                                    </div>
+                                                                    <div class="col-sm-4">
+                                                                        <label class="rai-font-sm-neutral-bold">Ha approvato il documento</label>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row push-20">
+                                                                    <div class="col-sm-12">
+                                                                        <label class="rai-font-sm-neutral">Nota</label>
+                                                                    </div>
+                                                                    <div class="col-sm-12">
+                                                                        <label class="rai-font-md">@Model.Richiesta.Documento.NotaApprovatore</label>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-5">
+                                <div class="row">
+                                    <div class="block block-content-table block-transparent">
+                                        <div class="block-header">
+                                            <label class="block-title">Dettagli</label>
+                                        </div>
+                                        <div class="block-content">
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <div class="panel remove-margin-bottom">
+                                                        <div class="panel-body">
+                                                            <div class="">
+                                                                <div class="row push-30">
+                                                                    <div class="col-sm-12">
+                                                                        @Html.Partial( "~/Views/Dematerializzazione/subpartial/_profiloimage.cshtml" , new ProfiloImageModel() {
+                                                                       Matricola= Model.Richiesta.Documento.MatricolaDestinatario,
+                                                                       Row1 = Model.NominativoUtenteDestinatario,
+                                                                       Row2 = "Matricola "+ Model.Richiesta.Documento.MatricolaDestinatario ,
+                                                                       InServizio = HomeManager.IsInServizio( Model.Richiesta.Documento.MatricolaDestinatario)
+                                                                   })
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="row push-20">
+                                                                    <div class="col-sm-12">
+                                                                        <label class="rai-font-sm-neutral-bold">Data richiesta</label>
+                                                                    </div>
+                                                                    <div class="col-sm-12">
+                                                                        <label class="rai-font-md">@Model.Richiesta.Documento.DataCreazione.ToString("dd/MM/yyyy")</label>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="row push-20">
+                                                                    <div class="col-sm-12">
+                                                                        <label class="rai-font-sm-neutral-bold">Creato da</label>
+                                                                    </div>
+                                                                    <div class="col-sm-12">
+                                                                        <label class="rai-font-md">@Model.NominativoUtenteCreatore</label>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="row push-20">
+                                                                    <div class="col-sm-12">
+                                                                        <label class="rai-font-sm-neutral-bold">Approvatore</label>
+                                                                    </div>
+                                                                    <div class="col-sm-12">
+                                                                        <label class="rai-font-md">@Model.NominativoUtenteApprovatore</label>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="row push-20">
+                                                                    <div class="col-sm-12">
+                                                                        <label class="rai-font-sm-neutral-bold">Incaricato firma</label>
+                                                                    </div>
+                                                                    <div class="col-sm-12">
+                                                                        <label class="rai-font-md">@Model.NominativoUtenteApprovatore</label>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="row push-20">
+                                                                    <div class="col-sm-12">
+                                                                        <label class="rai-font-sm-neutral-bold">Documento</label>
+                                                                    </div>
+                                                                    <div class="col-sm-12">
+                                                                        <label class="rai-font-md">@(Model.Richiesta.Documento.XR_DEM_TIPI_DOCUMENTO.Descrizione)</label>
+                                                                    </div>
+                                                                </div>
+
+                                                                @{
+                                                                    if (Model.Richiesta.Allegati.Count(w => !w.IsPrincipal) > 0)
+                                                                    {
+                                                                        var allegati = Model.Richiesta.Allegati.Where(w => !w.IsPrincipal).ToList();
+                                                                        <div class="row push-20">
+                                                                            <div class="col-sm-12">
+                                                                                <label class="rai-font-sm-bold">Documenti a supporto</label>
+                                                                            </div>
+                                                                            @{
+                                                                                foreach (var a in allegati)
+                                                                                {
+                                                                                    <div class="col-sm-12">
+                                                                                        <span class="rai-font-md">
+                                                                                            <a href="@Url.Action("DownloadAllegato","Dematerializzazione")?idAllegato=@a.Id" class=""><i class="fa fa-download"> </i> @a.NomeFile</a>
+                                                                                        </span>
+                                                                                    </div>
+                                                                                }
+                                                                            }
+                                                                        </div>
+                                                                    }
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="block-footer" class="block-footer-modal" style="height:136px;">
+            <div class="tab-content" style=" vertical-align: middle;">
+                <div class="row" id="div-inserimento-note" style="display:none">
+                    <div class="col-sm-12">
+                        <div class="form-group">
+                            <div class="row push-10" id="messaggio-attesa-nota" style="display:none;">
+                                <div class="col-sm-12">
+                                    <div class="alert alert-warning">
+                                        <span>In caso di rifiuto è necessario inserire una nota</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row push-10">
+                                <div class="col-xs-12">
+                                    <label class="rai-caption">NOTA AL DOCUMENTO</label>
+                                    <textarea id="noteAlDocumento" class="form-control" rows="5" cols="200" title="Inserisci una nota da allegare al documento">@(Model.Richiesta.Documento.NotaFirma)</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-4" style="padding-top: 12px;">
+                        <div class="switch switch-sm switch-primary">
+                            <div id="div-switch-abilita-inserimento-note" class="ios-switch off">
+                                <div class="on-background background-fill"></div>
+                                <div class="state-background background-fill"></div>
+                                <div class="handle"></div>
+                            </div>
+                            <input id="switch-abilita-inserimento-note" value="0" class="task-switch" type="checkbox" name="" data-plugin-ios-switch="" style="display:none;">
+                        </div>
+                        <label class="pad-left-30 rai-font-md">Inserisci una nota</label>
+                    </div>
+
+                    @{
+                        if (Model.DocumentoInFirma)
+                        {
+                            <div class="col-sm-8">
+                                <div class="text-right">
+                                    <button class="btn btn-md btn-action-icon text-info btn-action-icon-text" onclick="Dematerializzazione_RimuoviDaCarrello('@Model.Navigazione.IdDocumentoCorrente')" style="min-height:48px; width:190px;">
+                                        <i class="glyphicon glyphicon-remove"></i>
+                                        Rimuovi dalla firma
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="col-sm-8">
+                                <div class="text-right">
+                                    <button class="btn btn-md btn-action-icon btn-action-icon-text" onclick="Dematerializzazione_SaltaDocumento('@Model.Navigazione.IdDocumentoCorrente')" style="min-height:48px; width:150px; color:#1d79cb;">
+                                        <i class=""></i>
+                                        Salta
+                                    </button>
+                                    <button class="btn btn-md btn-action-icon text-danger btn-action-icon-text pad-left-15" onclick="Dematerializzazione_RifiutaDocumento('@Model.Navigazione.IdDocumentoCorrente')" style="min-height:48px; width:150px;">
+                                        <i class="glyphicon glyphicon-remove"></i>
+                                        Rifiuta
+                                    </button>
+                                    <button class="btn btn-md btn-action-icon text-success btn-action-icon-text pad-left-15" onclick="Dematerializzazione_MettiInFirma('@Model.Navigazione.IdDocumentoCorrente')" style="min-height:48px; width:180px;">
+                                        <i class="fa fa-fw fa-check"></i>
+                                        Metti in firma
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    }
+
+                </div>
+            </div>
+            <table class="no-margin-left-right " style="width:100%; height:64px;">
+                <tbody>
+                    <tr style="height: 50px;">
+                        <td class="col-sm-5 align-v">
+                            <button class="btn btn-md btn-action-icon text-info btn-action-icon-text @(!Model.Navigazione.HasPrev? "disable": "")" onclick="Dematerializzazione_PrevDocumento('@Model.Navigazione.IdDocumentoCorrente')" style=" height: 35px; width: 35px; padding-left: 0px; padding-right: 0px;">
+                                <i class="fa fa-fw fa-angle-left"> </i>
+                            </button>
+                            <button class="btn btn-md btn-action-icon text-info btn-action-icon-text @(!Model.Navigazione.HasNext? "disable": "")" onclick="Dematerializzazione_NextDocumento('@Model.Navigazione.IdDocumentoCorrente')" style=" height: 35px; width: 35px; padding-left: 0px; padding-right: 0px;">
+                                <i class="fa fa-fw fa-angle-right"> </i>
+                            </button>
+                            <span class="text-left margine-10-sx">
+                                <label class="rai-font-md">@Model.Navigazione.PosizioneCorrente di @(Model.Navigazione.DocumentiDaLavorare.Count())</label>
+                            </span>
+                        </td>
+                        <td class="col-sm-7 align-v text-right">
+                            <span class="">
+                                @{
+                                    if (Model.Navigazione.DocumentiInFirma == null || !Model.Navigazione.DocumentiInFirma.Any())
+                                    {
+                                        <label class="rai-font-md">Non ci sono documenti pronti per la firma</label>
+                                    }
+                                    else
+                                    {
+                                        <label class="rai-font-md">Ci sono @Model.Navigazione.DocumentiInFirma.Count() documenti pronti per la firma</label>
+                                    }
+                                }
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('#div-switch-abilita-inserimento-note').on('click', function () {
+
+            if ($(this).hasClass('ios-switch off')) {
+                $(this).removeClass('off');
+                $(this).addClass('on');
+                $('#switch-abilita-inserimento-note').val('1');
+                $('#block-footer').css('height', '280px');
+                $('#corpo-modale').removeClass("block-body-modal");
+                $('#corpo-modale').addClass("block-body-modal-reduced");
+                $('#div-inserimento-note').show();
+                if ($('#messaggio-attesa-nota').is(':visible')) {
+                    $('#block-footer').css('height', '360px');
+                }
+            }
+            else {
+                $(this).removeClass('on');
+                $(this).addClass('off');
+                $('#switch-abilita-inserimento-note').val('0');
+                $('#block-footer').css('height', '136px');
+                $('#corpo-modale').removeClass("block-body-modal-reduced");                
+                $('#corpo-modale').addClass("block-body-modal");
+                $('#div-inserimento-note').hide();
+            }
+        });
+    });
+</script>

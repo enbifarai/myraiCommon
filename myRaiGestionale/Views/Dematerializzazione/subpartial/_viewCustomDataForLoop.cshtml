@@ -1,0 +1,110 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiCommonModel
+@using myRaiHelper
+
+@model List<AttributiAggiuntivi>
+
+@{
+    Layout = null;
+}
+
+@{
+    if (Model != null && Model.Any())
+    {
+        var attrs = Model.OrderBy(w => w.Ordinamento).ToList();
+
+        // calcola la dimensione del singolo div inline
+        string dimensioneDiv = "";
+        int elementi = attrs.Count();
+        int parti = 12 / (elementi * 2);
+
+        // se sono tutti bottoni
+        bool allButtons = attrs.Count(w => w.Tipo == TipologiaAttributoEnum.ActionButton || w.Tipo == TipologiaAttributoEnum.Button) == attrs.Count();
+
+        if (allButtons)
+        {
+            parti = 12;
+        }
+
+        dimensioneDiv = "col-xs-" + parti.ToString();
+
+        List<string> gruppi = new List<string>();
+
+        foreach (var a in attrs.Where(w => w.Tipo != TipologiaAttributoEnum.FixedHiddenValue).ToList())
+        {
+            if (a.HideInReadOnly)
+            {
+                continue;
+            }
+            if (!String.IsNullOrEmpty(a.Valore))
+            {
+                string label1 = "";
+                string tx = "";
+
+                if (a.Tipo == TipologiaAttributoEnum.Importo)
+                {
+                    string txImporto = "0.00";
+
+                    if (!String.IsNullOrEmpty(a.Valore))
+                    {
+                        txImporto = a.Valore;
+                    }
+                    txImporto = Convert.ToDouble(txImporto).ToString("N2");
+                    tx = txImporto;
+                }
+                else if (a.Tipo == TipologiaAttributoEnum.Data)
+                {
+                    if (a.Valore.Length >= 10)
+                    {
+                        tx = a.Valore.Substring(0, 10);
+                    }
+                    else
+                    {
+                        tx = a.Valore;
+                    }
+                }
+                else if (a.Tipo == TipologiaAttributoEnum.Radio)
+                {
+                    var gruppo = a.Gruppo;
+                    bool giaElaborato = gruppi.Count(w => w.Equals(gruppo)) > 0;
+                    if (!giaElaborato)
+                    {
+                        gruppi.Add(gruppo);
+                        var el = attrs.Where(w => w.Tipo == TipologiaAttributoEnum.Radio && w.Gruppo.Equals(gruppo) && w.Checked).FirstOrDefault();
+                        if (el != null)
+                        {
+                            tx = el.Title;
+                        }
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+                else
+                {
+                    tx = a.Valore;
+                    if (tx.Contains("_NotDisplayed_"))
+                    {
+                        int pos = tx.IndexOf("_NotDisplayed_");
+                        tx = tx.Substring(pos);
+                        tx = tx.Replace("_NotDisplayed_", "");
+                    }
+                }
+
+                label1 = a.Label;
+
+                <div class="@(dimensioneDiv)">
+                    @Html.Label(a.Id, label1, new { @class = "rai-caption" })
+                </div>
+                <div class="@(dimensioneDiv)">
+                    @Html.Label(a.Id, tx, new { @class = "rai-font-md", style = "margin-top: 10px;" })
+                </div>
+            }
+            else if (a.InLine != null && a.InLine.Any())
+            {
+                @Html.Partial("~/Views/Dematerializzazione/subpartial/_viewCustomDataForLoop.cshtml", a.InLine)
+            }
+        }
+    }
+}

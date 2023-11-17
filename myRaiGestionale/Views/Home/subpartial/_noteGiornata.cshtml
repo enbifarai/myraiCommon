@@ -1,0 +1,101 @@
+﻿@using myRai.Business
+@using myRaiData
+@using myRaiCommonModel
+
+@model InfoGiornataModel
+
+<style>
+    .rounded-circle {
+        border-radius: 50% !important;
+    }
+
+    ul.simple-user-list li .actions {
+        float: right;
+        margin: 0 0 0 10px;
+    }
+
+    .risposta {
+        text-align:right;
+    }
+    
+    ul.simple-user-list li .risposta {
+        float: right;
+        margin: 0 0 0 10px;
+    }
+
+    figure.risposta
+    {
+        float:right;
+    }
+</style>
+
+<div id="Note_@(Model.DataGiornata.ToString("ddMMyyyy"))">
+
+    @{
+        if (Model.Note != null && Model.Note.Any())
+        {
+            <hr style="margin:10px 0 5px 0;"/>
+            <div class="row">
+                <div class="col-sm-12">
+                    <h5 class="text-bold">Note:</h5>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="row" id="elencoNote">
+                        <ul class="simple-user-list mb-3">
+                            @foreach (var nota in Model.Note.OrderBy(w => w.DataCreazione).ToList())
+                            {
+                                string myclass = "";
+                                if (!nota.Mittente.Equals(Model.MatricolaUtente))
+                                {
+                                    myclass = "risposta";
+                                }
+                                <li id="tx_nota_richieste_data_@nota.Id" class="@(myclass)">
+                                    @*<figure class="image rounded">
+                                        <img src="@(nota.Immagine)"
+                                                alt="@(System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase( nota.DescrizioneMittente ) )"
+                                                class="rounded-circle @(myclass)"
+                                                style="width:35px; height:35px;" />
+                                    </figure>*@
+                                    <div class="actions">
+                                        <!-- Se non è stata ancora letta allora è possibile modificare la nota -->
+                                        @if (nota.Mittente.Equals(Model.MatricolaUtente) && !nota.DataLettura.HasValue)
+                                        {
+                                            <span class="h3 font-w300" onclick="ModificaNotaRichiesta('@nota.Id')">
+                                                <a class="icons icon-pencil h4 text-primary"></a>
+                                            </span>
+                                            <span class="h3 font-w300">
+                                                <a class="icons icon-trash h4 text-primary" onclick="EliminaNotaRichiesta('@nota.Id')"></a>
+                                            </span>
+                                        }
+                                    </div>
+                                    <span class="title">@nota.DataUltimaModifica.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                                    <span class="message">@Html.Raw(nota.Messaggio.Replace("\r\n", "<br/>"))</span>
+                                    @if (nota.Mittente.Equals(Model.MatricolaUtente))
+                                    {
+                                        <span class="message">
+                                        Inserito da te
+                                        @{ 
+                                            if (!String.IsNullOrEmpty(nota.DescrizioneVisualizzatore))
+                                            {
+                                                @: (visualizzato da: @nota.DescrizioneVisualizzatore)
+
+                                            }
+                                        }
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="message">Inserito da @(nota.DescrizioneMittente)</span>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    </div>                    
+                </div>
+            </div>
+        }
+    }
+</div>

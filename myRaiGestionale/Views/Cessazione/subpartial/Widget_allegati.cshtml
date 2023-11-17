@@ -1,0 +1,171 @@
+﻿@using myRaiHelper
+@using myRaiData.Incentivi
+@model List<XR_INC_OPERSTATI_DOC>
+
+@foreach (var item in Model.OrderByDescending(x=>x.IsExternal).ThenByDescending(x=>x.ID_ALLEGATO!=0).ThenBy(x=>x.TMS_TIMESTAMP))
+{
+    <div id="allegato@(item.ID_ALLEGATO)" @(item.ID_ALLEGATO > 0 ? Html.Raw("data-allegato=\"" + item.ID_ALLEGATO + "\"") : Html.Raw("")) class="panel panel-no-shadow push-10-t">
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-sm-12">
+                    @if (item.ID_ALLEGATO != 0)
+                    {
+                        <span class="rai-font-md-bold" style="font-size: 130%;">@item.COD_TITLE</span>
+                    }
+                    else
+                    {
+                        <span class="rai-font-md-bold" style="font-size:130%;">Aggiungi un nuovo file</span>
+                    }
+
+                    <span class="rai-font-sm-neutral" style="display: block;">@item.DES_ALLEGATO</span>
+
+                    @if (item.ID_ALLEGATO == 0)
+                    {
+                        <div class="rai-btn-fill">
+                            <button id="button-allegato-@(item.ID_ALLEGATO)-@(item.ID_STATO_RIF)" type="button" onclick="$('#user@(item.ID_ALLEGATO)-@(item.ID_STATO_RIF)').show();$(this).hide()" class="btn rai-btn-small" style="margin-bottom: 12px;margin-top:16px">
+                                Aggiungi documento
+                            </button>
+                        </div>
+                        <input style="display:none" type="file" id="fileupload@(item.ID_ALLEGATO)-@(item.ID_STATO_RIF)" onchange="CessFileChanged(@(item.ID_ALLEGATO), @(item.ID_STATO_RIF))" />
+                        <input name="IdAllegatoInviato" data-tipo="@item.ID_ALLEGATO-@(item.ID_STATO_RIF)"
+                               class="id-all" type="hidden" id="id-allegato-@(item.ID_ALLEGATO)-@(item.ID_STATO_RIF)" />
+
+                    }
+                    else
+                    {
+                        <div class="widget-summary" style="margin-top: 8px;">
+                            <div class="widget-summary-col widget-summary-col-icon">
+                                <div class="summary-icon bg-cda" style="width:42px; height:42px;line-height:32px;background-color:#eee">
+                                    <i class="icons icon-doc" style="font-size: 65%;"></i>
+                                </div>
+                            </div>
+                            <div class="widget-summary-col">
+                                <div class="row">
+                                    <div class="col-sm-8">
+                                        <div class="summary">
+                                            <span class="rai-font-md" style="word-break:break-word;display: block;">@item.NME_FILENAME</span>
+                                            <span class="rai-font-sm-neutral">@(String.Format("{0:N2} KB", item.NMB_SIZE / 1000))</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-sm-4" style="text-align:right;padding-right:0px;padding-left:0px" id="cont-span@(item.ID_ALLEGATO)">
+                                        @if (item.ShowApproveBtn)
+                                        {
+                                            <button class="btn btn-action-icon" onclick="IncFileDecline('@item.Chiave', @item.ID_STATO_RIF, @item.ShowTipoRifiuto)" title="Rifiuta"><i class="fa fa-times feedback-error-color"></i></button>
+                                            <button class="btn btn-action-icon" onclick="IncFileApprove('@item.Chiave', @item.ID_STATO_RIF)" title="Approva e includi"><i class="fa fa-check feedback-success-color"></i></button>
+                                        }
+                                        @if (!item.IsExternal)
+                                        {
+                                            <a target="_blank" href="/cessazione/GetDoc?idDoc=@item.ID_ALLEGATO" class="btn rai-btn-small" onclick="" aria-label="Scegli file" title="Visualizza" style="min-width:80px;">Visualizza</a>
+                                        }
+                                        else
+                                        {
+                                            <a target="_blank" href="@item.ExternalAction" class="btn rai-btn-small" onclick="" aria-label="Scegli file" title="Visualizza" style="min-width:80px;">Visualizza</a>
+                                        }
+                                        @if (!item.DisableDelete)
+                                        {
+                                            <a href="javascript:IncEliminaGenericDoc(@item.ID_ALLEGATO)" id="rimuovi@(item.ID_ALLEGATO)" class="btn btn-action-icon"><i class="fa fa-trash"></i></a>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        if (item.ElencoTag != null && item.ElencoTag.Any(x=>!String.IsNullOrWhiteSpace(x)))
+                        {
+                            <div class="widget-summary push-10-t">
+                                <div class="widget-summary-col">
+                                    @foreach (var tag in item.ElencoTag.Where(x => !String.IsNullOrWhiteSpace(x)))
+                                    {
+                                        <span class="rai-label">@tag.UpperFirst()</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        if (item.ShowModifiedDate)
+                        {
+                            <div class="widget-summary">
+                                <div class="widget-summary-col">
+                                    <div class="push-5-t">
+                                        <label class="rai-font-sm-neutral text-italic">Caricato il @item.TMS_TIMESTAMP.ToString("dd/MM/yyyy") alle @item.TMS_TIMESTAMP.ToString("HH:mm")</label>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+
+            @if (item.ID_ALLEGATO == 0)
+            {
+                <div id="user@(item.ID_ALLEGATO)-@(item.ID_STATO_RIF)" style="display:none">
+                    <div class="form-group" style="margin-top:20px">
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                <label class="rai-caption">Titolo del documento</label>
+                                <span class="campoObbligatorio" style="font-weight:bold">*</span>
+
+                                <input id="titolodoc@(item.ID_ALLEGATO)-@(item.ID_STATO_RIF)" type="text" class="form-control" value="@item.COD_TITLE" />
+                            </div>
+                        </div>
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                <label class="rai-caption">Descrizione del documento</label>
+                                <input id="descrizionedoc@(item.ID_ALLEGATO)-@(item.ID_STATO_RIF)" type="text" class="form-control" />
+                            </div>
+                        </div>
+                        @if (item.ID_STATO_RIF == (int)myRaiHelper.IncStato.TempFileAccettazione || item.ID_STATO_RIF == (int)myRaiHelper.IncStato.FileAccettazione || item.ID_STATO_RIF == (int)myRaiHelper.IncStato.RecessoEffettuato)
+                        {
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <label class="rai-caption">Tipologia</label>
+                                    @{
+                                        var list = new List<SelectListItem>();
+                                        list.Add(new SelectListItem() { Value = "", Text = "Generico" });
+                                        list.Add(new SelectListItem() { Value = "accettazione", Text = "Accettazione" });
+                                        list.Add(new SelectListItem() { Value = "recesso", Text = "Recesso" });
+                                    }
+                                    @Html.RaiSelect(String.Format("tag{0}-{1}", item.ID_ALLEGATO, item.ID_STATO_RIF), list, hideSearch: true)
+                                </div>
+                            </div>
+                        }
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <div class="rai-btn-fill">
+                                    <button id="button-allegato-@(item.ID_ALLEGATO)-@(item.ID_STATO_RIF)" type="button" onclick="$('#fileupload@(item.ID_ALLEGATO)-@(item.ID_STATO_RIF)').click()" class="btn rai-btn-small" style="margin-bottom: 12px;margin-top:16px">
+                                        Scegli documento
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            <div id="uploading@(item.ID_ALLEGATO)-@(item.ID_STATO_RIF)" class="row" style="display:none">
+                <div class="col-sm-12">
+                    <div class="widget-summary push-10">
+                        <div class="widget-summary-col widget-summary-col-icon">
+                            <div class="summary-icon bg-cda" style="width:42px; height:42px;line-height:32px;background-color:#eee">
+                                <i class="icons icon-doc" style="font-size: 65%;"></i>
+                            </div>
+                        </div>
+                        <div class="widget-summary-col">
+                            <div class="summary">
+                                <span id="nome-file@(item.ID_ALLEGATO)-@(item.ID_STATO_RIF)" class="rai-font-md" style="word-break:break-word;display: block;">Nome del file</span>
+                                <span id="loaded@(item.ID_ALLEGATO)-@(item.ID_STATO_RIF)" class="rai-font-sm-neutral">100</span> / <span id="total@(item.ID_ALLEGATO)-@(item.ID_STATO_RIF)" class="rai-font-sm-neutral">200</span>
+                                <a href="javascript:IncEliminaGenericDoc(@item.ID_ALLEGATO)" id="rimuovi@(item.ID_ALLEGATO)" style="float: right;display:none">Rimuovi</a>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="rai progress progress-xs m-2 light">
+                        <div id="progress-bar@(item.ID_ALLEGATO)-@(item.ID_STATO_RIF)" class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="6" aria-valuemin="0" aria-valuemax="100" style="width: 6%;">
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}

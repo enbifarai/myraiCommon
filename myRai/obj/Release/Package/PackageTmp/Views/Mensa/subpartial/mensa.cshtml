@@ -1,0 +1,156 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model MensaModel
+<div class="row">
+    <div class="col-md-8">
+        <section class="panel">
+            <header class="panel-heading">
+                <h2 class="panel-title">Scontrino Mensa</h2>
+            </header>
+            <div class="panel-body">
+                <div class="row push-10" id="calendarmensa">
+                    <div class="col-sm-12 no-padding">
+                        <div class="rai-nav-fill">
+                            <div class="rai-nav-fill-item">
+                                <a href="javascript:cambiaMese(-1, 'sectionmensa', '/Mensa/getMensaAjaxView')" aria-label="Vai al mese precedente">
+                                    <span class="icons icon-arrow-left-circle"></span>
+                                </a>
+                            </div>
+                            <div class="rai-nav-fill-item-label">
+                                <label id="labdata" data-date="@Model.mese.ToString("dd/MM/yyyy")" style="border:none; font-weight:600; @((Request.Browser.IsMobileDevice) ? "font-size:10px;" : "font-size:14px;" )">
+                                    @CommonHelper.ToTitleCase(Model.mese.ToString("MMMM yyyy"))
+                                </label>
+                            </div>
+                            <div class="rai-nav-fill-item">
+                                <a href="javascript:cambiaMese(+1, 'sectionmensa', '/Mensa/getMensaAjaxView')">
+                                    <span class="icons icon-arrow-right-circle"></span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="js-table-sections table table-hover rai-table" id="table-eventi-3">
+                        <thead>
+                            <tr>
+                                <th class="col-md-4">Data</th>
+                                <th class="col-md-5">Descrizione</th>
+                                <th class="col-md-3">Costo</th>
+                            </tr>
+                            <tr>
+                                <td colspan="3"></td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.elencoScontrini != null)
+                            {
+                                int xSc = 0;
+                                foreach (var scontrino in Model.elencoScontrini)
+                                {
+                                    if (scontrino.pasti.Count > 0)
+                                    {
+                                        xSc++;
+
+                                        string dettaglioPasti = String.Empty;
+
+                                        if (scontrino.pasti != null && scontrino.pasti.Any())
+                                        {
+                                            foreach (var p in scontrino.pasti.Skip(1).ToList())
+                                            {
+                                                if (p.prezzo == null)
+                                                {
+                                                    dettaglioPasti += p.descrizione.Trim() + ", ";
+                                                }
+                                            }
+
+                                            if (dettaglioPasti.Length > 0)
+                                            {
+                                                dettaglioPasti = dettaglioPasti.Substring(0, dettaglioPasti.Length - 2);
+                                            }
+                                            dettaglioPasti = dettaglioPasti.Trim();
+                                        }
+
+                                        <tr class="@((xSc % 2 != 0) ? "bgscontrino" : "")">
+                                            <td class="col-md-4" style="border-top: none;" data-toggle="tooltip" data-html="true" title="@scontrino.mensa" data-container="body">
+                                                <span class="rai-font-md-bold">@scontrino.dataScontrino</span> <span class="h6"><em> alle: @scontrino.oraScontrino</em> </span>
+                                            </td>
+                                            <td class="col-md-5 @(scontrino.pasti[0].prezzo != null ? "" : "not-price ")" style="border-top: none;" data-toggle="tooltip" data-html="true" title="@dettaglioPasti" data-container="body">
+                                                <span class="rai-font-sm-neutral">@scontrino.pasti[0].descrizione</span>
+                                            </td>
+                                            <td class="col-md-3 text-bold" style="border-top: none;">
+                                                <span class="rai-font-sm">@scontrino.pasti[0].prezzo</span>
+                                            </td>
+                                        </tr>
+
+                                        foreach (var p in scontrino.pasti.Skip(1).ToList())
+                                        {
+                                            if (p.prezzo != null)
+                                            {
+                                                <tr class="@((xSc % 2 != 0) ? "bgscontrino" : "")">
+                                                    <td class="col-md-4" style="border:none; line-height: 0.5;">&nbsp;</td>
+                                                    <td class="col-md-5" style="border:none; line-height: 0.5;">
+                                                        <label class="rai-font-sm-neutral">
+                                                            @(p.descrizione)
+                                                        </label>
+                                                    </td>
+                                                    <td class="col-md-3" style="border:none; line-height: 0.5;">
+                                                        <span class="rai-font-sm">@(p.prezzo)</span>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        }
+
+                                        <tr class=" text-bold @((xSc % 2 != 0) ? "bgscontrino" : "")">
+                                            <td class="col-md-4">
+                                                <span class="rai-font-sm-neutral">(num scontrino: @scontrino.idScontrino)</span>
+                                            </td>
+                                            <td class="col-md-5">
+                                                <span class="rai-font-md-bold text-primary">TOTALE</span>
+                                            </td>
+                                            <td class="col-md-3">
+                                                <span class="rai-font-md-bold text-primary">€  @scontrino.prezzoTotale</span>
+                                            </td>
+                                        </tr>
+                                        <tr class="@((xSc % 2 != 0) ? "bgscontrino" : "")">
+                                            <td colspan="3" style="border-bottom:none; line-height: 1.7;"></td>
+                                        </tr>
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="3">
+                                        @Html.Partial("~/Views/Shared/_NoDati.cshtml")
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+
+
+            </div>
+        </section>
+    </div>
+
+    <div class="col-md-4">
+        @if (Model.elencoScontrini != null)
+        {
+            @Html.RenderWidget(WidgetType.Normal, "Spesa mensile", "icons icon-wallet",
+                             String.Format("€ {0:N2}", Model.totalePrezzoPasti), Model.quantiPasti + " past"+(Model.quantiPasti=="1"?"o":"i"),
+                             "La tua spesa in mensa per il mese di "+ CommonHelper.ToTitleCase(Model.mese.ToString("MMMM yyyy")) + " è di:")
+        }
+        else
+        {
+            @Html.RenderWidget(WidgetType.Normal, "Spesa mensile", "icons icon-wallet", "Non ci sono dati per il mese di " + Model.mese.ToString("MMMM yyyy"))
+        }
+
+
+    </div>
+</div>

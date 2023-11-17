@@ -1,0 +1,114 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiHelper
+@model myRaiCommonModel.Gestionale.CessazioneFilter
+
+@{ 
+    var parLimiti = HrisHelper.GetParametriJson<myRaiData.Incentivi.XR_HRIS_PARAM>(HrisParam.IncentiviParametri);
+    var parTipiVert = parLimiti.FirstOrDefault(x => x.COD_PARAM == "TipologieVertenze");
+    List<SelectListItem> tipiVert = new List<SelectListItem>();
+    tipiVert.Add(new SelectListItem() { Value = "", Text = "Seleziona tipologia" });
+    tipiVert.AddRange(Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, string>>(parTipiVert.COD_VALUE1)
+            .Select(x => new SelectListItem() { Value = x.Key, Text = x.Value }));
+}
+
+<section class="panel ">
+    <header class="panel-heading">
+        <h2 id="lblRightBox" class="panel-title">Ricerca</h2>
+        <div class="panel-actions">
+            <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" aria-labelledby="lblRightBox" aria-expanded="true"></a>
+        </div>
+    </header>
+
+    <div class="panel-body">
+        @using (Html.BeginForm("", "", FormMethod.Post, new { id = "form-ric-cess" }))
+        {
+            @Html.HiddenFor(m => m.HasFilter)
+            <div class="form-group">
+                <div class="row">
+                    <div class="col-xl-6 col-sm-12 push-10">
+                        @Html.LabelFor(m => m.Matricola, "Matricola", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.Matricola, new { @class = "form-control form-ric-cess form-control-value", placeholder = "Matricola", onkeydowwn = "LookForKeyDown()" })
+                    </div>
+                    <div class="col-xl-6 col-sm-12 push-10">
+                        @Html.LabelFor(m => m.Nominativo, "Nominativo", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.Nominativo, new { @class = "form-control form-ric-cess form-control-value", placeholder = "Nominativo", onkeydowwn = "LookForKeyDown()" })
+                    </div>
+                    @if (CessazioneHelper.EnabledTo(CommonHelper.GetCurrentUserMatricola()))
+                    {
+                        <div class="col-xl-6 col-sm-12 push-10">
+                            @Html.LabelFor(m => m.Tipologia, "Tipologia", new { @class = "rai-caption" })
+                            @Html.DropDownListFor(m => m.Tipologia, new SelectList(CessazioneController.getTipologie(), "Value", "Text", null), "Tipologia pratica", new { @class = "form-control form-ric-cess form-control-value", onkeydown = "LookForKeyDown()" })
+                        </div>
+                        <div class="col-xl-6 col-sm-12 push-10">
+                            @Html.LabelFor(m => m.Stato, "Stato", new { @class = "rai-caption" })
+                            <select id="Stato" name="Stato" class="form-control form-ric-cess form-control-value" onkeydown="LookForKeyDown()" onchange="IncGestGroup(this)">
+                                <option value="">Stato pratica</option>
+                                @foreach (var item in CessazioneController.GetStatiTipologia())
+                                {
+                                    <optgroup label="@item.Name">
+                                        @foreach (var subItem in item.ListItems)
+                                        {
+                                            <option value="@subItem.Value">@subItem.Text</option>
+                                        }
+                                    </optgroup>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-xl-6 col-sm-12 push-10">
+                            @Html.LabelFor(m => m.InCarico, "In carico", new { @class = "rai-caption" })
+                            @Html.DropDownListFor(m => m.InCarico, new SelectList(CessazioneController.getInCaricoList(), "Value", "Text", null), "Elaborazione", new { @class = "form-control form-ric-cess form-control-value", onkeydown = "LookForKeyDown()" })
+                        </div>
+                    }
+                    <div class="col-xl-6 col-sm-12 push-10">
+                        @Html.LabelFor(m => m.DataCessazione, "Data cessazione", new { @class = "rai-caption" })
+                        @Html.DropDownListFor(m => m.DataCessazione, new SelectList(CessazioneController.getDataCessazione().OrderByDescending(x => x.Value), "Value", "Text", null), "Cessazione", new { @class = "form-control form-ric-cess form-control-value", onkeydown = "LookForKeyDown()" })
+                    </div>
+                    <div class="col-xl-6 col-sm-12 push-10">
+                        @Html.LabelFor(m => m.Sede, "Sede", new { @class = "rai-caption" })
+                        @Html.DropDownListFor(m => m.Sede, new SelectList(CessazioneController.getSedi(), "Value", "Text", null), "Sede", new { @class = "form-control form-ric-cess form-control-value", onkeydown = "LookForKeyDown()" })
+                    </div>
+                    <div class="col-xl-6 col-sm-12 push-10">
+                        @Html.LabelFor(m => m.Causa, "Gestione manuale", new { @class = "rai-caption" })
+                        @Html.DropDownListFor(m => m.Causa, new SelectList(CessazioneController.getCause(), "Value", "Text", null), "Gestione manuale", new { @class = "form-control form-ric-cess form-control-value", onkeydown = "LookForKeyDown()" })
+                    </div>
+                    <div class="col-xl-6 col-sm-12 push-10">
+                        @Html.LabelFor(m => m.CodiceGruppo, "Gruppo pratiche", new { @class = "rai-caption" })
+                        @Html.DropDownListFor(m => m.CodiceGruppo, new SelectList(CessazioneController.getGruppi(), "Value", "Text", null), new { @class = "form-control form-ric-cess form-control-value", onkeydown = "LookForKeyDown()" })
+                    </div>
+                    <div class="col-xl-6 col-sm-12 push-10">
+                        @Html.LabelFor(m => m.DataRichiesta, "Data richiesta", new { @class = "rai-caption" })
+                        <div class="input-group">
+                            <span class="input-group-addon" style="cursor: pointer" onclick="$('#_dtRich').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                            @Html.TextBoxFor(m => m.DataRichiesta, new { @class = "js-datetimepicker form-ric-cess form-control form-control-value",id="_dtRich", data_format = "DD/MM/YYYY", data_locale = "it", placeholder = "Selezionare una data", autocomplete = "off" })
+                        </div>
+                    </div>
+                    <div class="col-xl-12 col-sm-12 push-10">
+                        @Html.LabelFor(m => m.QualFilter, "Tipo dipendente", new { @class = "rai-caption" })
+                        @Html.RaiSelectFor(m=>m.QualFilter, myRaiCommonManager.Cessazione.CessazioneManager.QualFilter(), multiple:true, attributes: new { @class = "form-ric-cess form-control-value" })
+                    </div>
+                    <div class="col-xl-12 col-sm-12 push-10">
+                        @Html.LabelFor(m => m.TipoVertenza, "Tipo vertenza", new { @class = "rai-caption" })
+                        @Html.RaiSelectFor(m=>m.TipoVertenza, tipiVert, multiple:true, attributes: new { @class = "form-ric-cess form-control-value" })
+                    </div>
+                </div>
+                <div class="row form-button">
+                    <div class="col-sm-12">
+                        <div class="rai-btn-fill">
+                            <button id="btnPulisciRicerca" class="btn rai-btn-secondary" title="Azzera" type="reset" value="Azzera" onclick="PulisciFiltri()">Azzera</button>
+                            <button id="btnCercaIncentivati" class="btn rai-btn-primary" title="Cerca" type="submit" value="Cerca" onclick="CercaIncentivato()">Cerca</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+</section>
+
+<script>
+    function IncGestGroup(combo) {
+        var desGroup = $(combo).find('option:selected').parent().attr('label');
+        var selVal = $("#Tipologia option:contains('" + desGroup + "')").attr('value');
+        $('#Tipologia').val(selVal);
+    }
+</script>

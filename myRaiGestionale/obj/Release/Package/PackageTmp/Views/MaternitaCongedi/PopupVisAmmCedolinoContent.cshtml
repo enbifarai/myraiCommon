@@ -1,0 +1,586 @@
+﻿@model myRaiCommonModel.DettaglioCedolinoModel
+ 
+
+                        @Html.Partial("_vocigeneriche", Model)
+
+
+                   <input type="hidden" id="eccezione-ris" value="@myRaiCommonManager.MaternitaCongediManager.GetEccezioneRisultante(Model.Richiesta)" />
+    <script>
+
+        CalcolaCifre();
+        function isInt(n) {
+            return n % 1 === 0;
+        }
+        function SriviTotaleGiorni(parentTable) {
+            var totalegiorni = 0;
+            var oneBlank = false;
+
+            $(parentTable).find(".voci-giorni").each(function () {
+                if ($(this).val().trim().indexOf(",") == $(this).val().trim().length - 1) {
+                    oneBlank = true;
+                }
+                if ($(this).val().trim() == "") {
+                    oneBlank = true;
+                }
+                if ($(this).val().trim() == "") return;
+                totalegiorni += parseFloat($(this).val().replace(",", "."));
+            });
+            $(parentTable).find(".num-giorni").each(function () {
+                debugger
+                var attributo_sospesa = $(this).closest(".row-cedo").attr("data-sospesa");
+                if (attributo_sospesa != "1") {
+                    totalegiorni += parseFloat($(this).text().replace(",", "."));
+                }
+
+            });
+            var labelGiorni = $(parentTable).find(".tot-giorni");
+            if (isInt(totalegiorni)) {
+                var intvalue = Math.floor(totalegiorni);
+                $(labelGiorni).text(intvalue + "/26");
+            }
+            else {
+                $(labelGiorni).text(totalegiorni.toFixed(2).toString().replace(".", ",") + "/26");
+            }
+        }
+        function CalcolaCifre() {
+           
+            var totale = 0;
+            var m13 = 0;
+            var m14 = 0;
+            var imp = 0;
+            var premio = 0;
+            var tipodip = $("#tipodip").val();
+
+            var calcolo13ma = "A9+A10+A11+A12+A13+A14+A15+A16+A17+A18+A19+A20+A21+A23+A25+A26+A27+A24".split('+');
+            if (tipodip == "G")
+                calcolo13ma = "A9+A10+A11+A12+A13+A14+A15+A16+A17+A18+A19+A20".split('+');
+
+            var calcoloimp = "A9+A10+A11+A12+A13+A14+A15+A16+A17+A18+A19+A20+A21+A22+A23+A24+A25+A26+A27+A28".split('+');
+            if (tipodip == "G")
+                //calcoloimp = "A9+A10+A11+A12+A13+A14+A15+A16+A17+A18+A19+A20+A21+A22+A23+A24+A25+A26+A27+A28+A29+A30+A31+A32+A33+A34".split('+');
+                calcoloimp = "A9+A10+A11+A12+A13+A14+A15+A16+A17+A18+A19+A20+A21+A22+A27+A28+A29+A30+A31+A32+A33+A34".split('+');
+
+
+            var calcolo14ma = "A9+A10+A11+A13+A14+A15+A16+A17+A18+A19+A20+A21+A24".split('+');
+            if (tipodip == "G")
+                calcolo14ma = "A41".split('+');
+
+            var calcolopremio = "A33".split('+');
+            if (tipodip == "G")
+                calcolopremio = "A41".split('+');
+
+            var dg55 = 0, ln20 = 0, ln25 = 0, ar20 = 0, lf80 = 0, lf36 = 0, lexf = 0, pdco = 0;
+            var calcolodg55 = "A9+A10+A11+A12+A13+A14+A15+A16+A17+A18".split('+');
+            var calcololn20 = "A10+A23+A24".split('+');
+            var calcololn25 = "A10+A23+A24".split('+');
+            var calcolopdco = "A23+A24".split('+');
+            var calcololf80 = "A9+A10+A11+A12+A13+A14+A15+A16+A17+A19".split('+');
+            var calcololf36 = "A9+A10+A11+A12+A13+A14+A15+A16+A17+A19".split('+');
+            var calcololexf = "A9+A10+A11+A12+A13+A14+A15+A16+A17+A18".split('+');
+            var calcoloar20 = "A9+A10+A11+A12+A13+A14+A15+A16+A17+A18+A19+A20".split('+');
+
+            
+            var oneBlank = false;
+
+            $(".voci-cedolino").each(function () {
+
+                if ($(this).val().trim().indexOf(",") == $(this).val().trim().length - 1) {
+                    oneBlank = true;
+                }
+                if ($(this).val().trim() == "") {
+                     
+                    oneBlank = true;
+                    return;
+                }
+                totale += parseFloat($(this).val().replace(",", "."));
+
+                if (calcolo13ma.indexOf($(this).attr("data-calcolo")) >= 0) {
+                    m13 += parseFloat($(this).val().replace(",", "."));
+                }
+                if (calcolo14ma.indexOf($(this).attr("data-calcolo")) >= 0) {
+                    m14 += parseFloat($(this).val().replace(",", "."));
+                }
+                if (calcoloimp.indexOf($(this).attr("data-calcolo")) >= 0) {
+                    imp += parseFloat($(this).val().replace(",", "."));
+                }
+                if (calcolopremio.indexOf($(this).attr("data-calcolo")) >= 0) {
+                    premio += parseFloat($(this).val().replace(",", "."));
+                }
+                if (tipodip == "G") {
+                    if (calcolodg55.indexOf($(this).attr("data-calcolo")) >= 0) {
+                        dg55 += parseFloat($(this).val().replace(",", "."));
+                    }
+                    if (calcololn20.indexOf($(this).attr("data-calcolo")) >= 0) {
+                        ln20 += parseFloat($(this).val().replace(",", "."));
+                    }
+                    if (calcololn25.indexOf($(this).attr("data-calcolo")) >= 0) {
+                        ln25 += parseFloat($(this).val().replace(",", "."));
+                    }
+                    if (calcolopdco.indexOf($(this).attr("data-calcolo")) >= 0) {
+                        pdco += parseFloat($(this).val().replace(",", "."));
+                    }
+                    if (calcololf80.indexOf($(this).attr("data-calcolo")) >= 0) {
+                        lf80 += parseFloat($(this).val().replace(",", "."));
+                    }
+                    if (calcololf36.indexOf($(this).attr("data-calcolo")) >= 0) {
+                        lf36 += parseFloat($(this).val().replace(",", "."));
+                    }
+                    if (calcololexf.indexOf($(this).attr("data-calcolo")) >= 0) {
+                        lexf += parseFloat($(this).val().replace(",", "."));
+                    }
+                    if (calcoloar20.indexOf($(this).attr("data-calcolo")) >= 0) {
+                        ar20 += parseFloat($(this).val().replace(",", "."));
+                    }
+                    
+                }
+            });
+
+            if ($("#str").length > 0) {
+                imp += parseFloat($("#str").text().replace(",", "."));
+            }
+                
+
+            
+            if (oneBlank || !allTablesRespect26() || imp <= 0 ) {
+                $("#conferma-avanti-ced").addClass("disable")
+            }
+            else {
+                $("#conferma-avanti-ced").removeClass("disable")
+            }
+            if (imp <= 0) {
+                $("#cifre-non-dispo").show();
+            }
+            else {
+                $("#cifre-non-dispo").hide();
+            }
+            if (tipodip != "G") {
+                m13 = m13 / 12;
+                m14 = m14 / 12;
+                premio = premio / 12;
+            } else {
+                m13 = (m13 * 1.154) / 12;
+                m14 = m14 / 12;
+                premio = premio / 12;
+                
+                dg55 = (dg55 / 26) * 0.55 * parseFloat($("#giorni-DG55").text().replace(",", "."));
+                $("#dg55").text(dg55.toFixed(2).replace(".", ","));
+                $("#DG55hid").val(dg55.toFixed(2).replace(".", ","));
+
+                ln20 = (ln20 / 26) * 0.2 * parseFloat($("#giorni-LN20").text().replace(",", "."));
+                $("#ln20").text(ln20.toFixed(2).replace(".", ","));
+                $("#LN20hid").val(ln20.toFixed(2).replace(".", ","));
+
+                ln25 = (ln25 / 26) * 0.25 * parseFloat($("#giorni-LN25").text().replace(",", "."));
+                $("#ln25").text(ln25.toFixed(2).replace(".", ","));
+                $("#LN25hid").val(ln25.toFixed(2).replace(".", ","));
+
+                pdco = (pdco / 26) * 0.25 * parseFloat($("#giorni-PDCO").text().replace(",", "."));
+                $("#pdco").text(pdco.toFixed(2).replace(".", ","));
+                $("#PDCOhid").val(pdco.toFixed(2).replace(".", ","));
+
+                lf80 = (lf80 / 26) * 1.8 * parseFloat($("#giorni-LF80").text().replace(",", "."));
+                $("#lf80").text(lf80.toFixed(2).replace(".", ","));
+                $("#LF80hid").val(lf80.toFixed(2).replace(".", ","));
+
+                lf36 = (lf36 / 26) * 3.6 * parseFloat($("#giorni-LF36").text().replace(",", "."));
+                $("#lf36").text(lf36.toFixed(2).replace(".", ","));
+                $("#LF36hid").val(lf36.toFixed(2).replace(".", ","));
+
+                lexf = (lexf / 26) *  parseFloat($("#giorni-LEXF").text().replace(",", "."));
+                $("#lexf").text(lexf.toFixed(2).replace(".", ","));
+                $("#LEXFhid").val(lexf.toFixed(2).replace(".", ","));
+
+                ar20 = (ar20 / 26) * parseFloat($("#giorni-AR20").text().replace(",", "."));
+                $("#ar20").text(ar20.toFixed(2).replace(".", ","));
+                $("#AR20hid").val(ar20.toFixed(2).replace(".", ","));
+
+                imp += dg55 + ln20 + ln25 + pdco + lf80 + lf36 + lexf + ar20;
+            }
+
+            if ($("#eccezione-ris").val() == "AF" || $("#eccezione-ris").val() == "MU") {
+                m13 = 0;
+                m14 = 0;
+                premio = 0;
+            }
+
+            $("#13ma").text(m13.toFixed(2).replace(".", ","));
+            $("#13mahid").val(m13.toFixed(2).replace(".", ","));
+
+            $("#14ma").text(m14.toFixed(2).replace(".", ","));
+            $("#14mahid").val(m14.toFixed(2).replace(".", ","));
+
+            $("#premio").text(premio.toFixed(2).replace(".", ","));
+            $("#premiohid").val(premio.toFixed(2).replace(".", ","));
+
+            $("#importo-totale").text(imp.toFixed(2).replace(".", ","));
+            $("#importo-totalehid").val(imp.toFixed(2).replace(".", ","));
+            $("#importo-accordion").text(imp.toFixed(2).replace(".", ","));
+            $("#importo1").text(imp.toFixed(2).replace(".", ","));
+            $("#importo2").text(imp.toFixed(2).replace(".", ","));
+        }
+        var w = $("#pbody").width();
+        $("#importo-fixed").css("width", w + "px")
+         
+         
+
+        $(".voci-giorni").on("keyup", function (evt) {
+            var totalegiorni = 0;
+            var oneBlank = false;
+
+            var parentTable = $(this).closest("table");
+            
+            $(parentTable).find(".voci-giorni").each(function () {
+                if ($(this).val().trim().indexOf(",") == $(this).val().trim().length - 1) {
+                    oneBlank = true;
+                }
+                if ($(this).val().trim() == "") {
+                    oneBlank = true;
+                }
+                if ($(this).val().trim() == "") return;
+                totalegiorni += parseFloat($(this).val().replace(",", "."));
+            });
+            $(parentTable).find(".num-giorni").each(function () {
+                debugger
+                var attributo_sospesa = $(this).closest(".row-cedo").attr("data-sospesa");
+                if (attributo_sospesa != "1") {
+                    totalegiorni += parseFloat($(this).text().replace(",", "."));
+                }
+               
+            });
+            var labelGiorni = $(parentTable).find(".tot-giorni");
+            if (isInt(totalegiorni)) {
+                var intvalue = Math.floor(totalegiorni);
+                $(labelGiorni).text(intvalue + "/26");
+            }
+            else {
+                $(labelGiorni).text(totalegiorni.toFixed(2).toString().replace(".", ",") + "/26");
+            }
+
+
+
+
+            if (oneBlank || !allTablesRespect26()) {
+                $("#conferma-avanti-ced").addClass("disable")
+            }
+            else {
+                $("#conferma-avanti-ced").removeClass("disable")
+            }
+
+            $("#pbh2").css("width", ((totalegiorni / 26) * 100).toString()+"%");
+            $("#pbh3").css("width", ((totalegiorni / 26) * 100).toString()+"%");
+
+            debugger
+            var currentFieldValue = $(this).val().replace(",", ".");
+            var oldFieldValue = $(this).closest("div.row").find(".giorni_old").val().replace(",", ".");
+            if (parseFloat(currentFieldValue) != parseFloat(oldFieldValue)) {
+                if ($(this).closest(".row").find(".alertfield").length == 0) {
+                    var div = $("#alert-field").clone();
+                    $(div).attr("id", "alert-" + name);
+                    $(div).show();
+                    $(this).closest(".row").prepend(div);
+                }
+            }
+            else {
+                if ($(this).closest(".row").find(".alertfield").length > 0) {
+                    $(this).closest(".row").find(".alertfield").remove();
+                }
+            }
+        });
+
+
+        $(".voci-cedolino").on("keyup", function (evt) {
+            
+            var name = $(this).attr("name");
+            var currentFieldValue = $(this).val().replace(",", ".");
+            debugger
+            if ($("input[name=" + name + "_old]").length >0) {
+                var oldFieldValue = $("input[name=" + name + "_old]").val().replace(",", ".");
+
+                if (currentFieldValue.trim() == "") currentFieldValue = 0;
+
+                if (parseFloat(currentFieldValue) != parseFloat(oldFieldValue)) {
+                    if ($(this).closest(".row").find(".alertfield").length == 0) {
+                        var div = $("#alert-field").clone();
+                        $(div).attr("id", "alert-" + name);
+                        $(div).show();
+                        $(this).closest(".row").prepend(div);
+                    }
+                }
+                else {
+                    if ($(this).closest(".row").find(".alertfield").length > 0) {
+                        $(this).closest(".row").find(".alertfield").remove();
+                    }
+                }
+            }
+           
+            CalcolaCifre();
+            
+        });
+
+
+
+
+        $(".voci-cedolino,.voci-giorni").keypress(function (evt) {
+            
+            var valid = false;
+            if (evt.keyCode >= 48 && evt.keyCode <= 57)
+                valid = true;
+            if (evt.keyCode == 44 && $(this).val().indexOf(",") < 0)
+                valid = true;
+
+            var len = $(this).val().length;
+            var p = $(this).val().indexOf(",");
+
+            if (!valid) {
+                evt.preventDefault();
+                evt.stopPropagation();
+            }
+            else {
+
+            }
+
+        });
+        function allTablesRespect26() {
+            var respect26 = true;
+            
+            $(".cap-ced").each(function () {
+                var totgiorni = 0;
+                var currentTable = $(this);
+                var labelTot = $(currentTable).find(".tot-giorni");
+                var tot = ($(labelTot).attr("data-totale-giorni"));
+                if (tot == "26" && $(labelTot).text() == "26/26")
+                    return true;
+
+                $(currentTable).find(".voci-giorni").each(function () {
+                    
+                    if ($(this).val().trim() == "") return;
+                    totgiorni += parseFloat($(this).val().replace(",", "."));
+                });
+                 
+                $(currentTable).find(".num-giorni").each(function () {
+                    totgiorni += parseFloat($(this).text().replace(",", "."));
+                });
+                 
+                if (totgiorni > 26)
+                    respect26 = false;
+            });
+
+            
+            return respect26;
+        }
+
+        function SendFormEccezioniExecute(formEccezioni, i) {
+            $.ajax({
+                url: $(formEccezioni).attr('action'),
+                type: 'POST',
+                data: $(formEccezioni).serialize(),
+                success: function (data) {
+                    if (data.esito == true) {
+                        i++;
+                        if ($("#ecc-con-" + i).length > 0) {
+                            SendFormEccezioniExecute($("#ecc-con-" + i), i);
+                        }
+                        else {
+                            swal({
+                                title: 'Modifiche salvate correttamente',
+                                type: "success",
+                                confirmButtonText: 'OK',
+                                customClass: 'rai'
+                            }).then(function () {
+                                AmmPage(2);
+                            });
+                        }
+                    }
+                    else {
+                        swal({
+                            title: data.errore,
+                            type: "error",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                    }
+                }
+            });
+        }
+
+        function SendFormEccezioni() {
+            var i = 1;
+                var formEccezioni = $("#ecc-con-" + i);
+                 
+                SendFormEccezioniExecute(formEccezioni, i);
+                 
+        }
+        function ConfermaModificheCedolino(idrichiesta, giornalisti) {
+
+            var cedolinoModificato = $("#ced-cont .alertfield").length > 0;
+            var eccezioniModificate = $("#giorni-cont .alertfield").length > 0;
+            debugger
+            if (!cedolinoModificato && !eccezioniModificate) {
+                AmmPage(2);
+                return;
+            }
+
+            swal({
+                title: "Conferma modifiche",
+                type: 'question',
+                html: "Confermi di salvare le modifiche?",
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+                cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+                reverseButtons: true,
+                customClass: 'rai rai-confirm-cancel'
+            }).then(function () {
+
+                if (cedolinoModificato) {
+                    var form = $("#modifica-cedolino");
+                    $("#meseannocedolino").val($("#mese-anno-comp").val());
+                    $.ajax({
+                        url: $(form).attr('action'),
+                        type: 'POST',
+                        data: $(form).serialize(),
+                        success: function (data) {
+                            if (data.esito == true) {
+                                if (eccezioniModificate) {
+                                    SendFormEccezioni();
+                                }
+                                else {
+                                    swal({
+                                        title: 'Modifiche salvate correttamente',
+                                        type: "success",
+                                        confirmButtonText: 'OK',
+                                        customClass: 'rai'
+                                    }).then(function () {
+                                        AmmPage(2);
+                                    });
+                                }
+                               
+                            }
+                            else {
+                                swal({
+                                    title: data.errore,
+                                    type: "error",
+                                    confirmButtonText: 'OK',
+                                    customClass: 'rai'
+                                });
+                            }
+                        }
+                    });
+                }
+                else {
+                    SendFormEccezioni();
+                }
+
+            });
+        }
+         
+      
+        function SendFormTask() {
+            var formTask = $("#form-tasks");
+            $.ajax({
+                url: $(formTask).attr('action'),
+                type: 'POST',
+                data: $(formTask).serialize(),
+                success: function (data) {
+                    if (data.esito == true) {
+                        swal({
+                            title: 'Pratica avviata correttamente',
+                            type: "success",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        }).then(function () {
+                            AmmPage(3);
+                            search();
+                        });
+                    }
+                    else {
+                        swal({
+                            title: data.errore,
+                            type: "error",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                    }
+                }
+            });
+        }
+        function ChangeSwitch(element) {
+           
+            var cb = $(element).parent().find("input");
+            var isStorno = ($(cb).attr("data-stornocedolino") == "True");
+            var meseCorrente = (new Date().getMonth() + 1).toString().padStart(2, "0");
+            var meseEccezioni = $(cb).attr("data-mese").padStart(2, "0");
+
+            debugger
+            
+            var div = $(element).find(".ios-switch")[0];
+            if ($(div).hasClass("on")) {
+                $(div).removeClass("on");
+                $(cb)[0].checked = false;
+                if (isStorno) {
+                    $("input[data-campo-nome='TIPO CEDOLINO']").each(function () {
+                        var nomeTask = $(this).closest("table").find(".task-nome").text().trim();
+                        if (nomeTask != "STORNO CEDOLINO") {
+                            if ($(this).attr("data-mese") == $(cb).attr("data-mese")) {
+                                $(this).val(" ");
+                                $(this).keyup();
+                            }
+                        }
+                    });
+                    $("input[data-campo-nome='MM COMPETENZA']").each(function () {
+                        var nomeTask = $(this).closest("table").find(".task-nome").text().trim();
+                       
+                        if (nomeTask != "STORNO CEDOLINO") {
+                             
+                            if ($(this).attr("data-mese") == $(cb).attr("data-mese")) {
+                                $(this).val(meseCorrente);
+                                $(this).keyup();
+                            }
+                        }
+                        
+                    });
+                    $("input[data-campo-nome='RICHIAMO ANAGRAFICA']").each(function () {
+                        if ($(this).attr("data-mese") == $(cb).attr("data-mese")) {
+                            $(this).val(" ");
+                            $(this).keyup();
+                        }
+                    });
+                }
+            }
+            else {
+                $(div).addClass("on");
+                $(cb)[0].checked = true;
+                if (isStorno) {
+                    $("input[data-campo-nome='TIPO CEDOLINO']").each(function () {
+                        debugger
+                        var nomeTask = $(this).closest("table").find(".task-nome").text().trim();
+                       
+                        if (nomeTask != "STORNO CEDOLINO") {
+                           
+                            if ($(this).attr("data-mese") == $(cb).attr("data-mese")) {
+                                $(this).val("0");
+                                $(this).keyup();
+                            }
+                        }
+                    });
+                    $("input[data-campo-nome='MM COMPETENZA']").each(function () {
+                        var nomeTask = $(this).closest("table").find(".task-nome").text().trim();
+                        if (nomeTask != "STORNO CEDOLINO") {
+                            
+                            if ($(this).attr("data-mese") == $(cb).attr("data-mese")) {
+                                $(this).val(meseEccezioni);
+                                $(this).keyup();
+                            }
+                        }
+                    });
+                    $("input[data-campo-nome='RICHIAMO ANAGRAFICA']").each(function () {
+                        if ($(this).attr("data-mese") == $(cb).attr("data-mese")) {
+                            $(this).val("1");
+                            $(this).keyup();
+                        }
+                    });
+                }
+            }
+        }
+         
+    </script>
+</section>

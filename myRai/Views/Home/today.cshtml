@@ -1,0 +1,125 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model ModelDash
+<div id="todaycontainer">
+    <div class="block card">
+        <div class="block-header bg-gray-lighter ">
+            <h3 class="block-title">Orario previsto per oggi</h3>
+        </div>
+        <div class="block-content ">
+            <h3 class="pull-10-l push-10-l push-10-t push-10">
+                <span class="actual-day">05</span>
+                <span class="actual-month">Febbraio</span>
+                <small class="actual-hour font-w300"> 18:30</small>
+            </h3>
+            @{string codiceAssenza = "";}
+            @if ( Model.dettaglioGiornata.timbrature.Count( ) == 0 )
+            {
+                //se ci sono eccezioni ti macro
+                if ( Model.dettaglioGiornata.eccezioni.Any( d => d.tipo_eccezione == "C" ) == true )
+                {
+                    codiceAssenza = CommonHelper.ToTitleCase( Model.dettaglioGiornata.eccezioni.Where( d => d.tipo_eccezione == "C" ).FirstOrDefault( ).descrittiva_lunga );
+                }
+
+            }
+            @if ( codiceAssenza == "" )
+            {
+                <div class="block tiles hgreen height-100 block-rounded">
+
+                    <p class="content-mini content-mini-full push-t">
+                        <div class="col-xs-1 col-xs-offset-1"><i class="di di-entrata fa-2x text-white"></i></div>
+                        <div class="col-xs-3 h3">
+                            @if ( Model.dettaglioGiornata != null && Model.dettaglioGiornata.orario != null )
+                            {
+                                @Model.dettaglioGiornata.orario.hhmm_entrata_48
+                            }
+                            else
+                            {
+                                @:--:--
+                            }
+                        </div>
+                        <div class="col-xs-1 col-xs-offset-1"><i class="di di-uscita fa-2x text-white"></i></div>
+                        <div class="col-xs-3 h3">
+                            @if ( Model.dettaglioGiornata != null && Model.dettaglioGiornata.orario != null )
+                            {
+                                @Model.dettaglioGiornata.orario.hhmm_uscita_48
+                            }
+                            else
+                            {
+                                @:--:--
+                            }
+
+                        </div>
+
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div class="block tiles hgreen height-100 block-rounded">
+
+                    <p class="content-mini content-mini-full push-t">
+                        <div class="col-xs-1 col-xs-offset-1"><i class="di di-entrata fa-2x text-white"></i></div>
+                        <div class="col-xs-3 h3">
+                            @Html.Label( codiceAssenza );
+                        </div>
+                    </p>
+                </div>
+            }
+            @if ( Model.digiGAPP )
+            {
+                <ul class="nav nav-justified">
+                    <li>
+                        <a href="#btabs-alt-static-settings" data-toggle="modal" title=""
+                           onclick="@(UtenteHelper.GiornateAssenteIngiustificato(CommonHelper.GetCurrentUserMatricola()).Count()==0?"ShowPopup('',0)":"ShowPopupIniziale('"+ CommonHelper.GetParametro<string>(EnumParametriSistema.MessaggioAssenteIngiustificato)+"')")">
+                            <div class="btn btn-block btn-lg btn-success push-20  text-uppercase push-">
+                                <small>Aggiungi Richiesta</small>
+                            </div>
+                        </a>
+                    </li>
+                </ul>
+            }
+        </div>
+
+
+        @if ( UtenteHelper.GestitoSirio( ) )
+        {
+            <div class="block-content block-content-full block-content-mini bg-gray-light">
+                <ul class="block-options">
+                    <li>
+                        <button type="button" data-toggle="block-option" data-action="refresh_toggle"
+                                data-refreshurl="/home/refreshToday" data-parentdiv="todaycontainer"
+                                data-refreshelements="div-orari,div-attivita"
+                                data-action-mode="demo">
+                            <i class="si si-refresh"></i>
+                        </button>
+                    </li>
+                </ul>
+                <span class="font-w600">Attività lavorativa</span>
+            </div>
+            <div class="block-content " id="div-attivita">
+                <address>
+                    <strong>Uno Mattina</strong><br>
+                    Studio 5 - Montaggio<br>
+                    Via Teulada<br>
+                    09:00 - 17:00<br>
+                </address>
+            </div>
+            if ( Model.dettaglioGiornata != null && Model.dettaglioGiornata.timbrature != null )
+            {
+                foreach ( MyRaiServiceInterface.it.rai.servizi.digigappws.Timbrature timbratura in Model.dettaglioGiornata.timbrature )
+                {
+                    if ( @timbratura.entrata != null )
+                    {
+                    }
+                    if ( @timbratura.uscita != null )
+                    {
+                    }
+                }
+            }
+        }
+    </div>
+</div>

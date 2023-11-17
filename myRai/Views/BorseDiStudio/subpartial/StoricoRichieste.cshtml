@@ -1,0 +1,159 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+@using System.Globalization
+
+@model StoricoRichieste_BorseDiStudio
+@{
+    Layout = null;
+}
+
+<section class="panel" style="margin-bottom: 50px;">
+    <header class="panel-heading">
+        <div class="panel-title h2">Storico Richieste</div>
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblNotifiche" aria-expanded="true"></a>
+        </div>
+    </header>
+    <div class="panel-body" style="padding: 0px; padding-top: 15px;">
+
+        <div id="tableContainer" class="col-lg-12 text-center no-padding">
+            <div class="table-responsive">
+                <table class="table table-responsive-lg table-hover mb-0">
+                    <thead class="h5 text-left">
+                        <tr>
+                            <td class="col-lg-1 text-bold text-nowrap" style="padding-left: 40px;">Periodo</td>
+                            <td class="col-lg-3 text-bold">Nominativo</td>
+                            <td class="col-lg-6 text-bold">Istituto</td>
+                            <td class="col-lg-1 text-bold text-primary">Status</td>
+                            <td class="col-lg-1 text-bold" style="padding-right: 40px;">Azioni</td>
+                            <td class="col-lg-1" style="padding-right: 40px;"></td>
+                        </tr>
+                        <tr>
+                            <td class="col-lg-12" colspan="12"></td>
+                        </tr>
+                    </thead>
+                    <tbody class="h5 text-left" style="padding-left: 36px; padding-right: 40px;">
+                        @if ( Model.RichiesteBorseDiStudio != null )
+                        {
+                            if ( Model.RichiesteBorseDiStudio.Any( ) )
+                            {
+                                foreach ( var richiesta in Model.RichiesteBorseDiStudio )
+                                {
+                                    <tr class="accordion-sintesi" style="cursor: pointer;">
+                                        <td style="padding: 0;">
+                                            <blockquote class="b-thin @(richiesta.DataDiStampa == null ? "info" : "")" style="padding-left: 36px; margin: 0;">
+                                                <span class="text-bold text-uppercase text-nowrap">
+                                                    @(richiesta.AnnoScolastico.HasValue ? richiesta.AnnoScolastico.Value + "/" + ( richiesta.AnnoScolastico.Value - 1999 ).ToString( "D2" ) : "---")<br />
+                                                    <br />
+                                                </span>
+                                            </blockquote>
+                                        </td>
+                                        <td class="text-capitalize">
+                                            @(( richiesta.Nominativo ?? "riepilogato" ).ToLower( ))
+                                        </td>
+                                        <td class="text-capitalize">
+                                            @(( richiesta.DescrIstituto ?? "---" ).ToLower( ))
+                                        </td>
+                                        <td class="text-uppercase text-primary">
+                                            @(( richiesta.DescrStatus ?? "---" ).ToLower( ))
+                                        </td>
+                                        <td class="h4 text-center">
+                                            @if ( richiesta.HaAllegatoTipo1 )
+                                            {
+                                                <i class="fa fa-file-pdf-o text-primary" style="margin-right: 5px;" data-toggle="tooltip" data-placement="bottom" data-title="Visualizza allegato richiesta"
+                                                   onclick="modalePDFViewer('@(Url.Action("getAllegato", "BorseDiStudio", new { annoRif = richiesta.AnnoScolastico, codFiscale = richiesta.CodFiscale, numAllegato = 1, }))', 'Documento Allegato' );"></i>
+                                            }
+                                            @if ( ( richiesta.DescrStatus == "NUOVA RIC" || richiesta.DescrStatus == "CONTROLLO" ) && ( "HPAS  ".Contains( richiesta.CodeIstituto ) == false ) )
+                                            {
+                                                <i class="fa fa-send-o text-primary" style="margin-right: 5px;" data-toggle="tooltip" data-placement="bottom" data-title="Invia il frontespizio per email"
+                                                   onclick="modalePDFViewer('@(Url.Action("getFronteSpizio", "BorseDiStudio", new { annoRif = richiesta.AnnoScolastico, codFiscale = richiesta.CodFiscale, nominativo = richiesta.Nominativo, sendmail = true, }))', 'Documento inviato per e-mail' );"></i>
+                                            }
+                                            @if ( richiesta.DescrStatus == "NUOVA RIC" || richiesta.DescrStatus == "ATTESA CERT" )
+                                            {
+                                                <i class="fa fa-trash-o text-danger" data-toggle="tooltip" data-placement="bottom" data-title="Cancella richiesta"
+                                                   onclick="deleteRichiestaBS('@(Url.Action("removeRichiesta", "BorseDiStudio", new { dtRic = richiesta.DataRichiesta, codFiscale = richiesta.CodFiscale, status = richiesta.DescrStatus, }))')"></i>
+                                            }
+                                        </td>
+                                        <td class="text-center" style="vertical-align: middle; padding-right: 40px;">
+                                            <i class="accordion-showdetail icons small icon-arrow-down"></i>
+                                        </td>
+                                    </tr>
+
+                                    <tr class="accordion-dettagli" hidden="hidden" style="background-color: #F6F6F6;">
+                                        <td style="padding-left: 40px">
+                                            <em>Codice:</em><br />
+                                            <span class="text-bold text-uppercase">@(richiesta.AnnoScolastico.HasValue ? richiesta.CodeIstituto + "/" + ( richiesta.AnnoScolastico.Value - 2000 ).ToString( "D2" ) : "---")</span>
+                                        </td>
+                                        <td colspan="2">
+                                            <em>Cod. Fiscale:</em><br />
+                                            <span class="text-bold text-uppercase">@(( richiesta.CodFiscale ?? "---" ).ToLower( ))</span>
+                                        </td>
+                                        <td colspan="3">
+                                            <em>Contabilizzazione:</em><br />
+                                            <span class="text-bold text-capitalize">@(richiesta.DataContabile.HasValue ? richiesta.DataContabile.Value.ToString( "y" ) : "---")</span>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="12" class="col-lg-12 text-bold" style="border-top: none; padding-left: 36px;">Nessuna richiesta di borsa di studio presente.</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="12" class="col-lg-12 text-bold" style="border-top: none; padding-left: 36px;">
+                                    Impossibile caricare i dati delle richieste di borse di studio.<br />
+                                    Contattare l'assistenza tecnica.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+@section afterjs {
+    <script type="text/javascript">
+        AttivaAccordion();
+    </script>
+}
+<script type="text/javascript">
+
+    function deleteRichiestaBS(pdfLink) {
+        swal({
+            title: "La richiesta verrà cancellata irreversibilmente, continuare?",
+            html: "",
+            type: 'question',
+            showCloseButton: true,
+            showCancelButton: true,
+            confirmButtonText: 'Ok',
+            cancelButtonText: 'Annulla'
+        }).then(function () {
+            $.ajax({
+                url: pdfLink,
+                type: "POST",
+                cache: false,
+                success: function () {
+                    swal("Richiesta cancellata");
+                    location.reload();
+                },
+                error: function (data) {
+                    swal("C'è stato un errore durante la cancellazione della richiesta");
+                }
+            });
+        });
+    }
+
+    function modalePDFViewer(pdfLink, modalTitle) {
+        var $modale = $("#containerModale");
+        $modale.find(".modal-title").html(modalTitle);
+        $modale.find(".modal-body").empty().prepend('<iframe class="pdfViewer" style="width: 100%; height: 100%;" src="' + pdfLink + '"></iframe>');
+        $modale.modal("show");
+    };
+</script>

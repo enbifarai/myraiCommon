@@ -1,0 +1,275 @@
+﻿@using MVCProject.Custom_Helpers;
+@using myRaiGestionale.Controllers;
+@{
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    ViewBag.Title = "HRIS - Trattamento economico";
+}
+@model myRaiCommonModel.TrattamentoEconomicoIndexModel
+<section role="main" class="content-body" style="padding-top:10px;">
+    <!-- start: page -->
+    <!-- Main Container -->
+
+    <main id="main-container">
+        <div class="content">
+
+
+            <div class="row">
+                <div class="col-sm-8">
+
+
+                    <div id="content-container">
+                        @Html.Partial("content", new myRaiCommonModel.TrattamentoEconomicoModel() { IsPreview = true })
+                    </div>
+
+                </div>
+                <div class="col-sm-4">
+
+                    @Html.Partial("Ricerca",Model)
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- end: page -->
+</section>
+@Html.Partial("popupTE")
+
+@section afterjs{
+    <script>
+        GetContentTE();
+        
+        function GetContentTE() {
+            var searchObject = {};
+            if ($("#matricola").val().trim() != "") {
+                searchObject.matr = $("#matricola").val().trim();
+            }
+            if ($("#datamese").val().trim() != "") {
+                searchObject.mese = $("#datamese").val().trim();
+            }
+            if ($("#stato").val().trim() != "") {
+                searchObject.stato = $("#stato").val().trim();
+            }
+            if ($("#tipo").val().trim() != "") {
+                searchObject.tipo = $("#tipo").val().trim();
+            }
+            if ($("#datatask").val().trim() != "") {
+                searchObject.mesetask = $("#datatask").val().trim();
+            }
+            FillDiv("content-container", "/trattamentoEconomico/GetContent", searchObject);
+        }
+        function FillDiv(container, url, dataAjax, hideDiv,CallBackOk) {
+
+            container = container.replace("#", "");
+            $("#" + container).addClass("rai-loader");
+            //$("#" + container).html("");
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    data: dataAjax,
+                    dataType: "html",
+                    success: function (data) {
+                        $("#" + container).removeClass("rai-loader");
+                        if (hideDiv) {
+                            debugger
+                            var $obj = $('<div>').html(data);
+                            $obj.find("#" + hideDiv).hide();
+                            $("#" + container).html($obj.first('div').html());
+                        }
+                        else
+                            $("#" + container).html(data);
+                        if (CallBackOk) CallBackOk();
+                    },
+                    error: function (err,err2,err3) {
+                        $("#" + container).removeClass("rai-loader");
+                        swal({
+                            title: err+ " " + err2 + " " +err3,
+                            type: "error",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                    }
+                });
+        }
+        function VisualizzaTE(id, taskAvviati) {
+          debugger
+            $("#popupview-te").modal("show");
+            //if (taskAvviati) {
+            //    $("#page1-amm").hide();
+            //    FillDiv("popupte-content", "/trattamentoEconomico/GetPopupContent", { id: id }, "page1-amm", ShowAvviati(id));
+               
+            //}
+            //else
+            FillDiv("popupte-content", "/trattamentoEconomico/GetPopupContent", { id: id });
+             
+  
+        }
+        function ChiudiTE() {
+            $("#popupview-te").modal("hide");
+        }
+        function AbilitaButtonAssegnaTE() {
+
+            var operatore = $("#assegna-operatori").val();
+
+            if (operatore == null || operatore == "")
+                $("#button-assegna").addClass("disable");
+            else
+                $("#button-assegna").removeClass("disable");
+        }
+        function PrendiInCaricoAmministrazioneTE(idric) {
+
+            ExecuteActionPost("/maternitaCongedi/PrendiInCaricoAmministrazioneTE",
+                                { idrichiesta: idric },
+                "Richiesta presa in carico correttamente",
+                function () { VisualizzaTE(idric); GetContentTE(); },
+                "Confermi di prendere in carico la richiesta visualizzata?"
+            )
+        }
+        function RilasciaAmministrazioneTE(idric) {
+            ExecuteActionPost("/maternitaCongedi/RilasciaAmministrazione",
+                { idrichiesta: idric },
+                "Richiesta rilasciata correttamente",
+                function () { ChiudiTE(); GetContentTE(); },
+                "Confermi di rilasciare la richiesta visualizzata?"
+            )
+        }
+        function _ExecuteActionPost(url, dataAjax, messaggioOK, functionOK) {
+            $.ajax({
+                url: url,
+                type: "POST",
+                data: dataAjax,
+                dataType: "json",
+                complete: function () { },
+                success: function (data) {
+                    if (data.esito == true) {
+                        swal({
+                            title: messaggioOK,
+                            type: "success",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        }).then(function () {
+                            functionOK();
+                        });
+                    }
+                    else {
+                        swal({
+                            title: data.errore,
+                            type: "error",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                    }
+                }
+            });
+        }
+        function ExecuteActionPost(url, dataAjax, messaggioOK, functionOK, messaggioConferma) {
+            if (messaggioConferma) {
+                swal({
+                    type: 'question',
+                    html: messaggioConferma,
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+                    cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+                    reverseButtons: true,
+                    customClass: 'rai rai-confirm-cancel'
+                }).then(function () {
+                    _ExecuteActionPost(url, dataAjax, messaggioOK, functionOK, messaggioConferma);
+                });
+            }
+            else
+                _ExecuteActionPost(url, dataAjax, messaggioOK, functionOK, messaggioConferma);
+        }
+
+        function ConfermaModificheTE(idric) {
+            if ($("#taskavviati-"+idric).length > 0  ){
+                
+                ShowAvviati(idric);
+                return;
+            }
+            var TEdata = [];
+            $("[data-jsonid]").each(function () {
+                TEdata.push({ name: $(this).attr("data-jsonid"), value: $(this).text()});
+            });
+             
+
+            $("#page1-amm").addClass("rai-loader");
+            $("#page3-amm").addClass("rai-loader");
+            $.ajax({
+                url: '/MaternitaCongedi/getTasks',
+                type: "GET",
+                contentType: "application/json",
+                data: { idrichiesta: idric, incongruenze: 0, IsFromTE: true, datiTE: JSON.stringify( TEdata) },
+                dataType: "html",
+                complete: function () { },
+                success: function (data) {
+                    debugger
+                    $("#page1-amm").removeClass("rai-loader");
+                    $("#page3-amm").removeClass("rai-loader");
+                    $("#page2-container").html(data)
+                    ShowTEpage(2);
+
+                }
+            });
+        }
+        function ShowTEpage(n) {
+            for (var i = 1; i <= 3; i++) {
+                $("#page" + i + "-amm").hide();
+            }
+            $("#page" + n + "-amm").show();
+        }
+        function ShowTEpage1() {
+            ShowTEpage(1);
+        }
+
+        function SendFormTaskTE(idric) {
+            var formTask = $("#form-tasks");
+            $.ajax({
+                url: $(formTask).attr('action'), ///maternitacongedi/salvatask
+                type: 'POST',
+                data: $(formTask).serialize(),
+                success: function (data) {
+                    if (data.esito == true) {
+                        swal({
+                            title: 'Pratica avviata correttamente',
+                            type: "success",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        }).then(function () {
+                            GetContentTE();
+                            VisualizzaTE(idric, true);
+                        });
+                    }
+                    else {
+                        swal({
+                            title: data.errore,
+                            type: "error",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                    }
+                }
+            });
+        }
+        function ShowAvviati(idric) {
+
+            $("#page2-amm").addClass("rai-loader");
+            $("#page1-amm").addClass("rai-loader");
+            $.ajax({
+                url: '/MaternitaCongedi/getTasksRecap',
+                type: "GET",
+                data: { idrichiesta: idric },
+                dataType: "html",
+                complete: function () { },
+                success: function (data) {
+                    $("#page2-amm").removeClass("rai-loader");
+                    $("#page1-amm").removeClass("rai-loader");
+                    $("#page1-amm").hide();
+                    ShowTEpage(3);
+                    $("#task-recap-te").html(data);
+                }
+            });
+        }
+    </script>
+
+}

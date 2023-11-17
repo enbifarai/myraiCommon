@@ -1,0 +1,222 @@
+﻿
+@model myRaiCommonModel.Gestionale.DettaglioProcessoModel
+@{
+    string tema = myRaiHelper.CommonHelper.GetTema((myRaiHelper.CommonHelper.GetCurrentUserMatricola()));
+}
+<style>
+    div[control-export-menu] hr {
+        margin: 10px 0 10px 0;
+    }
+
+    path {
+        fill: none !important;
+    }
+
+    div[data-item] > svg {
+        width: 0px;
+    }
+
+    #organigramma {
+        font-family: "Open Sans", sans-serif;
+    }
+</style>
+
+<section class="panel ">
+    <header class="panel-heading">
+        <h2 id="lblLeftBox" class="panel-title">Dettaglio</h2>
+        <div class="panel-actions rai-panel-actions">
+            @if (!Model.IsStartingProcess)
+            {
+                <button class="btn btn-action-icon" title="Modifica processo" alt="Modifica processo"
+                        onclick="ModProcesso(@Model.Processo.id)">
+                    <div class="fa fa-pencil"></div>
+                </button>
+
+                <button class="btn btn-action-icon" title="Chiudi processo" alt="Chiudi processo" onclick="CloseProcesso(@Model.Processo.id)"><div class="fa fa-minus-square"></div></button>
+
+            }
+
+
+
+
+            <button class="btn btn-action-icon" title="Aggiungi processo" alt="Aggiungi processo" onclick="AddProcesso(@Model.Processo.id)"><div class="fa fa-plus"></div></button>
+
+            <a href="#" class="panel-action  panel-action-toggle visible-xs" data-panel-toggle="" aria-labelledby="lblLeftBox" aria-expanded="true"></a>
+        </div>
+    </header>
+
+    <div class="panel-body ">
+
+
+        @if (Model.IsStartingProcess)
+        {
+            @Html.Raw(Model.Processo.descrizione_processo)
+        }
+        else
+        {
+        <div class="block block-content-table block-transparent">
+            <div class="block-header">
+                <label class="block-title">
+                    @Model.Processo.codice_processo - @Model.Processo.nome_processo
+                </label>
+            </div>
+            <div class="block-content">
+                <div class="rai-table-info">
+
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <label>Valida dal :</label>
+                        </div>
+                        <div class="col-sm-9">
+                            <label>@Model.Processo.data_inizio_validita.ToString("dd/MM/yyyy")</label>
+                        </div>
+                    </div>
+                    @if (Model.Processo.data_fine_validita != new DateTime(9999, 12, 31))
+                    {
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <label>Valida al :</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <label>@(((DateTime)Model.Processo.data_fine_validita).ToString("dd/MM/yyyy"))</label>
+                            </div>
+                        </div>
+                    }
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <label>Descrizione:</label>
+                        </div>
+                        <div class="col-sm-9">
+                            <label>@Model.Processo.descrizione_processo</label>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <label>Sistemi IT:</label>
+                        </div>
+                        <div class="col-sm-9">
+                            @if (Model.SistemiCollegati.Any())
+                            {
+                                foreach (var s in Model.SistemiCollegati)
+                                {
+                                    <li><label>@s.nome_sistema</label></li>
+                                }
+                            }
+                            else
+                            {
+                                <label>-</label>
+                            }
+
+
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <label>Process Owner:</label>
+                        </div>
+                        <div class="col-sm-9">
+                            @if (Model.DirezioniOwnerCollegati.Any())
+                            {
+                                foreach (var s in Model.DirezioniOwnerCollegati)
+                                {
+                                    <li><label>@s.descrizione_lunga</label></li>
+                                }
+                            }
+                            else
+                            {
+                                <label>-</label>
+                            }
+
+
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <label>Direzioni coinvolte:</label>
+                        </div>
+                        <div class="col-sm-9">
+                            @if (Model.DirezioniCoinvolteCollegati.Any())
+                            {
+                                foreach (var s in Model.DirezioniCoinvolteCollegati)
+                                {
+                                    <li><label>@s.descrizione_lunga</label></li>
+                                }
+                            }
+                            else
+                            {
+                                <label>-</label>
+                            }
+
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="block-header">
+                <label class="block-title">
+                    DOCUMENTI
+                </label>
+            </div>
+            <div class="block-content">
+                <div class="rai-table-info">
+                    @if (!Model.Allegati.Any())
+                    {
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <label>Nessun documento caricato</label>
+                            </div>
+                        </div>
+                                }
+                                else
+                                {
+                                    string lastCategoria = "";
+                                    foreach (var categoria in myRaiCommonModel.Gestionale.TipoDocumento.GetValues(typeof(myRaiCommonModel.Gestionale.TipoDocumento)))
+                                    {
+                                        foreach (var allegato in Model.Allegati.Where(x => x.categoria == categoria.ToString()))
+                                        {
+                                <div class="row" style="margin-bottom:8px">
+                                    <div class="col-sm-3">
+                                        @if (lastCategoria != allegato.categoria)
+                                        {
+                                            lastCategoria = allegato.categoria;
+                                            <label>@categoria</label>
+                                        }
+                                        else
+                                        {
+                                            <label>&nbsp;</label>
+                                        }
+
+                                    </div>
+                                    <div class="col-sm-9">
+                                        <a target="_blank" href="/strutturaorganizzativa/getdoc?id=@allegato.id">@allegato.nome_file</a>
+
+                                        @if (!String.IsNullOrWhiteSpace(allegato.descrizione))
+                            {
+                                            <br /> <em>@allegato.descrizione</em>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                    }
+                    }
+
+
+                </div>
+                        </div>
+
+
+
+                    </div>
+                    }
+                </div>
+
+                <div class="panel-footer">
+
+                </div>
+</section>

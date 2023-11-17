@@ -1,0 +1,67 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@{
+    var g = EccezioniManager.GetOrario( );
+}
+<h5><b>Cambio turno</b></h5>
+<input type="hidden" name="eccezione-fittizia" value="cambioturno" />
+<select name="ep-turno" id="parametro1" class="form-control ep ep-obb">
+    <option value="">Seleziona...</option>
+    @foreach ( var r in g )
+    {
+        <option data-min="@r.entrata_iniziale" data-max="@r.uscita_iniziale" value="@r.cod_orario">@r.cod_orario : @r.desc_orario</option>
+    }
+</select>
+<script>
+
+     function EseguiCat() {
+
+    var reale = $("#ora-rea").attr("data-cod");
+    var minutiInizio = $("#ora-rea").attr("data-min");
+    var data1 = $("#data_da").val();
+    var ecc = $("#select-eccezioni").val();
+    if (ecc == "CTA") {
+        $('#parametro1 option[value="' + reale + '"]').remove();
+        $("#parametro1").select2({ placeholder: "Seleziona il nuovo turno...", width: "100%" });
+        return;
+    }
+    $.ajax({
+        url: '/ajax/getMinutifineTurno',
+        type: 'GET',
+        data: { dataOggi: data1 },
+        dataType: "html",
+        success: function (data) {
+            var min = parseInt(data);
+            if (min != -1) {
+                min = min + 660;
+                if (min > 1440)
+                    min = min - 1440;
+                $('#parametro1 option').each(function () {
+                    var currentItem = parseInt($(this).attr("data-min"), 10);
+                    if (currentItem < min) {
+                        $(this).remove();
+                    }
+                });
+            }
+            $('#parametro1 option[value="' + reale + '"]').remove();
+                 //$("#parametro1").select2({ placeholder: "Seleziona il nuovo turno...", width: "100%" });
+        }
+    });
+        // setTimeout(function () {
+
+             $("#parametro1").select2({
+                 templateResult: formatState,
+                 placeholder: 'Seleziona turno...',
+                 width: "100%"
+             });
+        // }, 500);
+     }
+     
+     
+
+    
+    
+</script>

@@ -1,0 +1,335 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+@model myRaiCommonModel.AssunzioniVM
+@{
+    /**/
+
+    Layout = null;
+    string idPersona = Model.IdPersona.ToString();
+    TempData["idPersona"] = Model.IdPersona.ToString();
+
+    string idEvento = Model.IdEvento.ToString();
+    TempData["idEvento"] = Model.IdEvento.ToString();
+    Assunzione_FileUploadVM allegati = new Assunzione_FileUploadVM();
+    allegati.Allegati = myRaiCommonTasks.Helpers.FileAssunzioneManager.GetFilesByIdAssunzione(Model.IdEvento, "ASSGEN").Files;
+    if (allegati.Allegati == null || (allegati.Allegati != null && allegati.Allegati.Count == 0))
+    {
+        allegati.Allegati = myRaiCommonTasks.Helpers.FileAssunzioneManager.GetFilesByIdAssunzione(Model.IdEvento, "ASSGENCUSTOM").Files;
+    }
+    string idContratto = allegati.Allegati[0].Id.ToString();
+    TempData["idContratto"] = allegati.Allegati[0].Id.ToString();
+}
+
+@using (Html.BeginModal("Dettaglio assunzione"))
+{
+    @Html.Hidden("IdEvento", Model.IdEvento)
+    @Html.Hidden("IdPersona", Model.IdPersona)
+    @Html.Hidden("idContratto", allegati.Allegati[0].Id.ToString())
+    <div class="row" id="divDettaglioAssunzione">
+        <div class="col-sm-7">
+            @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Stato avanzamento", false))
+            {
+                <div class="row">
+                    <div class="col-sm-12">
+                        <span class="rai-font-md-neutral-bold"></span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div id="newwizard" style="margin-top:0px" class="rai wizard-progress wizard-progress-llg wiznew remove-margin-t" role="tablist">
+                            <ul class="wizard-steps">
+                                <li class="tabhead tabheadrich @(Model.CodAssunzione == "L" ? "disabled completed" : "disabled")" id="tab-dem-1" role="presentation" style="max-width:none">
+                                    <a role="tab" aria-label="Avvio pratica" aria-controls="validation-classic-step1" id="hTab1" data-toggle="tab" tabindex="0"><span>1</span>Avvio pratica<br /><p class="rai-font-sm-neutral">@(Model.DataCreazione.ToString())</p></a>
+                                </li>
+                                <li class="tabhead tabheadrich @(Model.TabAnagrafica && Model.TabDatiContrattuali && Model.TabAllegati? "disabled completed" : "disabled")" id="tab-dem-2" role="presentation">
+                                    <a role="tab" tabindex="-1" aria-label="Inserimento dati" aria-controls="validation-classic-step2" id="hTab2" data-toggle="tab"><span>2</span>Inserimento dati<br /><p class="rai-font-sm-neutral">@(Model.DataContrattoCreazione.HasValue ? Model.DataContrattoCreazione.Value.ToString() : "")</p></a>
+                                </li>
+                                <li class="tabhead tabheadrich @(Model.Avanzamento == 85 || Model.DataApprovazione.HasValue || Model.Avanzamento == 90 || Model.DataFirma.HasValue ? "disabled completed" : "disabled")" id="tab-dem-3" role="presentation">
+                                    <a role="tab" tabindex="-1" aria-label="Approvazione" aria-controls="validation-classic-step2" id="hTab2" data-toggle="tab"><span>3</span>Approvazione<p class="rai-font-sm-neutral">@(Model.DataFirma.HasValue ? Model.DataFirma.Value.ToString() : Model.DataApprovazione.HasValue ? Model.DataApprovazione.Value.ToString() : "")</p></a>
+                                </li>
+                                @*<li class="tabhead tabheadrich @(Model.Avanzamento == 90 || Model.DataFirma.HasValue? "disabled completed" : "disabled")" id="tab-dem-4" role="presentation">
+                                        <a role="tab" tabindex="-1" aria-label="Firma" aria-controls="validation-classic-step3" id="hTab3" data-toggle="tab"><span>4</span>Firma<p class="rai-font-sm-neutral">@(Model.DataFirma.HasValue ? Model.DataFirma.Value.ToString() : "")</p></a>
+                                    </li>*@
+                                <li class="tabhead tabheadrich @(Model.Avanzamento == 100 || Model.DataConclusionePratica.HasValue? "disabled completed" : "disabled")" id="tab-dem-4" role="presentation">
+                                    <a role="tab" tabindex="-1" aria-label="Conclusa" aria-controls="validation-classic-step3" id="hTab3" data-toggle="tab"><span>4</span>Conclusa<p class="rai-font-sm-neutral">@(Model.DataConclusionePratica.HasValue ? Model.DataConclusionePratica.Value.ToString() : "")</p></a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            }
+            @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Dati Anagrafici", false))
+            {
+                <div class="rai-table-info">
+                    @*<div class="row push-10">
+                            <div class="col-sm-6">
+                                <label class="rai-caption rai-font-md-neutral-bold">Matricola</label>
+                            </div>
+                            <div class="col-sm-6">
+                                <label id="lblMatricola">@Model.Matricola</label>
+                            </div>
+                        </div>*@
+                    <div class="row push-10">
+                        <div class="col-sm-6">
+                            <label class="rai-caption rai-font-md-neutral-bold">Nome</label>
+                        </div>
+                        <div class="col-sm-6">
+                            <label id="lblNominativo">@Model.Nome</label>
+                        </div>
+                    </div>
+                    <div class="row push-10">
+                        <div class="col-sm-6">
+                            <label class="rai-caption rai-font-md-neutral-bold">Cognome</label>
+                        </div>
+                        <div class="col-sm-6">
+                            <label id="lblNominativo">@Model.Cognome </label>
+                        </div>
+                    </div>
+                    <div class="row push-10">
+                        <div class="col-sm-6">
+                            <label class="rai-caption rai-font-md-neutral-bold">Data di Nascita</label>
+                        </div>
+                        <div class="col-sm-6">
+                            <label id="lblDataNascita">@Model.DataNascita.ToShortDateString()</label>
+                        </div>
+
+                    </div>
+                    <div class="row push-10">
+                        <div class="col-sm-6">
+                            <label class="rai-caption rai-font-md-neutral-bold">Genere</label>
+                        </div>
+                        <div class="col-sm-6">
+                            @if (Model.Genere == 'F')
+                            {
+                                <label id="lblComune">Femmina</label>
+
+                            }
+                            else
+                            {
+                                <label id="lblComune">Maschio</label>
+
+                            }
+                        </div>
+                    </div>
+                    <div class="row push-10">
+                        <div class="col-sm-6">
+                            <label class="rai-caption rai-font-md-neutral-bold">Luogo di Nascita</label>
+                        </div>
+                        <div class="col-sm-6">
+                            <label id="lblComune">@Model.LuogoDiNascita</label>
+                        </div>
+                    </div>   <div class="row push-10">
+                        <div class="col-sm-6">
+                            <label class="rai-caption rai-font-md-neutral-bold">Provincia</label>
+                        </div>
+                        <div class="col-sm-6">
+                            <label id="lblNominativo">@Model.Provincia</label>
+                        </div>
+                    </div>
+                    <div class="row push-10">
+                        <div class="col-sm-6">
+                            <label class="rai-caption rai-font-md-neutral-bold">Cittadinanza</label>
+                        </div>
+                        <div class="col-sm-6">
+                            <label id="lblNominativo">@Model.Cittadinanza</label>
+                        </div>
+                    </div>
+                    <div class="row push-10">
+                        <div class="col-sm-6">
+                            <label class="rai-caption rai-font-md-neutral-bold">Codice Fiscale</label>
+                        </div>
+                        <div class="col-sm-6">
+                            <label id="lblComune">@Model.CodiceFiscale</label>
+                        </div>
+                    </div>
+                </div>
+            }
+            @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Dati Contrattuali", false))
+            {
+                <div class="rai-table-info">
+                    <div class="row push-10">
+                        <div class="col-sm-6">
+                            <label class="rai-caption rai-font-md-neutral-bold">Azienda</label>
+                        </div>
+                        <div class="col-sm-6">
+                            <label id="lblAzienda">@Model.Azienda</label>
+                        </div>
+                    </div>
+                    <div class="row push-10">
+                        <div class="col-sm-6">
+                            <label class="rai-caption rai-font-md-neutral-bold">Sede</label>
+                        </div>
+                        <div class="col-sm-6">
+                            <label id="lblSede">@Model.Sede</label>
+                        </div>
+                    </div>
+                    <div class="row push-10">
+                        <div class="col-sm-6">
+                            <label class="rai-caption rai-font-md-neutral-bold">Servizio</label>
+                        </div>
+                        <div class="col-sm-6">
+                            <label id="lblServizio">@Model.Servizio</label>
+                        </div>
+                    </div>
+                    <div class="row push-10">
+                        <div class="col-sm-6">
+                            <label class="rai-caption rai-font-md-neutral-bold">Sezione</label>
+                        </div>
+                        <div class="col-sm-6">
+                            <label id="lblSezione">@Model.SelectedSezione - @Model.Sezione</label>
+                        </div>
+                    </div>
+                    <div class="row push-10">
+                        <div class="col-sm-6">
+                            <label class="rai-caption rai-font-md-neutral-bold">Categoria</label>
+                        </div>
+                        <div class="col-sm-6">
+                            <label id="lblCategoria">@Model.Categoria</label>
+                        </div>
+                    </div>
+                    <div class="row push-10">
+                        <div class="col-sm-6">
+                            <label class="rai-caption rai-font-md-neutral-bold">Mansione</label>
+                        </div>
+                        <div class="col-sm-6">
+                            <label id="lblMansione">@Model.Mansione</label>
+                        </div>
+                    </div>
+                    <div class="row push-10">
+                        <div class="col-sm-6">
+                            <label class="rai-caption rai-font-md-neutral-bold">Tipo di Contratto</label>
+                        </div>
+                        <div class="col-sm-6">
+                            <label id="lblRappLavoro">@Model.RappLavoro</label>
+                        </div>
+                    </div>
+                    <div class="row push-10">
+                        <div class="col-sm-6">
+                            <label class="rai-caption rai-font-md-neutral-bold" l>Data contratto</label>
+                        </div>
+                        <div class="col-sm-6">
+                            @if (Model.RappLavoro != "TEMPO INDETERMINATO")
+                            {
+                                <label id="lblDataInizioFine">@Model.DataInizio.ToShortDateString()-@Model.DataFine.Value.ToShortDateString()</label>
+
+                            }
+                            else
+                            {
+                                <label id="lblDataInizioFine">@Model.DataInizio.ToShortDateString() </label>
+
+                            }
+                        </div>
+                    </div>
+
+                </div>
+            }
+            @if (Model.Avanzamento == 90 && allegati.Allegati != null && allegati.Allegati.Where(x => x.Firmato).Count() > 0)
+            {
+                <div class="push-10 rai-btn-fill" id="divContratto">
+                    <input type="button" class="btn btn-primary" title="Finalizza contratto" onclick="ConcludiPratica();" value="Finalizza contratto">
+                </div>
+
+            }
+        </div>
+        <div class="col-sm-5">
+            <div id="profile-widget">
+
+            </div>
+            @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Documenti", false))
+            {
+                <div class="rai-table-info">
+                    <div class="row push-10-t border-top">
+                        <div class="col-sm-12" style="padding-top:10px;">
+                            @{
+
+
+                                if (allegati.Allegati != null && allegati.Allegati.Count > 0)
+                                {
+                                    if (allegati.Allegati != null && allegati.Allegati.Count > 0)
+                                    {
+                                        int riga = 0;
+                                        foreach (var a in allegati.Allegati.Where(y => y != null).OrderBy(w => w.Id).ToList())
+                                        {
+                                            riga++;
+                                            <div class="row push-10-t">
+                                                <div class="col-sm-12" id="div-allegato-firmato-container">
+                                                    <span id="span-allegato-container" class="rai-font-md text-primary">
+                                                        <a href="@(Url.Action( "ScaricaPDF" , "Assunzione" ))?idAllegato=@a.Id" class="rai-font-md text-primary" id="span-allegato"><i class="fa fa-download"> </i> @a.NomeFile</a>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+
+                                }
+                            }
+
+                        </div>
+                    </div>
+                    <div class="row push-10-t border-top">
+                        <div class="col-sm-6" style="padding-top:10px;">
+                            <button id="btn-carica-contratto-firmato" type="button" class="btn rai-btn-small" onclick="$('#contrattoFirmatoUpload').click()">
+                                Carica contratto
+                            </button>
+                            <input style="display:none" type="file" id="contrattoFirmatoUpload" onchange="Assunzione_CaricaContrattoFirmato()" />
+                        </div>
+                        @if (Model.Avanzamento == 90 && allegati.Allegati != null && allegati.Allegati.Where(x => x.Firmato).Count() <= 0)
+                        {
+                            <div class="col-sm-6" style="padding-top:10px;">
+                                <button id="btn-condividi_contratto" type="button" class="btn rai-btn-small" onclick="CondividiContratto();">
+                                    Condividi
+                                </button>
+                            </div>
+                        }
+
+                    </div>
+                    @*<div class="row push-10-t border-top" id="divCellularePin" style="display:none">
+                            <div class="col-sm-12" style="padding-top:10px;">
+                                <label class="rai-caption rai-font-md-neutral-bold">Cellulare</label>
+                            </div>
+                        </div>
+                        <div class="row push-10" id="divInviaAnnullaPin" style="display:none">
+                            <div class="col-sm-6" style="padding-top:10px;">@Html.TextBox("Cellulare")</div>
+                            <div class="col-sm-6" style="padding-top:10px;">
+                                <button id="btn-carica-contratto-firmato" type="button" class="btn rai-btn-small" onclick="$('#contrattoFirmatoUpload').click()">
+                                    Invia Pin
+                                </button>
+                                <button id="btn-condividi_contratto" type="button" class="btn rai-btn-small" onclick="CondividiContratto();">
+                                    Annulla
+                                </button>
+                            </div>
+                        </div>*@
+                </div>
+
+            }
+
+            @if (Model.SelectedTipoAssunzione == "TI")
+            {
+                string hrisAbil = AuthHelper.HrisFuncAbil(CommonHelper.GetCurrentUserMatricola());
+                if (String.IsNullOrWhiteSpace(hrisAbil))
+                {
+                    hrisAbil = "HRCE";
+                }
+                bool abilPFI = false;
+                if (hrisAbil == "HRCE")
+                {
+                    abilPFI = AuthHelper.EnableToMatr(CommonHelper.GetCurrentUserMatricola(), Model.Matricola, "HRCE", "APPRENDISTATO").Enabled;
+                }
+                else
+                {
+                    abilPFI = AuthHelper.EnableToMatr(CommonHelper.GetCurrentUserMatricola(), Model.Matricola, "HRIS_GEST", "PFIGES").Enabled;
+                }
+            }
+
+        </div>
+    </div>
+
+
+    <div class="row">
+
+    </div>
+}
+
+
+
+

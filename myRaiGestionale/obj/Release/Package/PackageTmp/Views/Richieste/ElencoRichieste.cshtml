@@ -1,0 +1,83 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+@model myRaiCommonModel.RichContainer
+
+@if (Model.Richieste == null || !Model.Richieste.Any())
+{
+    <div class="row push-20-t push-20">
+        @Html.Partial("_NoDatiDiv")
+    </div>
+}
+else
+{
+    bool moreTypes = Model.Richieste.GroupBy(x => x.Tipologia).Count() > 1;
+
+    <table class="table rai-table rai-table-vcenter rai-table-panel rai-table-collapsable rai-table-vcenter" id="elenco-rich">
+        <thead>
+            <tr>
+                <td style="width:1%;white-space:nowrap;padding-left:18px;">
+                    <a href="#" onclick="RaiSortData(this)" data-order-group="#cont-rich" data-order-name="richdate" data-order-container="#cont-rich .table-gr-rich">Data <i class="fa fa-chevron-down" data-order-dir=""></i></a>
+                </td>
+                <td>
+                    <div class="rai-profile-widget">
+                        <div class="rai-profile-image"><div style="width:36px;margin-right:10px;"></div></div>
+                        <div class="rai-profile-info">
+                            <a href="#" onclick="RaiSortData(this)" data-order-group="#cont-rich" data-order-name="nominativo" data-order-container="#cont-rich  .table-gr-rich">Nominativo <i class="fa fa-chevron-down" data-order-dir=""></i></a>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <a href="#" onclick="RaiSortData(this)" data-order-group="#cont-rich" data-order-name="tipo" data-order-container="#cont-rich  .table-gr-rich">Tipo <i class="fa fa-chevron-down" data-order-dir=""></i></a>
+                </td>
+                <td>
+                    &nbsp;
+                </td>
+            </tr>
+        </thead>
+
+        @foreach (var tipologia in Model.Richieste.GroupBy(x => x.Tipologia))
+        {
+            <tbody class="rai-table-collapsable-header border-top @(moreTypes?"":"open")">
+                <tr>
+                    <td colspan="3"><label class="rai-font-lg">@tipologia.Key.GetAmbientValue()</label></td>
+                    <td class="text-right"><label class="rai-label">@tipologia.Count()</label>&nbsp;<i class="fa fa-chevron-down"></i></td>
+                </tr>
+            </tbody>
+
+            <tbody class="table-gr-rich">
+                @foreach (var item in tipologia.OrderBy(x => x.DataRichiesta))
+                {
+                    <tr data-order-item data-tipo="@item.Descrizione" data-richdate="@item.DataRichiesta.ToString("yyyyMMdd")" data-tipologia="@item.Tipologia" data-nominativo="@item.Nominativo">
+                        <td style="width:1%;white-space:nowrap">
+                            <label class="rai-font-md-neutral">@item.DataRichiesta.ToString("dd/MM/yyyy")</label>
+                        </td>
+                        <td >
+                            @Html.ProfileWidget(item.Matricola, item.Nominativo, null, "Matricola " + item.Matricola)
+                        </td>
+                        <td>
+                            <label class="rai-font-md">
+                                @item.Descrizione
+                            </label>
+                        </td>
+                        <td class="text-right">
+                            @switch (item.Tipologia)
+                            {
+                                case TipoRichiestaAnag.Congedo:
+                                    <button class="btn rai-btn-small" onclick="location.href='@Url.Action("","Maternitacongedi", new { idrichiesta = @item.IdRichiesta})';return false;">Visualizza</button>
+                                    break;
+                                case TipoRichiestaAnag.Dematerializzazione:
+                                    <button class="btn rai-btn-small" onclick="OpenModalGetDettaglioDematerializzazione(@item.Matricola, @item.IdPersona, @item.IdRichiesta)">Visualizza</button>
+                                    break;
+                                default:
+                                    <button class="btn rai-btn-small" onclick="OpenModalRichiesta('@item.Matricola', '@item.Tipologia', @item.IdRichiesta)">Visualizza</button>
+                                    break;
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        }
+    </table>
+}
+
+

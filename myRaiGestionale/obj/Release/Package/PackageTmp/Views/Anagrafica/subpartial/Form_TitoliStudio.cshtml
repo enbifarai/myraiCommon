@@ -1,0 +1,189 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiHelper
+@using myRaiCommonModel
+@using myRaiCommonManager
+@model StudioModel
+
+@{ 
+    var idPersona = ViewBag.IdPersona;
+    var buttonText = "Aggiungi titolo di studio";
+    if (!String.IsNullOrWhiteSpace(Model.CodTitolo))
+    {
+        buttonText = "Salva";
+    }
+
+    var listValue = new List<SelectListItem>();
+    if (Model.CodTipoTitolo > 0)
+    {
+        listValue = AnagraficaManager.GetStudi(Model.CodTipoTitolo).Select(x => new SelectListItem() { Value = x.COD_STUDIO.ToString(), Text = x.DES_STUDIO }).ToList();
+    }
+
+    string action = Model.SubmitAction;
+    if (String.IsNullOrWhiteSpace(action))
+    {
+        action = "saveDatiTitoliDiStudio('"+idPersona.ToString()+"')";
+    }
+}
+
+
+@using (Html.BeginModal("Titoli di studio")) { 
+    using (Html.BeginForm(Model.FormAction, Model.FormController, FormMethod.Post, new { id = "form-studio" }))
+    {
+    @Html.HiddenFor(m => m.Matricola);
+    @Html.HiddenFor(m => m.IdPersona);
+<div class="row">
+    <div class="col-md-12">
+        @using (Html.BeginPanel(PanelType.Panel, "Dati titolo di studio", false))
+        {
+            using (Html.BeginBlock(BlockType.ContentTable, "Tipologia"))
+            {
+                <div class="row">
+                    <div class="col-sm-12">
+                        @Html.RaiSelectFor(m => m.CodTipoTitolo, AnagraficaController.GetTipiStudi(), hideSearch: true, onSelectchange: "UpdateTitoloForm()")
+                    </div>
+                </div>
+            }
+
+            <div class="form-group">
+                @using (Html.BeginBlock(BlockType.ContentTable, "Dettagli titolo di studio"))
+                {
+                    <div class="dip">
+                        <div class="row">
+                            <div class="col-xs-12">
+                                @Html.LabelFor(m => m.CodTitolo, "Titolo di studio", new { @class = "rai-caption" })
+                                @Html.RaiSelectFor(m => m.CodTitolo, listValue)
+                            </div>
+                        </div>
+                        <div class="row" id="rowTitolo" style="@((Model.DesTipoTitolo ?? "").ToUpper().Contains("LAUR") ? "" : "display:none;")">
+                            <div class="col-sm-12 push-10">
+                                @Html.LabelFor(m => m.CorsoLaurea, "Corso di laurea/Ambito/Titolo in", new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.CorsoLaurea, new { @class = "form-control", maxlength = "250" })
+                                @Html.ValidationMessageFor(m => m.CorsoLaurea)
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-xs-12 col-sm-6 push-10">
+                                @Html.LabelForRequiredObbl(m => m.DataInizioStr, "Data di inizio", new { @class = "rai-caption" })
+                                <div class="input-group">
+                                    <span class="input-group-addon" style="cursor: pointer" onclick="$('#DataInizioStr').datetimepicker('show')">
+                                        <i class="fa fa-calendar"></i>
+                                    </span>
+                                    @Html.TextBoxFor(m => m.DataInizioStr, new { @onchange = "UpdateMinDateEnd()", @class = "form-control js-datetimepicker", data_format = "MM/YYYY", data_locale = "it" })
+                                </div>
+                                @Html.ValidationMessageFor(m => m.DataInizioStr)
+                            </div>
+                            <div class="col-xs-12 col-sm-6 push-10">
+                                @Html.LabelForRequiredObbl(m => m.DataFineStr, "Data di fine", new { @class = "rai-caption" })
+                                <div class="input-group">
+                                    <span class="input-group-addon" style="cursor: pointer" onclick="$('#DataFineStr').datetimepicker('show')">
+                                        <i class="fa fa-calendar"></i>
+                                    </span>
+                                    @Html.TextBoxFor(m => m.DataFineStr, new { @class = "form-control js-datetimepicker", data_format = "MM/YYYY", data_locale = "it", required = "required" })
+                                </div>
+                                @Html.ValidationMessageFor(m => m.DataFineStr)
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-xs-12 col-sm-6 push-10">
+                                @Html.LabelFor(m => m.Voto, "Valutazione", new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.Voto, new { @class = "form-control" })
+                                @Html.ValidationMessageFor(m => m.Voto)
+                            </div>
+                            <div class="col-xs-12 col-sm-6 push-10">
+                                @Html.LabelFor(m => m.Cod_TipoPunteggio, "Scala", new { @class = "rai-caption" })
+                                @Html.RaiSelectFor(m => m.Cod_TipoPunteggio, AnagraficaController.GetScaleVoti(), hideSearch: true)
+                                @Html.ValidationMessageFor(m => m.Cod_TipoPunteggio)
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12 push-10">
+                                @Html.LabelFor(m => m.Lode, "Lode", new { @class = "rai-caption" })
+                                @Html.RaiCheckBoxLabelFor(m => m.Lode, "Con lode", "")
+                            </div>
+                        </div>
+                        <div class="row" id="rowRicon" style="@((Model.DesTipoTitolo ?? "").ToUpper().Contains("LAUR") ? "" : "display:none;")">
+                            <div class="col-sm-12 push-10">
+                                @Html.LabelFor(m => m.Riconoscimento, "Riconoscimento", new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.Riconoscimento, new { @class = "form-control", maxlength = "250" })
+                                @Html.ValidationMessageFor(m => m.Riconoscimento)
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-xs-12 push-10" id="colAteneo" style="@((Model.DesTipoTitolo ?? "").ToUpper().Contains("LAUR") ? "" : "display:none;")">
+                                @Html.LabelFor(m => m.CodIstituto, "Istituto/ente erogatore", new { @class = "rai-caption" })
+                                @Html.RaiSelectFor(m => m.CodIstituto, AnagraficaController.GetAtenei())
+                                @Html.ValidationMessageFor(m => m.CodIstituto)
+                            </div>
+                            <div class="col-xs-12 push-10" id="colIstituto" style="@((Model.DesTipoTitolo ?? "").ToUpper().Contains("LAUR") ? "display:none;" : "")">
+                                @Html.LabelFor(m => m.Istituto, "Istituto/ente erogatore", new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.Istituto, new { @class = "form-control", maxlength = "250" })
+                                @Html.ValidationMessageFor(m => m.Istituto)
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-xs-12 push-10">
+                                @Html.LabelFor(m => m.CodCitta, "Città", new { @class = "rai-caption" })
+                                @Html.RaiAsyncSelectFor(m => m.CodCitta, Url.Action("GetComuni", "Anagrafica"), tipoFiltro: myRaiHelper.SelectFilterType.StartsWith)
+                                @Html.ValidationMessageFor(m => m.CodCitta)
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-xs-12">
+                                @Html.LabelFor(m => m.Nota, "Ulteriori informazioni", new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.Nota, new { @class = "form-control", maxlength = "250" })
+                                @Html.ValidationMessageFor(m => m.Nota)
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="row push-20-t">
+                <div class="col-sm-12">
+                    <div class="rai-btn-fill">
+                        <button id="btnok" class="btn rai-btn-primary" type="button" onclick="@action">@buttonText</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+    @*saveDatiTitoliDiStudio('Model.IdPersona')*@
+    @*<div class="col-md-5">
+            @Html.RenderWidget(WidgetType.Normal, "Documenti", "fa fa-upload", "Aggiungi un documento", "Formati .jpg, .pdf", action: new ActionTemplate() { Text = "Aggiungi documento" })
+            <div class="rai-btn-fill">
+                <button class="btn rai-btn-primary" onclick="Save_DatiStudio(this, '@Model.Matricola')">@buttonText</button>
+            </div>
+        </div>*@
+</div>
+    }
+}
+
+
+<script>
+    InitDatePicker();
+
+    function UpdateTitoloForm() {
+        RaiSelectExtLoadAsyncData('CodTitolo', '@Url.Action("GetStudi","Anagrafica")', { codTipo: $('#CodTipoTitolo').val() });
+        
+        if ($('#CodTipoTitolo').text().toUpperCase().indexOf("LAUR") >= 0) {
+            $('#colAteneo').show();
+            $('#colIstituto').hide();
+            $('#rowTitolo').show();
+            $('#rowRicon').show();
+        } else {
+            $('#colAteneo').hide();
+            $('#colIstituto').show();
+            $('#rowTitolo').hide();
+            $('#rowRicon').hide();
+        }
+    }
+   
+   
+    function UpdateMinDateEnd() {
+        
+        var value = $('#DataInizioStr').val();
+        $('#DataFineStr').data('DateTimePicker').minDate(value);
+        if (value > $('#DataFineStr').val()) {
+            $('#DataFineStr').val(value);
+        }
+    }
+</script>

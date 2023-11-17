@@ -1,0 +1,1107 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+@model AnagraficaModel
+
+@{
+    var dbCzn = new myRaiData.Incentivi.IncentiviEntities();
+    var tmpParam = dbCzn.XR_HRIS_PARAM.FirstOrDefault(x => x.COD_PARAM == "SWAggiungiRichieste");
+    bool aggiungiRich = tmpParam == null || tmpParam.COD_VALUE1 == "TRUE";
+
+    string func = myRaiGestionale.Controllers.StatiRapportoController.GetSWAbilFunc();
+    AbilSubFunc abilSubFunc = null;
+    bool t = AuthHelper.EnabledToSubFunc(CommonHelper.GetCurrentUserMatricola(), func, "SWKADM", out abilSubFunc)
+        || AuthHelper.EnabledToSubFunc(CommonHelper.GetCurrentUserMatricola(), func, "SWKGES", out abilSubFunc)
+        || AuthHelper.EnabledToSubFunc(CommonHelper.GetCurrentUserMatricola(), func, "SWKVIS", out abilSubFunc);
+
+    var tmpSw = Model.DatiStatiRapporti.Eventi.Where(x => x.Codice == "SW" && (x.ValiditaFine == null || x.ValiditaFine > DateTime.Now)).OrderBy(x => x.DataInizio);
+    List<EventoModel> eventi = new List<EventoModel>();
+    DateTime dataRif = Model.DataAssunzione;
+    for (int i = 0; i < tmpSw.Count(); i++)
+    {
+        if (dataRif != tmpSw.ElementAt(i).DataInizio)
+        {
+            if (dataRif <= tmpSw.ElementAt(i).DataInizio.AddDays(-1))
+            {
+                eventi.Add(new EventoModel()
+                {
+                    Codice = "PRESENZA",
+                    Descrizione = "In presenza",
+                    DataInizio = dataRif,
+                    DataFine = tmpSw.ElementAt(i).DataInizio.AddDays(-1)
+                });
+            }
+        }
+        dataRif = tmpSw.ElementAt(i).DataFine.AddDays(1);
+        eventi.Add(tmpSw.ElementAt(i));
+    }
+
+
+    if (Model.DataCessazione < dataRif)
+    {
+        dataRif = Model.DataCessazione;
+    }
+
+    if (dataRif <= DateTime.Today && Model.DataCessazione > DateTime.Today)
+    {
+        eventi.Add(new EventoModel()
+        {
+            Codice = "PRESENZA",
+            Descrizione = "In presenza",
+            DataInizio = dataRif,
+            DataFine = DateTime.Today
+        });
+    }
+
+
+    var evento = tmpSw.FirstOrDefault(x => x.DataInizio <= DateTime.Today && x.DataFine > DateTime.Today);
+    if (evento == null)
+    {
+        var min = tmpSw.Any() ? tmpSw.Max(x => x.DataFine).AddDays(1) : Model.DataAssunzione;
+        evento = new EventoModel()
+        {
+            Matricola = Model.Matricola,
+            IdPersona = Model.IdPersona,
+            MinDate = min,
+            MaxDate = Model.DataCessazione > min ? Model.DataCessazione : min,
+            DataInizio = DateTime.Today,
+            DataFine = DateTime.Today.AddDays(1),
+            Codice = "SW",
+            TipologiaAccordo = "Unilaterale"
+        };
+    }
+
+    var tmpCommGara = Model.DatiStatiRapporti.Eventi.Where(x => x.Codice != "SW" && (x.ValiditaFine == null || x.ValiditaFine > DateTime.Now)).OrderBy(x => x.DataInizio);
+    foreach (var item in tmpCommGara)
+    {
+        eventi.Add(item);
+    }
+
+    var eventoCommGara = tmpCommGara.FirstOrDefault(x => x.DataInizio <= DateTime.Today && x.DataFine > DateTime.Today);
+    if (eventoCommGara == null)
+    {
+        eventoCommGara = new EventoModel()
+        {
+            Matricola = Model.Matricola,
+            IdPersona = Model.IdPersona,
+            MinDate = tmpCommGara.Any() ? tmpCommGara.Max(x => x.DataFine).AddDays(1) : Model.DataAssunzione,
+            MaxDate = Model.DataCessazione,
+            DataInizio = DateTime.Today,
+            DataFine = DateTime.Today.AddDays(1),
+            Codice = "COMM_GARA",
+        };
+    }
+
+    var listStati = new myRaiDataTalentia.TalentiaEntities().XR_TB_STATO_RAPPORTO.Where(x => x.IND_VISUALIZZA).OrderBy(x => x.ORDINE).ToList();
+
+    bool isFirstSW = true;
+
+    Model.ViewInfo = new string[] { "matricola", "data_assunzione", "cessazione", "servizio", "parttime" };
+
+    var rich = Model.DatiStatiRapporti.Richieste != null && Model.DatiStatiRapporti.Richieste.Any() ?
+                Model.DatiStatiRapporti.Richieste.FirstOrDefault(x => x.ECCEZIONE == "SW" && (x.CATEGORIA == 52 || x.CATEGORIA == 54) && x.XR_WKF_MATCON_OPERSTATI.Any(y => y.ID_STATO == 20) && x.GIORNI_APPROVATI != null) : null;
+
+    int? giorniExtra = rich != null ? rich.GIORNI_APPROVATI : null;
+}
+
+@using (Html.BeginModal(Model.Cognome.TitleCase() + " " + Model.Nome.TitleCase()))
+{
+    <input type="hidden" id="idPersona" value="@Model.IdPersona" />
+    <input type="hidden" id="idPersonaSW" value="@Model.IdPersona" />
+    <input type="hidden" id="matricola-dip" value="@Model.Matricola" />
+    <div class="row" id="block-stati">
+        <div class="col-md-12">
+            <div id="profile-widget" style="display:none">
+                @Html.ProfileWidget(Model.Matricola, Model.Nome + " " + Model.Cognome, null)
+            </div>
+
+            @if (Model.DatiStatiRapporti.IsAventeDiritto)
+            {
+                foreach (var sel in Model.DatiStatiRapporti.AventeDirittoSelezione)
+                {
+                    string descr = sel.Selezione.GetDescription();
+
+
+                    <div class="alert alert-info">
+                        <b>Smart Working</b><br />
+                        <span>Ha diritto allo Smart Working in quanto @(descr.StartsWith("di essere") ? "dichiara " : "")@descr</span><br />
+                        <small><em>Scelta effettuata il @Model.DatiStatiRapporti.DataSelezione.Value.ToString("dd/MM/yyyy")</em></small>
+                    </div>
+                }
+
+
+            }
+
+            @*@if (Model.DatiStatiRapporti.Richieste != null && Model.DatiStatiRapporti.Richieste.Any())
+        {
+            var dbSt = new myRaiData.Incentivi.IncentiviEntities();
+            var listWkfStati = dbSt.XR_MAT_STATI.ToList();
+
+            <div class="alert alert-info">
+                <b>Richiesta di giornate o periodi aggiuntivi di lavoro da remoto</b><br />
+                @foreach (var item in Model.DatiStatiRapporti.Richieste)
+                {
+                    string[] sw = item.XR_MAT_CATEGORIE.DESCRIZIONE_ECCEZIONE.Split(',');
+                    var oper = item.XR_WKF_OPERSTATI.OrderByDescending(y => y.ID_STATO).FirstOrDefault();
+                    var stato = listWkfStati.FirstOrDefault(x => x.ID_STATO == oper.ID_STATO);
+
+                    <span>@item.XR_MAT_CATEGORIE.TITOLO - @item.XR_MAT_CATEGORIE.SOTTO_TITOLO</span><br />
+                    <span>Data inserimento: @item.DATA_INVIO_RICHIESTA.ToString("dd/MM/yyyy")</span><br />
+                    <span>Stato: @stato.DESCRIZIONE</span><br />
+                    if (item.XR_MAT_CATEGORIE.ID == 52 || item.XR_MAT_CATEGORIE.ID == 54)
+                    {
+                        <span>Numero giorni approvati: @item.GIORNI_APPROVATI.GetValueOrDefault()</span>
+                    }
+                    else
+                    {
+                        <span>Numero giorni: @sw[1]</span>
+                    }
+                    if (item.DATA_INIZIO_SW.HasValue)
+                    {
+                        <br />
+                        <span>Periodo: @item.DATA_INIZIO_SW.Value.ToString("dd/MM/yyyy") - @item.DATA_FINE_SW.Value.ToString("dd/MM/yyyy")</span>
+                    }
+                }
+            </div>
+        }*@
+
+            @using (Html.BeginPanel(PanelType.NoHeaderNoPadding, "Storico  stati", false))
+            {
+                @Html.Partial("..\\Anagrafica\\Header_DatiDipendente", Model)
+
+                if (Model.DatiStatiRapporti.Richieste != null && Model.DatiStatiRapporti.Richieste.Any())
+                {
+                    var dbSt = new myRaiData.Incentivi.IncentiviEntities();
+                    var listWkfStati = dbSt.XR_MAT_STATI.ToList();
+
+                    using (Html.BeginBlock(BlockType.ContentTable, "Richiesta di giornate o periodi aggiuntivi di lavoro da remoto"))
+                    {
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                <table class="table rai-table rai-table-vcenter">
+                                    @*<thead>
+                                    <tr>
+                                        <th>
+                                            Tipologia
+                                        </th>
+                                        <th>
+                                            Numero giorni/Periodo
+                                        </th>
+                                        <th>
+                                            Stato
+                                        </th>
+                                        <th>
+
+                                        </th>
+                                    </tr>
+                                </thead>*@
+                                    @foreach (var item in Model.DatiStatiRapporti.Richieste)
+                                    {
+                                        string[] sw = item.XR_MAT_CATEGORIE.DESCRIZIONE_ECCEZIONE.Split(',');
+                                        var oper = item.XR_WKF_MATCON_OPERSTATI.OrderByDescending(y => y.ID_STATO).FirstOrDefault();
+                                        var stato = listWkfStati.FirstOrDefault(x => x.ID_STATO == oper.ID_STATO);
+                                        bool hasPerdiodo = false;
+
+                                        <tr>
+                                            <td>
+                                                <span class="rai-font-md">@item.XR_MAT_CATEGORIE.TITOLO</span><br />
+                                                @*<span class="rai-font-sm-neutral">@item.XR_MAT_CATEGORIE.SOTTO_TITOLO</span>*@
+                                            </td>
+                                            <td style="width:1%;white-space:nowrap">
+                                                @if (item.DATA_INIZIO_SW.HasValue)
+                                                {
+                                                    hasPerdiodo = true;
+                                                    <span>Dal @item.DATA_INIZIO_SW.Value.ToString("dd/MM/yyyy") al @item.DATA_FINE_SW.Value.ToString("dd/MM/yyyy")</span>
+                                                }
+                                                else if (item.INIZIO_GIUSTIFICATIVO.HasValue)
+                                                {
+                                                    hasPerdiodo = true;
+                                                    <span>Dal @item.INIZIO_GIUSTIFICATIVO.Value.ToString("dd/MM/yyyy") al @item.FINE_GIUSTIFICATIVO.Value.ToString("dd/MM/yyyy")</span>
+                                                }
+
+                                                @if (item.XR_MAT_CATEGORIE.TIPO_AGGIORNAMENTO_STATO == "AGGIUNTIVO")
+                                                {
+                                                    if (hasPerdiodo)
+                                                    {
+                                                        <br />
+                                                    }
+                                                    if (item.GIORNI_APPROVATI.HasValue)
+                                                    {
+                                                        int ngg = item.GIORNI_APPROVATI.GetValueOrDefault();
+                                                        if (ngg == 1)
+                                                        {
+                                                            <span>1 giorno</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span>@ngg giorni</span>
+                                                        }
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    if (hasPerdiodo)
+                                                    {
+                                                        <br />
+                                                    }
+                                                    <span>@sw[1] giorni</span>
+                                                }
+                                                <br /><span class="rai-font-md-neutral-bold">Inviata il @item.DATA_INVIO_RICHIESTA.ToString("dd/MM/yyyy")</span>
+                                            </td>
+                                            <td style="width:1%;white-space:nowrap">
+                                                @if (stato.ID_STATO < 20)
+                                                {
+                                                    <span><span class="fa fa-circle feedback-warning-color"></span> In attesa</span>
+                                                }
+                                                else if (stato.ID_STATO == 20)
+                                                {
+                                                    if (oper.COD_USER == Model.Matricola)
+                                                    {
+                                                        <span class="fa fa-circle feedback-success-color"></span><span> Validata automaticamente</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="fa fa-circle feedback-success-color"></span><span> Approvata dal responsabile</span>
+                                                    }
+                                                }
+                                                else if (stato.ID_STATO == 30)
+                                                {
+                                                    <span class="fa fa-check feedback-success-color"></span><span> Verificata</span>
+                                                }
+                                                else if (stato.ID_STATO == 102)
+                                                {
+                                                    <span class="fa fa-times feedback-error-color"></span><span> Annullata</span>
+                                                }
+                                            </td>
+                                            <td class="text-right" style="width:1%;white-space:nowrap">
+                                                @if (stato.ID_STATO != 20)
+                                                {
+                                                    <button class="btn rai-btn-small" onclick="VisualizzaGestione(@item.ID)">Visualizza</button>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn rai-btn-small" onclick="VisualizzaGestione(@item.ID)">Gestisci</button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </table>
+                            </div>
+                        </div>
+                    }
+                }
+
+
+
+                if (myRaiCommonTasks.CommonTasks.API_SW_Abilitate(myRaiHelper.CommonHelper.GetCurrentUserMatricola()))
+                {
+                    <div id="api-found">
+
+                    </div>
+                }
+
+
+
+                string endDateEventi = "";
+                if (eventi != null && eventi.Any())
+                {
+                    endDateEventi = eventi.Max(x => x.DataFine).ToString("dd/MM/yyyy");
+                }
+                else
+                {
+                    DateTime _tempDT = Model.DataAssunzione;
+                    _tempDT = _tempDT.AddDays(-1);
+                    endDateEventi = _tempDT.ToString("dd/MM/yyyy");
+                }
+                <div class="form-group">
+                    <div class="row push-10 push-10-t">
+                        <div class="col-sm-6">
+                            <label class="rai-caption">Filtra per data</label>
+                            <div class="input-group">
+                                <i class="input-group-addon"><i class="fa fa-calendar"></i></i>
+                                <input type="text" class="form-control js-daterangepicker" id="rangePicker" onchange="onStateFilterChange()"
+                                       data-startdate="@Model.DataAssunzione.ToString("dd/MM/yyyy")"
+                                       data-enddate="@endDateEventi"
+                                       data-mindate="@Model.DataAssunzione.ToString("dd/MM/yyyy")"
+                                       @*data-parentel="#rangePicker"*@
+                                       data-showdropdowns="true" />
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="rai-caption">Filtra per stato</label>
+                            @{
+                                var tmp = new myRaiDataTalentia.TalentiaEntities().XR_TB_STATO_RAPPORTO.OrderBy(x => x.ORDINE);
+                                var selectList = new List<SelectListItem>();
+                                selectList.AddRange(tmp.Select(x => new SelectListItem() { Value = x.COD_STATO_RAPPORTO, Text = x.DES_STATO_RAPPORTO, Selected = true }));
+                                selectList.Add(new SelectListItem() { Value = "PRESENZA", Text = "Presenza", Selected = true });
+                            }
+                            @Html.RaiSelect("selStati", selectList, onSelectchange: "onStateFilterChange()", multiple: true)
+                        </div>
+                    </div>
+                </div>
+
+
+                if (abilSubFunc.Create)
+                {
+                    <div class="row bg-neutrals-xl-10" style="padding-top: 10px; padding-bottom:10px;margin:0px">
+                        <div class="col-sm-12 text-right">
+
+
+                            @if (abilSubFunc.Create)
+                            {
+                                <button class="btn rai-btn-small" onclick="StatiGest(@Model.IdPersona, 0)">Aggiungi nuovo stato</button>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <table class="table rai-table rai-table-vcenter rai-table-high-row rai-table-collapsable rai-table-borderless" data-ignore-scroll="true">
+                    <thead>
+                        <tr>
+                            <th>Stato</th>
+                            <th>Data inizio</th>
+                            <th>Data fine</th>
+                            <th>Accordo</th>
+                            <th>Comunicazione</th>
+                            <th>gg/mese</th>
+                            <th class=""></th>
+                            <th class="rai-table-td-toggle"></th>
+                        </tr>
+                    </thead>
+
+                    @foreach (var item in eventi.OrderByDescending(x => x.DataInizio))
+                    {
+                        var subEventi = new List<EventoModel>();
+                        int? idRif = item.IdEventoPrec;
+                        while (idRif.HasValue)
+                        {
+                            var tmpEv = Model.DatiStatiRapporti.Eventi.FirstOrDefault(x => x.IdEvento == idRif);
+                            if (tmpEv != null)
+                            {
+                                subEventi.Add(tmpEv);
+                                idRif = tmpEv.IdEventoPrec;
+                            }
+                        }
+
+                        <tbody class="rai-table-collapsable-header">
+                            <tr data-stato="@item.Codice" data-inizio="@item.DataInizio.ToString("yyyyMMdd")" data-fine="@item.DataFine.ToString("yyyyMMdd")" data-type="@item.Codice">
+                                <td>
+                                    <span>@item.Descrizione</span>
+                                    @if (subEventi.Count() > 0)
+                                    {
+                                        var labelText = "modifica";
+                                        if (subEventi.Count() > 1)
+                                        {
+                                            labelText = "modifiche";
+                                        }
+
+                                        <br />
+                                        <span class="feedback-warning-color">@subEventi.Count() @labelText</span>
+                                    }
+                                    @if (item.Codice == "SW_P" && item.DataScadenza.HasValue)
+                                    {
+                                        <br />
+                                        <span class="rai-font-sm-neutral"><span class="feedback-warning-color fa fa-warning"></span>&nbsp;@item.DataScadenza.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span>@item.DataInizio.ToString("dd/MM/yyyy")</span>
+                                </td>
+                                <td>
+                                    <span>@item.DataFine.ToString("dd/MM/yyyy")</span>
+                                </td>
+                                <td>
+                                    @if (!String.IsNullOrWhiteSpace(item.TipologiaAccordo))
+                                    {
+                                        <span>@item.TipologiaAccordo</span>
+                                        if (item.NotificaDipendente.HasValue && item.TipologiaAccordo == "Consensuale")
+                                        {
+                                            if (item.Codice != "SW")
+                                            {
+                                                <span class="rai-font-sm-neutral" data-toggle="tooltip" title="Notificato al dipendente il @item.NotificaDipendente.Value.ToString("dd/MM/yyyy HH:mm")"><i class=" fa fa-info"></i></span>
+                                            }
+                                            else
+                                            {
+                                                <a target="_blank" class="btn btn-action-icon" title="Scarica accordo" href="@Url.Action("DownloadAccordo", "StatiRapporto", new {id=item.Modulo })"><i class="fa fa-file"></i></a>
+                                            }
+                                        }
+                                        else if (item.Codice == "SW" && item.TipologiaAccordo == "Consensuale")
+                                        {
+                                            var idModulo = item.Modulo;
+                                            if (idModulo == null)
+                                            {
+                                                var tmpMod = subEventi.FirstOrDefault(x => x.Modulo.HasValue);
+                                                idModulo = tmpMod != null ? tmpMod.Modulo : null;
+                                            }
+                                            if (idModulo != null)
+                                            {
+                                                <a target="_blank" class="btn btn-action-icon" title="Scarica accordo" href="@Url.Action("DownloadAccordo", "StatiRapporto", new { id = idModulo })"><i class="fa fa-file"></i></a>
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span>&nbsp;</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span>@(item.NotificaEnte.HasValue ? item.NotificaEnte.Value.ToString("dd/MM/yyyy HH:mm") : "-")</span>
+                                </td>
+                                <td>
+                                    @(item.NumeroGiorniMax.HasValue ? item.NumeroGiorniMax.ToString() : "-")
+                                    @if (item.NumeroGiorniExtra.HasValue)
+                                    {
+                                        <span>+@item.NumeroGiorniExtra.GetValueOrDefault()</span>
+                                    }
+                                    @*@if (giorniExtra.HasValue && item.Codice=="SW" && item.DataInizio<=DateTime.Today && item.DataFine>=DateTime.Today)
+                                {
+                                    <span title="@rich.XR_MAT_CATEGORIE.TITOLO"> +@giorniExtra.Value</span>
+                                }*@
+                                </td>
+                                <td class="text-right">
+                                    @*@if (abilSubFunc.Update && (item.Codice == "SW" && isFirstSW && item.TipologiaAccordo == "Consensuale" && item.InCorso))
+                                {
+                                    <button class="btn rai-btn-small" title="Recesso" onclick="StatiModalRecesso(@evento.IdPersona, @evento.IdEvento)">
+                                        @if (evento.RichiestaRecesso.HasValue)
+                                        {
+                                            <span>Recesso</span>
+                                        }
+                                        else
+                                        {
+                                            <span>Richiedi recesso</span>
+                                        }
+                                    </button>
+                                }*@
+                                    @if (abilSubFunc.Update && (item.Codice == "SW" && (isFirstSW || (item.DataInizio <= DateTime.Now && DateTime.Now <= item.DataFine) || item.Codice == "SW_P" || item.Codice == "SW_N")))
+                                    {
+                                        <button class="btn btn-action-icon" title="Modifica periodo" onclick="StatiGest(@item.IdPersona, @item.IdEvento)"><i class="fa fa-pencil"></i></button>
+                                    }
+                                    @if (abilSubFunc.Delete && item.Codice == "SW" && isFirstSW)
+                                    {
+                                        <button class="btn btn-action-icon" title="Elimina periodo" onclick="StatoDelete(@item.IdEvento, '@item.Codice')"><i class="fa fa-trash"></i></button>
+                                    }
+                                    else if (abilSubFunc.Delete && item.Codice == "SW_P")
+                                    {
+                                        <button class="btn btn-action-icon" title="Elimina periodo" onclick="StatoDelete(@item.IdEvento, '@item.Codice')"><i class="fa fa-trash"></i></button>
+                                    }
+
+                                    @if (item.Codice == "SW" && isFirstSW) { isFirstSW = false; }
+                                </td>
+                                <td>
+                                    @if (subEventi.Count() > 0 || (item.Codice == "SW" && item.Info != null && item.Info.Any()))
+                                    {
+                                        <i class="fa fa-chevron-down"></i>
+                                    }
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tbody class="no-border">
+                            @if (item.Info != null)
+                            {
+                                if (item.Info.Any())
+                                {
+                                    <tr data-actual-period>
+                                        <td colspan="6" class="bg-neutrals-xl-10"><em>Numero giorni per mesi</em></td>
+                                        <td colspan="2" class="bg-neutrals-xl-10 text-right">
+                                            @if (abilSubFunc.Create)
+                                            {
+                                                <button class="btn rai-btn-small" onclick="SWOpenGiorni(@item.IdEvento)">Modifica</button>
+                                            }
+                                        </td>
+                                    </tr>
+                                    <tr style="display:none;">
+                                        <td colspan="8"><div id="info-@item.IdEvento"></div></td>
+                                    </tr>
+                                    foreach (var info in item.Info.OrderBy(x => x.DataInizio))
+                                    {
+                                        <tr data-actual-period="@item.IdEvento">
+                                            <td></td>
+                                            <td>@info.DataInizio.ToString("dd/MM/yyyy")</td>
+                                            <td>@info.DataFine.Value.ToString("dd/MM/yyyy")</td>
+                                            <td></td>
+                                            <td></td>
+                                            <td>
+                                                @info.NumeroGiorniMax
+                                                @if (info.NumeroGiorniExtra.HasValue)
+                                                {
+                                                    <span>+@info.NumeroGiorniExtra.GetValueOrDefault()</span>
+                                                }
+                                                @if (aggiungiRich && info.NumeroGiorniRich.HasValue)
+                                                {
+                                                    <span>+@info.NumeroGiorniRich.GetValueOrDefault()</span>
+                                                }
+                                            </td>
+                                            <td colspan="2">
+                                                @if (!String.IsNullOrWhiteSpace(info.Ipotesi))
+                                                {
+                                                    <span class="rai-font-sm">Lavoratori fragili ipotesi I-@info.Ipotesi</span><br />
+                                                    if (info.DataInivio != null)
+                                                    {
+                                                        <span class="rai-font-sm">Mail inviata il @info.DataInivio.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                                    }
+                                                }
+                                            </td>
+
+                                        </tr>
+                                    }
+
+                                }
+                            }
+
+                            @if (subEventi.Any())
+                            {
+                                <tr>
+                                    <td colspan="8" class="bg-neutrals-xl-10"><em>Modifiche</em></td>
+                                </tr>
+                                foreach (var subItem in subEventi)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span>&nbsp;</span>
+                                        </td>
+                                        <td>
+                                            <span>@subItem.DataInizio.ToString("dd/MM/yyyy")</span>
+                                        </td>
+                                        <td>
+                                            <span>@subItem.DataFine.ToString("dd/MM/yyyy")</span>
+                                        </td>
+                                        <td>
+                                            @if (!String.IsNullOrWhiteSpace(subItem.TipologiaAccordo))
+                                            {
+                                                <span>@subItem.TipologiaAccordo</span>
+                                            }
+                                            else
+                                            {
+                                                <span>&nbsp;</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span></span>
+                                        </td>
+                                        <td></td>
+                                        <td>
+                                            &nbsp;
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    }
+
+                </table>
+            }
+        </div>
+        @*<div class="col-md-4">
+                @using (Html.BeginPanel(PanelType.PanelNoPadding, "Gestisci", false))
+                {
+                    <div class="row" style="margin:15px;">
+                        <div class="col-sm-12 form-group">
+                            <label class="rai-caption">Tipologia stato</label>
+                            <select class="form-control" onchange="onSelectStateChange(this)">
+                                @for (int i = 0; i < listStati.Count(); i++)
+                                {
+                                    <option value="@listStati.ElementAt(i).COD_STATO_RAPPORTO" @(i == 0 ? "selected" : "")>@listStati.ElementAt(i).DES_STATO_RAPPORTO</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="tab-content no-shadow no-border" id="tabStatiContainer">
+                        <div class="tab-pane active" id="tabStato-SW">
+                            <div class="form-group">
+                                <input type="hidden" id="MatrCode" value="@Model.Matricola" />
+                                <div class="row push-10">
+                                    <div class="col-sm-12">
+                                        <label class="rai-caption">Assic. Infortuni</label>
+                                    </div>
+                                    <div class="col-sm-9">
+                                        <input type="text" id="assic_inf" class="form-control" value="@Model.AssicurazioneInfortuni" disabled />
+                                    </div>
+                                    <div class="col-sm-3">
+                                        <button class="btn btn-action-icon" onclick="AnagModifyAI()" style="margin:8px 0"><i class="fa fa-pencil"></i></button>
+                                    </div>
+                                    @if (Model.AssicurazioneInfortuniUpdate.HasValue)
+                                    {
+                                        <div class="col-sm-12">
+                                            <em class="rai-font-sm-neutral">Aggiornato al @Model.AssicurazioneInfortuniUpdate.Value.ToString("dd/MM/yyyy")</em>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                            @Html.Partial("~/Views/Anagrafica/subpartial/Modal_DatiStatoRapporto.cshtml", evento)
+                        </div>
+                        <div class="tab-pane" id="tabStato-COMM_GARA">
+                            @Html.Partial("~/Views/Anagrafica/subpartial/Modal_DatiStatoRapporto.cshtml", eventoCommGara)
+                        </div>
+                    </div>
+                }
+
+
+
+            </div>*@
+    </div>
+}
+
+
+
+
+    <script>
+    function FillApiFound(matricola) {
+        $("#api-found").load("/statirapporto/GetApiFound?matricola=" + matricola, function () { $("#api-found tbody").addClass("open")});
+    }
+
+    function ModificaComunicazione(CodiceCom) {
+        $.ajax({
+            url: "/statiRapporto/ProponiModificaCom",
+            type: "GET",
+            cache: false,
+            dataType: 'html',
+            data: { CodiceComunicazione: CodiceCom },
+            success: function (data) {
+                $("#nuova-com").html(data);
+                $("#agg-com").hide();
+            }
+        });
+    }
+    function ModificaComunicazioneInternal(CodiceCom, matricola) {
+        var d1 = $("#data-ini").val();
+        var d2 = $("#data-fin").val();
+        if (d1.trim() == "" || d2.trim() == "") {
+            swal({
+                title: "Errore",
+                text: "Data non valida",
+                type: 'error',
+                customClass: 'rai'
+            });
+            return;
+        }
+        $.ajax({
+            url: "/statiRapporto/CheckPrimaModificaCom",
+            type: "POST",
+            cache: false,
+            dataType: 'json',
+            data: { CodiceComunicazione: CodiceCom, d1: d1, d2: d2 , matricola:matricola},
+            success: function (data) {
+                if (data.esito == true) {
+                    swal({
+                        title: "Modifica comunicazione",
+                        type: 'question',
+                        //html: "Non sono stati trovati invii di precedenti nuove comunicazioni, vuoi che sia inviata la presente comunicazione come Modifica o Recesso ?" +
+                        //    "<br /> </br> " +
+                        //    "<input type='radio' name ='modrec' id='sc-1' /><span>Invia come Modifica</span> <br />" +
+                        //    "<input type='radio' name ='modrec' id='sc-2' /><span>Invia come Recesso</span> <br />"
+                        //,
+                        showCancelButton: true,
+                        confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+                        cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+                        reverseButtons: true,
+                        customClass: 'rai rai-confirm-cancel'
+                    }).then(function () {
+
+                    });
+                }
+                else {
+                    alert("non è prima mod")
+                }
+            }
+        });
+
+    }
+    function ModificaComunicazioneInternal_2(CodiceCom, matricola,d1,d2) {
+        $("#api-found").addClass("rai-loader");
+
+        $.ajax({
+            url: "/statiRapporto/ModificaCom",
+            type: "POST",
+            cache: false,
+            dataType: 'json',
+            data: { CodiceComunicazione: CodiceCom, d1: d1, d2: d2 },
+            success: function (data) {
+                $("#api-found").removeClass("rai-loader");
+                if (data.esito == true) {
+                    swal({
+                        title: 'Dati caricati correttamente',
+                        type: "success",
+                        confirmButtonText: 'OK',
+                        customClass: 'rai'
+                    });
+                    FillApiFound(matricola);
+                }
+                else {
+                    swal({
+                        title: "Errore",
+                        text: data.errore,
+                        type: 'error',
+                        customClass: 'rai'
+                    });
+                }
+            }
+        });
+    }
+    function AnnullaComunicazione(CodiceCom, matricola) {
+        swal({
+            title: "Annulla comunicazione",
+            type: 'question',
+            html: "Confermi di annullare la comunicazione visualizzata?",
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+            AnnullaComunicazioneInternal(CodiceCom, matricola);
+        });
+    }
+    function AnnullaComunicazioneInternal(CodiceCom, matricola) {
+        $("#api-found").addClass("rai-loader");
+        $.ajax({
+            url: "/statiRapporto/AnnullaCom",
+            type: "POST",
+            cache: false,
+            dataType: 'json',
+            data: { CodiceComunicazione: CodiceCom },
+            success: function (data) {
+                $("#api-found").removeClass("rai-loader");
+                if (data.esito == true) {
+                    swal({
+                        title: 'Comunicazione annullata correttamente',
+                        type: "success",
+                        confirmButtonText: 'OK',
+                        customClass: 'rai'
+                    });
+                    FillApiFound(matricola);
+                }
+                else {
+                    swal({
+                        title: "Errore",
+                        text: data.errore,
+                        type: 'error',
+                        customClass: 'rai'
+                    });
+                }
+            }
+        });
+
+        }
+
+        function AggiornaAPI(matr) {
+            swal({
+                title: "Aggiorna API",
+                type: 'question',
+                html: "Confermi di inviare la posizione SW del dipendente al sistema REST del Min. Lavoro ?",
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+                cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+                reverseButtons: true,
+                customClass: 'rai rai-confirm-cancel'
+            }).then(function () {
+                AggiornaAPIinternal(matr);
+            });
+        }
+
+        function AggiornaAPIinternal(matr) {
+            $("#api-found").addClass("rai-loader");
+            $.ajax({
+                url: "/statiRapporto/AggiornaAPI",
+                type: "POST",
+                cache: false,
+                dataType: 'json',
+                data: { matr:matr },
+                success: function (data) {
+                    $("#api-found").removeClass("rai-loader");
+                    debugger
+                    if (data.esito == true)
+                        FillApiFound(matr);
+                    else
+                        swal({
+                            title: "Errore",
+                            text: data.errore,
+                            type: 'error',
+                            customClass: 'rai'
+                        });
+                   
+                }
+            });
+        }
+            
+      function InfoApiCF(cf) {
+        $("#modal-api").modal("show");
+        $("#modal-api-internal").html("");
+        $("#modal-api-internal").addClass("rai-loader");
+
+        $.ajax({
+            url: "/statiRapporto/InfoApiCF",
+            type: "POST",
+            cache: false,
+            dataType: 'html',
+            data: { cf:cf },
+            success: function (data) {
+                $("#modal-api-internal").removeClass("rai-loader");
+                debugger
+                $("#modal-api-internal").html(data);
+            }
+        });
+    }
+    function InfoComunicazione(codice, matricola) {
+        $("#modal-api").modal("show");
+        $("#modal-api-internal").html("");
+        $("#modal-api-internal").addClass("rai-loader");
+
+        $.ajax({
+            url: "/statiRapporto/InfoCom",
+            type: "POST",
+            cache: false,
+            dataType: 'html',
+            data: { matricola: matricola, codice:codice },
+            success: function (data) {
+                $("#modal-api-internal").removeClass("rai-loader");
+                debugger
+                $("#modal-api-internal").html(data);
+            }
+        });
+    }
+    function AggiungiNuovaComunicazione(matricola) {
+        $.ajax({
+            url: "/statiRapporto/ProponiNuovaCom",
+            type: "GET",
+            cache: false,
+            dataType: 'html',
+            data: { matricola: matricola },
+            success: function (data) {
+                $("#nuova-com").html(data);
+                $("#agg-com").hide();
+            }
+        });
+
+    }
+    function AggiungiNuovaComunicazioneInternal(matricola) {
+        var d1 = $("#data-ini").val();
+        var d2 = $("#data-fin").val();
+        if (d1.trim() == "" || d2.trim() == "") {
+            swal({
+                title: "Errore",
+                text: "Data non valida",
+                type: 'error',
+                customClass: 'rai'
+            });
+            return;
+        }
+        $("#api-found").addClass("rai-loader");
+
+        $.ajax({
+            url: "/statiRapporto/AggiungiNuovaCom",
+            type: "POST",
+            cache: false,
+            dataType: 'json',
+            data: { matricola: matricola, d1:d1, d2:d2 },
+            success: function (data) {
+                $("#api-found").removeClass("rai-loader");
+                if (data.esito == true) {
+                    swal({
+                        title: 'Dati caricati correttamente',
+                        type: "success",
+                        confirmButtonText: 'OK',
+                        customClass: 'rai'
+                    });
+                    FillApiFound(matricola);
+                }
+                else {
+                    swal({
+                        title: "Errore",
+                        text: data.errore,
+                        type: 'error',
+                        customClass: 'rai'
+                    });
+                }
+            }
+        });
+
+    }
+    InitDateRangePicker();
+        debugger
+
+    FillApiFound('@Model.Matricola');
+
+
+    function onSelectStateChange(select) {
+        var stateSel = $(select).val();
+        $('#tabStatiContainer .tab-pane').removeClass('active');
+        $('#tabStato-' + stateSel).addClass('active');
+    }
+
+    function onStateFilterChange() {
+        var rifDate = $('#rangePicker').val();
+        var rifInizio = '19000101';
+        var rifFine = '29991231';
+        let statiSel = $('#selStati').val();
+
+        if (rifDate != '') {
+            var ary = rifDate.split('-');
+            var arySt = ary[0].trim();
+            var aryEnd = ary[1].trim();
+
+            rifInizio = arySt.substr(6, 4) + arySt.substr(3, 2) + arySt.substr(0, 2);
+            rifFine = aryEnd.substr(6, 4) + aryEnd.substr(3, 2) + aryEnd.substr(0, 2);
+        }
+
+        $('[data-stato]').hide();
+        var list = $('[data-stato]');
+        for (var i = 0; i < list.length; i++) {
+            if (rifInizio <= $(list[i]).attr('data-fine')
+                && $(list[i]).attr('data-inizio') <= rifFine) {
+
+                var tipo = $(list[i]).attr('data-type');
+                if (statiSel.includes(tipo)) {
+                    $(list[i]).show();
+                } else {
+                    $(list[i]).hide();
+                    $(list[i]).removeClass('open');
+                }
+            }
+            else {
+                $(list[i]).hide();
+                $(list[i]).removeClass('open');
+            }
+        }
+    }
+
+    function AnagModifyAI() {
+        let actualCode = $('#assic_inf').val();
+        swal({
+            title: 'Sei sicuro?',
+            html: '<div class="row">'
+                + '<div class="col-sm-12 push-10">ATTENZIONE! <br/>La modifica del codice sarà valida fino al prossimo aggiornamento del trattamento economico.</div>'
+                + '<div class="col-sm-12 text-center"><input class="form-control" id="new-code" style="width:5em;display:inline-block" required value="'+actualCode+'"/></div> '
+                + '</div>',
+            showCancelButton: true,
+            confirmButtonText: 'Conferma',
+            cancelButtonText: 'Annulla',
+            reverseButtons: 'true',
+            customClass: 'rai',
+            preConfirm: function (value) {
+                return new Promise(function (resolve, reject) {
+                    if ($('#new-code').val() == "") {
+                        reject("Inserisci il codice")
+                    }
+                    else {
+                        resolve();
+                    }
+                });
+            }
+        }).then(function (result) {
+            debugger
+            let newCode = $('#new-code').val();
+            let matricola = $('#MatrCode').val();
+            $.ajax({
+                url: "/Anagrafica/CambiaCodiceCont",
+                type: "POST",
+                cache: false,
+                dataType: 'html',
+                data: { matricola: matricola, codice: newCode },
+                success: function (data) {
+                    switch (data) {
+                        case "OK":
+                            swal({
+                                title: "Salvataggio effettuato",
+                                text: "Il codice è stato cambiato correttamente",
+                                type: 'success',
+                                customClass: 'rai'
+                            });
+                            $('#assic_inf').val(newCode);
+                            break;
+                        default:
+                            swal({
+                                title: "Ops...",
+                                text: data,
+                                type: 'error',
+                                customClass: 'rai'
+                            });
+                    }
+                },
+                error: function (a, b, c) {
+                    swal({
+                        title: "Oops...",
+                        text: c,
+                        type: 'error',
+                        customClass: 'rai'
+                    });
+                }
+            });
+        });
+    }
+
+    function StatoDelete(idRec, codice) {
+        swal({
+            title: 'Sei sicuro?',
+            text:'Il periodo sarà eliminato.',
+            showCancelButton: true,
+            confirmButtonText: 'Conferma',
+            cancelButtonText: 'Annulla',
+            reverseButtons: 'true',
+            customClass: 'rai'
+             @if (myRaiCommonTasks.CommonTasks.API_SW_Abilitate(myRaiHelper.CommonHelper.GetCurrentUserMatricola()))
+               {
+                <text>
+                 ,html: '<input type="checkbox" id="delete-api" style="margin-right:6px;scale:1.3" checked="checked"></input><span>Elimina anche comunicazione telematica se presente</span>'
+               </text>
+               }
+
+        }).then(function (result) {
+
+            var deleteApi = false;
+            if ($("#delete-api").length > 0)
+                deleteApi = $("#delete-api").prop("checked");
+
+            $.ajax({
+                url: "/Anagrafica/Delete_StatiRappporto",
+                type: "POST",
+                cache: false,
+                dataType: 'html',
+                data: { idRecord: idRec, deleteApi: deleteApi },
+                success: function (data) {
+                    switch (data) {
+                        case "OK":
+                            swal({
+                                title: "Eliminazione effettuata",
+                                text: "Il periodo è stato cancellato correttamente",
+                                type: 'success',
+                                customClass: 'rai'
+                            });
+
+                            var idPersona = $('#idPersona').val();
+                            RaiUpdateWidget("block-stati", "/StatiRapporto/Modal_Dipendente", "replaceId", { idPersona: idPersona }, false,
+                                function () { FillApiFound($("#matricola-dip").val()); }
+                            )
+                            if ($('#form-ricerca-dipendente[action="/StatiRapporto/RicercaDipendente"]').length > 0) {
+                                $('#form-ricerca-dipendente[action="/StatiRapporto/RicercaDipendente"]').submit();
+                            }
+                            break;
+                        default:
+                            swal({
+                                title: "Ops...",
+                                text: data,
+                                type: 'error',
+                                customClass: 'rai'
+                            });
+                    }
+                },
+                error: function (a, b, c) {
+                    swal({
+                        title: "Oops...",
+                        text: c,
+                        type: 'error',
+                        customClass: 'rai'
+                    });
+                }
+            });
+        });
+    }
+
+
+    function SWOpenGiorni(idEvento) {
+        event.preventDefault();
+
+        RaiUpdateWidget('info-' + idEvento, '/StatiRapporto/Modal_GestGiorni', 'html', { idEvento: idEvento }, false, function () {
+            $('#info-' + idEvento).closest('tr').show();
+            $('[data-actual-period="' + idEvento + '"]').hide();
+        });
+    }
+    </script>

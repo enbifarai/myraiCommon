@@ -1,0 +1,238 @@
+﻿@using myRaiData;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+@using MyRaiServiceInterface.it.rai.servizi.digigappws;
+
+@model ModelDash
+
+<div id="inevidenza">
+    <h2 class="content-heading">Giornate in evidenza</h2>
+    <div class="block" id="evidenzeblock">
+        <ul class="nav nav-tabs nav-tabs-alt" data-toggle="tabs">
+            <li class="active">
+                <a href="#btab-da-giustifcare">da giustificare</a>
+            </li>
+            @if ( UtenteHelper.GetQuadratura( ) == Quadratura.Giornaliera )
+            {
+                <li class="">
+                    <a href="#btab-con-maggiorpresenza">con maggior presenza</a>
+                </li>
+            }
+            <li class="pull-right">
+                <ul class="block-options push-10-t push-10-r">
+                    <li>
+                        <button id="button-refresh-evid" type="button" data-toggle="block-option" data-action="refresh_toggle"
+                                data-refreshurl="/home/refreshInEvidenza" data-parentdiv="inevidenza"
+                                data-refreshelements="btab-da-giustifcare,btab-con-maggiorpresenza"
+                                data-action-mode="demo">
+                            <i class="si si-refresh"></i>
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button" data-toggle="block-option" data-action="content_toggle"></button>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+        <div class="block-content tab-content">
+            <div class="tab-pane active" id="btab-da-giustifcare">
+                <table class="js-table-sections table table-hover">
+                    <thead>
+                        <tr>
+                            <th style="width: 2%;"></th>
+                            <th style="width: 20%;">Data</th>
+                            <th style="width: 45%;">Segnalazione</th>
+                            <th class="hidden-xs" style="width: 10%;"></th>
+                            <th style="width: 30%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="js-table-sections-header">
+                        @{
+                            string tipoIcona = "fa-edit";
+                            int rows = 0;
+                            string quadratura = "g";
+                            if ( UtenteHelper.GetQuadratura( ) == Quadratura.Settimanale )
+                            {
+                                quadratura = "s";
+                            }
+                        }
+                        @if ( Model.listaEvidenze != null && Model.listaEvidenze.data != null )
+                        {
+                            /*  var items= Model.listaEvidenze.data.giornate.
+                                 Where(a => (a.TipoEcc == myRai.digigappWS_ws1.TipoEccezione.AssenzaIngiustificata) ||
+                                        (quadratura=="g"&& a.TipoEcc == myRai.digigappWS_ws1.TipoEccezione.Carenza)
+                                     ).Take(7);*/
+
+                            var items = Model.listaEvidenze.data.giornate.
+                               Where( a => ( a.TipoEcc == TipoEccezione.AssenzaIngiustificata ) ||
+                                       ( a.TipoEcc == TipoEccezione.Carenza )
+                                   ).Take( 7 );
+                            foreach ( Evidenza Evidenza in items )
+                            {
+                                if ( Evidenza.TipoEcc == TipoEccezione.Carenza
+                                    && quadratura == "s" )
+                                { continue; }
+
+                                rows++;
+
+                                //se questa row è una carenza e ci sono altre rows assente ingiustificato, disabilita carenza
+                                Boolean SpegniCarenza = Evidenza.TipoEcc == TipoEccezione.Carenza && Model.listaEvidenze.data.giornate.Any( z => z.TipoEcc == TipoEccezione.AssenzaIngiustificata );
+                                SpegniCarenza = SpegniCarenza || ( UtenteHelper.GetQuadratura( ) == Quadratura.Giornaliera && Evidenza.TipoEcc == TipoEccezione.Carenza && rows > 1 );
+                                <tr>
+                                    <td></td>
+                                    @{
+                                        string colore = "danger";
+                                        string descEcc = "Assente Ingiustificato";
+                                        string minuti = "";
+                                        Boolean ShowButton = true;
+                                    }
+                                    @if ( Evidenza.TipoEcc == TipoEccezione.Carenza )
+                                    {
+                                        colore = "warning";
+                                        descEcc = "Carenza";
+                                        minuti = "(" + @Evidenza.carenza + " minuti " + ( String.IsNullOrWhiteSpace( Evidenza.CarenzaEffettiva ) ? "" : " - Effettivi " + Evidenza.CarenzaEffettiva + " minuti" ) + " )";
+                                    }
+                                    @if ( Evidenza.TipoEcc == TipoEccezione.AssenzaIngiustificata && Evidenza.timbrature != null && Evidenza.timbrature.Count( ) > 0 )
+                                    {
+                                        descEcc = "Transiti Sfasati";
+                                        minuti = "Contattare la Segretaria per la correzione";
+                                        ShowButton = false;
+                                    }
+
+                                    <td class="font-w600 text-@colore">
+                                        <span class="hidden-xs">
+                                            @Evidenza.data.ToString("dd MMMM, yyyy", System.Globalization.CultureInfo
+                                        .CreateSpecificCulture("it-IT"))
+                                        </span>
+                                        <span class="visible-xs ">@Evidenza.data.ToString( "dd/MM/yyyy" )</span>
+                                        <div class="text-muted hidden-xs visible-sm visible-md visible-lg">
+                                            <em>
+                                                @Evidenza.descOrarioReale
+                                            </em>
+                                        </div>
+                                        <em></em>
+                                    </td>
+                                    <td class="font-w600">
+                                        @descEcc
+                                        <div class="text-muted">
+                                            <em>
+                                                @minuti
+                                            </em>
+                                        </div>
+                                        <div class="text-muted visible-xs">
+                                            <em>
+                                                @Evidenza.descOrarioReale
+                                            </em>
+                                        </div>
+                                    </td>
+
+                                    <th class="text-center" colspan="2" style="width: 100px;">
+                                        @if ( ShowButton )
+                                        {
+                                            <a href="#" data-toggle="modal"
+                                               onclick="ShowPopup('','','@Evidenza.data.ToString("dd/MM/yyyy")','@Evidenza.data.ToString("dd/MM/yyyy")')"
+                                               data-day="@Evidenza.data.ToString("ddMMyyyy")"
+                                               class="btn btn-lg btn-default @(SpegniCarenza ?"disable":"")">
+                                                @if ( Evidenza.descOrarioReale.Trim( ) == "Transiti Sfasati" && Model.dettaglioGiornata.giornata.tipoDipendente != "G" )
+                                                { tipoIcona = "fa-eye"; }
+                                                else
+                                                { tipoIcona = "fa-edit"; }
+                                                <i class="fa fa-fw @tipoIcona text-success"></i>
+                                            </a>
+                                        }
+                                    </th>
+                                </tr>
+                            }
+                            if ( rows == 0 )
+                            {
+                                @Html.Partial( "_nodati" );
+                            }
+                        }
+                        else
+                        {
+                            @Html.Partial( "_nodati" );
+                        }
+                    </tbody>
+                </table>
+                @if ( Model.listaEvidenze != null && Model.listaEvidenze.data != null )
+                {
+                    if ( Model.listaEvidenze.data.giornate.Where( a =>
+                           ( a.TipoEcc == TipoEccezione.AssenzaIngiustificata ) ||
+                               ( quadratura == "g" && a.TipoEcc == TipoEccezione.Carenza ) ).Count( ) > 7 )
+                    {
+                        <table class="js-table-sections table table-hover">
+                            <tr>
+                                <td style="text-align: center; width: 100%">
+                                    <i class="si si-arrow-right fa-2x text-success" />
+                                </td>
+                            </tr>
+                        </table>
+                    }
+                }
+            </div>
+            <div class="tab-pane" id="btab-con-maggiorpresenza">
+                <table class="js-table-sections table table-hover">
+                    <thead>
+                        <tr>
+                            <th style="width: 20%;">Data/Orario</th>
+                            <th class="hidden-xs" style="width: 45%;">Timbrature</th>
+                            <th style="width: 40%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="js-table-sections-header">
+                        @if ( Model.listaEvidenze != null && Model.listaEvidenze.data != null )
+                        {
+                            var items = Model.listaEvidenze.data.giornate.Where( a => a.TipoEcc == TipoEccezione.MaggiorPresenza );
+                            foreach ( Evidenza Evidenza in items )
+                            {
+                                <tr>
+                                    @{ string colore = "success";
+                                        string minuti = ""; }
+
+                                    <td class="font-w600 text-@colore">
+                                        <span class="hidden-xs">@Evidenza.data.ToString( "dd MMMM, yyyy" )</span>
+                                        <span class="visible-xs ">@Evidenza.data.ToString( "dd/MM/yyyy" )</span>
+                                        <div class="text-muted hidden-xs visible-sm visible-md visible-lg">
+                                            <em>
+                                                @Evidenza.descOrarioReale
+                                            </em>
+                                        </div>
+                                        <em></em>
+                                    </td>
+                                    <td>
+                                        Prima: @Evidenza.timbrature[0].entrata.orario
+                                        Ultima:  @Evidenza.timbrature[0].uscita.orario
+                                        <div class="text-muted">
+                                            <em>
+                                                Maggior Presenza:   @Evidenza.maggiorPresenza
+                                            </em>
+                                        </div>
+                                        <em></em>
+                                    </td>
+
+                                    <th class="text-center" style="width: 100px;">
+                                        <button class="btn btn-lg btn-default" type="button"
+                                                onclick="ShowPopup('','','@Evidenza.data.ToString("dd/MM/yyyy")','@Evidenza.data.ToString("dd/MM/yyyy")')">
+                                            <i class="fa fa-fw fa-edit text-success"></i>
+                                        </button>
+
+                                    </th>
+                                </tr>
+                            }
+                            if ( items.Count( ) == 0 )
+                            {
+                                @Html.Partial( "_nodati" );
+                            }
+                        }
+                        else
+                        {
+                            @Html.Partial( "_nodati" );
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,113 @@
+﻿@model myRaiCommonModel.MaternitaApprovazioniModel
+
+<section class="panel " style="">
+    <header class="panel-heading" data-panel-toggle="">
+        <h1 class="panel-title">Approvazioni</h1>
+        <div class="panel-actions rai-panel-actions">
+            <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" aria-labelledby="lblRightBox" aria-expanded="true"></a>
+        </div>
+    </header>
+    <div class="panel-body no-padding">
+        <div id="content-approvazioni" class="@(Model.IsPreview ?"rai-loader":"")">
+            <table class="rai-table matapp table  rai-table-vcenter rai-table-high-row rai-table-panel" id="table_app">
+                <thead>
+                    <tr>
+                        <th>Nominativo</th>
+                        <th style="width:auto;">Tipo richiesta</th>
+                        <th>Scadenza</th>
+                        <th>Stato</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                @if (Model.RichiesteAggregate.Any() == false)
+                {
+                    <tbody>
+                        <tr>
+                            <td class="text-center no-border" colspan="100"><span class="rai-font-md-neutral">Non ci sono dati da visualizzare</span></td>
+                        </tr>
+                    </tbody>
+                }
+                else
+                {
+
+                    foreach (var rich in Model.RichiesteAggregate)
+                    {
+                        if (rich.ListaRichiesteAggregate.Count == 1)
+                        {
+                            <tbody>
+                                @Html.Partial("_contentRow",
+                                              //new myRaiCommonModel.ContentRowModel(rich.ListaRichiesteAggregate.First().ID)
+                                              new myRaiCommonModel.ContentRowModel()
+                                              {
+                                                  Richiesta= rich.ListaRichiesteAggregate.First(),
+                                                  OpenByUfficioPersonale = false,
+                                                  IDSTATOricercato = null,
+                                                  MyOffice = Model.MyOffice,
+                                                  OpenByUfficioAmministrazione = false,
+                                                  OperazioniAvviateAny = false,
+                                                  IsOpenByApprovazioneResponsabileGestione=true
+                                              })
+                            </tbody>
+
+                        }
+                        else
+                        {
+                            <tbody class="js-table-sections-header">
+                                <tr>
+                                    <td>
+
+                                        @Html.Partial("_profiloimage", new                                                                  myRaiCommonModel.ProfiloImageModel() {
+                                     InServizio = null,
+                                     Matricola = rich.Matricola,
+                                     Row1 = rich.ListaRichiesteAggregate[0].NOMINATIVO,
+                                     Row2 = "Matricola " + rich.Matricola,
+                                     display="inline"
+
+                                 })
+
+                                    </td>
+                                    <td>
+                                        <span class="rai-label rai-label-interactive"
+                                              style="">
+                                            @rich.ListaRichiesteAggregate.Count() richieste
+                                        </span>
+                                    </td>
+                                    <td></td>
+                                    <td></td>
+                                    <td style="padding-top: 9px;width:20px;text-align:right;padding-right:22px" class="interactive-primary-color text-center">
+                                        <i class="fa fa-angle-down" style="font-size:20px"></i>
+                                    </td>
+                                </tr>
+                            </tbody>
+                            <tbody class="tbodydata" style="border:none ">
+
+                                @foreach (var r in rich.ListaRichiesteAggregate)
+                                {
+                                    //r.InCaricoANessuno = true;
+
+                                    @Html.Partial("_contentRow",
+new myRaiCommonModel.ContentRowModel( ) {
+    OpenByUfficioPersonale = false,
+    IDSTATOricercato = null,
+    MyOffice = Model.MyOffice,
+    hideImage = true,
+    OpenByUfficioAmministrazione =false,
+    OperazioniAvviateAny = rich.ListaRichiesteAggregate.Any(x => x.XR_MAT_TASK_IN_CORSO.Any()),
+    IsOpenByApprovazioneResponsabileGestione = true
+})
+                                }
+                            </tbody>
+                        }
+                    }
+
+
+                }
+            </table>
+        </div>
+    </div>
+</section>
+<script>
+    function VisualizzaApprovatoreGestione(id) {
+        VisualizzaGestione(id, true);
+    }
+</script>

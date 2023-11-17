@@ -1,0 +1,129 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model myRai.Controllers.CeitonErrorTable
+
+<section class="panel">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+        </div>
+        <h2 class="panel-title">Elenco log</h2>
+    </header>
+    <div class="panel-body">
+        <div id="wait-error-table" class="text-center" style="display:none;">
+            <i class="fa fa-refresh fa-spin" style="font-size: 22px; color: #ebebeb;"></i>
+        </div>
+        <div id="content-error-table">
+            <div class="row">
+                <div class="col-sm-12" style="height:400px;overflow-y:auto">
+                    @if ( Model.Richieste.Count( ) == 0 )
+                    {
+                        <h4>Nessun record trovato</h4>
+                    }
+                    else
+                    {
+                        <i>Numero record: @Model.Richieste.Count( )</i>
+                        <table class="js-table-sections table table-hover" role="grid" id="erroriTable" aria-label="Errori nelle richieste">
+                            <thead>
+                                <tr>
+                                    <th>Data oper.</th>
+                                    <th>Data rif.</th>
+                                    <th>Matricola</th>
+                                    <th>Flusso</th>
+                                    <th>Errore</th>
+                                    <th>&nbsp;</th>
+                                </tr>
+                            </thead>
+                            @foreach ( var item in Model.Richieste.OrderBy( x => x.Data_Operazione ) )
+                            {
+                                <tbody class="js-table-sections-header">
+                                    <tr role="row">
+                                        <td>@item.Data_Operazione.Value.ToString( "dd/MM/yyyy\nHH:mm" )</td>
+                                        <td>@item.Data_Riferimento.Value.ToString( "dd/MM/yyyy" )</td>
+                                        <td>@item.Matricola.Substring( 1 )</td>
+                                        <td>Da @item.Origine a @item.Destinazione</td>
+                                        <td>@item.Desc_Messaggio_Errore_Flusso</td>
+                                        <td><i class="icon icon-info" onclick="ShowMessage(@item.Messaggio_Soap)"></i></td>
+                                    </tr>
+                                </tbody>
+                                <tbody class="tbodydata">
+                                    @if ( item.wsGappCeiton_Operazioni != null && item.wsGappCeiton_Operazioni.Count( ) > 0 )
+                                    {
+                                        <tr>
+                                            <td colspan="5">
+                                                <table class="table table-bordered table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Pr.</th>
+                                                            <th>Operazione</th>
+                                                            <th>Turno Attuale Gapp</th>
+                                                            <th>Turno pianificato</th>
+                                                            <th>Eccezione</th>
+                                                            <th>Errore</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach ( var ope in item.wsGappCeiton_Operazioni.OrderBy( x => x.Progressivo ) )
+                                                        {
+
+                                                            <tr>
+                                                                <td>@ope.Progressivo</td>
+                                                                <td>
+                                                                    @if ( ope.Tipo_Operazione == "M" )
+                                                                    {
+                                                                        <span>Modifica</span>
+                                                                    }
+                                                                    else if ( ope.Tipo_Operazione == "I" )
+                                                                    {
+                                                                        <span>Inserimento</span>
+                                                                    }
+                                                                    else if ( ope.Tipo_Operazione == "C" )
+                                                                    {
+                                                                        <span>Cancellazione</span>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span>@ope.Tipo_Operazione</span>
+                                                                    }
+                                                                </td>
+                                                                <td>@ope.Turno_Attuale_Gapp</td>
+                                                                <td>@ope.Turno_Pianificato</td>
+                                                                <td>@ope.Cod_Eccezione</td>
+                                                                <td>@ope.Desc_Messaggio_Errore</td>
+                                                            </tr>
+
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td colspan="5" class="tex-center">
+                                                <em>Nessuna operazione trovata</em>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            }
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+
+<script type="text/javascript">
+    InitDatePicker();
+
+
+
+
+</script>

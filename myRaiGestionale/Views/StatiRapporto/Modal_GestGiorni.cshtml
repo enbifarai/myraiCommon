@@ -1,0 +1,190 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiCommonModel
+@model  EventoModel
+
+@{ 
+    var list = Model.Info.OrderBy(x => x.DataInizio).ToList();
+}
+
+<input type="hidden" id="dett-gg-id" value="@Model.IdEvento" />
+<div class="row">
+    <div class="col-sm-12 text-right">
+        <button class="btn rai-btn-small" onclick="SwAggiungiPeriodo()">Aggiungi periodo</button>
+    </div>
+</div>
+<div class="row push-20">
+    <div class="col-sm-12">
+        <table class="table rai-table rai-table rai-table-vcenter">
+            <thead>
+                <tr>
+                    <th>Data inizio</th>
+                    <th>Data fine</th>
+                    <th>Numero giorni</th>
+                    <th>Giorni aggiuntivi</th>
+                    <th class="rai-table-td-action"></th>
+                </tr>
+            </thead>
+            <tbody id="rowperiodi">
+                @for (int i = 0; i < list.Count(); i++)
+                {
+                    var item = list[i];
+
+                    <tr data-info-periodo>
+                        <td>
+                            <input class="form-control js-datetimepicker" data-format="DD/MM/YYYY" data-locale="it" data-info-inizio type="text" value="@item.DataInizio.ToString("dd/MM/yyyy")" @(i == 0 ? "disabled" : "") />
+                        </td>
+                        <td>
+                            <input class="form-control js-datetimepicker" data-format="DD/MM/YYYY" data-locale="it" data-info-fine type="text" value="@item.DataFine.Value.ToString("dd/MM/yyyy")" @(i != Model.Info.Count() - 1 && Model.Info.Count() != 1 ? "disabled" : "") />
+                        </td>
+                        <td>
+                            <input class="form-control" data-info-gg type="number" value="@item.NumeroGiorniMax" />
+                        </td>
+                        <td>
+                            <input class="form-control" data-info-gg-extra type="number" value="@item.NumeroGiorniExtra" />
+                        </td>
+                        <td>
+                            <button class="btn btn-action-icon" @(i != Model.Info.Count() - 1 ? "disabled" : "") onclick="SwEliminaPeriodo(this)"><i class="fa fa-times feedback-error-color"></i></button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm-12">
+        <button class="btn rai-btn-small full-width" onclick="SwSalvaGiornate()">Salva</button>
+    </div>
+</div>
+
+<script>
+    InitDatePicker();
+    function SwSalvaGiornate() {
+        event.preventDefault();
+
+        //Salvataggio
+        debugger
+        var periodi = new Array();
+        $('[data-info-periodo]').each(function (i, element) {
+            periodi.push({
+                DataInizio: $(element).find('[data-info-inizio]').val(),
+                DataFine: $(element).find('[data-info-fine]').val(),
+                NumeroGiorniMax: $(element).find('[data-info-gg]').val(),
+                NumeroGiorniExtra: $(element).find('[data-info-gg-extra]').val()
+            });
+        });
+
+        for (var i = 0; i < periodi.length - 1; i++) {
+            let d1 = moment(periodi[i].DataFine, 'DD/MM/YYYY');
+            let d2 = d1.add(1, 'd');
+            if (periodi[i + 1].DataInizio != d2.format('DD/MM/YYYY')) {
+                swal({
+                    title: "Attenzione",
+                    text: 'Periodi non consecutivi',
+                    type: 'warning'
+                });
+                return;
+            }
+        }
+
+        if (periodi[periodi.length - 1].DataFine != '@Model.DataFine.ToString("dd/MM/yyyy")') {
+            swal({
+                title: "Attenzione",
+                text: 'Non è stato coperto interamente il periodo',
+                type: 'warning'
+            });
+            return;
+        }
+
+         $.ajax({
+                url: '@(Url.Action("Save_Giorni", "StatiRapporto"))',
+                type: "POST",
+                cache: false,
+                async: false,
+                data: JSON.stringify({
+                    idEvento: @Model.IdEvento,
+                    info:periodi
+                }),
+                contentType: "application/json; charset=utf-8",
+                success: function (response) {
+                    if (response=="OK")
+                    {
+                        swal({
+                            title: "Dati salvati con successo",
+                            text: '',
+                            type: 'success'
+                        });
+                        RaiUpdateWidget("block-stati", "/StatiRapporto/Modal_Dipendente", "replaceId", { idPersona: @Model.IdPersona })
+                        if ($('#form-ricerca-dipendente[action="/StatiRapporto/RicercaDipendente"]').length > 0) {
+                            $('#form-ricerca-dipendente[action="/StatiRapporto/RicercaDipendente"]').submit();
+                        }
+                        
+                    }
+                    else
+                    {
+                        swal({
+                            title: "Si è verificato un errore",
+                            text: response,
+                            type: 'error'
+                        });
+                    }
+                },
+                error: function (err) {
+                    swal({
+                        title: "Si è verificato un errore\n",
+                        text: '',
+                        type: 'error'
+                    });
+                }
+            });
+
+
+    }
+
+    function SwAggiungiPeriodo() {
+        let lastFine = $('[data-info-periodo]:last [data-info-fine]').val();
+        let infoGG = $('[data-info-periodo]:last [data-info-gg]').val();
+        let infoGGExtra = $('[data-info-periodo]:last [data-info-gg-extra]').val();
+        let newInizio = moment(lastFine, 'DD/MM/YYYY').add(1, 'd').format('DD/MM/YYYY');
+
+        let newRow = '<tr data-info-periodo>' +
+            '<td><input class="form-control js-datetimepicker" data-format="DD/MM/YYYY" data-locale="it" data-info-inizio type="text" value="'+newInizio+'" /></td>' +
+            '<td><input class="form-control js-datetimepicker" data-format="DD/MM/YYYY" data-locale="it" data-info-fine type="text" value="@Model.DataFine" /></td>' +
+            '<td><input class="form-control" data-info-gg type="number" value="'+infoGG+'" /></td>' +
+            '<td><input class="form-control" data-info-gg-extra type="number" value="'+infoGGExtra+'" /></td>' +
+            '<td><button class="btn btn-action-icon" onclick="SwEliminaPeriodo(this)"><i class="fa fa-times feedback-error-color"></i></button></td>' +
+            '</tr>';
+        $('#rowperiodi').append(newRow);
+        InitDatePicker();
+        SwUpdateStatus();
+    }
+    function SwEliminaPeriodo(button) {
+        let lastFine = $(button).closest('tr').find('[data-info-fine]').val();
+        $(button).closest('tr').remove();
+        $('[data-info-periodo]:last [data-info-fine]').val(lastFine);
+        SwUpdateStatus();
+    }
+
+    function SwUpdateStatus() {
+        debugger
+        let countElem = $('[data-info-periodo]').length;
+        $('[data-info-periodo]').each(function (i, element) {
+            if (i < countElem - 1) {
+                $(element).find('[data-info-inizio]').prop('disabled', true);
+                $(element).find('[data-info-fine]').prop('disabled', true);
+                $(element).find('button').prop('disabled', true);
+            }
+            else {
+                if (i == 0) {
+                    $(element).find('[data-info-inizio]').prop('disabled', true);
+                }
+                else {
+                    $(element).find('[data-info-inizio]').prop('disabled', false);
+                }
+                $(element).find('[data-info-fine]').prop('disabled', false);
+                $(element).find('button').prop('disabled', false);
+            }
+
+        });
+    }
+</script>

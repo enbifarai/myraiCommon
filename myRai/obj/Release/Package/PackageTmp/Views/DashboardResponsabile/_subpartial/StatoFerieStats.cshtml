@@ -1,0 +1,148 @@
+﻿@using myRaiCommonModel.DashboardResponsabile
+@model StatoFerieStatsVM
+
+<section class="rai panel">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+        </div>
+        <h2 class="panel-title">Monitoraggio ferie</h2>
+    </header>
+    <div class="panel-body">
+        @{
+            if ( Model.Dati != null && Model.Dati.Any( ) )
+            {
+                foreach ( var d in Model.Dati.OrderBy( w => w.CodiceSedeGapp ).ToList( ) )
+                {
+                    if ( d.Dipendenti != null && d.Dipendenti.Any( ) )
+                    {
+                        string testoSede = string.Format( "{0} - {1}" , d.CodiceSedeGapp , d.DescrizioneSedeGapp );
+                        <div class="row border-neutral-10-b">
+                            <div class="col-sm-12 col-xs-12 push-5">
+                                <span><b>@(testoSede)</b></span>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-xl-10 col-lg-9 col-sm-8 col-xs-7">
+                                @{
+                                    float p = 0;
+                                    float scostamento = 0;
+                                    int percentuale = 0;
+
+                                    if ( d.GiorniPianificatiTotali > 0 )
+                                    {
+                                        // percentuale pianificazione ad oggi
+                                        float t1 = ( ( ( float ) d.GiorniPianificatiAdOggi / ( float ) d.GiorniPianificatiTotali ) );
+
+                                        // scostamento tra effettive ad oggi e pianificate ad oggi
+                                        //float t2 = ( ( float ) d.GiorniEffettiviTotali - ( float ) d.GiorniPianificatiAdOggi );
+                                        //t2 /= ( float ) d.GiorniPianificatiAdOggi;
+                                        //t2 *= 100;
+
+                                        float t2 = ( ( ( float ) d.GiorniEffettiviTotali / ( float ) d.GiorniPianificatiAdOggi ) );
+                                        t2 = ( t2 * 100 );
+
+                                        p = ( t1 * 100 );
+                                        scostamento = ( int ) Math.Round( t2 );
+                                    }
+
+                                    percentuale = ( int ) Math.Round( p );
+                                }
+                                <div class="rai progress progress-chart progress-xl light" style="height: 23px;">
+                                        @{
+                                            string txScostamento = "";
+                                            txScostamento = scostamento.ToString( ) + "%";
+                                        if ( scostamento < 100 )
+                                        {
+                                            int nuovo = ( percentuale * ( int ) scostamento ) / 100;
+                                            <div class="progress-bar rai-bg-primary" role="progressbar" aria-valuenow="@nuovo" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                                                <span class="sottotitolettoBox progress-bar-tooltip" id="span_before" style="line-height: 23px; font-size: 21px;">@(txScostamento)</span>
+                                            </div>
+
+                                            int nuovaPercentuale = percentuale - nuovo;
+
+                                            <div class="progress-bar rai-bg-primary" role="progressbar" aria-valuenow="@(nuovaPercentuale.ToString())" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                                                <span class="sottotitolettoBox progress-bar-tooltip" id="span_before" style="line-height: 23px; font-size: 21px;"></span>
+                                            </div>
+
+                                            int diffRimasta = 100 - ( nuovaPercentuale + nuovo );
+
+                                            <div class="progress-bar rai-bg-primary" role="progressbar" aria-valuenow="@(diffRimasta)" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                                                <span class="sottotitolettoBox progress-bar-tooltip" id="span_before" style="line-height: 23px; font-size: 21px;"></span>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="progress-bar rai-bg-primary" role="progressbar" aria-valuenow="@(percentuale.ToString())" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                                                <span class="sottotitolettoBox progress-bar-tooltip" id="span_before" style="line-height: 23px; font-size: 21px;">@(txScostamento)</span>
+                                    </div>
+
+                                            int diffRimasta = 100 - percentuale;
+
+                                            <div class="progress-bar rai-bg-primary" role="progressbar" aria-valuenow="@(diffRimasta.ToString())" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                                                <span class="sottotitolettoBox progress-bar-tooltip" id="span_before" style="line-height: 23px; font-size: 21px;"></span>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                            <div class="col-xl-2 col-lg-3 col-sm-4 col-xs-5">
+                                <div class="rai-widget-cta-action" style="margin-top:-10px;">
+                                    <a href="javascript:ShowStatoFerieModal('@d.CodiceSedeGapp', null, 1, '@(testoSede)')" aria-label="Visualizzazione estesa" class="btn btn-action-default font-w600 bg-interactive-secondary interactive-primary-color">Vedi</a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+
+                <br />
+                <br />
+                <div class="row no-margin-left-right">
+                    <div class=" col-12 col-xs-12 col-md-6 col-lg-6 col-xl-6">
+                        <span class="rai-font-sm"><i class="rai-chart-legend bg-default color1"></i>Fruite ad oggi</span>
+                    </div>
+                    <div class=" col-12 col-xs-12 col-md-6 col-lg-6 col-xl-6">
+                        <span class="rai-font-sm"><i class="rai-chart-legend bg-default color2"></i>Pianificate ad oggi</span>
+                    </div>
+                    <div class=" col-12 col-xs-12 col-md-6 col-lg-6 col-xl-6">
+                        <span  class="rai-font-sm"><i class="rai-chart-legend bg-default color3"></i>Pianificate Totali</span>
+                    </div>
+                </div>
+                <br />
+            }
+        }
+    </div>
+</section>
+
+<script type="text/javascript">
+    $(function () {
+        $(".progress-bar").each(function () {
+            each_bar_width = $(this).attr('aria-valuenow');
+            $(this).width(each_bar_width + '%');
+        });
+    });
+
+    function ShowStatoFerieModal(sede, anno, page, descSede) {
+        $.ajax({
+            type: "POST",
+            url: "@Url.Action( "ChartStatoFerie", "DashboardResponsabile" )",
+            data: {
+                sede: sede,
+                anno: anno,
+                page: page,
+                descSede: descSede
+            },
+            dataType: "html",
+            success: function (risposta) {
+                $("#statoferie-modal-content").html(risposta);
+                $("#statoferie-modal").modal("show");
+                $("#statoferie-modal").on('shown.bs.modal', function () {
+                    CaricaGrafico();
+                });
+            },
+            error: function () {
+                    alert("Chiamata fallita!");
+                }
+            });
+    }
+</script>

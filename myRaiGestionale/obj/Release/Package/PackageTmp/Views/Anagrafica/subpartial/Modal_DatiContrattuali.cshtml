@@ -1,0 +1,184 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+@using myRaiGestionale.Controllers
+@model EventoModel
+
+@{
+    var modalTitle = "";
+    var urlActionSelect = "";
+    var urlActionSelectSec = "";
+    var codice = "";
+    List<SelectListItem> eventi = null;
+    switch (Model.Tipo)
+    {
+        case TipoEvento.Sede:
+            codice = "Sede";
+            modalTitle = "Modifica sede";
+            urlActionSelect = Url.Action("GetSedi", "Anagrafica");
+            break;
+        case TipoEvento.Servizio:
+            codice = "Servizio";
+            modalTitle = "Modifica servizio";
+            urlActionSelect = Url.Action("GetServizi", "Anagrafica");
+            urlActionSelectSec = Url.Action("GetSezioni", "Anagrafica");
+            break;
+        case TipoEvento.Sezione:
+            codice = "Sezione";
+            modalTitle = "Modifica sezione";
+            urlActionSelect = Url.Action("GetSezioni", "Anagrafica");
+            break;
+        default:
+            break;
+    }
+    eventi = AnagraficaController.GetEventi(Model.Tipo);
+
+    var enableMod = true;
+    var formAction = "Save_RichDatiContrattuali";
+    var buttonText = "Inserisci richiesta";
+    if (Model.IdRichiesta != 0)
+    {
+        enableMod = false;
+        formAction = "Save_DatiContrattuali";
+        buttonText = "Approva";
+
+        modalTitle = "Convalida " + modalTitle.ToLower();
+    }
+}
+
+@using (Html.BeginModal(modalTitle))
+{
+    using (Html.BeginPanel(PanelType.NoHeader, "", false))
+    {
+        <div id="head-anag-@(enableMod?"true":"false")">
+            <div class="height-100">
+
+            </div>
+        </div>
+
+        using (Html.BeginForm(formAction, "Anagrafica", FormMethod.Post, new { @id = "form-contract" }))
+        {
+            <div class="form-group">
+                @Html.HiddenFor(m => m.Matricola)
+                @Html.HiddenFor(m => m.IdPersona)
+                @*@Html.HiddenFor(m => m.Tipo)*@
+                <input type="hidden" id="Tipo" name="Tipo" value="@Model.Tipo" />
+                @Html.HiddenFor(m => m.CodiceRif)
+                @Html.HiddenFor(m => m.IdRichiesta)
+
+                @if (enableMod)
+                {
+                    <div class="row push-10">
+                        <div class="col-sm-12 push-10">
+                            @Html.LabelForRequiredObbl(m => m.DataInizio, "Data inizio", new { @class = "rai-caption" })
+                            <div class="input-group">
+                                <span class="input-group-addon" style="cursor: pointer" onclick="$('#DataInizio').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                                @Html.TextBoxFor(m => m.DataInizio, new { @class = "js-datetimepicker  form-control", data_format = "DD/MM/YYYY", data_minData = Model.MinDate.ToString("MM/dd/yyyy"), data_maxData = Model.MaxDate.AddDays(-1).ToString("MM/dd/yyyy"), data_locale = "it", placeholder = "Selezionare una data", autocomplete = "off", required = "required", onchange = "onChangeDataInizio()" })
+                            </div>
+                            @Html.ValidationMessageFor(m => m.DataInizio)
+                        </div>
+                        <div class="col-sm-12 push-10">
+                            @Html.LabelForRequiredObbl(m => m.DataFine, "Data fine", new { @class = "rai-caption" })
+                            <div class="input-group">
+                                <span class="input-group-addon" style="cursor: pointer" onclick="$('#DataFine').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                                @Html.TextBoxFor(m => m.DataFine, new { @class = "js-datetimepicker  form-control", data_format = "DD/MM/YYYY", data_minData = Model.DataInizio.ToString("MM/dd/yyyy"), data_maxData= Model.MaxDate.ToString("MM/dd/yyyy"), data_locale = "it", placeholder = "Selezionare una data", autocomplete = "off", required="required" })
+                            </div>
+                            @Html.ValidationMessageFor(m=>m.DataFine)
+                        </div>
+                        <div class="col-sm-12 push-10">
+                            @Html.LabelForRequiredObbl(m => m.Codice, codice, new { @class = "rai-caption" })
+                            @Html.RaiAsyncSelectFor(m => m.Codice, urlActionSelect, minCharInput: 1, expandView: true, getParametersFunction: "getParametriContr()", attributes: new { required = "required" }, tipoFiltro: SelectFilterType.AllStartsWith, showCodeInDropdown: true)
+                            @Html.ValidationMessageFor(m => m.Codice)
+                        </div>
+                        @if (Model.Tipo == TipoEvento.Servizio)
+                        {
+                        <div class="col-sm-12 push-10">
+                            @Html.LabelForRequiredObbl(m => m.CodiceSec, "Sezione", new { @class = "rai-caption" })
+                            @Html.RaiAsyncSelectFor(m => m.CodiceSec, urlActionSelectSec, minCharInput: 1, expandView: true, getParametersFunction: "getParametriSecContr()", attributes: new { required = "required" }, tipoFiltro: SelectFilterType.AllStartsWith, showCodeInDropdown: true)
+                            @Html.ValidationMessageFor(m => m.Codice)
+                        </div>
+                        }
+                        <div class="col-sm-12 push-10">
+                            @Html.LabelForRequiredObbl(m => m.CodiceEvento, "Evento", new { @class = "rai-caption" })
+                            @Html.RaiSelectFor(m => m.CodiceEvento, eventi, expandView: true, attributes: new { required = "required" }, tipoFiltro: SelectFilterType.StartsWith)
+                            @Html.ValidationMessageFor(m => m.CodiceEvento)
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="row push-10">
+                        <div class="col-sm-12 push-10">
+                            @Html.LabelFor(m => m.DataInizio, "Data inizio", new { @class = "rai-caption" })
+                            <div class="input-group">
+                                @Html.TextBoxFor(m => m.DataInizio, new { @class = "js-datetimepicker  form-control", data_format = "DD/MM/YYYY", data_minData = Model.MinDate.ToString("MM/dd/yyyy"), data_locale = "it", placeholder = "Selezionare una data", autocomplete = "off", @readonly = "readonly" })
+                                <span class="input-group-addon"><i class="fa fa-lock"></i></span>
+                            </div>
+                        </div>
+                        <div class="col-sm-12 push-10">
+                            @Html.LabelFor(m => m.DataFine, "Data fine", new { @class = "rai-caption" })
+                            <div class="input-group">
+                                @Html.TextBoxFor(m => m.DataFine, new { @class = "js-datetimepicker  form-control", data_format = "DD/MM/YYYY", data_minData = Model.MinDate.ToString("MM/dd/yyyy"), data_locale = "it", placeholder = "Selezionare una data", autocomplete = "off", @readonly = "readonly" })
+                                <span class="input-group-addon"><i class="fa fa-lock"></i></span>
+                            </div>
+                        </div>
+                        <div class="col-sm-12 push-10">
+                            @Html.LabelFor(m => m.Codice, codice, new { @class = "rai-caption" })
+                            @Html.RaiAsyncSelectFor(m => m.Codice, urlActionSelect, minCharInput: 1, expandView: true, getParametersFunction: "getParametriContr()", tipoFiltro: SelectFilterType.AllStartsWith, showCodeInDropdown: true, readOnly: true)
+                        </div>
+                        @if (Model.Tipo == TipoEvento.Servizio)
+                        {
+                            <div class="col-sm-12 push-10">
+                                @Html.LabelFor(m => m.CodiceSec, "Sezione", new { @class = "rai-caption" })
+                                @Html.RaiAsyncSelectFor(m => m.CodiceSec, urlActionSelectSec, minCharInput: 1, expandView: true, getParametersFunction: "getParametriSecContr()", tipoFiltro: SelectFilterType.AllStartsWith, showCodeInDropdown: true, readOnly: true)
+                            </div>
+                        }
+                        <div class="col-sm-12 push-10">
+                            @Html.LabelFor(m => m.CodiceEvento, "Evento", new { @class = "rai-caption" })
+                            @Html.RaiSelectFor(m => m.CodiceEvento, eventi, expandView: true, tipoFiltro: SelectFilterType.StartsWith, readOnly: true)
+                        </div>
+                    </div>
+                }
+                <div class="row ">
+                    <div class="col-sm-12 push-20 rai-btn-fill">
+                        @if (Model.IdRichiesta > 0)
+                        {
+                            <button class="btn rai-btn-secondary" onclick="Save_DatiContr(this, false)">Cancella</button>
+                        }
+                        <button class="btn btn-primary" onclick="Save_DatiContr(this, true)">@buttonText</button>
+                    </div>
+                </div>
+
+            </div>
+        }
+    }
+}
+
+<script>
+    RaiUpdateWidget('head-anag-@(enableMod?"true":"false")', '@Url.Action("Header_DatiDipendente", "Anagrafica")', 'html', { idPersona:@Model.IdPersona, viewInfo: 'matricola,sede,servizio,sezione' });
+    InitDatePicker();
+    $('#Codice').parent().attr('data-rai-select-onchange', 'onCodiceChange()');
+
+    function onCodiceChange() {
+        if ($('#CodiceSec').length > 0) {
+            RaiSelectClear('CodiceSec');
+        }
+    }
+
+    function onChangeDataInizio() {
+        if ($('#DataInizio').val() != ''){
+            $("#DataFine").data('DateTimePicker').minDate($("#DataInizio").val());
+        }
+    }
+
+    function getParametriContr() {
+        return {
+            codiceRif: $('#CodiceRif').val()
+        };
+    }
+
+    function getParametriSecContr() {
+        return {
+            codiceRif: $('#Codice').val()
+        }
+    }
+</script>

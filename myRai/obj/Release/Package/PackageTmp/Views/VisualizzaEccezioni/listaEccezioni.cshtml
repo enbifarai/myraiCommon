@@ -1,0 +1,120 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model VisualizzaEccezioniModel
+<section class="panel" id="panel-schede-ecc">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblEccezioni" tabindex="0" aria-expanded="true"></a>
+        </div>
+        <h2 id="lblEccezioni" class="panel-title">Eccezioni presenti</h2>
+    </header>
+    <div id="schede-eccez" class="block panel-body no-padding">
+        <div class="block-content tab-content" style="padding-top:4px">
+            <div class="table-responsive">
+                <table class="table table-hover rai-table rai-table-vcenter" id="table-ecc" role="grid">
+                    <thead>
+                        <tr>
+                            <th>Eccezione</th>
+                            <th>Tipologia</th>
+                            <th>Area Tematica</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{int row = 0;}
+
+                        @if ( Model.Eccezioni == null || Model.Eccezioni.Count( ) == 0 )
+                        {
+                            @Html.Partial( "_NoDati" )
+                        }
+                        @foreach ( var item in Model.Eccezioni )
+                        {
+                            if ( item.codice.StartsWith( "$" ) || item.codice.StartsWith( "+" ) )
+                            { continue; }
+
+                            row++;
+                            Boolean NonPresente = item.data_inizio_validita == default( DateTime );
+                            Boolean MaiModificata = item.data_modifica == null;
+                            int tipo = 2;
+                            if ( NonPresente )
+                            {
+                                tipo = 3;
+                            }
+                            else
+                                if ( MaiModificata )
+                            {
+                                tipo = 1;
+                            }
+                            string classeCss = "";
+
+                            string ariaLabel = item.codice + ":" + item.descrittiva + " - " + item.definizione;
+                            if ( item.MyRai_Regole_TipoAssenza != null )
+                            {
+                                ariaLabel += ". Tipo assenza:" + item.MyRai_Regole_TipoAssenza.tipo_assenza;
+                            }
+                            string strTematiche = "";
+                            if ( item.MyRai_Regole_SchedeEccezioni_Tematiche != null )
+                            {
+                                List<string> tematiche = new List<string>( );
+                                foreach ( var tem in item.MyRai_Regole_SchedeEccezioni_Tematiche.ValidToday( ) )
+                                {
+                                    tematiche.Add( tem.MyRai_Regole_Tematiche.tematica );
+                                }
+                                if ( tematiche.Count > 0 )
+                                {
+                                    strTematiche = String.Join( ", " , tematiche.ToArray( ) );
+                                    ariaLabel += ". Tematiche:" + strTematiche;
+                                }
+                            }
+                            <tr class="tipo-@tipo" role="row" onfocus="onFocusRow(this)" tabindex="@(row==1?"0":"-1")">
+                                <td>
+                                    @if ( NonPresente )
+                                    {
+                                    }
+                                    else
+                                    {
+                                        if ( MaiModificata )
+                                        {
+                                            classeCss = "text-danger";
+                                        }
+                                        else
+                                        {
+                                            classeCss = "text-primary";
+                                        }
+                                    }
+                                    <span class="@classeCss"><b>@item.codice : @item.descrittiva</b></span>
+                                </td>
+                                <td>
+                                    @if ( item.MyRai_Regole_TipoAssenza != null )
+                                    {
+                                        <span class="@classeCss"> @item.MyRai_Regole_TipoAssenza.tipo_assenza</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if ( item.MyRai_Regole_SchedeEccezioni_Tematiche != null )
+                                    {
+                                        <span class="@classeCss">@strTematiche</span>
+                                    }
+                                </td>
+                                <td style="text-align:right;padding:7px;">
+                                    @if ( NonPresente )
+                                    {
+                                        <a class="btn-action-icon"
+                                           onclick="newEccezione('@item.codice');" role="link" tabindex="-1"><i class="fa fa-plus"></i></a>
+                                    }
+                                    else
+                                    {
+                                        <a class="btn rai-btn-small" onclick="showDettaglioEccezione('@item.codice');" role="link" tabindex="-1">Anteprima</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <input type="hidden" id="eccezioni-spettanti" value="@(String.Join(",",Model.Visibili.ToArray()))" />
+</section>

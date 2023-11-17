@@ -1,0 +1,260 @@
+﻿@using myRaiCommonModel
+@using myRaiHelper
+@model DelegaModelVM
+
+<style>
+    .rai-select-popover-top .rai-select-popover-container {
+        bottom: inherit;
+        top: 4px;
+    }
+
+    .rai-select-popover-container {
+        z-index: 1000;
+    }
+</style>
+
+@{
+    string urlActionSelect = Url.Action("GetDestinatario", "Deleghe");
+}
+
+<div class="block block-transparent no-margin-bottom">
+    <div class="block-header">
+        <label class="rai-font-modal-heading">Inserimento nuova pratica</label>
+        <div class="block-options">
+            <button data-dismiss="modal" class="btn btn-action-icon" onclick="$(this).parent('.modal').css('z-index', '');"><i class="glyphicon glyphicon-remove"></i></button>
+        </div>
+    </div>
+    <div class="block-content">
+        @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Creazione delega", false))
+        {
+            <div class="wizard-progress" id="wizAuto">
+                <ul class="wizard-steps">
+                    <li id="deleghe-tab1" class="tabhead active">
+                        <a href="#sez-1" data-toggle="tab" aria-expanded="true"><span>1</span>Scelta destinatario</a>
+                    </li>
+                    <li id="deleghe-tab2" class="tabhead disable">
+                        <a href="#sez-2" data-toggle="tab" aria-expanded="false"><span>2</span>Scelta funzioni</a>
+                    </li>
+                    <li id="deleghe-tab3" class="tabhead disable">
+                        <a href="#sez-3" data-toggle="tab" aria-expanded="false"><span>3</span>Riepilogo</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="tab-content" style="border:none;box-shadow:none;">
+                <div class="tab-pane active" id="sez-1" role="tabpanel">
+                    <div class="row">                        
+                        <div class="col-xs-12 push-10">
+                            <div class="form-group">
+                                <div class="row no-margin">
+                                    <div class="col-xs-12">
+                                        @Html.LabelForRequiredObbl(m => m.NomeDelega, "Nome delega", new { @class = "rai-caption" })
+                                        <input id="NomeDelega" style="width:100%;" type="text" class="form-control form-control-value" onchange="Deleghe_AbilitaButton_Tab_1();" value="" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xs-12 push-10">
+                            <div class="form-group">
+                                <div class="row no-margin">
+                                    <div class="col-xs-12">
+                                        @Html.LabelForRequiredObbl(m => m.MatricolaDelegato, "Dipendente delegato", new { @class = "rai-caption" })
+                                        @Html.RaiAsyncSelectFor(m => m.MatricolaDelegato, urlActionSelect, minCharInput: 3, expandView: false, tipoFiltro: SelectFilterType.AllContains, showCodeInDropdown: false, attributes: new { required = "required", id = "MatricolaDelegato" }, onSelectchange: "Deleghe_AbilitaButton_Tab_1();")
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xs-12 push-10">
+                            <div class="form-group">
+                                <div class="row no-margin">
+                                    <div class="col-xs-12">
+                                        @Html.LabelForRequiredObbl(model => model.DataInizioDelega, "Data inizio delega", new { @class = "rai-caption" })
+                                        <div id="calendario_DataInizioDelega" class="input-group mb-md">
+                                            <span onclick="$('#DataInizioDelega').datetimepicker('show')" class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                                            <input class="js-datetimepicker form-control" onchange="Deleghe_AbilitaButton_Tab_1();" data-format="DD/MM/YYYY" data-locale="it" type="text" id="DataInizioDelega" placeholder="Data inizio delega" value="" required="required">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xs-12 push-10">
+                            <div class="form-group">
+                                <div class="row no-margin">
+                                    <div class="col-xs-12">
+                                        @Html.LabelForRequiredObbl(model => model.DataFineDelega, "Data fine delega", new { @class = "rai-caption" })
+                                        <div id="calendario_DataFineDelega" class="input-group mb-md">
+                                            <span onclick="$('#DataFineDelega').datetimepicker('show')" class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                                            <input class="js-datetimepicker form-control" onchange="Deleghe_AbilitaButton_Tab_1();" data-format="DD/MM/YYYY" data-locale="it" type="text" id="DataFineDelega" placeholder="Data fine delega" value="" required="required">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane" id="sez-2" role="tabpanel">
+                    <div class="row">
+                        <div class="col-xs-12 push-20">
+                            <table class="table rai-table rai-table-vcenter rai-table-panel rai-table-collapsable">
+                                <thead>
+                                    <tr>
+                                        <th colspan="2" style="padding-bottom:4px">
+                                            <span class="as-block-title">Elenco abilitazioni</span>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                @if (Model.Abilitazioni != null && Model.Abilitazioni.Any(x => x.ID_PROFILO != null || x.ID_SUBFUNZ != null))
+                                {
+                                    foreach (var grProf in Model.Abilitazioni.Where(x => x.ID_PROFILO != null || x.ID_SUBFUNZ != null).GroupBy(x => x.ID_PROFILO.HasValue))
+                                    {
+                                        if (grProf.Key)
+                                        {
+                                            <tbody class="rai-table-collapsable-header">
+                                                <tr>
+                                                    <td>
+                                                        <span class="rai-font-md-bold">*PROFILI</span>
+                                                    </td>
+                                                    <td class="text-right">
+                                                        <i class="fa fa-chevron-down"></i>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                            <tbody>
+                                                <tr>
+                                                    <td colspan="2" class="no-padding">
+                                                        <table class="table rai-table rai-table-panel rai-table-vcenter table-striped">
+                                                            @foreach (var item in grProf)
+                                                            {
+                                                                var profilo = item.XR_HRIS_ABIL_PROFILO;
+                                                                <tr data-abil="@item.ID_ABIL">
+                                                                    <td>
+                                                                        <span class="rai-font-md">@profilo.COD_PROFILO</span><span class="rai-font-md-neutral"> - @profilo.DES_PROFILO</span>
+                                                                        @if (!profilo.IND_ATTIVO)
+                                                                        {
+
+                                                                            <span class="rai-label">Non attivo</span>
+                                                                        }
+                                                                    </td>
+                                                                    <td class="rai-table-td-toggle">
+
+                                                                        <div class="rai-checkbox">
+                                                                            <input onclick="Deleghe_AbilitaButton_Tab_2();" value="@item.ID_ABIL" type="checkbox" id="Delega_check_@item.ID_ABIL">
+                                                                            <label for="check_@item.ID_ABIL"></label>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            }
+                                                        </table>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        }
+                                        else
+                                        {
+                                            foreach (var funz in grProf.Where(x => x.ID_SUBFUNZ != null).GroupBy(x => x.XR_HRIS_ABIL_SUBFUNZIONE.ID_FUNZIONE))
+                                            {
+                                                <tbody class="rai-table-collapsable-header">
+                                                    <tr>
+                                                        <td>
+                                                            <span class="rai-font-md-bold">@funz.First().XR_HRIS_ABIL_SUBFUNZIONE.XR_HRIS_ABIL_FUNZIONE.COD_FUNZIONE</span>
+                                                            <span>- @funz.First().XR_HRIS_ABIL_SUBFUNZIONE.XR_HRIS_ABIL_FUNZIONE.DES_FUNZIONE</span>
+                                                            @if (!funz.First().XR_HRIS_ABIL_SUBFUNZIONE.XR_HRIS_ABIL_FUNZIONE.IND_ATTIVO)
+                                                            {
+
+                                                                <span class="rai-label">Non attivo</span>
+                                                            }
+                                                        </td>
+                                                        <td class="text-right">
+                                                            <i class="fa fa-chevron-down"></i>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                                <tbody>
+                                                    <tr>
+                                                        <td colspan="2" class="no-padding">
+                                                            <table class="table rai-table rai-table-panel rai-table-vcenter table-striped">
+
+                                                                @foreach (var item in funz)
+                                                                {
+                                                                    var subfunz = item.XR_HRIS_ABIL_SUBFUNZIONE;
+                                                                    <tr data-abil="@item.ID_ABIL">
+                                                                        <td>
+                                                                            <span class="rai-font-md">@subfunz.COD_SUBFUNZIONE</span>
+                                                                            <span class="rai-font-md-neutral"> - @subfunz.DES_SUBFUNZIONE</span>
+                                                                            @if (!subfunz.IND_ATTIVO)
+                                                                            {
+
+                                                                                <span class="rai-label">Non attivo</span>
+                                                                            }
+                                                                        </td>
+                                                                        <td class="rai-table-td-toggle">
+                                                                            <div class="rai-checkbox">
+                                                                                <input onclick="Deleghe_AbilitaButton_Tab_2();" value="@item.ID_ABIL" type="checkbox" id="Delega_check_@item.ID_ABIL">
+                                                                                <label for="check_@item.ID_ABIL"></label>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                }
+                                                            </table>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            }
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    <tbody>
+                                        <tr>
+                                            @Html.Partial("_NoDati")
+                                        </tr>
+                                    </tbody>
+                                }
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane" id="sez-3" role="tabpanel">
+                    <div class="row" id="deleghe-div-riepilogo">
+
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+    <div class="block-footer-modal" style="height:60px;">
+        <div class="">
+            <div id="btns-fase1" class="block-footer" style="padding: 5px 2px;">
+                <div class="rai-btn-fill">
+                    <button type="button" id="btns-fase1-prev" class="btn rai-btn-secondary" onclick="">Annulla</button>
+                    <button type="button" id="btns-fase1-next" onclick="Deleghe_btns_fase1_next_Click();" class="btn rai-btn-primary disable">Avanti</button>
+                </div>
+            </div>
+            <div id="btns-fase2" class="block-footer" style="padding: 5px 2px; display:none;">
+                <div class="rai-btn-fill">
+                    <button type="button" id="btns-fase2-prev" class="btn rai-btn-secondary" onclick="Deleghe_btns_fase2_prev_Click();">Indietro</button>
+                    <button type="button" id="btns-fase2-next" onclick="Deleghe_btns_fase2_next_Click();" class="btn rai-btn-primary disable">Avanti</button>
+                </div>
+            </div>
+            <div id="btns-fase3" class="block-footer" style="padding: 5px 2px; display:none;">
+                <div class="rai-btn-fill">
+                    <button type="button" id="btns-fase3-prev" class="btn rai-btn-secondary" onclick="Deleghe_btns_fase3_prev_Click();">Indietro</button>
+                    <button type="button" id="btns-fase3-finish" onclick="Deleghe_btns_fase3_finish_Click();" class="btn rai-btn-primary">Conferma</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    InitDatePicker();
+    $(function () {
+        $('#DataInizioDelega').on('change', function () {
+            Deleghe_AbilitaButton();
+        });
+
+        $('#DataFineDelega').on('change', function () {
+            Deleghe_AbilitaButton();
+        });
+    });
+</script>

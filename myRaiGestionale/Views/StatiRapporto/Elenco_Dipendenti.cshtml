@@ -1,0 +1,138 @@
+﻿@using myRaiCommonModel
+@using myRaiGestionale.Controllers
+@model ResultStati
+
+<input type="hidden" class="test" id="showed" value="@Model.Showed" />
+<input type="hidden" id="totNumber" value="@Model.TotNumber" />
+
+<table class="table rai-table js-table-sections rai-table-vcenter rai-table-panel" id="elenco-dip-table">
+    <thead>
+        <tr>
+            <th>Nominativo</th>
+            <th>Stato</th>
+            <th>Giorni aggiuntivi</th>
+            <th>Invio telematico</th>
+            <th></th>
+            @*<th></th>*@
+        </tr>
+    </thead>
+    @if (Model.List == null || !Model.List.Any())
+    {
+        <tr>
+            <td colspan="7" class="text-center"><span class="rai-font-md-neutral">Non ci sono dati visualizzare</span></td>
+        </tr>
+    }
+    else
+    {
+        foreach (var dip in Model.List)
+        {
+            string nominativo = dip.Cognome + " " + dip.Nome;
+            string servizio = dip.Servizio;
+            if (String.IsNullOrWhiteSpace(nominativo.Trim()))
+            {
+                nominativo = "Anagrafica non trovata";
+            }
+
+            <tbody class="to-append">
+                <tr data-persone="" id="TR_@(dip.IdPersona)" data-iddipendente="@(dip.IdPersona)" role="row" style="margin:2px; border-top:1px solid lightgray; ">
+                    <td data-id-persona="@(dip.IdPersona)">
+                        @Html.ProfileWidget(dip.Matricola, nominativo, null, dip.Servizio, caption: "Matricola " + dip.Matricola)
+                    </td>
+                    <td data-id-persona="@(dip.IdPersona)">
+                        @{
+                            bool isActive = true;
+                            var current = dip.DatiStatiRapporti.Eventi.FirstOrDefault(x => x.DataInizio <= DateTime.Today && x.DataFine >= DateTime.Today && x.ValiditaFine == null);
+                            if (current == null)
+                            {
+                                isActive = false;
+                                current = dip.DatiStatiRapporti.Eventi.Where(x => x.ValiditaFine == null).OrderByDescending(x => x.DataInizio).FirstOrDefault();
+                            }
+                        }
+                        @if (current != null)
+                        {
+                            <label class="rai-label @(isActive && (current.Codice=="SW" || current.Codice=="SW_P")?"rai-label-interactive":"")">
+                                <span>@current.Descrizione</span>
+                            </label>
+                        }
+                        else
+                        {
+                            <span>-</span>
+                        }
+
+                        <br />
+                        @if (current != null)
+                        {<span>Dal @current.DataInizio.ToString("dd/MM/yyyy") al @current.DataFine.ToString("dd/MM/yyyy")</span>}
+                    </td>
+                    <td>
+                        @if (current != null && current.Codice == "SW")
+                        {
+                            var richCurrent = dip.DatiStatiRapporti.Richieste.Where(x => x.ECCEZIONE == "SW");
+                            //&& ((x.DATA_INIZIO_SW <= current.DataFine && current.DataInizio <= x.DATA_FINE_SW)
+                            //|| (x.INIZIO_GIUSTIFICATIVO <= current.DataFine && current.DataInizio <= x.FINE_GIUSTIFICATIVO)));
+
+                            if (richCurrent != null && richCurrent.Any())
+                            {
+                                var listStati = richCurrent.Select(x => x.XR_WKF_OPERSTATI.Where(y => y.COD_TIPO_PRATICA == "SW").Max(y => y.ID_STATO));
+                                if (listStati.Any(x => x < 20))
+                                {
+                                    <span><span class="fa fa-circle feedback-warning-color"></span> In attesa</span>
+                                }
+                                else if (listStati.Any(x => x == 20))
+                                {
+                                    <span><span class="fa fa-circle feedback-success-color"></span> Approvati</span>
+                                }
+                                else
+                                {
+                                    //Se sono tutti successivi vuol dire che sono stati verificati, approvati o no
+                                    <span><span class="fa fa-check feedback-success-color"></span> Verificato</span>
+                                }
+                            }
+                        }
+                    </td>
+                    <td class="rai-table-td-toggle">
+                        @if (current != null)
+                        {
+                            //&& ((x.DATA_INIZIO_SW <= current.DataFine && current.DataInizio <= x.DATA_FINE_SW)
+                            //|| (x.INIZIO_GIUSTIFICATIVO <= current.DataFine && current.DataInizio <= x.FINE_GIUSTIFICATIVO)));
+
+                            
+                            if (!string.IsNullOrWhiteSpace(current.ErroreInvioTelematicoSw) && current.PeriodoDal <= DateTime.Today && current.PeriodoAl >= DateTime.Today && dip.CodSoggettoCr.ToUpper() == "RAI")
+                            {
+                                <a data-toggle="tooltip" title="@current.ErroreInvioTelematicoSw"><span style="color:red;">Errore</span></a>
+                                
+                            }
+                            @*else if (listStati.Any(x => x == 20))
+                                {
+                                    <span style="color:green">Confermato</span>
+                                }*@
+
+                        }
+                    </td>
+                    <td>
+                        @if (dip.DataCessazione < DateTime.Today)
+                        {
+                            <label class="rai-label">Cessato il @dip.DataCessazione.ToString("dd/MM/yyyy")</label>
+                        }
+                    </td>
+                    <td class="text-right">
+                        <button onclick="OpenModalDipStati(@dip.IdPersona, 'modal-dipendente')" class="btn rai-btn-small">Visualizza</button>
+                    </td>
+                </tr>
+            </tbody>
+        }
+        if (Model.Showed < Model.TotNumber)
+        {
+            <tbody class="to-append load-more">
+                <tr>
+                    <td colspan="5" class="">
+                        <button class="btn rai-btn-small full-width" onclick="StatiCaricaAltri(this)">Carica altri</button>
+                    </td>
+                </tr>
+            </tbody>
+        }
+    }
+</table>
+
+<script id="scriptUpdate">
+    UpdateNumber(@Model.Showed, @Model.TotNumber);
+</script>

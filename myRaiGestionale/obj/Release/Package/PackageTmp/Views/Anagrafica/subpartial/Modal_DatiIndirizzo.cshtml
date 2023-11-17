@@ -1,0 +1,201 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+@model IndirizzoModel
+
+@{
+    var titolo = "";
+    switch (Model.Tipologia)
+    {
+        case IndirizzoType.Residenza:
+            titolo = "residenza";
+            break;
+        case IndirizzoType.Domicilio:
+            titolo = "domicilio";
+            break;
+        default:
+            break;
+    }
+
+
+}
+
+@using (Html.BeginModal("Modifica dati " + titolo))
+{
+    <div class="row">
+        <div class="col-xs-12 col-sm-8">
+            @using (Html.BeginPanel(PanelType.Panel, "Dati " + titolo, false))
+            {
+                using (Html.BeginForm("Save_Indirizzo", "Anagrafica", FormMethod.Post, new { id = "form-dati-indirizzo" }))
+                {
+                    <div class="form-group">
+                        @Html.HiddenFor(m => m.Tipologia)
+                        @Html.HiddenFor(m => m.Matricola)
+                        @Html.HiddenFor(m => m.IdPersona)
+                        @if (Model.Tipologia == IndirizzoType.Residenza)
+                        {
+                            @Html.HiddenFor(m=>m.G_PrimoIndirizzo)
+                            @Html.HiddenFor(m=>m.G_Contabilita)
+                            <div class="row">
+                                <div class="col-xs-12 push-10">
+                                    @Html.LabelForRequiredObbl(m => m.G_CambioRes, "Data cambio residenza", new { @class = "rai-caption" })
+                                    <div class="input-group">
+                                        <span class="input-group-addon" style="cursor: pointer" onclick="$('#G_CambioRes').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                                        @Html.TextBoxFor(m=>m.G_CambioRes, new { @class = "js-datetimepicker  form-control", data_format = "DD/MM/YYYY", data_locale = "it", placeholder = "Selezionare una data", autocomplete = "off", required = "required", onchange = "setDecorrenza()"})
+                                    </div>
+                                    @Html.ValidationMessageFor(m=>m.G_CambioRes)
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-12 push-10">
+                                    @Html.LabelForRequiredObbl(m => m.Decorrenza, "Decorrenza", new { @class = "rai-caption" })
+                                    <div class="input-group">
+                                        <span class="input-group-addon" style="cursor: pointer" onclick="$('#Decorrenza').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                                        @Html.TextBoxFor(m => m.Decorrenza, new { @class = "js-datetimepicker  form-control", data_format = "DD/MM/YYYY", data_locale = "it", placeholder = "Selezionare una data", autocomplete = "off", required = "required"@*, onchange = "checkDecorrenza()"*@ })
+                                    </div>
+                                    @Html.ValidationMessageFor(m => m.Decorrenza)
+                                </div>
+                            </div>
+                        }
+                        <div class="row">
+                            <div class="col-xs-12 col-sm-8 push-10">
+                                @Html.LabelForRequiredObbl(m => m.Indirizzo, "Indirizzo", new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.Indirizzo, new { @class = "form-control", required = "required" })
+                                @Html.ValidationMessageFor(m => m.Indirizzo)
+                            </div>
+                            <div class="col-sm-4 push-10">
+                                @Html.LabelForRequiredObbl(m => m.Civico, "Civico", new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.Civico, new { @class = "form-control", required = "required" })
+                                @Html.ValidationMessageFor(m => m.Civico)
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-xs-12 push-10">
+                                @Html.LabelForRequiredObbl(m => m.CodCitta, "Città", new { @class = "rai-caption" })
+                                @Html.RaiAsyncSelectFor(m => m.CodCitta, Url.Action("GetComuni", "Anagrafica"), 3, attributes: new { required = "required" }, tipoFiltro: myRaiHelper.SelectFilterType.StartsWith)
+                                @Html.ValidationMessageFor(m => m.CodCitta)
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-xs-12 col-md-5 col-xl-4 push-10">
+                                @Html.LabelForRequiredObbl(m => m.CAP, "CAP", new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.CAP, new { @class = "form-control", required = "required" })
+                                @Html.ValidationMessageFor(m => m.CAP)
+                            </div>
+                            <div class="col-xs-12 col-md-7 col-xl-8 push-10">
+                                @if (Model.Tipologia == IndirizzoType.Residenza)
+                                {
+                                    <label class="rai-caption push-10">Domicilio</label>
+                                    @Html.RaiCheckBoxLabelFor(m => m.AssegnaDomilicio, "Aggiorna anche il domicilio", "")
+                                }
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12 push-20-t">
+                                <button class="btn rai-btn-primary full-width" onclick="checkDecorrenza();Save_DatiIndirizzo(this, '@Model.Matricola')">Salva</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+        <div class="col-xs-12 col-sm-4">
+            @Html.RenderAsyncPanel(PanelType.PanelNoPadding, "Storico dati " + titolo, "Load_StoricoIndirizzo", "Anagrafica", false, routeValues: new { idPersona = Model.IdPersona, tipologia = Model.Tipologia })
+        </div>
+    </div>
+}
+
+<script>
+    $('#G_CambioRes').val('');
+    $('#Decorrenza').val('');
+    InitDatePicker();
+
+    $(function () {
+        $.validator.methods.date = function (value, element) {
+            return this.optional(element) || moment(value, "DD/MM/YYYY", true).isValid();
+        };
+        $.validator.addMethod("checkCap", function (value, element) {
+            return this.optional(element) || (parseInt(value) > 0);
+        }, "CAP non corretto");
+        $.validator.addMethod("checkDecorrenza", function (value, element) {
+            var result = true;
+            debugger
+            var isFirstIndirizzo = $('#G_PrimoIndirizzo').val();
+            if (isFirstIndirizzo == 'False') {
+                var cambio = $('#G_CambioRes').val();
+                var decorrenza = value;
+                if (cambio != '' && decorrenza != '') {
+                    var dtaCambio = moment(cambio, "DD/MM/YYYY").add(60, 'd');
+                    var dtaDec = moment(decorrenza, "DD/MM/YYYY");
+                    result = dtaCambio <= dtaDec;
+                }
+            }
+
+            return this.optional(element) || result;
+        }, "Trascorsi meno di 60 giorni da cambio residenza");
+        $.validator.addMethod("checkContabilita", function (value, element) {
+            var result = true;
+            var isContabilita = $('#G_Contabilita').val();
+            if (isContabilita == 'False') {
+                var decorrenza = value;
+                if (decorrenza != '') {
+                    result = moment(decorrenza, "DD/MM/YYYY").format('YYYY') == moment().format('YYYY');
+                }
+            }
+
+            return this.optional(element) || result;
+        }, "Decorrenza anno diverso dal corrente");
+
+        $('#form-dati-indirizzo').validate({
+            rules: {
+                CAP: {
+                    required: true,
+                    checkCap: true
+                },
+                Decorrenza: {
+                    required: true,
+                    checkDecorrenza: true,
+                    checkContabilita: true
+                }
+            },
+            errorPlacement: function (error, element) {
+                var name = $(element).attr('id');
+                $('[data-valmsg-for="' + name + '"]').html(error);
+            }
+        })
+    });
+    $.validator.unobtrusive.parse('#form-dati-indirizzo');
+
+    function setDecorrenza() {
+        var today = moment();
+        var cambio = $('#G_CambioRes').val();
+        if (cambio != '') {
+            var decorrenza = moment(cambio, "DD/MM/YYYY").add(60, 'd');
+            if (decorrenza < today) {
+                decorrenza = today;
+            }
+            $('#Decorrenza').val(decorrenza.format('DD/MM/YYYY'));
+        }
+    }
+
+    function checkDecorrenza() {
+        var cambio = $('#G_CambioRes').val();
+        var decorrenza = $('#Decorrenza').val();
+        if (cambio != '' && decorrenza != '') {
+            var dtaCambio = moment(cambio, "DD/MM/YYYY").add(60, 'd');
+            var dtaDec = moment(decorrenza, "DD/MM/YYYY");
+            if (dtaCambio > dtaDec) {
+                swal({
+                    title: 'Attenzione',
+                    type: 'error',
+                    text: 'Devono essere trascorsi almeno 60 giorni dalla richiesta di cambio di residenza',
+                    customClass: 'rai'
+                }).then(function () {
+                    $('#Decorrenza').val('');
+                    return false;
+                });
+            }
+        }
+    }
+</script>
+
+@Html.Raw(TempData["script"])

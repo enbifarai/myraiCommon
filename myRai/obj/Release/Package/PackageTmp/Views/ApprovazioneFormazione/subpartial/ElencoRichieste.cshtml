@@ -1,0 +1,215 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+
+@model myRai.Controllers.FormazioneRichiesteModel
+@{Layout = null;}
+
+<div class="row" id="SummaryFiltri" style="display:none;">
+    <div class="col-md-12">
+        <h5 class="text-italic"><span id="textSummary"></span><span id="textSummaryBold" class="text-bold"></span>. <a class="cursor-pointer" onclick="javascript:PulisciFiltri()">Vedi tutte</a></h5>
+    </div>
+</div>
+
+@if (Model != null && (Model.MieRichieste.Count() > 0 || Model.AltreRichieste.Count() > 0))
+{
+
+    int aperte = Model.MieRichieste.Count();
+    int chiuse = Model.AltreRichieste.Count();
+
+    <div class="block" id="richiesteBlock" style="margin-bottom:0px;">
+        <ul class="nav nav-tabs nav-tabs-alt nav-justified" data-toggle="tabs" role="tablist">
+            @if (aperte > 0)
+            {
+            <li class="@(aperte > 0 ? "active" : "")" role="presentation">
+                <a href="#btab-aperte" id="hrefAperte" tabindex="@(aperte > 0 ? "0" : "-1")" role="tab" aria-selected="@(aperte > 0 ? "true" : "false")" aria-controls="btab-aperte">
+                    Da approvare
+                    <span id="badge-tot-aperte" class="rai-badge-tab">@aperte</span>
+                </a>
+            </li>
+            }
+            @if (chiuse > 0)
+            {
+            <li class="@(aperte == 0 ? "active" : "")" role="presentation">
+                <a href="#btab-chiuse" id="hrefChiuse" tabindex="@(aperte == 0 ? "0" : "-1")" role="tab" aria-selected="@(aperte == 0 ? "true" : "false")" aria-controls="btab-chiuse">
+                    Altre richieste
+                    <span id="badge-tot-chiuse" class="rai-badge-tab">@chiuse</span>
+                </a>
+            </li>
+            }
+        </ul>
+
+        <div class="block-content tab-content" style="padding:5px 5px 1px;">
+            <div class="tab-pane @(aperte>0?"active":"")" id="btab-aperte" role="tabpanel">
+                @if (Model.MieRichieste.Count() > 0)
+                {
+                    <div class="panel-group" id="accordion">
+                        @{
+                            var tmp = Model.MieRichieste.GroupBy(x => x.ID_PERSONA);
+                            foreach (var pers in tmp)
+                            {
+                                var sint = pers.First().SINTESI1;
+                                <div class="panel panel-accordion ">
+                                    <div class="panel-heading">
+                                        <h4 class="panel-title">
+                                            <a class="accordion-toggle collapsed" style="padding:0px!important" data-toggle="collapse" data-parent="#accordion" href="#collapse@(pers.Key)_a" aria-expanded="false">
+                                                <span>@((sint.DES_COGNOMEPERS + " " + sint.DES_NOMEPERS).TitleCase())</span>
+                                            </a>
+                                        </h4>
+                                        <div class="panel-actions">
+                                            <span class="rai-notification">@pers.Count()</span>
+                                        </div>
+                                    </div>
+
+                                    <div id="collapse@(pers.Key)_a" class="collapse" aria-expanded="false">
+                                        <div class="panel-body panel-row-bordered" style="padding:5px;">
+                                            @{
+                                                int countreq = 1;
+
+                                                foreach (var req in pers)
+                                                {
+
+                                                    var lastStep = req.TREQUESTS_STEP.OrderBy(x => x.NUM_PROGR).Last();
+                                                    <div class="row">
+                                                        <div class="col-sm-6">
+                                                            <a href="#" onclick="ShowDettaglioRichiesta(@req.ID_TREQUESTS)"><h5 class="text-bold">@req.CORSO.COD_CORSO</h5></a>
+                                                            <label><i>Motivo: </i>@req.DES_NEED</label>
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            @if (!lastStep.IND_APPROVED.HasValue)
+                                                            {
+                                                                <label class="rai-caption">In approvazione</label>
+                                                            }
+                                                            else if (!lastStep.IND_APPROVED.Value)
+                                                            {
+                                                                <label class="rai-caption">Rifiutata</label>
+                                                            }
+                                                            else if (!lastStep.IND_CURRFORM.Value)
+                                                            {
+                                                                <label class="rai-caption">Iscritto</label>
+                                                            }
+                                                            else
+                                                            {
+                                                                <label class="rai-caption">Approvata</label>
+                                                            }
+                                                        </div>
+                                                        <div class="col-sm-3 text-right">
+                                                            <button class="btn btn-action-icon" type="submit" onclick="ListRichInline(2, @req.ID_TREQUESTS, @lastStep.ID_TREQUESTS_STEP)">
+                                                                <i class="fa fa-fw fa-remove text-danger"></i>
+                                                            </button>
+                                                            <button class="btn btn-action-icon" type="submit" onclick="ListRichInline(1, @req.ID_TREQUESTS, @lastStep.ID_TREQUESTS_STEP)">
+                                                                <i class="fa fa-fw fa-check text-success"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    countreq++;
+                                                }
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="row">
+                        @Html.Partial("~/Views/Shared/_NoDatiDiv.cshtml")
+                    </div>
+                }
+            </div>
+            <div class="tab-pane @(aperte==0?"active":"")" id="btab-chiuse" role="tabpanel">
+                @if (Model.AltreRichieste.Count() > 0)
+                {
+                    <div class="panel-group" id="accordion">
+                        @{
+                            var tmp2 = Model.AltreRichieste.GroupBy(x => x.ID_PERSONA);
+                            foreach (var pers in tmp2)
+                            {
+                                var sint = pers.First().SINTESI1;
+                                <div class="panel panel-accordion ">
+                                    <div class="panel-heading">
+                                        <label class="panel-title">
+                                            <a class="accordion-toggle collapsed" style="padding:0px!important" data-toggle="collapse" data-parent="#accordion" href="#collapse@(pers.Key)_c" aria-expanded="false">
+                                                <span>@((sint.DES_COGNOMEPERS + " " + sint.DES_NOMEPERS).TitleCase())</span>
+                                            </a>
+                                        </label>
+                                        <div class="panel-actions">
+                                            <span class="rai-notification">@pers.Count()</span>
+                                        </div>
+                                    </div>
+
+                                    <div id="collapse@(pers.Key)_c" class="collapse" aria-expanded="false">
+                                        <div class="panel-body panel-row-bordered" style="padding:5px;">
+                                            @{
+                                                int countreq = 1;
+
+                                                foreach (var req in pers)
+                                                {
+                                                    var lastStep = req.TREQUESTS_STEP.OrderBy(x => x.NUM_PROGR).Last();
+
+                                                    <div class="row">
+                                                        <div class="col-sm-6">
+                                                            <label class="rai-font-md-bold">@req.CORSO.COD_CORSO</label><br />
+                                                            <label class="rai-font-sm"><i>Motivo: </i>@req.DES_NEED</label>
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            @if (!lastStep.IND_APPROVED.HasValue)
+                                                            {
+                                                                <label class="rai-label">In approvazione</label>
+                                                            }
+                                                            else if (!lastStep.IND_APPROVED.Value)
+                                                            {
+                                                                <label class="rai-label">Rifiutata</label>
+                                                            }
+                                                            else if (!lastStep.IND_CURRFORM.Value)
+                                                            {
+                                                                <label class="rai-label">Iscritto</label>
+                                                            }
+                                                            else
+                                                            {
+                                                                <label class="rai-label">Approvata</label>
+                                                            }
+                                                        </div>
+                                                        <div class="col-sm-3 text-right">
+                                                            <a href="#" class="btn rai-btn-small" onclick="ShowDettaglioRichiesta(@req.ID_TREQUESTS)">Dettaglio</a>
+                                                        </div>
+                                                    </div>
+
+                                                    countreq++;
+                                                }
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="row">
+                            @Html.Partial("~/Views/Shared/_NoDatiDiv.cshtml")
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row">
+            @Html.Partial("~/Views/Shared/_NoDatiDiv.cshtml")
+    </div>
+}
+
+<script>
+    function ListRichInline(oper, idRich, idRichStep) {
+        $('#modal-richiesta-inline-internal').html(' ');
+        $('#modal-richiesta-inline-internal').load('/ApprovazioneFormazione/GestisciInline?oper=' + oper + '&idRichiesta=' + idRich + '&idRichiestaStep=' + idRichStep);
+        $('#modal-richiesta-inline').modal('show');
+    }
+</script>

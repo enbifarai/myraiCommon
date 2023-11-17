@@ -1,0 +1,204 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel.Gestionale
+@model MboReminder
+
+@{
+    string codTipo = "ReminderCompilazione";
+}
+
+<div class="block block-transparent no-margin-bottom">
+    <div class="block-header">
+        <label class="rai-font-modal-heading">Schede incomplete</label>
+        <div class="block-options">
+            <button data-dismiss="modal" class="btn btn-action-icon" onclick="$(this).parent('.modal').css('z-index', '');"><i class="glyphicon glyphicon-remove"></i></button>
+        </div>
+    </div>
+    <div class="block-content block-body-modal" id="reminder-cont">
+        <div class="row">
+            <div class="col-sm-12">
+                @foreach (var ini in Model.Schede.GroupBy(x => x.Iniziativa.Id))
+                {
+                    using (Html.BeginPanel(PanelType.PanelNoPadding, ini.First().Iniziativa.Nome))
+                    {
+                        <table class="table rai-table rai-table-collapsable rai-table-panel rai-table-vcenter" data-table-collapsable-parent="#reminder-cont">
+                            @foreach (var dir in ini.GroupBy(x => x.PersValutato.CodServizio).OrderBy(x => x.Key))
+                            {
+                                <tbody class="rai-table-collapsable-header">
+                                    <tr>
+                                        <td>
+                                            <span class="rai-font-table-heading">@dir.Key - @dir.First().PersValutato.DesServizio</span>
+                                        </td>
+                                        <td class="rai-table-td-toggle text-right">
+                                            <span class="rai-notification">@dir.Count()</span>
+                                        </td>
+                                        <td class="rai-table-td-toggle">
+                                            <i class="fa fa-chevron-down"></i>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tbody>
+                                    <tr>
+                                        <td class="no-padding" colspan="3">
+                                            <div>
+                                                <table class="table rai-table rai-table-panel rai-table-vcenter">
+                                                    @foreach (var pers in dir.GroupBy(x => x.CurrentOperator.Id).OrderBy(x => x.First().CurrentOperator.Nominativo))
+                                                    {
+                                                        <tbody class="js-table-sections-header">
+                                                            <tr>
+                                                                <td class="rai-table-td-toggle">
+                                                                    <div class="rai-checkbox">
+                                                                        <input id="@(ini.Key)_@(pers.Key)" type="checkbox" data-rem-pers="@pers.Key" data-rem-ini="@ini.Key" data-table-collapsable-toggle="ignore" onchange="MboCheckSelReminder()">
+                                                                        <label for="@(ini.Key)_@(pers.Key)"></label>
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    <div class="rai-profile-widget">
+                                                                        <div class="rai-profile-info">
+                                                                            <span class="rai-font-md-bold ">@pers.First().CurrentOperator.Nominativo</span>
+                                                                            <br>
+                                                                            <span class="rai-font-sm">@(pers.First().CurrentOperator.CodServizio + " - " + pers.First().CurrentOperator.DesServizio)</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    @{
+                                                                        var prom = Model.LogEmail.Where(x => x.ID_INIZIATIVA == ini.Key && x.ID_PERSONA == pers.Key && x.COD_TIPO == codTipo);
+                                                                    }
+                                                                    @if (prom != null && prom.Any())
+                                                                    {
+                                                                        <em>Reminder inviati: @prom.Count()</em><br /><em>Data ultimo invio: @prom.Max(x => x.DTA_INVIO).ToString("dd/MM/yyyy HH:mm")</em>
+                                                                    }
+                                                                </td>
+                                                                <td class="rai-table-td-toggle text-right">
+                                                                    <span class="rai-notification">@pers.Count()</span>
+                                                                </td>
+                                                                <td class="rai-table-td-toggle">
+                                                                    <i class="fa fa-chevron-down"></i>
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                        <tbody>
+                                                            @foreach (var stato in pers.GroupBy(x => x.StatoCorrente.ID_STATO))
+                                                            {
+                                                                <tr>
+                                                                    <td class="no-padding" colspan="5">
+                                                                        <table class="table rai-table rai-table-panel rai-table-vcenter rai-table-bordered js-table-sections">
+                                                                            <tbody class="js-table-sections-header">
+                                                                                <tr>
+                                                                                    <td class="bg-neutrals-xl-20 rai-table-td-toggle">&nbsp;</td>
+                                                                                    <td class="bg-neutrals-xl-20"><em class="rai-font-md">@stato.First().StatoCorrente.DES_DESCRIZIONE</em></td>
+                                                                                    <td class="bg-neutrals-xl-20 rai-table-td-toggle"><span class="rai-notification">@stato.Count()</span></td>
+                                                                                    <td class="bg-neutrals-xl-20 rai-table-td-toggle"><i class="fa fa-chevron-down"></i></td>
+                                                                                </tr>
+                                                                            </tbody>
+                                                                            <tbody>
+                                                                                @foreach (var sch in stato.OrderBy(x => x.PersValutato.Nominativo))
+                                                                                {
+                                                                                    <tr>
+                                                                                        <td></td>
+                                                                                        <td colspan="3">
+                                                                                            <span class="push-20-l rai-font-md">@sch.PersValutato.Nominativo</span>
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                }
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </td>
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    }
+                                                </table>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            }
+                        </table>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+    <div class="block-footer block-footer-modal bg-white">
+        <div class="row">
+            <div class="col-sm-12">
+                <button id="btnSendReminder" class="btn rai-btn-small full-width" disabled onclick="MboSendReminder()">Invia</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function MboCheckSelReminder() {
+        if ($('input[data-rem-pers]:checked').length > 0) {
+            $('#btnSendReminder').prop('disabled', false);
+        } else {
+            $('#btnSendReminder').prop('disabled', true);
+        }
+    }
+
+    function MboSendReminder() {
+        swal({
+            title: 'Sei sicuro?',
+            text: "Vuoi inviare un reminder ai dirigenti selezionati?",
+            type: 'question',
+            customClass: 'rai',
+            showCancelButton: true,
+            confirmButtonText: 'Conferma',
+            cancelButtonText: 'Annulla',
+            reverseButtons: true
+        }).then(function () {
+            var list = $('input[data-rem-pers]:checked');
+
+            var aryIni = new Array();
+            var aryPers = new Array();
+            for (var i = 0; i < list.length; i++) {
+                aryIni.push($(list[i]).data('rem-ini'));
+                aryPers.push($(list[i]).data('rem-pers'));
+            }
+            debugger
+            $.ajax({
+                url: "/Mbo/InviaReminderPersona",
+                type: "POST",
+                cache: false,
+                contentType: 'application/json',
+                dataType: 'html',
+                data: JSON.stringify({ iniziativa: aryIni, persone: aryPers }),
+                success: function (data) {
+                    switch (data) {
+                        case "OK":
+
+                            swal({
+                                title: "Invio effettuato",
+                                text: "I reminder sono stati correttamente inviati",
+                                type: 'success',
+                                customClass: 'rai'
+                            });
+                            $('#modal-mbo-half').modal('hide');
+
+                            break;
+                        default:
+                            swal({
+                                title: "Oops...",
+                                html: data,
+                                type: 'error',
+                                customClass: 'rai'
+                            });
+                    }
+                },
+                error: function (a, b, c) {
+                    swal({
+                        title: "Oops...",
+                        text: c,
+                        type: 'error',
+                        customClass: 'rai'
+                    });
+                }
+            });
+        });
+
+
+
+    }
+</script>

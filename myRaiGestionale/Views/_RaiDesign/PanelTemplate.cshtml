@@ -1,0 +1,118 @@
+﻿@using MVCProject.Custom_Helpers;
+
+@model myRaiHelper.SectionTemplate
+
+@{
+    bool hasContent = !Model.OnlyHeader && !Model.OnlyFooter;
+
+    string additionalPanelClass = "";
+    string additionalPanelAttributes = "";
+    string additionalPanelStyle = "";
+    string additionalPanelBodyClass = "";
+    string additionalPanelBodyAttributes = "";
+    string additionalPanelBodyStyle = "";
+
+    if (Model.PanelAttributes != null && Model.PanelAttributes.Count( ) > 0)
+    {
+        additionalPanelClass += String.Join(" " , Model.PanelAttributes.Where(x => x.Name == "class").Select(x => " " + x.Value));
+        additionalPanelStyle += String.Join(" " , Model.PanelAttributes.Where(x => x.Name == "style").Select(x => " " + x.Value));
+        additionalPanelAttributes += String.Join(" " , Model.PanelAttributes.Where(x => x.Name != "class" && x.Name != "style" && !x.Name.StartsWith("body")).Select(x => x.ToString( )));
+
+        additionalPanelBodyClass += String.Join(" " , Model.PanelAttributes.Where(x => x.Name == "bodyclass").Select(x => " " + x.Value));
+        additionalPanelBodyStyle += String.Join(" " , Model.PanelAttributes.Where(x => x.Name == "bodystyle").Select(x => " " + x.Value));
+        additionalPanelBodyAttributes += String.Join(" " , Model.PanelAttributes.Where(x => x.Name != "bodyclass" && x.Name != "bodystyle" && x.Name.StartsWith("body")).Select(x => x.ToString( )));
+
+    }
+}
+
+@if (Model.CheckModel)
+{
+    if (!Model.DrawSkeleton && Model.Model == null)
+    {
+        return;
+    }
+}
+
+@if (hasContent || Model.OnlyHeader)
+{
+    @Html.Raw("<section class=\"panel " + additionalPanelClass + "\" style=\"" + additionalPanelStyle + "\" " + additionalPanelAttributes + ">")
+    if (Model.PanelType != myRaiHelper.PanelType.NoHeader && Model.PanelType != myRaiHelper.PanelType.NoHeaderNoPadding)
+    {
+        <header class="panel-heading" @(Model.Collapsable ? "data-panel-toggle" : "")>
+            <h1 class="panel-title">@Model.Title</h1>
+            <div class="panel-actions rai-panel-actions">
+                @if (Model.SwitchActions != null)
+                {
+                    <div class="btn-action-icon-switch">
+                        @foreach (var action in Model.SwitchActions.Actions)
+                        {
+                            string additionalClass = "";
+                            string additionalAttributes = "";
+                            if (action.Attributes != null && action.Attributes.Count( ) > 0)
+                            {
+                                additionalClass += String.Join(" " , action.Attributes.Where(x => x.Name == "class").Select(x => " " + x.Value));
+                                additionalAttributes += String.Join(" " , action.Attributes.Where(x => x.Name != "class").Select(x => x.ToString( )));
+                            }
+
+                            <button class="btn-action-icon @(action.Active ? "active" : "") @additionalClass" title="@action.Title" onclick="@action.OnClick" @additionalAttributes><i class="@action.Icon"></i></button>
+                        }
+                    </div>
+                }
+                @if (Model.Actions != null && Model.Actions.Count( ) > 0)
+                {
+                    foreach (var item in Model.Actions)
+                    {
+                        <button onclick="@item.OnClick" title="@item.Title" class="bnt btn-action-icon @(!String.IsNullOrWhiteSpace(item.Text) ? "btn-action-icon-text":"")"><i class="@item.Icon"></i>@item.Text</button>
+                    }
+                }
+                @if (Model.Collapsable)
+                {
+                    <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" aria-labelledby="lblRightBox" aria-expanded="true"></a>
+                }
+            </div>
+        </header>
+    }
+    @*@Html.Raw("<div class=\"panel-body " + (Model.PanelType == myRaiHelper.PanelType.PanelNoPadding ? "no-padding" : "") + "\">")*@
+
+    @Html.Raw("<div class=\"panel-body " + (Model.PanelType == myRaiHelper.PanelType.PanelNoPadding || Model.PanelType==myRaiHelper.PanelType.NoHeaderNoPadding ? "no-padding" : "") + " " + additionalPanelBodyClass + "\" style=\"" + additionalPanelBodyStyle + "\" " + additionalPanelBodyAttributes + "\">")
+
+}
+
+@if (hasContent)
+{
+    if (!String.IsNullOrWhiteSpace(Model.ContentId))
+    {
+        @Html.Raw("<div id=\"" + Model.ContentId + "\">")
+    }
+
+    if (Model.Async)
+    {
+        @Html.AsyncPartial(Model.Controller , Model.Action , "~/Views/_RaiDesign/PanelTemplateSkeleton.cshtml" , TempData , Model.AsyncCallBack , routeValues: Model.RouteValues)
+    }
+    else if (Model.DrawSkeleton)
+    {
+        @Html.Partial("~/Views/_RaiDesign/PanelTemplateSkeleton.cshtml")
+    }
+    else
+    {
+        if (Model.Model != null)
+        {
+            @Html.Partial(Model.ViewUrl , Model.Model)
+        }
+        else
+        {
+            @Html.Partial(Model.ViewUrl)
+        }
+    }
+
+    if (!String.IsNullOrWhiteSpace(Model.ContentId))
+    {
+        @Html.Raw("</div>")
+    }
+}
+
+@if (hasContent || Model.OnlyFooter)
+{
+    @Html.Raw("</div>")
+    @Html.Raw("</section>")
+}

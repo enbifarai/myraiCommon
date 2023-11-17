@@ -1,0 +1,116 @@
+﻿<div class="block block-transparent no-margin-bottom">
+
+    @* Hidden field fissi dell'utente *@
+    <input type="hidden" value="@ViewBag.MatricolaUtente" id="hdnSceltaDestinazioneTfrMatricolaUtente" />
+    <input type="hidden" value="@ViewBag.IdUtente" id="hdnSceltaDestinazioneTfrIdUtente" />
+    <input type="hidden" value="@ViewBag.IdRecordScelta" id="hdnSceltaDestinazioneTfrIdRecordScelta" />
+
+    <div class="block-header">
+        <label class="rai-font-modal-heading">Trattamento di fine rapporto</label>
+        <div class="block-options">
+            @*<button data-dismiss="modal" class="btn btn-action-icon"
+        onclick="$(this).parent('.modal').css('z-index', '');"><i class="glyphicon glyphicon-remove"></i></button>*@
+            <button data-dismiss="modal" class="btn btn-action-icon"
+                    onclick="chiudiSceltaTrattamentoTfr()">
+                <i class="glyphicon glyphicon-remove"></i>
+            </button>
+        </div>
+    </div>
+    <div class="block-content">
+        <div id="div-modulo-trattamento-fine-rapporto"></div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        // Caricamento iniziale modulo con wizard
+        loadModuloDestinazioneTfr();
+    })
+
+    /**
+     * Funzione che carica il documento da compilare tenendo conto dello step a cui è arrivato l'utente nella compilazione
+     * */
+    function loadModuloDestinazioneTfr() {
+        var datiUtente = {
+            'matricolaUtente': $('#hdnSceltaDestinazioneTfrMatricolaUtente').val(),
+            'idUtente': $('#hdnSceltaDestinazioneTfrIdUtente').val(),
+            'idRecordScelta': $('#hdnSceltaDestinazioneTfrIdRecordScelta').val(),
+        }
+
+        $.ajax({
+            type: 'GET',
+            cache: false,
+            url: "/SceltaDestinazioneTfr/GetModulo",
+            data: datiUtente,
+            success: function (data) {
+                //console.dir(data);
+                $('#div-modulo-trattamento-fine-rapporto').html(data);
+            }
+        });
+    }
+
+    /**
+     * Funzione che chiede conferma sulla chiusura del model e, eventualmente, esegue azioni
+     * */
+    function chiudiSceltaTrattamentoTfr() {
+        swal({
+            title: 'Attenzione',
+            type: 'question',
+            html: "Si desidera eliminare i dati inseriti",
+            showCancelButton: true,
+            confirmButtonText: 'Sì',
+            cancelButtonText: 'No',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+            // Cliccato su 'Sì, elimina i dati'
+            eseguiEliminazioneDatiInseriti();
+        }).catch(function () {
+            // Cliccato su 'No, mantieni i dati'
+            sceltaDestinazioneTFR_ChiudiInserimento();
+        });
+    }
+
+    /**
+     * Funzione che si occupa di chiamare il metodo per l'eiminazione dei dati dell'utente
+     * */
+    function eseguiEliminazioneDatiInseriti() {
+
+        //console.log('eseguiEliminazioneDatiInseriti');
+
+        var dati = {
+            'idUtente': $('#hdnSceltaDestinazioneTfrIdUtente').val(),
+            'matricolaUtente': $('#hdnSceltaDestinazioneTfrMatricolaUtente').val(),
+            'idRecordScelta': $('#hdnSceltaDestinazioneTfrIdRecordScelta').val(),
+        };
+
+        //console.dir(dati);
+
+        $.ajax({
+            type: 'POST',
+            cache: false,
+            url: "/SceltaDestinazioneTfr/EliminaDatiInseriti",
+            data: dati,
+            success: function (data) {
+                swal({
+                    title: 'Dati eliminati correttamente',
+                    type: 'success',
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+                sceltaDestinazioneTFR_ChiudiInserimento();
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                swal({
+                    title: jqXHR.statusText,
+                    type: 'error',
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+            }
+        });
+    }
+</script>

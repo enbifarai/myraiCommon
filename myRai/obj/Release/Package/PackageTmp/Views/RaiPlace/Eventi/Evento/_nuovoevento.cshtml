@@ -1,0 +1,355 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+@using myRaiCommonManager;
+
+@model ModelDash
+
+<div id="modal-evento">
+    <div class="modal right fade" id="modal-popin-nuovo" role="dialog" aria-hidden="true" style="display: none;">
+        <div class="modal-dialog modal-dialog-popin">
+            <div class="modal-content height100">
+
+                @using (Html.BeginModal("Nuovo evento"))
+                {
+                    using (Html.BeginForm("", "", FormMethod.Post, new { id = "form-evento" }))
+                    {
+                        <div class="form-group">
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    @using (Html.BeginPanel(PanelType.Panel, "Dati generali", false))
+                                    {
+                                        <div class="row push-10">
+                                            <div class="col-sm-12">
+                                                <label class="rai-caption">Titolo</label>
+                                                <input class="form-control" type="text" id="titoloins" name="titoloins" placeholder="inserisci titolo">
+                                            </div>
+                                        </div>
+                                        <div class="row push-10">
+                                            <div class="col-sm-12">
+                                                <label class="rai-caption">Sede Contabile</label>
+                                                <input class="form-control" type="text" id="sedecontabile" name="sedecontabile" placeholder="inserisci sede">
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-sm-12">
+                                                <label class="rai-caption">Data/ora inizio evento</label>
+                                            </div>
+                                        </div>
+
+                                        <div class="row push-10">
+                                            <div class="col-xs-6">
+                                                <div class="input-group">
+                                                    <span style="cursor: pointer" onclick="$('#datainizio').datetimepicker('show')" class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                                                    <input class="js-datetimepicker form-control" data-format="DD/MM/YYYY" data-locale="it" type="text" id="datainizio" name="datainizio" placeholder="inserisci data">
+                                                </div>
+                                            </div>
+                                            <div class="col-xs-6 ">
+                                                <input type="time" id="orarioInizio" class="form-control" name="orarioInizio" value="now" style="font-size: 1.2em" />
+                                            </div>
+                                        </div>
+
+                                        <div class="row push-10">
+                                            <div class="col-sm-12">
+                                                <label class="rai-caption">Luogo Evento</label>
+                                                <input class="form-control" type="text" id="luogoins" name="luogoins" placeholder="inserisci luogo">
+                                            </div>
+                                        </div>
+
+                                        using (Html.BeginBlock(BlockType.ContentTable, "Dati prenotazione"))
+                                        {
+                                            <div class="row push-10">
+                                                <div class="col-xs-6">
+                                                    <label class="rai-caption">Numero Totale</label>
+                                                    <input class="form-control" id="numeroTotale" name="numeroTotale" placeholder="Totale" type="number" style="width: 150px;">
+                                                </div>
+                                                <div class="col-sm-6">
+                                                    <label class="rai-caption">Numero Massimo</label>
+                                                    <input class="form-control" id="numeroMassimo" name="numeroMassimo" placeholder="Massimo" type="number" style="width: 150px;">
+                                                </div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <label class="rai-caption">Data/ora Apertura</label>
+                                                </div>
+                                            </div>
+                                            <div class="row push-10">
+                                                <div class="col-xs-6">
+                                                    <div class="input-group ">
+                                                        <span class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                                                        <input class="js-datetimepicker form-control annoinizio" type="text" data-format="DD/MM/YYYY" data-locale="it" id="dataApertura" name="dataApertura" placeholder="inserisci data">
+                                                    </div>
+                                                </div>
+                                                <div class="col-xs-6">
+                                                    <input type="time" id="orarioApertura" class="form-control" name="orarioApertura" value="now" style="font-size: 1.2em" />
+                                                </div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <label class="rai-caption">Data/ora chiusura</label>
+                                                </div>
+                                            </div>
+
+                                            <div class="row push-10">
+                                                <div class="col-xs-6">
+                                                    <div class="input-group">
+                                                        <span class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                                                        <input class="js-datetimepicker form-control annoinizio" type="text" data-format="DD/MM/YYYY" data-locale="it" id="dataChiusura" name="dataChiusura" placeholder="inserisci data">
+                                                    </div>
+                                                </div>
+                                                <div class="col-xs-6">
+                                                    <input type="time" id="orarioChiusura" class="form-control" name="orarioChiusura" style="font-size: 1.2em" />
+                                                </div>
+                                            </div>
+
+                                            <div class="row push-10">
+                                                <div class="col-sm-12">
+                                                    <label class="rai-caption">Programma</label>
+                                                    <select name="programma" id="programma" class="form-control" onchange="selectProgram()">
+                                                        <option value="0">Nessun Programma</option>
+                                                        @foreach (var item1 in Model.Programs.listaProgrammi)
+                                                        {
+                                                            <option value="@item1.Value">@item1.Text</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="row push-10">
+                                                <div class="col-sm-12">
+                                                    <label class="rai-caption">Note Email</label>
+                                                    <textarea class="form-control" id="noteEmail" name="noteEmail" rows="5" placeholder="Descrivere le note dell'email"></textarea>
+                                                </div>
+                                            </div>
+
+                                            <div class="row push-10">
+                                                <div class="col-sm-12">
+                                                    <div class="rai-checkbox">
+                                                        <input type="checkbox" name="checkInsediamento" />
+                                                        <label for="checkInsediamento">Specifica insediamento</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row push-10">
+                                                <div class="col-sm-12">
+                                                    <label class="rai-caption">Limite età</label>
+                                                    <input class="form-control" id="limiteEta" name="limiteEta" placeholder="Limite età" type="number">
+                                                </div>
+                                            </div>
+
+                                            <div class="row push-10">
+                                                <div class="col-sm-12">
+                                                    <div class="rai-checkbox">
+                                                        <input type="checkbox" name="ticket" />
+                                                        <label for="ticket">Codice prenotazione</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+
+
+
+
+                                        <div class="row">
+                                            <div class="col-sm-12 text-center">
+                                                <button id="invia-evento" type="submit" class="btn rai-btn-primary full-width">Inserisci Evento</button>
+                                            </div>
+                                        </div>
+
+                                    }
+
+
+
+                                </div>
+
+                                <div class="col-sm-6">
+                                    @using (Html.BeginPanel(PanelType.Panel, "Sedi e matricole abilitate", false))
+                                    {
+                                        <div class="row push-10">
+                                            <div class="col-sm-12">
+                                                <label class="rai-caption">Sedi</label>
+                                                <input class="form-control" type="text" id="sedi" name="sedi" placeholder="inserisci sedi">
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-sm-12">
+                                                <label class="rai-caption">Matricole</label>
+                                                <input class="form-control" type="text" id="matricole" name="matricole" placeholder="inserisci matricole">
+                                            </div>
+                                        </div>
+                                    }
+
+                                    @using (Html.BeginPanel(PanelType.Panel, "Gestione campi", false))
+                                    {
+                                        <table class="table table-striped rai-table rai-table-vcenter">
+                                            <thead>
+                                                <tr>
+                                                    <th>Nome campo</th>
+                                                    <th style="width:50px;">Visibili</th>
+                                                    <th style="width:75px;">Obbligatori</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>
+                                                        <label class="rai-caption">Email</label>
+                                                    </td>
+                                                    <td style="padding-left:20px;">
+                                                        <div class="rai-checkbox">
+                                                            <input type="checkbox" name="check_vis_email" id="check_vis_email" checked="checked" />
+                                                            <label>&nbsp;</label>
+                                                        </div>
+                                                    </td>
+                                                    <td style="padding-left:35px;">
+                                                        <div class="rai-checkbox">
+                                                            <input type="checkbox" name="check_obl_email" id="check_obl_email" />
+                                                            <label>&nbsp;</label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <label class="rai-caption">Data nascita</label>
+                                                    </td>
+                                                    <td style="padding-left:20px;">
+                                                        <div class="rai-checkbox">
+                                                            <input type="checkbox" name="check_vis_datnas" id="check_vis_datnas" checked="checked" />
+                                                            <label>&nbsp;</label>
+                                                        </div>
+                                                    </td>
+                                                    <td style="padding-left:35px;">
+                                                        <div class="rai-checkbox">
+                                                            <input type="checkbox" name="check_obl_datnas" id="check_obl_datnas" />
+                                                            <label>&nbsp;</label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <label class="rai-caption">Città nascita</label>
+                                                    </td>
+                                                    <td style="padding-left:20px;">
+                                                        <div class="rai-checkbox">
+                                                            <input type="checkbox" name="check_vis_citnas" id="check_vis_citnas" checked="checked" />
+                                                            <label>&nbsp;</label>
+                                                        </div>
+                                                    </td>
+                                                    <td style="padding-left:35px;">
+                                                        <div class="rai-checkbox">
+                                                            <input type="checkbox" name="check_obl_citnas" id="check_obl_citnas" />
+                                                            <label>&nbsp;</label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <label class="rai-caption">Genere</label>
+                                                    </td>
+                                                    <td style="padding-left:20px;">
+                                                        <div class="rai-checkbox">
+                                                            <input type="checkbox" name="check_vis_gen" id="check_vis_gen" checked="checked" />
+                                                            <label>&nbsp;</label>
+                                                        </div>
+                                                    </td>
+                                                    <td style="padding-left:35px;">
+                                                        <div class="rai-checkbox">
+                                                            <input type="checkbox" name="check_obl_gen" id="check_obl_gen" />
+                                                            <label>&nbsp;</label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <label class="rai-caption">Telefono</label>
+                                                    </td>
+                                                    <td style="padding-left:20px;">
+                                                        <div class="rai-checkbox">
+                                                            <input type="checkbox" name="check_vis_tel" id="check_vis_tel" checked="checked" />
+                                                            <label>&nbsp;</label>
+                                                        </div>
+                                                    </td>
+                                                    <td style="padding-left:35px;">
+                                                        <div class="rai-checkbox">
+                                                            <input type="checkbox" name="check_obl_tel" id="check_obl_tel" />
+                                                            <label>&nbsp;</label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <label class="rai-caption">Documento</label>
+                                                    </td>
+                                                    <td style="padding-left:20px;">
+                                                        <div class="rai-checkbox">
+                                                            <input type="checkbox" name="check_vis_doc" id="check_vis_doc" checked="checked" />
+                                                            <label>&nbsp;</label>
+                                                        </div>
+                                                    </td>
+                                                    <td style="padding-left:35px;">
+                                                        <div class="rai-checkbox">
+                                                            <input type="checkbox" name="check_obl_doc" id="check_obl_doc" />
+                                                            <label>&nbsp;</label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <label class="rai-caption">Grado di parentela</label>
+                                                    </td>
+                                                    <td style="padding-left:20px;">
+                                                        <div class="rai-checkbox">
+                                                            <input type="checkbox" name="check_vis_gra" id="check_vis_gra" checked="checked" />
+                                                            <label>&nbsp;</label>
+                                                        </div>
+                                                    </td>
+                                                    <td style="padding-left:35px;">
+                                                        <div class="rai-checkbox">
+                                                            <input type="checkbox" name="check_obl_gra" id="check_obl_gra" />
+                                                            <label>&nbsp;</label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <label class="rai-caption">Nota</label>
+                                                    </td>
+                                                    <td style="padding-left:20px;">
+                                                        <div class="rai-checkbox">
+                                                            <input type="checkbox" name="check_vis_nota" id="check_vis_nota" checked="checked" />
+                                                            <label>&nbsp;</label>
+                                                        </div>
+                                                    </td>
+                                                    <td style="padding-left:35px;">
+                                                        <div class="rai-checkbox">
+                                                            <input type="checkbox" name="check_obl_nota" id="check_obl_nota" />
+                                                            <label>&nbsp;</label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+
+                                            </tbody>
+                                        </table>
+                                    }
+
+
+                                    <div class="row">
+
+
+
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>

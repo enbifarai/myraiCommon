@@ -1,0 +1,78 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel.Gestionale
+@model List<CessazioneModel>
+
+@{
+    bool firstc = true;
+    
+}
+
+<table class="rai js-table-sections table rai-table rai-table-panel rai-table-vcenter" style="margin-top:0 !important;" role="grid">
+    @{
+        foreach (var sind in Model.GroupBy(x=>x.Pratica.ID_SIGLASIND))
+        {
+            int indexSind = 0;
+            string sindacato = "Sindacato da decidere";
+            if (sind.Key.HasValue)
+            {
+                indexSind = sind.Key.Value;
+                sindacato = sind.First().Pratica.XR_INC_SIGLESINDACALI.SINDACATO;
+            }
+            @*<thead style="">
+                    <tr>
+                        <td style="width:2%"></td>
+                        <td style="width:10%"></td>
+                        <td style="width:61%"></td>
+                        <td style="width:10%"></td>
+                        <td class="rai-table-td-toggle"></td>
+                    </tr>
+                </thead>*@
+            <tbody class="rai js-table-sections-header">
+                <tr>
+                    <td>
+                        <label class="rai-font-md">@sindacato</label>
+                    </td>
+                    <td class="rai-table-td-toggle">
+                        <span class="rai-notification">@sind.Count().ToString()</span>
+                    </td>
+                    <td class="rai-table-td-toggle">
+                        <i class="fa fa-chevron-down"></i>
+                    </td>
+                </tr>
+            </tbody>
+            <tbody class="tbodydata">
+                <tr>
+                    <td colspan="3">
+                        <table class="table rai-table rai-table-vcenter">
+                            @foreach (var item in sind.OrderBy(x=>x.Pratica.DATA_APPUNTAMENTO))
+                            {
+                                <tr>
+                                    <td class="rai-table-td-toggle">
+                                        <div class="rai-day-card">
+                                            <div class="rai-day-number">@item.Pratica.DATA_APPUNTAMENTO.Value.ToString("dd")</div>
+                                            <div class="rai-day-name">@item.Pratica.DATA_APPUNTAMENTO.Value.ToString("MMM").ToUpper()</div>
+                                        </div>
+                                    </td>
+                                    <td class="">
+                                        <div class="rai-block-info">
+                                            <span class="rai-caption">@(item.Pratica.XR_INC_SIGLESINDACALI != null ? item.Pratica.XR_INC_SIGLESINDACALI.SINDACATO : "Sindacato da decidere")</span><br />
+                                            <span class="rai-font-md "><a href="#" class="interactive-primary-color" onclick="ShowIncentivato(@item.Pratica.ID_DIPENDENTE,'')">@item.Sintesi.Nominativo()</a></span><br />
+                                            <span class="rai-font-sm">Orario: @item.Pratica.DATA_APPUNTAMENTO.Value.ToString("HH:mm")</span>
+                                            @if (item.InCarico != null && item.InCarico.ID_PERSONA != CommonHelper.GetCurrentIdPersona())
+                                            {
+                                                <br /><span class="rai-font-sm-neutral">In carico a @item.InCarico.Nominativo()</span>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td class="text-right rai-table-td-action">
+                                        <a class="btn btn-action-icon" style="" href="@Url.Action("CreaVerbaleDoc", new { idDip = item.Pratica.ID_DIPENDENTE })" title="Scarica il verbale"><i class="fa fa-file"></i></a>
+                                    </td>
+                                </tr>
+                            }
+                        </table>
+                    </td>
+                </tr>
+            </tbody>
+        }
+    }
+</table>

@@ -1,0 +1,299 @@
+﻿@model myRaiCommonModel.cvModels.cvModel.Languages
+
+@{
+    myRai.Data.CurriculumVitae.cv_ModelEntities cvEnt = new myRai.Data.CurriculumVitae.cv_ModelEntities();
+    int i;
+}
+
+<div class="rai modal fade right modalCheck" id="modalLanguagesInserimento" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="rai modal-content">
+
+            @using (Html.BeginModal("Autovalutazione competenze linguistiche (Standard Europeo)"))
+            {
+                using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Dettaglio", false))
+                {
+                    <form class="mb-lg form-insertlanguages" id="form-insertlanguages" novalidate="novalidate" action="/CV_Online/" method="post">
+                        @Html.HiddenFor(m => m._codLinguaLiv, new { id = "_codLinguaLiv" })
+                        @Html.HiddenFor(m => m._matricola)
+
+                        <div class="rai form-group" id="edit-content">
+
+                            <div class="row">
+                                <div class="col-md-6 push-10">
+                            @Html.LabelForRequiredObbl(m => m._codLingua, "Lingua", new { @class="titleElements rai-caption requiredobbl" })
+                            <select class="js-select2 rai form-control input-validation-error " data-val="true" data-val-required="Campo obbligatorio" id="_codLingua" name="_codLingua" style="width: 100%;">
+                                        <option></option>
+                                        <!-- necessario per il placeholder con Select2 plugin -->
+                                        @{
+                                            //carico gli elementi di CodLingua già presenti per la matricola
+                                            var matricola = Model._matricola;
+
+                                            var list_languages = (from ll in cvEnt.TCVLingue
+                                                                  where ll.Matricola == matricola
+                                                                  select ll.CodLingua).ToList();
+
+                                            var language = cvEnt.DLingua.ToList();
+                                            foreach (var lang in language.OrderBy(a => a.Posizione).ThenBy(x => x.DescLingua))
+                                            {
+                                                if (!(list_languages.Contains(lang.CodLingua)))
+                                                {
+                                                    <option value="@lang.CodLingua">@lang.DescLingua.Substring(0, 1).ToUpper()@lang.DescLingua.Substring(1, lang.DescLingua.Length - 1).ToLower()</option>
+                                                }
+                                            }
+                                        }
+                                    </select>
+                                    @Html.ValidationMessageFor(m => m._codLingua)
+                                </div>
+                                <div class="col-md-6 ">
+                                    <div class="rai-checkbox push-20-t">
+                                        <input type="checkbox" name="_setMadrelingua" id="_setMadrelingua" value="09" onchange="CheckMadrelingua('form-insertlanguages')" />
+                                <label for="_setMadrelingua" class="titleElements rai-caption">Madrelingua</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Autovalutazione"))
+                            {
+                            <div id="scelta_livelli">
+                                <div class="row push-20-t">
+                                    <div class="col-md-12">
+                                        <i class="rai-font-lg">Comprensione</i>
+                                    </div>
+                                </div>
+                                <div class="row push-5-t">
+                                    <div class="col-md-12">
+                                @Html.LabelForRequiredObbl(m => m._livAscolto, "Ascolto", new { @class="titleElements rai-caption requiredobbl" })
+                                        @Html.ValidationMessageFor(m => m._livAscolto)
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @{
+                                        var ascolto = (cvEnt.DAutovalutLingua.Where(m => ((m.Livello == "Comprensione") && (m.SottoLivello == "Ascolto")))).OrderBy(m => m.CodLivello);
+                                        i = 0;
+                                        foreach (var elem in ascolto)
+                                        {
+                                            string first_element_class = "";
+                                            if (i == 0)
+                                            {
+                                                first_element_class = "first-element-checkable";
+                                            }
+                                            else
+                                            {
+                                                first_element_class = "";
+                                            }
+                                            <div class="col-md-2">
+                                                <div class="rai-radio">
+                                                    @Html.RadioButtonFor(x => x._livAscolto, elem.CodLivello, new { @class = first_element_class }) @* , @data_popover_content = "#myPopover", @data_html = "true", @data_container = "body", @data_placement = "right", @data_content = elem.Descrizione, @data_original_title = elem.DescLivello *@
+                                                    <label for="ascolto-@i">@elem.CodLivello</label>
+
+                                                    <span tabindex="0" id="popidascolto-@i" data-popover-content="#myPopover" class="push-5-l" data-toggle="popover" data-html="true" data-container="body" data-placement="right" title="" data-content="@elem.Descrizione" data-original-title="@String.Format("{0}", elem.DescLivello)" data-trigger="focus"><i id="" class="fa fa-info-circle"></i></span>
+                                                </div>
+                                            </div>
+                                            i++;
+                                        }
+                                    }
+                                </div>
+                                <div class="row push-5-t">
+                                    <div class="col-md-12">
+                                @Html.LabelForRequiredObbl(m => m._livLettura, "Lettura", new { @class="titleElements rai-caption requiredobbl" })
+                                        @Html.ValidationMessageFor(m => m._livLettura)
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @{
+                                        var lettura = (cvEnt.DAutovalutLingua.Where(m => ((m.Livello == "Comprensione") && (m.SottoLivello == "Lettura")))).OrderBy(m => m.CodLivello);
+                                        i = 0;
+                                        foreach (var elem in lettura)
+                                        {
+                                            string first_element_class = "";
+                                            if (i == 0)
+                                            {
+                                                first_element_class = "first-element-checkable";
+                                            }
+                                            else
+                                            {
+                                                first_element_class = "";
+                                            }
+                                            <div class="col-md-2">
+                                                <div class="rai-radio">
+                                                    @Html.RadioButtonFor(x => x._livLettura, elem.CodLivello, new { @class = first_element_class })
+                                                    <label for="lettura-@i">@elem.CodLivello</label>
+                                                    <span tabindex="0" id="popidlettura-@i" data-popover-content="#myPopover" class="push-5-l" data-toggle="popover" data-html="true" data-container="body" data-placement="right" title="" data-content="@elem.Descrizione" data-original-title="@elem.DescLivello" data-trigger="focus"><i id="" class="fa fa-info-circle"></i></span>
+                                                </div>
+                                            </div>
+                                            i++;
+                                        }
+                                    }
+                                </div>
+
+
+
+                                <div class="row push-20-t">
+                                    <div class="col-md-12">
+                                        <i class="rai-font-lg">Parlato</i>
+                                    </div>
+                                </div>
+                                <div class="row push-5-t">
+                                    <div class="col-md-12">
+                                @Html.LabelForRequiredObbl(m => m._livInterazione, "Interazione", new { @class="titleElements rai-caption requiredobbl" })
+                                        @Html.ValidationMessageFor(m => m._livInterazione)
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @{
+                                        var interazione = (cvEnt.DAutovalutLingua.Where(m => ((m.Livello == "Parlato") && (m.SottoLivello == "Interazione")))).OrderBy(m => m.CodLivello);
+                                        i = 0;
+                                        foreach (var elem in interazione)
+                                        {
+                                            string first_element_class = "";
+                                            if (i == 0)
+                                            {
+                                                first_element_class = "first-element-checkable";
+                                            }
+                                            else
+                                            {
+                                                first_element_class = "";
+                                            }
+                                            <div class="col-md-2">
+                                                <div class="rai-radio">
+                                                    @Html.RadioButtonFor(x => x._livInterazione, elem.CodLivello, new { @class = first_element_class })
+                                                    <label for="inter-@i">@elem.CodLivello</label>
+                                                    <span tabindex="0" id="popidinterazione-@i" data-popover-content="#myPopover" class="push-5-l" data-toggle="popover" data-html="true" data-container="body" data-placement="right" title="" data-content="@elem.Descrizione" data-original-title="@elem.DescLivello" data-trigger="focus"><i id="" class="fa fa-info-circle"></i></span>
+                                                </div>
+                                            </div>
+                                            i++;
+                                        }
+                                    }
+                                </div>
+
+                                <div class="row push-5-t">
+                                    <div class="col-md-12">
+                                @Html.LabelForRequiredObbl(m => m._livProdOrale, "Produzione orale", new { @class="titleElements rai-caption requiredobbl" })
+                                        @Html.ValidationMessageFor(m => m._livProdOrale)
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @{
+                                        var prodOrale = (cvEnt.DAutovalutLingua.Where(m => ((m.Livello == "Parlato") && (m.SottoLivello == "Produzione orale")))).OrderBy(m => m.CodLivello);
+                                        i = 0;
+                                        foreach (var elem in prodOrale)
+                                        {
+                                            string first_element_class = "";
+                                            if (i == 0)
+                                            {
+                                                first_element_class = "first-element-checkable";
+                                            }
+                                            else
+                                            {
+                                                first_element_class = "";
+                                            }
+                                            <div class="col-md-2">
+                                                <div class="rai-radio">
+                                                    @Html.RadioButtonFor(x => x._livProdOrale, elem.CodLivello, new { @class = first_element_class })
+                                                    <label for="prod-@i">@elem.CodLivello</label>
+                                                    <span tabindex="0" id="popidprodorale-@i" data-popover-content="#myPopover" class="push-5-l" data-toggle="popover" data-html="true" data-container="body" data-placement="right" title="" data-content="@elem.Descrizione" data-original-title="@elem.DescLivello " data-trigger="focus"><i id="" class="fa fa-info-circle"></i></span>
+                                                </div>
+                                            </div>
+                                            i++;
+                                        }
+                                    }
+
+                                </div>
+
+                                <div class="row push-20-t">
+                                    <div class="col-md-12">
+                                        <i class="rai-font-lg">Produzione scritta</i>
+                                    </div>
+                                </div>
+                                <div class="row push-5-t">
+                                    <div class="col-md-12">
+                                @Html.LabelForRequiredObbl(m => m._livScritto, "Scritto", new { @class="titleElements rai-caption requiredobbl" })
+                                        @Html.ValidationMessageFor(m => m._livScritto)
+
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    @{
+                                        var scritto = (cvEnt.DAutovalutLingua.Where(m => ((m.Livello == "Produzione scritta") && (m.SottoLivello == "Scritto")))).OrderBy(m => m.CodLivello);
+                                        i = 0;
+                                        foreach (var elem in scritto)
+                                        {
+                                            string first_element_class = "";
+                                            if (i == 0)
+                                            {
+                                                first_element_class = "first-element-checkable";
+                                            }
+                                            else
+                                            {
+                                                first_element_class = "";
+                                            }
+                                            <div class="col-md-2">
+                                                <div class="rai-radio">
+                                                    @Html.RadioButtonFor(x => x._livScritto, elem.CodLivello, new { @class = first_element_class })
+                                                    <label for="scr-@i">@elem.CodLivello</label>
+                                                    <span tabindex="0" id="popidscritto-@i" data-popover-content="#myPopover" class="push-5-l" data-toggle="popover" data-html="true" data-container="body" data-placement="right" title="" data-content="@elem.Descrizione" data-original-title="@elem.DescLivello" data-trigger="focus"><i id="" class="fa fa-info-circle"></i></span>
+                                                </div>
+                                            </div>
+                                            i++;
+                                        }
+                                    }
+                                </div>
+
+
+
+                                <div class="row push-20-t">
+                                    <div class="col-md-12">
+                                <label for="_note" class="push-10-t titleElements rai-caption">Note esplicative</label>
+                                @Html.TextAreaFor(m => m._note, new { @class = "rai form-control", placeholder = "Inserire a testo libero (max 1000 caratteri)", id = "_note" })
+                                    </div>
+                                </div>
+
+                            </div>
+                            }
+
+                            <div class="row push-20-t">
+                                <div class="col-sm-12 text-center">
+                                    <a href="@Html.Raw(Request.Url.Scheme + "://" + Request.Url.Authority + Request.ApplicationPath.TrimEnd('/') + "/cv_online/pdf")" target="_blank" target="_blank"><p class="text-bold">Visualizza l'anteprima del tuo CV</p></a><br />
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <button class="btn rai-btn-primary  full-width" type="submit" onclick="submit_language(this)">Salva</button>
+                                </div>
+                            </div>
+
+
+                        </div>
+                    </form>
+            <div id="savedblanguage" class="alert alert-primary" style="position:fixed;bottom:10px;right:10px;display:none;z-index:100; width:250px;">
+                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                        <i class="fa fa-refresh fa-spin"></i> Salvataggio in corso
+                    </div>
+                }
+            }
+
+
+
+
+        </div>
+    </div>
+</div>
+
+<script>
+
+     $.validator.unobtrusive.parse($("#form-insertlanguages"));
+     jQuery("#form-insertlanguages .first-element-checkable").each(function (j) {
+         jQuery(this).trigger('click');
+     });
+
+     $('#_codLingua').on("select2:selecting", function (e, item) {
+         $('#_codLingua-error').hide();
+     });
+
+     $('#_codLingua').on('change', function () {
+         $('#_codLingua-error').hide();
+     }).on('keypress', function () {
+         $('#_codLingua-error').hide();
+     });
+</script>

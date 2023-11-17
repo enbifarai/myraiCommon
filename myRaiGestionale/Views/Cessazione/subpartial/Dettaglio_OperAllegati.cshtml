@@ -1,0 +1,107 @@
+﻿@using myRaiData.Incentivi
+@using myRaiCommonModel.Gestionale
+@model CessazioneAllContainer
+
+@{
+    string matricola = myRaiHelper.CommonHelper.GetCurrentUserMatricola();
+}
+
+@if (Model.Allegati.Count() > 0 || Model.EnabledAdd)
+{
+    if (Model.Stato != (int)myRaiHelper.IncStato.FileOverride)
+    {
+        <div class="row push-10-t">
+            <div class="col-sm-6">
+                <label class="rai-caption">Documenti allegati</label>
+            </div>
+        </div>
+    }
+    foreach (var all in Model.Allegati.OrderBy(x => x.TMS_TIMESTAMP))
+    {
+        <div id="allegato@(all.ID_ALLEGATO)">
+            <div class="row">
+                <div class="col-sm-12">
+                    <a href="@Url.Action("GetDoc", "Cessazione", new { idDoc = all.ID_ALLEGATO })" title="@all.DES_ALLEGATO"><i class="fa fa-download"></i>&nbsp; @(!String.IsNullOrWhiteSpace(all.COD_TITLE) ? all.COD_TITLE : all.NME_FILENAME)</a>
+                    @if (all.ElencoTag != null && all.ElencoTag.Any())
+                    {
+                        foreach (var item in all.ElencoTag)
+                        {
+                            <span class="text-italic"> (@item)</span>
+                        }
+                    }
+                    @if (all.COD_USER.Contains(matricola) && !all.DisableDelete)
+                    {
+                        <span> - </span><a href="#" class="text-italic" onclick="IncEliminaGenericDoc(@all.ID_ALLEGATO)">Elimina</a>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    if (Model.EnabledAdd && Model.Stato != (int)myRaiHelper.IncStato.RichiestaInserita)
+    {
+        <div class="row push-5-t">
+            <div class="col-sm-12">
+                @if (Model.Stato != (int)myRaiHelper.IncStato.FileOverride)
+                {
+                    <a href="#add-all-@Model.Stato" class="btn rai-btn-small full-width" data-toggle="collapse" aria-expanded="false" aria-controls="collapseExample">Aggiungi un nuovo file</a>
+                }
+                else
+                {
+                    <em class="rai-font-sm">Per sovrascrivere il prospetto, <a href="#add-all-@Model.Stato" class="" data-toggle="collapse" aria-expanded="false" aria-controls="collapseExample">clicca qui</a></em>
+                }
+            </div>
+        </div>
+
+        <div class="row collapse push-5-t" id="add-all-@Model.Stato">
+            <div class="col-sm-12">
+                <div class="panel panel-no-shadow remove-margin-bottom">
+                    <div class="panel-body">
+                        <div class="form-group">
+                            <input style="display:none" type="file" id="fileupload0-@Model.Stato" onchange="CessDettFileChanged(@Model.IdDipendente, 0, @(Model.Stato))" />
+                            <input name="IdAllegatoInviato" data-tipo="0-@(Model.Stato)"
+                                   class="id-all" type="hidden" id="id-allegato-0-@(Model.Stato)" />
+                            <div class="row push-10">
+                                <div class="col-sm-12">
+                                    <label class="rai-caption">Titolo del documento</label>
+                                    <span class="campoObbligatorio" style="font-weight:bold">*</span>
+                                    <input id="titolodoc0-@Model.Stato" type="text" class="form-control" />
+                                </div>
+                            </div>
+                            <div class="row push-10">
+                                <div class="col-sm-12">
+                                    <label class="rai-caption">Descrizione del documento</label>
+                                    <input id="descrizionedoc0-@Model.Stato" type="text" class="form-control" />
+                                </div>
+                            </div>
+                            @if (Model.Stato == (int)myRaiHelper.IncStato.TempFileAccettazione || Model.Stato == (int)myRaiHelper.IncStato.FileAccettazione || Model.Stato == (int)myRaiHelper.IncStato.RecessoEffettuato)
+                            {
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <label class="rai-caption">Tipologia</label>
+                                        @{
+                                            var list = new List<SelectListItem>();
+                                            list.Add(new SelectListItem() { Value = "", Text = "Generico" });
+                                            list.Add(new SelectListItem() { Value = "accettazione", Text = "Accettazione" });
+                                            list.Add(new SelectListItem() { Value = "recesso", Text = "Recesso" });
+                                        }
+                                        @Html.RaiSelect(String.Format("tag{0}-{1}", 0, Model.Stato), list, hideSearch: true)
+                                    </div>
+                                </div>
+                            }
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <div class="rai-btn-fill">
+                                        <button id="button-allegato-0-@Model.Stato" type="button" onclick="$('#fileupload0-@Model.Stato').click()" class="btn rai-btn-small" style="margin-bottom: 12px;margin-top:16px">
+                                            Scegli documento
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}

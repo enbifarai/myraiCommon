@@ -1,0 +1,559 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiHelper
+@using myRaiCommonModel.Gestionale
+@model CessazioneModel
+
+@{
+    int stato = Model.IsPreview?0:Model.Stato.ID_STATO;
+    bool showHalfModal = Model.IsPreview
+                        || !Model.Pratica.XR_INC_OPERSTATI.Any(x => x.XR_INC_STATI.IND_DETAIL_WIDGET)
+                        || Model.IsAnpal
+                        || (Model.AbilitaAvviaPratica && !AuthHelper.EnabledToSubFunc(CommonHelper.GetCurrentUserMatricola(), CessazioneHelper.INCENTIVI_HRGA_FUNC, "ADM"));
+    string nominativo = Model.Pratica.SINTESI1.Nominativo();
+
+    var tipologieList = new List<SelectListItem>()
+{
+new SelectListItem(){Value="Quota100",Text="Quota 100"},
+new SelectListItem(){Value="NoQuota100;PensioneVecchiaia",Text="No Quota 100 - Pensione di vecchiaia"},
+new SelectListItem(){Value="NoQuota100;PensioneAnticipata",Text="No Quota 100 - Pensione anticipata"},
+new SelectListItem(){Value="NoQuota100;PensioneAnzianita",Text="No Quota 100 - Pensione di anzianita"},
+};
+
+    var decodScelta = tipologieList.Where(x => x.Value == Model.Pratica.NOT_TIP_SCELTA).Select(x => x.Text).FirstOrDefault();
+    var decodAccert = tipologieList.Where(x => x.Value == Model.Pratica.NOT_TIP_ACCERT).Select(x => x.Text).FirstOrDefault();
+
+    var matObiettivi = myRaiGestionale.Controllers.CessazioneController.GetDateMaturazioneRequisiti();
+    var decodMat = matObiettivi.Where(x => x.Value == Model.Pratica.NOT_REQ_MATURATO).Select(x => x.Text).FirstOrDefault();
+}
+
+@if (!showHalfModal)
+{
+    <style>
+        #modal-dettaglioInc .modal-dialog {
+            width: 75%;
+        }
+    </style>
+}
+
+@using (Html.BeginModal("Scheda dipendente"))
+{
+    <div id="incContent" class="row">
+        <input type="hidden" id="openForAnpal" value="@(Model.IsAnpal?"true":"false")" />
+        <div class="@(showHalfModal ?"col-md-12":"col-md-7")">
+            <section class="panel ">
+                @if (!Model.IsPreview)
+                {
+                <header class="panel-heading">
+                    <h2 id="lblRightBox" class="panel-title">@Model.Tipologia.DES_TIPOLOGIA</h2>
+                </header>
+                }
+
+                <div class="panel-body">
+                    @Html.Partial("subpartial/Dettaglio_DatiAnagrafici", Model)
+                    @if (!Model.IsPreview)
+                    {
+                        @Html.Partial("subpartial/GestioneStati")
+                    }
+                    else
+                    {
+                        @Html.Partial("subpartial/Dettaglio_DatiRelazioni", Model.Pratica, ViewData)
+                    }
+                </div>
+            </section>
+        </div>
+        @if (!showHalfModal)
+        {
+            <div class="col-md-5">
+                @*<div style="overflow:hidden;overflow-y:auto;max-height:90vh">*@
+                <div>
+                    @foreach (var item in Model.Tipologia.XR_WKF_WORKFLOW.Where(x => x.XR_INC_STATI.IND_DETAIL_WIDGET || (x.ID_STATO == 1 && Model.Pratica.DTA_RICHIESTA.HasValue)).OrderBy(x => x.ORDINE))
+                    {
+                        if (Model.Pratica.XR_INC_OPERSTATI.Any(x => x.ID_STATO == item.ID_STATO && !x.DATA_FINE_VALIDITA.HasValue))
+                        {
+                            switch (item.ID_STATO)
+                            {
+
+                                case (int)IncStato.Conteggio:
+                                    @Html.Partial("subpartial/Dettaglio_DatiContabili", Model.Pratica, ViewData)
+                                    break;
+                                case (int)IncStato.Appuntamento:
+                                    @Html.Partial("subpartial/Dettaglio_DatiAppuntamento", Model.Pratica, ViewData)
+                                    break;
+                                case (int)IncStato.VerbaleCaricato:
+                                    @Html.Partial("subpartial/Dettaglio_DatiVerbale", Model.Pratica, ViewData)
+                                    break;
+                                case (int)IncStato.Cedolini:
+                                    @Html.Partial("subpartial/Dettaglio_DatiPagamento", Model.Pratica, ViewData)
+                                    break;
+                                case (int)IncStato.RichiestaAccettata:
+                                    <div class="block block-content-table block-transparent">
+                                        <div class="block-header block-content-mini">
+                                            <label class="block-title">@CessazioneController.GetBoxDescription((IncStato)item.ID_STATO)</label>
+                                        </div>
+                                        <div class="block-content block-content-mini rai-table-info">
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <a href="@Url.Action("GetModuloRich","Cessazione", new { idDip = Model.Pratica.ID_DIPENDENTE })" target="_blank"><i class="fa fa-download"></i>&nbsp; Modulo di richiesta</a>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-sm-6 ">
+                                                    <label class="rai-caption">Data Inserimento</label>
+                                                </div>
+                                                <div class="col-sm-6">
+                                                    <label>@Model.Pratica.DTA_RICHIESTA.Value.ToString("dd/MM/yyyy")</label>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-sm-6 ">
+                                                    <label class="rai-caption">Data uscita richiesta</label>
+                                                </div>
+                                                <div class="col-sm-6">
+                                                    <label>@Model.Pratica.DATA_USCITA_RICH.Value.ToString("dd/MM/yyyy")</label>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-sm-6">
+                                                    <label class="rai-caption">Tipologia scelta</label>
+                                                </div>
+                                                <div class="col-sm-6">
+                                                    <label>@decodScelta</label>
+                                                </div>
+                                            </div>
+
+                                            @if (Model.Pratica.NOT_TIP_SCELTA != Model.Pratica.NOT_TIP_ACCERT)
+                                            {
+                                                <div class="row">
+                                                    <div class="col-sm-6">
+                                                        <label class="rai-caption">Tipologia accertata</label>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <label>@decodAccert</label>
+                                                    </div>
+                                                </div>
+                                            }
+
+                                            @if (!String.IsNullOrWhiteSpace(Model.Pratica.NOT_REQ_MATURATO))
+                                            {
+                                                <div class="row">
+                                                    <div class="col-sm-6">
+                                                        <label class="rai-caption">Requisiti maturati</label>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <label>@decodMat</label>
+                                                    </div>
+                                                </div>
+                                            }
+
+                                            @if (Model.Pratica.DATA_PENSIONE_ANTICIPATA.HasValue)
+                                            {
+                                                <div class="row">
+                                                    <div class="col-sm-6">
+                                                        <label class="rai-caption">Data pensione anticipata</label>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <label>@Model.Pratica.DATA_PENSIONE_ANTICIPATA.Value.ToString("dd/MM/yyyy")</label>
+                                                    </div>
+                                                </div>
+                                            }
+
+                                            @if (Model.Pratica.DATA_ARRIVO_DOC.HasValue)
+                                            {
+                                                <div class="row">
+                                                    <div class="col-sm-6">
+                                                        <label class="rai-caption">Data arrivo estratti</label>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <label>@Model.Pratica.DATA_ARRIVO_DOC.Value.ToString("dd/MM/yyyy")</label>
+                                                    </div>
+                                                </div>
+                                            }
+                                            @if (Model.Pratica.DATA_RICH_INT.HasValue)
+                                            {
+                                                <div class="row">
+                                                    <div class="col-sm-6">
+                                                        <label class="rai-caption">Data richiesta integrazione</label>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <label>@Model.Pratica.DATA_RICH_INT.Value.ToString("dd/MM/yyyy")</label>
+                                                    </div>
+                                                </div>
+
+                                                if (Model.Pratica.DATA_ARRIVO_INT.HasValue)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-sm-6">
+                                                            <label class="rai-caption">Data arrivo integrazione</label>
+                                                        </div>
+                                                        <div class="col-sm-6">
+                                                            <label>@Model.Pratica.DATA_ARRIVO_INT.Value.ToString("dd/MM/yyyy")</label>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            }
+
+                                        </div>
+                                    </div>
+                                    break;
+                                case (int)IncStato.RecessoEffettuato:
+                                    <div class="block block-content-table block-transparent">
+                                        <div class="block-header block-content-mini">
+                                            <label class="block-title">@CessazioneController.GetBoxDescription((IncStato)item.ID_STATO)</label>
+                                        </div>
+                                        <div class="block-content block-content-mini rai-table-info">
+                                            @if (Model.Pratica.DATA_INVIO_PROP.HasValue)
+                                            {
+                                                <div class="row">
+                                                    <div class="col-sm-6 ">
+                                                        <label class="rai-caption">Data invio proposta</label>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <label>@Model.Pratica.DATA_INVIO_PROP.Value.ToString("dd/MM/yyyy")</label>
+                                                    </div>
+                                                </div>
+                                            }
+                                            @if (Model.Pratica.DATA_FIRMA_DIP.HasValue)
+                                            {
+                                                <div class="row">
+                                                    <div class="col-sm-6 ">
+                                                        <label class="rai-caption">Data firma proposta</label>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <label>@Model.Pratica.DATA_FIRMA_DIP.Value.ToString("dd/MM/yyyy")</label>
+                                                    </div>
+                                                </div>
+                                            }
+
+                                            @if (Model.Pratica.DTA_ACCETT_AZ.HasValue)
+                                            {
+                                                <div class="row">
+                                                    <div class="col-sm-6">
+                                                        <label class="rai-caption">Data invio accettazione</label>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <label>@Model.Pratica.DTA_ACCETT_AZ.Value.ToString("dd/MM/yyyy")</label>
+                                                    </div>
+                                                </div>
+                                            }
+
+                                            @if (Model.Pratica.DATA_FIRMA_DIP_ACCETT_AZ.HasValue)
+                                            {
+                                                <div class="row">
+                                                    <div class="col-sm-6">
+                                                        <label class="rai-caption">Data firma accettazione</label>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <label>@Model.Pratica.DATA_FIRMA_DIP_ACCETT_AZ.Value.ToString("dd/MM/yyyy")</label>
+                                                    </div>
+                                                </div>
+                                            }
+                                            @if (Model.Pratica.DTA_RECESSO.HasValue)
+                                            {
+                                                <div class="row">
+                                                    <div class="col-sm-6">
+                                                        <label class="rai-caption">Data recesso</label>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <label>@Model.Pratica.DTA_RECESSO.Value.ToString("dd/MM/yyyy")</label>
+                                                    </div>
+                                                </div>
+                                            }
+
+
+
+
+                                        </div>
+                                    </div>
+                                    break;
+                                case (int)IncStato.RichiestaDecaduta:
+                                case (int)IncStato.RichiestaRifiutata:
+                                    if (!Model.Pratica.XR_INC_OPERSTATI.Any(x => x.ID_STATO == (int)IncStato.RichiestaAccettata && !x.DATA_FINE_VALIDITA.HasValue))
+                                    {
+                                        <div class="block block-content-table block-transparent">
+                                            <div class="block-header block-content-mini">
+                                                <label class="block-title">@CessazioneController.GetBoxDescription((IncStato)item.ID_STATO)</label>
+                                            </div>
+                                            <div class="block-content block-content-mini rai-table-info">
+                                                <div class="row">
+                                                    <div class="col-sm-12">
+                                                        <a href="@Url.Action("GetModuloRich","Cessazione", new { idDip = Model.Pratica.ID_DIPENDENTE })" target="_blank"><i class="fa fa-download"></i>&nbsp; Modulo di richiesta</a>
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-sm-6 ">
+                                                        <label class="rai-caption">Data Inserimento</label>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <label>@Model.Pratica.DTA_RICHIESTA.Value.ToString("dd/MM/yyyy")</label>
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-sm-6 ">
+                                                        <label class="rai-caption">Data uscita richiesta</label>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <label>@Model.Pratica.DATA_USCITA_RICH.Value.ToString("dd/MM/yyyy")</label>
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-sm-6">
+                                                        <label class="rai-caption">Tipologia scelta</label>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <label>@decodScelta</label>
+                                                    </div>
+                                                </div>
+
+                                                @if (Model.Pratica.NOT_TIP_SCELTA != Model.Pratica.NOT_TIP_ACCERT)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-sm-6">
+                                                            <label class="rai-caption">Tipologia accertata</label>
+                                                        </div>
+                                                        <div class="col-sm-6">
+                                                            <label>@decodAccert</label>
+                                                        </div>
+                                                    </div>
+                                                }
+
+                                                @if (!String.IsNullOrWhiteSpace(Model.Pratica.NOT_REQ_MATURATO))
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-sm-6">
+                                                            <label class="rai-caption">Requisiti maturati</label>
+                                                        </div>
+                                                        <div class="col-sm-6">
+                                                            <label>@decodMat</label>
+                                                        </div>
+                                                    </div>
+                                                }
+
+                                                @if (Model.Pratica.DATA_PENSIONE_ANTICIPATA.HasValue)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-sm-6">
+                                                            <label class="rai-caption">Data pensione anticipata</label>
+                                                        </div>
+                                                        <div class="col-sm-6">
+                                                            <label>@Model.Pratica.DATA_PENSIONE_ANTICIPATA.Value.ToString("dd/MM/yyyy")</label>
+                                                        </div>
+                                                    </div>
+                                                }
+
+                                                @if (Model.Pratica.DATA_ARRIVO_DOC.HasValue)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-sm-6">
+                                                            <label class="rai-caption">Data arrivo estratti</label>
+                                                        </div>
+                                                        <div class="col-sm-6">
+                                                            <label>@Model.Pratica.DATA_ARRIVO_DOC.Value.ToString("dd/MM/yyyy")</label>
+                                                        </div>
+                                                    </div>
+                                                }
+                                                @if (Model.Pratica.DATA_RICH_INT.HasValue)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-sm-6">
+                                                            <label class="rai-caption">Data richiesta integrazione</label>
+                                                        </div>
+                                                        <div class="col-sm-6">
+                                                            <label>@Model.Pratica.DATA_RICH_INT.Value.ToString("dd/MM/yyyy")</label>
+                                                        </div>
+                                                    </div>
+
+                                                    if (Model.Pratica.DATA_ARRIVO_INT.HasValue)
+                                                    {
+                                                        <div class="row">
+                                                            <div class="col-sm-6">
+                                                                <label class="rai-caption">Data arrivo integrazione</label>
+                                                            </div>
+                                                            <div class="col-sm-6">
+                                                                <label>@Model.Pratica.DATA_ARRIVO_INT.Value.ToString("dd/MM/yyyy")</label>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="block block-content-table block-transparent">
+                                            <div class="block-header block-content-mini">
+                                                <label class="block-title">@CessazioneController.GetBoxDescription((IncStato)item.ID_STATO)</label>
+                                            </div>
+                                            <div class="block-content block-content-mini rai-table-info">
+                                                @if (Model.Pratica.DATA_INVIO_PROP.HasValue)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-sm-6 ">
+                                                            <label class="rai-caption">Data invio proposta</label>
+                                                        </div>
+                                                        <div class="col-sm-6">
+                                                            <label>@Model.Pratica.DATA_INVIO_PROP.Value.ToString("dd/MM/yyyy")</label>
+                                                        </div>
+                                                    </div>
+                                                }
+                                                @if (Model.Pratica.DATA_FIRMA_DIP.HasValue)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-sm-6 ">
+                                                            <label class="rai-caption">Data firma proposta</label>
+                                                        </div>
+                                                        <div class="col-sm-6">
+                                                            <label>@Model.Pratica.DATA_FIRMA_DIP.Value.ToString("dd/MM/yyyy")</label>
+                                                        </div>
+                                                    </div>
+                                                }
+
+                                                @if (Model.Pratica.DTA_ACCETT_AZ.HasValue)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-sm-6">
+                                                            <label class="rai-caption">Data invio accettazione</label>
+                                                        </div>
+                                                        <div class="col-sm-6">
+                                                            <label>@Model.Pratica.DTA_ACCETT_AZ.Value.ToString("dd/MM/yyyy")</label>
+                                                        </div>
+                                                    </div>
+                                                }
+
+                                                @if (Model.Pratica.DATA_FIRMA_DIP_ACCETT_AZ.HasValue)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-sm-6">
+                                                            <label class="rai-caption">Data firma accettazione</label>
+                                                        </div>
+                                                        <div class="col-sm-6">
+                                                            <label>@Model.Pratica.DATA_FIRMA_DIP_ACCETT_AZ.Value.ToString("dd/MM/yyyy")</label>
+                                                        </div>
+                                                    </div>
+                                                }
+                                                @if (Model.Pratica.DTA_RECESSO.HasValue)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-sm-6">
+                                                            <label class="rai-caption">Data recesso</label>
+                                                        </div>
+                                                        <div class="col-sm-6">
+                                                            <label>@Model.Pratica.DTA_RECESSO.Value.ToString("dd/MM/yyyy")</label>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+
+                            if (item.XR_INC_STATI.IND_CANADDFILE && (item.ID_STATO != (int)IncStato.Appuntamento || Model.Stato.ID_STATO != item.ID_STATO))
+                            {
+                                <div class="push-20" style="margin-top:-15px;">
+                                    <div id="dett-all-@item.ID_STATO" class="rai-table-info"></div>
+                                    <script>
+                                    RaiUpdateWidget('dett-all-@(item.ID_STATO)', '/Cessazione/Dettaglio_OperAllegati', 'html', { idDip: @Model.Pratica.ID_DIPENDENTE, stato:@item.ID_STATO});
+                                    </script>
+                                </div>
+                            }
+
+                            switch (item.ID_STATO)
+                            {
+                                case (int)IncStato.RichiestaAccettata:
+                                    if (Model.AllegatiCont.Any())
+                                    {
+                                        <div class="block block-content-table block-transparent">
+                                            <div class="block-header block-content-mini">
+                                                <label class="block-title">Conteggi incentivi</label>
+                                            </div>
+                                            <div class="block-content block-content-mini">
+                                                @foreach (var all in Model.AllegatiCont)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-sm-12">
+                                                            <a href="@Url.Action("GetDoc", "Cessazione", new { idDoc = all.ID_ALLEGATO })" title="@all.DES_ALLEGATO"><i class="fa fa-download"></i>&nbsp; @all.COD_TITLE</a>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                    break;
+                                case (int)IncStato.RecessoEffettuato:
+                                    if (Model.CanAnpal && !Model.Pratica.DATA_RECESSO_ANPAL.HasValue)
+                                    {
+                                        <div class="block block-content-table block-transparent">
+                                            <div class="block-header block-content-mini">
+                                                <label class="block-title">Dati Anpal</label>
+                                            </div>
+                                            <div class="block-content block-content-mini">
+                                                <div class="row">
+                                                    <div class="col-sm-12">
+                                                        <button class="btn rai-btn-small full-width" onclick="ShowIncentivato(@Model.Pratica.ID_DIPENDENTE, true)">Carica ricevuta Anpal</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+
+                                    if (Model.Pratica.DATA_RECESSO_ANPAL.HasValue && Model.AllegatiAnpal != null && Model.AllegatiAnpal.Any())
+                                    {
+                                        <div class="block block-content-table block-transparent">
+                                            <div class="block-header block-content-mini rai-table-info">
+                                                <label class="block-title">Dati Anpal</label>
+                                            </div>
+                                            <div class="block-content block-content-mini rai-table-info">
+                                                <div class="row">
+                                                    <div class="col-sm-6">
+                                                        <label class="rai-caption">Data invio</label>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <label>@Model.Pratica.DATA_RECESSO_ANPAL.Value.ToString("dd/MM/yyyy")</label>
+                                                    </div>
+                                                </div>
+                                                @foreach (var all in Model.AllegatiAnpal)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-sm-12">
+                                                            <a href="@Url.Action("GetDoc", "Cessazione", new { idDoc = all.ID_ALLEGATO })" title="@all.DES_ALLEGATO"><i class="fa fa-download"></i>&nbsp; @all.COD_TITLE</a>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                    break;
+                                case (int)IncStato.RichiestaDecaduta:
+                                case (int)IncStato.RichiestaRifiutata:
+                                    if (!Model.Pratica.XR_INC_OPERSTATI.Any(x => x.ID_STATO == (int)IncStato.RichiestaAccettata && !x.DATA_FINE_VALIDITA.HasValue) && Model.AllegatiCont.Any())
+                                    {
+                                        <div class="block block-content-table block-transparent">
+                                            <div class="block-header block-content-mini">
+                                                <label class="block-title">Conteggi incentivi</label>
+                                            </div>
+                                            <div class="block-content block-content-mini">
+                                                @foreach (var all in Model.AllegatiCont)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-sm-12">
+                                                            <a href="@Url.Action("GetDoc", "Cessazione", new { idDoc = all.ID_ALLEGATO })" title="@all.DES_ALLEGATO"><i class="fa fa-download"></i>&nbsp; @all.COD_TITLE</a>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+

@@ -1,0 +1,167 @@
+﻿@*@model myRai.Models.MatCampiModel*@
+@model List<myRaiCommonModel.PeriodoArretratoDipendente>
+
+@{
+
+    int GiorniPaginazione = myRaiHelper.CommonHelper.GetParametro<int>(myRaiHelper.EnumParametriSistema.PaginazioneCongedi);
+    int page = 0;
+    decimal totaleGiorni = (decimal)Model.Sum(x => x.Quantita);
+    int mesi = (int)(totaleGiorni / 30);
+    decimal giorni = totaleGiorni % 30;
+
+    string Totale = "";
+    if (mesi == 1)
+    {
+        Totale = "1 mese ";
+    }
+    else if (mesi > 1)
+    {
+        Totale = mesi + " mesi ";
+    }
+    if (giorni == 1)
+    {
+        Totale += " e 1 giorno";
+    }
+    else if (giorni > 1)
+    {
+        Totale += " e " + giorni + " giorni";
+    }
+    if (Totale == "")
+    {
+        Totale = "0 giorni";
+    }
+}
+
+<input type="hidden" id="totale-giorni-d" value="@totaleGiorni.ToString().Replace(",",".")" />
+
+@if (totaleGiorni == 0)
+{
+    <div class="row">
+        <div class="col-sm-12">
+            <span>NESSUN DATO TROVATO</span>
+        </div>
+    </div>
+}
+else
+{
+    <div id="peri-container">
+
+        <div class="row">
+            <div class="col-sm-12" style="text-align:right">
+
+                <span class="rai-font-md-bold" style="display:block;margin-top:30px">Totale: @Totale</span>
+
+
+                <div style="height:1px;width:100%;background-color:#eee;margin-bottom: 6px;margin-top: 10px;"></div>
+            </div>
+        </div>
+        <div class="row" style="padding-top:10px;padding-bottom:8px">
+            <div class="col-sm-5"><span class="rai-font-md-neutral-bold">Periodo</span></div>
+            <div class="col-sm-5"><span class="rai-font-md-neutral-bold">Eccezione</span></div>
+            <div class="col-sm-2" style="text-align:right"><span class="rai-font-md-neutral-bold">Giorni</span></div>
+        </div>
+        <div class="row">
+            <div class="col-sm-12">
+                <div style="height:1px;width:100%;background-color:#eee;margin-bottom: 6px;margin-top: 10px;"></div>
+            </div>
+        </div>
+
+        @{
+            int counter = 0;
+            string h = "";
+            if (Model.Count() > GiorniPaginazione)
+            {
+                h = "height:250px";
+            }
+        }
+        <div style="@h">
+
+
+            @foreach (var item in Model)
+            {
+
+                if (item.D1 != null && item.D2 != null)
+                {
+                    page = 1 + (counter / GiorniPaginazione);
+                    counter++;
+                    <div class="row" style="padding-top:10px;padding-bottom:8px;@(page>1?"display:none":"")" data-paginadip="@page">
+                        <div class="col-sm-5"><span class="rai-font-md">@item.D1.ToString("dd/MM/yyyy") - @item.D2.ToString("dd/MM/yyyy")</span></div>
+                        <div class="col-sm-5"><span class="rai-font-md">@item.Eccezione  </span></div>
+                        <div class="col-sm-2" style="text-align:right"><span class="rai-font-md">@item.Quantita</span></div>
+                    </div>
+                }
+
+            }
+        </div>
+        @if (page > 1)
+        {
+            <div class="row" style="margin-top:20px">
+                <div class="col-sm-12" style="text-align:right">
+                    <div class="btn-action-icon-container">
+                        <button id="go-prev-dip" class="btn btn-action-icon disable" type="button" onclick="GoPagePeriodiDip(1)">
+                            <i class="fa fa-chevron-left"></i>
+                        </button>
+
+                        @for (int i = 1; i <= page; i++)
+                        {
+                            if (i == 1)
+                            {
+                                <span data-pagination-dip="@i" style="margin-left:8px;margin-right:8px;padding-top:6px">@i</span>
+                            }
+                            else
+                            {
+                                <span data-pagination-dip="@i" class="text-primary" onclick="GoPagePeriodiDip(@i)" style="cursor:pointer;margin-left:8px;margin-right:8px;padding-top:6px">@i</span>
+                            }
+                        }
+
+                        <button id="go-next-dip" type="button" class="btn btn-action-icon @(page ==1?"disable":"")" onclick="GoPagePeriodiDip(2)">
+                            <i class="fa fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <input type="hidden" value="@page" id="total-page-dip" />
+    </div>
+}
+
+
+<script>
+    $("#totale-dipendente").text('@Totale');
+    function GoPagePeriodiDip(yourpage) {
+        $("div.row[data-paginadip]").hide();
+        $("div.row[data-paginadip=" + yourpage + "]").show();
+        $("span[data-pagination-dip]").each(function () {
+            var spanPage = $(this).attr("data-pagination-dip");
+            if (spanPage == yourpage) {
+                $(this).removeAttr("onclick");
+                $(this).removeClass("text-primary");
+                $(this).css("cursor", "");
+            }
+            else {
+                $(this).attr("onclick", "GoPagePeriodiDip(" + spanPage + ")");
+                $(this).addClass("text-primary");
+                $(this).css("cursor", "pointer");
+            }
+        });
+        debugger
+
+        if (yourpage > 1) {
+            $("#go-prev-dip").removeClass("disable");
+            $("#go-prev-dip").attr("onclick", "GoPagePeriodiDip(" + (Number(yourpage - 1)) + ")");
+        }
+        else {
+            $("#go-prev-dip").addClass("disable");
+        }
+        var totPage = $("#total-page-dip").val();
+        if (yourpage < totPage) {
+            var nextpage = yourpage + 1;
+            $("#go-next-dip").removeClass("disable");
+            $("#go-next-dip").attr("onclick", "GoPagePeriodiDip(" + nextpage + ")");
+        }
+        else {
+            $("#go-next-dip").addClass("disable");
+        }
+    }
+</script>

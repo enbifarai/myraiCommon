@@ -1,0 +1,223 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model ModelDash
+
+<div id="daapprovare">
+    <h1 class="lead" style="font-size: 2.5rem;">Le cose da approvare </h1>
+    <div class="block2 tabs tabs-primary" id="my-block">
+        <ul class="nav nav-tabs nav-tabs-alt" data-toggle="tabs" id="mainul">
+            @if ( Model.elencoProfilieSedi != null )
+            {
+                int TotUrgenti = Model.elencoProfilieSedi.elencoSediEccezioni.SelectMany( x => x.eccezionidaValidare.Where( item => item.IsUrgent == true ) ).Count( );
+                int TotS = Model.elencoProfilieSedi.elencoSediEccezioni.SelectMany( x => x.eccezionidaValidare.Where( item => item.IsOverdue == true ) ).Count( );
+                foreach ( var ragg in Model.elencoProfilieSedi.RaggruppamentiEccezioni )
+                {
+                    <li @if ( ragg.IdRaggruppamento == 0 ) { @: class="active"
+                        }>
+                        <a href="#tab-@ragg.IdRaggruppamento">
+                            @ragg.Descrizione
+                        @if ( ragg.IdRaggruppamento == 1 && TotUrgenti > 0 )
+                        {
+                            <span id="badge-tot-u" style="background-color: #f3b760" class="badge">@TotUrgenti</span>
+                        }
+                        @if ( ragg.IdRaggruppamento == 2 && TotS > 0 )
+                        {
+                            <span id="badge-tot-s" style="background-color: #f3b760" class="badge">@TotS</span>
+                        }
+                    </a>
+                </li>
+                }
+            }
+            <li class="pull-right">
+                <ul class="block-options push-10-t push-10-r">
+                    <li>
+                        <button type="button" data-toggle="block-option" data-action="refresh_toggle"
+                                data-refreshurl="/home/refreshDaApprovare" data-parentdiv="daapprovare"
+                                data-refreshelements="my-block"
+                                data-action-mode="demo">
+                            <i class="si si-refresh"></i>
+                        </button>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+
+        <div id="appr" class="block-content tab-content">
+
+            @if ( Model.elencoProfilieSedi == null )
+            {
+                <span class="my-card-loading-block" style="width: 28%; height: 18px;"></span>
+                <span class="my-card-loading-block" style="width: 10%; height: 8px;"></span>
+            }
+
+            @if ( Model.elencoProfilieSedi != null )
+            {
+                //per ogni tab (tutto/urgenti/scadute/altro)
+                foreach ( var ragg in Model.elencoProfilieSedi.RaggruppamentiEccezioni )
+                {
+                    <div class="tab-pane @(ragg.IdRaggruppamento == 0 ? "active" : "")" id="tab-@ragg.IdRaggruppamento">
+                        <div class="divall" style="width: 100%; text-align: right; display: none;margin-bottom:4px">
+                        <button class="button-approva-tutti btn btn-lg btn-default" style="padding:4px" 
+                                 @if (Model.RichiedeVisti)
+                                {
+                                    @:data-richiedevisto="1"
+                                }
+                                type="submit"><i class="fa fa-fw fa-check text-success"></i><small style="font-size:70%;font-weight:300">Approva sel.</small></button>
+
+                        <button class="button-rifiuta-tutti btn btn-lg btn-default" style="padding:4px" 
+                                 @if (Model.RichiedeVisti)
+                                {
+                                    @:data-richiedevisto="1"
+                                }
+                                type="submit"><i class="fa fa-fw fa-remove text-danger"></i><small style="font-size:70%;font-weight:300">Rifiuta sel.</small></button>
+
+                        </div>
+                        <div id="approv">
+
+                            <table id="tabapp" class="js-table-sections table table-hover">
+                                <thead>
+                                    <tr>
+
+                                        <th style="width: 2%;"></th>
+                                        <th style="width: 20%;"></th>
+                                        <th class="hidden-xs" style="width: 40%;"></th>
+                                        <th style="width: 30%;"></th>
+                                        <th class="text-center" style="width: 70px;"></th>
+                                    </tr>
+                                </thead>
+
+                                @if ( Model.elencoProfilieSedi != null && Model.elencoProfilieSedi.elencoSediEccezioni.Count > 0 &&
+                                    ( ragg.IdRaggruppamento == 0 ||
+                                        ( ragg.IdRaggruppamento == 1 && Model.elencoProfilieSedi.elencoSediEccezioni.Any( x => x.eccezionidaValidare.Any( w => w.IsUrgent ) ) ) ||
+                                        ( ragg.IdRaggruppamento == 2 && Model.elencoProfilieSedi.elencoSediEccezioni.Any( x => x.eccezionidaValidare.Any( w => w.IsOverdue ) ) ) ||
+                                        ( ragg.IdRaggruppamento == 3 && Model.elencoProfilieSedi.elencoSediEccezioni.Any( x => x.eccezionidaValidare.Any( w => !w.IsUrgent && !w.IsOverdue ) ) )
+                                        ) )
+                                {
+                                    int sediVisualizzate = 0;
+                                    //per ogni sede nel tab
+                                    foreach ( daApprovareModel.sedegappAbilitata SedeAbil in Model.elencoProfilieSedi.elencoSediEccezioni.Where( f => f.Accesso_in_scrittura ) )
+                                    {
+                                        if ( ragg.IdRaggruppamento == 0 && SedeAbil.eccezionidaValidare.Count( ) == 0 )
+                                        {
+                                            continue;
+                                        }
+                                        if ( ragg.IdRaggruppamento == 1 && SedeAbil.eccezionidaValidare.Where( x => x.IsUrgent == true ).Count( ) == 0 )
+                                        {
+                                            continue;
+                                        }
+                                        if ( ragg.IdRaggruppamento == 2 && SedeAbil.eccezionidaValidare.Where( x => x.IsOverdue == true ).Count( ) == 0 )
+                                        {
+                                            continue;
+                                        }
+                                        if ( ragg.IdRaggruppamento == 3 && SedeAbil.eccezionidaValidare.Where( x => x.IsUrgent == false && x.IsOverdue == false ).Count( ) == 0 )
+                                        {
+                                            continue;
+                                        }
+                                        sediVisualizzate++;
+
+                                        //intestazione sede + totale richieste
+                                        <tbody class="@(Model.elencoProfilieSedi.elencoSediEccezioni.Count == 1 ? "js-table-sections-header open" : "js-table-sections-header")">
+                                            <tr>
+                                                <td onclick="$(this).closest('tbody').toggleClass('open')" class="text-center">
+                                                    <i class="fa fa-angle-right"></i>
+                                                </td>
+                                                <td colspan="2" onclick="$(this).closest('tbody').toggleClass('open')">
+                                                    <em class="text-gray-darker">@SedeAbil.Codice_sede_gapp - @SedeAbil.Descrittiva_sede_gapp</em>
+                                                </td>
+
+                                                <td colspan="3" class="text-right">
+                                                    @{
+                                                        int r = 0;
+                                                        if ( ragg.IdRaggruppamento == 0 )
+                                                        {
+                                                            r = SedeAbil.eccezionidaValidare.Count( );
+                                                        }
+                                                        else
+                                                        {
+                                                            r = SedeAbil.eccezionidaValidare
+                                                            .Where( d => ragg.IdRaggruppamento == 0 ||
+                                                                 ( ragg.IdRaggruppamento == 1 && d.IsUrgent == true ) ||
+                                                                 ( ragg.IdRaggruppamento == 2 && d.IsOverdue == true ) ||
+                                                                 ( ragg.IdRaggruppamento == 3 && d.IsOverdue == false && d.IsUrgent == false )
+                                                                ).Count( );
+                                                        }
+                                                    }
+                                                    <span class="label label-info">@r.ToString( ) richiest@(r == 1 ? "a" : "e")</span>
+
+
+                                                </td>
+                                            </tr>
+                                        </tbody>
+
+                                        <tbody class="tbodydata">
+
+                                            <tr>
+                                                <td colspan="" style="padding-top: 0px;padding-bottom: 0px;">
+                                                    <label class="css-input css-checkbox css-checkbox-rounded css-checkbox-sm css-checkbox-info">
+                                                        <input class="seltutti" type="checkbox" onchange="SelTutti(this,'@SedeAbil.Codice_sede_gapp')">
+                                                        <span></span>
+                                                    </label>
+                                                </td>
+                                                <td colspan="6" style="padding-top: 0px; padding-bottom: 0px;"><span style="font-size: 85%;vertical-align: middle;margin-top: 8px;display: block;">Seleziona tutti</span></td>
+                                            </tr>
+                                            @*stampa row eccezioni*@
+                                            @foreach ( MyRaiServiceInterface.it.rai.servizi.digigappws.Eccezione eccezione in SedeAbil.eccezionidaValidare
+                                                .Where( d => ragg.IdRaggruppamento == 0 ||
+                                                     ( ragg.IdRaggruppamento == 1 && d.IsUrgent == true ) ||
+                                                     ( ragg.IdRaggruppamento == 2 && d.IsOverdue == true ) ||
+                                                     ( ragg.IdRaggruppamento == 3 && d.IsOverdue == false && d.IsUrgent == false )
+                                                   ).Take( Model.elencoProfilieSedi.MaxRowsVisualizzabili ) )
+                                            {
+                                                @Html.Partial( "~/Views/Responsabile/_TRdaapprovare.cshtml" , eccezione )
+                                            }
+
+                                            <tr>
+                                                <td class="text-center"></td>
+                                                <td class="font-w600 text-success"></td>
+                                                <td></td>
+
+                                                <td colspan="2" class="text"></td>
+                                                <td></td>
+                                            </tr>
+
+                                        </tbody>
+                                    }
+                                    if ( sediVisualizzate == 0 )
+                                    {
+                                        <tbody>
+                                            @Html.Partial( "_nodati" )
+                                        </tbody>
+                                    }
+                                }
+                                else
+                                {
+                                    <tbody>
+                                        @Html.Partial( "_nodati" )
+                                    </tbody>
+                                }
+                            </table>
+
+
+
+                        </div>
+
+
+
+                        @if ( Model.elencoProfilieSedi != null && Model.elencoProfilieSedi.FrecciaVisibile )
+                        {
+                            <div class="block-content block-content-full text-center">
+                                <a href="/Responsabile/totaledaapprovare"><i class="si si-arrow-right fa-2x text-info"></i></a>
+                            </div>
+                        }
+                    </div>
+                }
+            }
+        </div>
+
+
+    </div>
+</div>
+

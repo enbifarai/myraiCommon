@@ -1,0 +1,93 @@
+﻿@using myRaiCommonModel
+@using myRaiHelper
+@model myRaiCommonModel.RichiestaLoader
+
+@{
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    ViewBag.Title = "HRIS - Richieste";
+
+
+    var tipologie = Enum.GetValues(typeof(TipoRichiestaAnag))
+                        .Cast<TipoRichiestaAnag>()
+                        .Select(d => new SelectListItem() { Value = d.ToString(), Text = d.GetAmbientValue() })
+                        .ToList();
+
+}
+
+
+
+<section role="main" class="content-body" style="padding-top:10px;">
+
+
+    <!-- start: page -->
+    <!-- Main Container -->
+
+    <main id="main-container">
+
+        <div class="content">
+            <div class="row">
+                <div class="col-md-8">
+                    @using (Html.BeginPanel(myRaiHelper.PanelType.PanelNoPadding, "Elenco richieste", false))
+                    {
+                        <div id="cont-rich">
+                            <div class="height-100">&nbsp;</div>
+                        </div>
+                    }
+                </div>
+                <div class="col-md-4">
+                    @using (Html.BeginPanel(PanelType.Panel, "Ricerca", false))
+                    {
+                        using (Ajax.BeginForm("ElencoRichieste", "Richieste", new AjaxOptions
+                        {
+                            InsertionMode = InsertionMode.Replace,
+                            HttpMethod = "POST",
+                            UpdateTargetId = "cont-rich",
+                            OnBegin = "$('#cont-rich').addClass('rai-loader')",
+                            OnSuccess = "$('#cont-rich').removeClass('rai-loader')"
+                        }, new { id = "form-rich", @class = "", role = "search" }))
+                        {
+                            <div class="form-group">
+                                <div class="row">
+                                    <div class="col-sm-12 push-10">
+                                        @Html.LabelFor(m => m.Matricola, "Matricola", new { @class = "rai-caption" })
+                                        @Html.TextBoxFor(m => m.Matricola, new { @class = "form-control" })
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-12 push-10">
+                                        @Html.LabelFor(m => m.Nominativo, "Nominativo", new { @class = "rai-caption" })
+                                        @Html.TextBoxFor(m => m.Nominativo, new { @class = "form-control" })
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-12 push-10">
+                                        @Html.LabelFor(m => m.Tipologie, "Tipologie", new { @class = "rai-caption" })
+                                        @Html.DropDownListFor(m => m.Tipologie, tipologie, new { @class = "form-control" })
+                                    </div>
+                                </div>
+
+                                <div class="row form-button">
+                                    <div class="col-sm-12 rai-btn-fill">
+                                        <input class="btn rai-btn-secondary" type="reset" value="Azzera" onclick="event.preventDefault();$('#form-rich').resetForm();$('#form-rich').submit()" />
+                                        <input class="btn rai-btn-primary" type="submit" value="Cerca" />
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- end: page -->
+</section>
+
+@Html.RenderModal("richiestaDematerializzazione", size: ModalSize.Half)
+@Html.RenderModal("richiesta", size: ModalSize.Half)
+
+@section afterjs{
+    <script>
+    RaiUpdateWidget('cont-rich', '@Url.Action("ElencoRichieste", "Richieste")', 'html');
+    </script>
+}

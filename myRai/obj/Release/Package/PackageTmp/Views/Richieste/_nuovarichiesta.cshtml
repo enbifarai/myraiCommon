@@ -1,0 +1,585 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+<style>
+    #periodo-scroll:not(.move){
+        display:none;
+    }
+    #periodo-scroll.move1 {
+        display:block;
+        padding: 10px;
+        background-color: #E0E7EB;
+    }
+</style>
+
+@model  List<myRaiData.MyRai_Raggruppamenti>
+<div class="rai modal right fade" id="modal-popin" role="dialog" aria-modal="true" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-popin">
+        <form id="form-inserimento" class="js-form1 validation form-horizontal" method="post" action="ajax/inserimento" novalidate="novalidate">
+            <input type="hidden" id="cambio-turni" name="cambioturni" />
+            <div class="rai modal-content height100 scroll-container">
+
+                <div class="block block-transparent remove-margin-b">
+                    <div class="block-header">
+                        <div style="display:table-cell;vertical-align:middle;height:58px;position:relative;top:-15px;">
+                            <label class="rai-font-modal-heading">Gestisci le tue presenze/assenze</label>
+                            @*<label class="rai-font-modal-heading" id="periodo-scroll"></label>*@
+                        </div>
+                        <div class="block-options">
+                            <button data-dismiss="modal" class="btn btn-action-icon"><i class="glyphicon glyphicon-remove"></i></button>
+                        </div>
+                    </div>
+                    <div class=" text-center rai-font-md-bold" id="periodo-scroll">
+
+                    </div>
+                    <div class="block-content">
+                        <div class="row">
+                            <div class="col-md-7">
+                                <section class="rai panel">
+                                    <header class="panel-heading">
+                                        <h2 class="panel-title">Richiedi</h2>
+                                    </header>
+                                    <div class="panel-body">
+
+                                        <div class="row">
+                                            <div class="col-sm-12"> <label id="titolodate">Seleziona le date</label></div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-sm-12" style="MARGIN-TOP: -10PX;"> <small><em id="altregiornate"></em></small></div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-sm-12" id="col-boxdate">
+                                                <div class="row">
+                                                    <div class="col-sm-5">
+                                                        <div class="input-group mb-md">
+                                                            <span role="link" style="cursor:pointer" onclick="$('#data_da').datetimepicker('show')" onkeydown="$('#data_da').datetimepicker('show')" class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                                                            <input class="js-datetimepicker form-control" data-format="DD/MM/YYYY" data-locale="it" type="text" id="data_da" name="data_da" aria-label="Inserisci la data o l'inizio del periodo" placeholder="Dal">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-sm-5">
+                                                        <div class="input-group mb-md">
+                                                            <span style="cursor:pointer" onclick="$('#data_a').datetimepicker('show')" class="input-group-addon"><i class="icons icon-calendar" style="cursor:pointer" onclick="$('#data_a').datetimepicker('show')"></i></span>
+                                                            <input class="js-datetimepicker form-control" data-format="DD/MM/YYYY" data-locale="it" type="text" id="data_a" name="data_a" aria-label="Inserisci la datadi fine periodo" placeholder="al">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-sm-2">
+                                                        <button id="dateok" onclick="ShowWizard()" class="btn btn-primary full-width disable" type="button">Vai</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div id="proposteday" class="block " tabindex="0">
+                                            @*.............AJAX CONTENT PROPOSTE AUTOMATICHE.........*@
+                                        </div>
+
+
+                                        <input type="hidden" id="currentpage" value="1" />
+                                        <input type="hidden" id="enabledpage" value="1" />
+
+                                        <div id="giornata-chiusa"></div>
+
+                                        <div class="row" id="wiz-tit" style="margin-left:-15px;margin-right:-15px;">
+                                            <div class="col-sm-12 no-padding">
+                                                <div class="rai-nav-fill" style="padding:10px;">
+                                                    <div class="rai-nav-fill-item">&nbsp;</div>
+                                                    <div class="rai-nav-fill-item text-right">
+                                                        <a aria-label="Vai alla data precedente" class="daybefore" href="javascript:ScorriBack()"><i class="icons icon-arrow-left-circle" style="margin-right:2px;"></i></a>
+                                                    </div>
+                                                    <div class="rai-nav-fill-item-label text-center">
+                                                        <span class="font-w600 tit-richieste" style="text-align:center;text-transform:none">Richieste per il: </span>
+                                                        <span id="lblSceltaWizard" class="giorno-display" style="text-align: center;font-weight:bold;margin-top:2px"></span>
+                                                    </div>
+                                                    <div class="rai-nav-fill-item text-left">
+                                                        <a aria-label="Vai alla data successiva" class="dayafter" href="javascript:ScorriAhead()"><i class="icons icon-arrow-right-circle" style="margin-left:2px;"></i></a>
+                                                    </div>
+                                                    <div class="rai-nav-fill-item">&nbsp;</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-sm-12">
+
+
+                                                <div class="block" id="wiz-parent" tabindex="0" aria-labelledby="lblSceltaWizard">
+                                                    @*<div id="wiz-tit" class="block-header pull-up-block">
+                                                        @*  <ul class="block-options">
+                                                                <li>
+                                                                    <button type="button" data-toggle="block-option" data-action="content_toggle"></button>
+                                                                </li>
+                                                            </ul>*@
+                                                    @*<h4 class="font-w600 tit-richieste" style="text-align:center">
+                                                                Richieste per il:
+
+                                                            </h4>
+
+
+                                                            <div class="rai-nav-fill">
+                                                                <div class="rai-nav-fill-item">
+                                                                    <a aria-label="Vai alla data precedente" class="daybefore" href="javascript:ScorriBack()"><i class="icons icon-arrow-left-circle"></i></a>
+                                                                </div>
+                                                                <div class="rai-nav-fill-item-label">
+                                                                    <span class="font-w600 tit-richieste" style="text-align:center;text-transform:none">Richieste per il: </span>
+                                                                    <span id="lblSceltaWizard" class="giorno-display" style="text-align: center;font-weight:bold;margin-top:2px"></span>
+                                                                </div>
+                                                                <div class="rai-nav-fill-item">
+                                                                    <a aria-label="Vai alla data successiva" class="dayafter" href="javascript:ScorriAhead()"><i class="icons icon-arrow-right-circle"></i></a>
+                                                                </div>
+                                                            </div>
+
+                                                        </div>*@
+
+                                                    <div id="wiz-body">
+                                                        <div class="js-wizard-classic-validation block">
+
+
+
+                                                            <div id="newwizard" class="rai wizard-progress wizard-progress-llg wiznew" role="tablist">
+                                                                @*<div class="steps-progress">
+                                                                        <div class="progress-indicator" style="width: 0%;"></div>
+                                                                    </div>*@
+                                                                <ul class="wizard-steps">
+                                                                    <li class=" tabhead tabheadrich" id="primoTab" role="presentation">
+                                                                        <a role="tab" aria-label="Scegli il tipo di richiesta" aria-controls="validation-classic-step1" id="tab1" onclick="ClickedTab(1)" href="#validation-classic-step1" data-toggle="tab"><span>1</span>Scegli il tipo</a>
+
+                                                                        <!--	<a href="#w4-account" data-toggle="tab"><span>1</span>Account Info</a>*-->
+                                                                    </li>
+                                                                    <li class="tabhead tabheadrich" id="secondoTab" role="presentation">
+                                                                        <a role="tab" tabindex="-1" aria-label="Scegli il tipo di eccezione" aria-controls="validation-classic-step2" id="tab2" onclick="ClickedTab(2)" href="#validation-classic-step2" data-toggle="tab"><span>2</span>Scegli l'eccezione</a>
+
+                                                                        <!--<a href="#w4-profile" data-toggle="tab"><span>2</span>Profile Info</a>-->
+                                                                    </li>
+                                                                    <li class="tabhead tabheadrich" id="terzoTab" role="presentation">
+                                                                        @*	<a href="#w4-billing" data-toggle="tab"><span>3</span>Billing Info</a>*@
+                                                                        <a role="tab" tabindex="-1" aria-label="Inserisci i dati della richiesta" aria-controls="validation-classic-step3" id="tab3" onclick="ClickedTab(3)" href="#validation-classic-step3" data-toggle="tab"><span>3</span>Inserisci i dati</a>
+
+                                                                    </li>
+
+                                                                </ul>
+                                                            </div>
+
+                                                            <!-- END Step Tabs -->
+                                                            <!-- Form -->
+                                                            <!-- Steps Content -->
+                                                            <div class="block-content tab-content no-padding" style="overflow: visible; border: 0px; box-shadow: none">
+                                                                <!-- Step 1 -->
+                                                                <div class="tab-pane push-30-t push-50 active" id="validation-classic-step1" role="tabpanel" tabindex="0">
+                                                                    <div class="form-group">
+                                                                        <div class="col-xs-12">
+                                                                            @if (myRai.Models.Utente.GestitoSirio() && HttpContext.Current.Session["AttivitaCeitonError"] != null)
+                                                                            {
+                                                                                <em style="color:red;font-weight:bold" id="no-ceit-activity">Alcune eccezioni non sono disponibili causa mancata connessione al servizio delle attività Ceiton.</em><input type="hidden" value="@HttpContext.Current.Session["AttivitaCeitonError"]" />
+                                                                            }
+
+                                                                            <ul class="nav nav-justified">
+                                                                                @foreach (var ragg in Model)
+                                                                                {
+                                                                                    <li class="col-4">
+                                                                                        <a id="icona-raggr-@ragg.IdRaggruppamento" class="no-padding disable rai-radio-box icone-raggr text-center"
+                                                                                           onclick="AbilitaPagina(2,@ragg.IdRaggruppamento,'@ragg.Descrizione')"
+                                                                                           href="javascript:void(0)">
+                                                                                            <div class="block-content border-b">
+                                                                                                <i class="rai-radio-box-icon @ragg.classe_icona" style="font-size: 3em; "></i>
+                                                                                            </div>
+                                                                                            <div class="block-content block-content-full block-content-mini">
+                                                                                                <label class="rai-font-md">@ragg.Descrizione</label>
+                                                                                            </div>
+                                                                                        </a>
+                                                                                    </li>
+                                                                                }
+
+                                                                            </ul>
+
+
+
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <!-- END Step 1 -->
+                                                                <!-- Step 2 -->
+                                                                <div class="tab-pane push-30-t push-50" id="validation-classic-step2" role="tabpanel" tabindex="0" aria-labelledby="idTipologiaEccezione">
+                                                                    <div class="form-group">
+
+                                                                        <div class="col-md-12">
+                                                                            <div class="my-breadcrumb">
+                                                                                <span>
+                                                                                    <span id="idTipologiaEccezione" class="my-breadcrumb-link raggr-selez"></span>
+                                                                                    <span class="my-breadcrumb-separator">&gt;</span>
+                                                                                </span>
+                                                                                <span>
+                                                                                    <span class="my-breadcrumb-link ecc-selez"></span>
+
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="col-md-12 push-20-t">
+                                                                            <div class="form-material" style="width: 100%">
+                                                                                @*  <label for="select-eccezioni">Eccezione</label>*@
+                                                                                <select id="select-eccezioni" class="form-control enable-next-page" style="display:none;width: 100%; margin-top: 10px" name="cod_eccezione"></select>
+
+
+                                                                                <br />
+                                                                                <span id="select_eccezioni_descAggiuntiva_Container" style="font-style:italic; display:none; margin-bottom: 5px;">
+                                                                                    <p style="margin-top: -30px;">&nbsp;</p>
+                                                                                    @*<i class="fa fa-info"></i>*@
+                                                                                    <span id="select_eccezioni_descAggiuntiva"></span>
+                                                                                    <p style="margin-top: -30px;">&nbsp;</p>
+                                                                                </span>
+
+                                                                                <div id="feriedetail" class="hide">
+                                                                                    <ul class="nav nav-justified" style="display:table">
+
+                                                                                        @*<visualizzaFerie>true</visualizzaFerie>
+                                                                                            <visualizzaFC>false</visualizzaFC>
+                                                                                            <visualizzaPermessi>false</visualizzaPermessi>
+                                                                                            <visualizzaPermessiGiornalisti>true</visualizzaPermessiGiornalisti>
+                                                                                            <visualizzaRecuperoRiposi>true</visualizzaRecuperoRiposi>
+                                                                                            <visualizzaRecuperoNonLavorati>true</visualizzaRecuperoNonLavorati>
+                                                                                            <visualizzaRecuperoFestivi>true</visualizzaRecuperoFestivi>*@
+
+                                                                                        @*---------------------FE----------------*@
+                                                                                        <li class="col-4 li-ecc" style="width:25%" id="li-fe">
+                                                                                            <a id="sel-ferie" class="no-padding tastone icone-raggr block block-link-hover3 text-center"
+                                                                                               onclick="AbilitaRadio('FE')" onkeydown="AbilitaRadioKeyDown(event,'FE')" href="javascript:void(0)" aria-labelledby="FECounter">
+
+                                                                                                <div class="pad4tb block-content block-content-full block-content-mini bg-gray-lighter " id="FECounter">
+                                                                                                    <h5 class="font1-1" aria-label="Ferie"><strong>FE</strong></h5>
+                                                                                                    <h5 class="font1-2" id="tot-ferie">0</h5>
+                                                                                                </div>
+                                                                                            </a>
+                                                                                        </li>
+                                                                                        @*---------------------PF----------------*@
+                                                                                        <li class="col-4 li-ecc" style="width:25%" id="li-pf">
+                                                                                            <a id="sel-permessi" class="no-padding disable tastone icone-raggr block block-link-hover3 text-center"
+                                                                                               onclick="AbilitaRadio('PF')" onkeydown="AbilitaRadioKeyDown(event,'PF')" href="javascript:void(0)" aria-labelledby="PFCounter">
+
+                                                                                                <div class="pad4tb block-content block-content-full block-content-mini bg-gray-lighter " id="PFCounter">
+                                                                                                    <h5 class="font1-1" aria-label="Permessi ex Festività"><strong>PF</strong></h5>
+                                                                                                    <h5 class="font1-2" id="tot-permessi">0</h5>
+                                                                                                </div>
+                                                                                            </a>
+                                                                                        </li>
+                                                                                        @*---------------------PX----------------*@
+                                                                                        <li class="col-4 li-ecc" style="width:25%" id="li-px">
+                                                                                            <a id="sel-permessi-giorn" class="no-padding disable tastone icone-raggr block block-link-hover3 text-center"
+                                                                                               onclick="AbilitaRadio('PX')" onkeydown="AbilitaRadioKeyDown(event,'PX')" href="javascript:void(0)" aria-labelledby="PXCounter">
+
+                                                                                                <div class="pad4tb block-content block-content-full block-content-mini bg-gray-lighter " id="PXCounter">
+                                                                                                    <h5 class="font1-1"><strong>PX</strong></h5>
+                                                                                                    <h5 class="font1-2" id="tot-permessi-giorn">0</h5>
+                                                                                                </div>
+                                                                                            </a>
+                                                                                        </li>
+                                                                                        @*---------------------PR----------------*@
+                                                                                        <li class="col-4 li-ecc" style="width:25%" id="li-pr">
+                                                                                            <a id="sel-permessi-ret" class="no-padding tastone icone-raggr block block-link-hover3 text-center"
+                                                                                               onclick="AbilitaRadio('PR')" onkeydown="AbilitaRadioKeyDown(event,'PR')" href="javascript:void(0)" aria-labelledby="PRCounter">
+
+                                                                                                <div class="pad4tb block-content block-content-full block-content-mini bg-gray-lighter" id="PRCounter">
+                                                                                                    <h5 class="font1-1" aria-label="Permessi"><strong>PR</strong></h5>
+                                                                                                    <h5 class="font1-2" id="tot-permessi-ret">0</h5>
+                                                                                                </div>
+                                                                                            </a>
+                                                                                        </li>
+
+                                                                                        @*---------------------PG----------------*@
+                                                                                        <li class="col-4 li-ecc" disabled="disabled" style="width:25%" id="li-pg">
+                                                                                            <a id="sel-pg" class="no-padding tastone icone-raggr block block-link-hover3 text-center" onclick="AbilitaRadio('PG')" onkeydown="AbilitaRadioKeyDown(event,'PG')" href="javascript:void(0)" aria-labelledby="PGCounter">
+
+                                                                                                <div class="pad4tb block-content block-content-full block-content-mini bg-gray-lighter " id="PGCounter">
+                                                                                                    <h5 class="font1-1" aria-label="Permessi"><strong>PG</strong></h5>
+                                                                                                    <h5 class="font1-2" id="tot-pg">0</h5>
+                                                                                                </div>
+                                                                                            </a>
+                                                                                        </li>
+                                                                                        @*---------------------RR----------------*@
+                                                                                        <li class="col-4 li-ecc" style="width:25%" id="li-rr">
+                                                                                            <a id="sel-rr" class="no-padding tastone icone-raggr block block-link-hover3 text-center"
+                                                                                               onclick="AbilitaRadio('RR')" onkeydown="AbilitaRadioKeyDown(event,'RR')" href="javascript:void(0)" aria-labelledby="RRCounter">
+
+                                                                                                <div class="pad4tb block-content block-content-full block-content-mini bg-gray-lighter" id="RRCounter">
+                                                                                                    <h5 class="font1-1" aria-label="Recupero riposo"><strong>RR</strong></h5>
+                                                                                                    <h5 class="font1-2" id="tot-permessi-rr">0</h5>
+                                                                                                </div>
+                                                                                            </a>
+                                                                                        </li>
+                                                                                        @*---------------------RN----------------*@
+                                                                                        <li class="col-4 li-ecc" style="width:25%" id="li-rn">
+                                                                                            <a id="sel-rn" class="no-padding tastone icone-raggr block block-link-hover3 text-center"
+                                                                                               onclick="AbilitaRadio('RN')" onkeydown="AbilitaRadioKeyDown(event,'RN')" href="javascript:void(0)" aria-labelledby="RNCounter">
+
+                                                                                                <div class="pad4tb block-content block-content-full block-content-mini bg-gray-lighter" id="RNCounter">
+                                                                                                    <h5 class="font1-1" aria-label="Recupero non lavorato"><strong>RN</strong></h5>
+                                                                                                    <h5 class="font1-2" id="tot-permessi-rn">0</h5>
+                                                                                                </div>
+                                                                                            </a>
+                                                                                        </li>
+                                                                                        @*---------------------RF----------------*@
+                                                                                        <li class="col-4 li-ecc" style="width:25%" id="li-rf">
+                                                                                            <a id="sel-rf" class="no-padding tastone icone-raggr block block-link-hover3 text-center"
+                                                                                               onclick="AbilitaRadio('RF')" href="javascript:void(0)">
+
+                                                                                                <div class="pad4tb block-content block-content-full block-content-mini bg-gray-lighter">
+                                                                                                    <h5 class="font1-1"><strong>RF</strong></h5>
+                                                                                                    <h5 class="font1-2" id="tot-permessi-rf">0</h5>
+                                                                                                </div>
+                                                                                            </a>
+                                                                                        </li>
+
+                                                                                    </ul>
+                                                                                    <div class="row" id="radio-cont" style="display:none">
+                                                                                        <div class="col-sm-12">
+                                                                                            <div class="rai-radio-container">
+                                                                                                <div class="row">
+                                                                                                    <div class="col-xs-12 col-sm-4">
+                                                                                                <div class="rai-radio">
+                                                                                                    <input disabled="disabled" onchange="ForceSelect(this)" id="gior" value="gior" type="radio" name="max" />
+                                                                                                    <label for="gior" class="matpom font1-2">GIORNATA</label>
+                                                                                                </div>
+                                                                                                    </div>
+                                                                                                    <div class="col-xs-12 col-sm-4">
+                                                                                                <div class="rai-radio">
+                                                                                                    <input disabled="disabled" onchange="ForceSelect(this)" id="matt" value="matt" type="radio" name="max" />
+                                                                                                    <label for="matt" class="matpom font1-2">MATTINA</label>
+                                                                                                </div>
+                                                                                                    </div>
+                                                                                                    <div class="col-xs-12 col-sm-4">
+                                                                                                <div class="rai-radio">
+                                                                                                    <input disabled="disabled" onchange="ForceSelect(this)" id="pome" value="pome" type="radio" name="max" />
+                                                                                                    <label class="matpom font1-2">POMERIGGIO</label>
+                                                                                                </div>
+                                                                                                    </div>
+                                                                                                    <div class="col-xs-12 col-sm-4">
+                                                                                                <div class="rai-radio">
+                                                                                                    <input disabled="disabled" onchange="ForceSelect(this)" id="ma12" value="ma12" type="radio" name="max" />
+                                                                                                    <label class="matpom font1-2">QUARTO</label>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        @*<div class="col-xs-6 col-sm-4">
+                                                                                            </div>
+                                                                                            <div class="col-xs-6 col-sm-4">
+                                                                                            </div>
+                                                                                            <div class="col-xs-6 col-sm-4">
+                                                                                            </div>
+                                                                                            <div class="col-xs-6 col-sm-4">
+                                                                                            </div>*@
+                                                                                        @* <div class="col-xs-4">
+                                                                                                 <div class="radio-custom radio-primary">
+                                                                                                        <input disabled="disabled"  onchange="ForceSelect(this)" id="ma22" value="ma22" type="radio" name="max" />
+                                                                                                        <label class="matpom font1-2">2/2 MATTINA</label>
+                                                                                                 </div>
+                                                                                            </div>
+                                                                                            <div class="col-xs-4">
+                                                                                                 <div class="radio-custom radio-primary">
+                                                                                                        <input disabled="disabled"  onchange="ForceSelect(this)" id="po12" value="po12" type="radio" name="max"/>
+                                                                                                        <label class="matpom font1-2">1/2 POMER</label>
+                                                                                                  </div>
+                                                                                            </div>
+                                                                                            <div class="col-xs-4">
+                                                                                                  <div class="radio-custom radio-primary">
+                                                                                                <input disabled="disabled"  onchange="ForceSelect(this)" id="po22" value="po22" type="radio" name="max"/>
+                                                                                                <label class="matpom font1-2"> 1/2 POMER</label>
+                                                                                                </div>
+                                                                                            </div>*@
+                                                                                    </div>
+                                                                                </div>
+
+                                                                            </div>
+
+
+                                                                        </div>
+                                                                        <div>
+                                                                            <div class="col-sm-6 hide params" id="param-dalle">
+                                                                                <label>Dalle</label>
+                                                                                <input onchange="CheckQuantita()" onkeyup="CheckQuantita()" name="dalle" disabled="disabled" class="form-control formato-ora" placeholder="Dalle" maxlength="5" />
+                                                                            </div>
+                                                                            <div class="col-sm-6 hide params" id="param-alle">
+                                                                                <label>Alle</label>
+                                                                                <input onchange="CheckQuantita()" onkeyup="CheckQuantita()" name="alle" disabled="disabled" class="form-control  formato-ora" placeholder="Alle" maxlength="5" />
+                                                                            </div>
+                                                                            <div class="col-sm-6 hide params" id="param-quantita" disabled="disabled">
+                                                                                <label>Quantità</label>
+                                                                                <input name="quantita" disabled="disabled" class="form-control formato-ora" />
+                                                                                @*<input class="form-control" id="date3" placeholder="__:__" data-input-mask="99:9" data-plugin-masked-input="">*@
+                                                                            </div>
+                                                                            <div class="col-sm-6 hide params" id="param-importo">
+                                                                                <label>Importo</label>
+                                                                                <input name="importo" disabled="disabled" class="form-control formato-importo" placeholder="Importo" maxlength="7" />
+                                                                            </div>
+                                                                            <div class="col-sm-6 hide params" id="param-uorg">
+                                                                                <label>Uorg</label>
+                                                                                <input name="uorg" disabled="disabled" class="form-control" placeholder="Uorg" maxlength="7" />
+                                                                            </div>
+                                                                            <div class="col-sm-6 hide params" id="param-df">
+                                                                                <label>Df</label>
+                                                                                <input name="df" disabled="disabled" class="form-control" placeholder="Df" maxlength="7" />
+                                                                            </div>
+                                                                            <div class="col-sm-6 hide params" id="param-matrspett">
+                                                                                <label>Matr. spettacolo</label>
+                                                                                <input name="matrspett" disabled="disabled" class="form-control" placeholder="Matr" maxlength="7" />
+                                                                            </div>
+                                                                            <div class="col-sm-12">
+                                                                                <span id="modif-quantita" class="text-danger"></span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <!-- END Step 2 -->
+                                                                <!-- Step 3 -->
+                                                                <div class="tab-pane push-30-t push-50" id="validation-classic-step3" role="tabpanel" tabindex="0">
+                                                                    <div class="form-group">
+
+                                                                        <div class="col-md-12">
+                                                                            <div class="my-breadcrumb">
+                                                                                <span>
+                                                                                    <span class="my-breadcrumb-link raggr-selez"></span>
+                                                                                    <span class="my-breadcrumb-separator">&gt;</span>
+                                                                                </span>
+                                                                                <span>
+                                                                                    <span class="my-breadcrumb-link ecc-selez"></span>
+                                                                                    <span class="my-breadcrumb-separator">&gt;</span>
+                                                                                </span>
+                                                                                <span>
+                                                                                    <span class="my-breadcrumb-link ">
+                                                                                        Inserisci la nota
+                                                                                    </span>
+
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="col-md-12 push-20-t">
+                                                                            <div id="extra-params-container">
+                                                                            </div>
+                                                                            <div class="row">
+                                                                                <div class="col-sm-12">
+                                                                                    <h5 id="mot-ric" style="display:inline-block">
+                                                                                        <strong>Motivo della richiesta <font id="red-star" color="#d2322d"> *</font></strong>
+
+                                                                                    </h5>
+                                                                                </div>
+
+                                                                            </div>
+
+
+                                                                            <textarea class="form-control" id="NotaInserimento" name="nota_richiesta" rows="4" placeholder="La tua nota"></textarea>
+                                                                            <div class="row">
+
+                                                                                <div class="col-xs-6">
+                                                                                </div>
+                                                                                <div class="col-xs-6 text-right">
+                                                                                    @*   <button id="button-invia" class="btn btn-default disable" style="margin-top: 10px" type="submit">Invia <i class="fa fa-cloud-upload"></i></button>*@
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                    </div>
+                                                                </div>
+                                                                <!-- END Step 3 -->
+                                                            </div>
+                                                            <!-- END Steps Content -->
+                                                            <!-- Steps Navigation -->
+                                                            <div class="block-content block-content-mini block-content-full no-padding">
+                                                                <div class="row">
+
+                                                                    <div style="text-align: center; margin-bottom: 20px" class="col-xs-12">
+                                                                        <div class="rai-btn-fill">
+                                                                            <button class="wizard-next btn btn-primary disable large-btn" type="button">Prosegui @*<i class="fa fa-arrow-right"></i>*@</button>
+                                                                            <button style="display: none" id="button-invia" class="btn btn-primary disable large-btn" style="margin-top: 10px" type="submit">INVIA @*<i class="fa fa-cloud-upload"></i>*@</button>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-xs-4">
+                                                                        <button class="wizard-prev btn btn-primary hide" type="button"><i class="fa fa-arrow-left"></i>INDIETRO</button>
+                                                                    </div>
+                                                                    <div class="col-xs-4">
+                                                                    </div>
+                                                                    <div class="col-xs-4 text-right">
+                                                                    </div>
+                                                                </div>
+
+
+                                                            </div>
+                                                            <!-- END Steps Navigation -->
+                                                            <!-- END Form -->
+                                                            <div class="row">
+
+                                                                <div id="button-passa-auto" class="col-sm-12" style="text-align: center; display: none">
+                                                                    <div style="text-align: left">
+                                                                        <h5>
+                                                                            Non hai trovato nessuna opzione utile tra le nostre proposte manuali? Scegli automaticamente
+                                                                        </h5>
+                                                                    </div>
+                                                                    <button onclick="ScegliDaProposteAuto()" type="button" style="margin-top: 20px" class="btn btn-default btn-scriv bg-puls_dash">
+                                                                        Scelta automatica
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="wiz-parent-skeleton" style="display:none"></div>
+
+                                    </div>
+                                </section>
+                            </div>
+                            <div class="col-md-5">
+                                <div id="boxleft" style="margin-top:0px;">
+                                </div>
+                                <div id="boxleft-skeleton" style="display: none; margin-top:0px;">
+                                    <div id="infogiornata" class="block block-transparent block-content-table">
+                                        <div class="block-header block-content-mini">
+                                            <label class="rai-font-table-heading">Informazioni giornata</label>
+                                        </div>
+                                        <div class="block-content block-content-mini">
+                                            <div id="infogiornata-content">
+                                                <table class="table push-30-t" id="timbraturecontent">
+                                                    <tbody>
+                                                        <tr>
+                                                            <td class="text-left no-border" colspan="100">
+                                                                <span style="font-size: 16px; font-weight: 300; font-style: italic; line-height: 1.5; text-align: justify;">
+                                                                    <em>
+                                                                        Non ci sono ancora dati da visualizzare.<br />
+                                                                        Seleziona una delle date a sinistra, per poter visualizzare i dati della giornata.
+                                                                    </em>
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        @*.............AJAX CONTENT INFO GIORNATA...................*@
+                                    </div>
+                                    @Html.RenderBlock(BlockType.ContentTable, "Timbrature", "", null, null, "timbratureday")
+
+                                    <div id="segnalazioniday">
+                                        @Html.RenderBlock(BlockType.ContentTable, "Segnalazioni presenti", "")
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row no-margin-left-right">
+
+
+
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </form>
+    </div>
+
+</div>
+
+

@@ -1,0 +1,555 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@model DatiApprendistato
+
+<div class="row">
+    <div class="col-sm-8">
+        @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Nuovo Piano Formativo", true))
+        {
+
+            <div id="schedaDatiDipendente">
+
+
+            </div>
+            <hr class=" border-neutral-20-b" />
+            <form id="nuovoPFI">
+
+                @Html.Hidden("IdPersona", Model.IdPersona)
+                <div class="form-group">
+                    <div id="wiz-parent">
+                        <div id="wiz-body">
+                            <div class="js-wizard-classic-validation">
+                                <div id="newwizard" class="wizard-progress wizard-progress-llg wiznew">
+                                    <ul class="wizard-steps">
+                                        <!--StepIndex == 0-->
+                                        <li class="tabhead tabheadrich active disable" id="LiTabDatiApprendistato" role="presentation">
+                                            <a role="tab" tabindex="-1" aria-label="" aria-controls="wizgenerale" id="tab1" data-toggle="tab" href="#wizgenerale"><span>1</span>DATI APPRENDISTATO</a>
+                                        </li>
+                                        <!--StepIndex == 1-->
+                                        <li class="tabhead tabheadrich disable" id="LiTabDatiApprendista" role="presentation">
+                                            <a role="tab" tabindex="-1" aria-label="" aria-controls="wizfiltro-contratto" id="tab2" data-toggle="tab" href="#wizfiltro-apprendista"><span>2</span>DATI APPRENDISTA</a>
+                                        </li>
+                                        <!--StepIndex == 2-->
+                                        <li class="tabhead tabheadrich disable" id="LiTabDatiTutor" role="presentation">
+                                            <a role="tab" tabindex="-1" aria-label="" aria-controls="wizfiltro-contratto" id="tab3" data-toggle="tab" href="#wizfiltro-tutor"><span>3</span>SELEZIONE TUTOR</a>
+                                        </li>
+                                        <!--StepIndex == 3-->
+                                        <li class="tabhead tabheadrich disable" id="LiTabRiepilogo" role="presentation">
+                                            <a role="tab" tabindex="-1" aria-label="Riepilogo" aria-controls="wizriepilogo" id="tab4" data-toggle="tab" href="#wizriepilogo"><span>3</span>RIEPILOGO</a>
+                                        </li>
+                                    </ul>
+                                    <div class="block-content tab-content" style="overflow: visible; padding:0px; border: 0px; box-shadow: none">
+                                        <div class="tab-pane active text-left" id="wizgenerale" role="tabpanel" tabindex="0">
+                                            <!--Tipologia apprendistato !-->
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    @Html.LabelForRequiredObbl(m => m.TipologiaApprendistati, "TIPOLOGIA APPRENDISTATO", new { @class = "rai-caption", required = "required" })
+                                                    <br />
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                @foreach (var item in Model.TipologiaApprendistati)
+                                                {
+                                                    <div class="col-sm-12">
+                                                        <div class="rai-radio-box-icon">
+
+
+                                                            <input type="radio"
+                                                                   class="radioButtonTipologiaApprendistato"
+                                                                   name="SelectedTipologia"
+                                                                   value="@item.Value"
+                                                                   onchange="onChangeCheckedBox('@item.Value')"
+                                                                   @if (Model.SelectedTipologiaApprendistato.Contains(item.Value)) { <text> checked </text> } /> @item.Value - @item.Text
+                                                                <label>&nbsp;</label>
+                                                            </div>
+                                                        </div>
+
+
+                                                    }
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    @Html.LabelForRequiredObbl(m => m.DurataApprendistato, "DURATA APPRENDISTATO", new { @class = "rai-caption", @id = "durataApprendistato" })
+                                                    <div class="input-group" style="width:100%">
+                                                        @Html.TextBoxFor(m => m.DurataApprendistato, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "", @readonly = "readonly" })
+                                                        <span class="input-group-addon"><i class="fa fa-lock"></i></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!--Profilo Formativo input x12-->
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    @Html.LabelForRequiredObbl(m => m.Profilo, "PROFILO FORMATIVO", new { @class = "rai-caption", required = "required" })
+                                                    @Html.RaiSelectFor(m => m.Profilo.CodiceRuolo, myRaiGestionale.Controllers.PianoFormativoController.GetProfiliFormativi("profiliFormativi"), "Seleziona un profilo", "Cerca...", true, "changeCompetenzeProfiloFormativo()", false, null, true)
+                                                </div>
+                                            </div>
+                                            <br />
+                                            <!--Competenze call tableCompetenze-->
+                                            <div id="sezione_competenze">
+
+                                            </div>
+                                        </div>
+                                        <div class="tab-pane text-left" id="wizfiltro-apprendista" role="tabpanel" tabindex="0">
+
+
+                                            <div id="sezioneFormazioneApprendista" data-bind="@Model.IdPersona">
+
+                                            </div>
+
+                                        </div>
+
+                                        <div class="tab-pane text-left" id="wizfiltro-tutor" role="tabpanel" tabindex="0">
+                                            <div id="sezioneAggiuntaTutor">
+
+                                            </div>
+                                        </div>
+
+                                        <div class="tab-pane text-left" id="wizriepilogo" role="tabpanel" tabindex="0">
+                                            <div id="sezioneRiepilogo">
+                                                @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "DETTAGLIO APPRENDISTATO"))
+                                                {
+                                                    <div class="rai-table-info">
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-6 col-lg-3">
+                                                                <label>Tipologia apprendistato</label>
+                                                            </div>
+                                                            <div class="col-sm-6 col-lg-9">
+                                                                <label id="lblTipologiaApprendistato"></label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-6 col-lg-3">
+                                                                <label>Durata</label>
+                                                            </div>
+                                                            <div class="col-sm-6 col-lg-9">
+                                                                <label id="lblDurataApprendistato"></label>
+                                                            </div>
+                                                        </div>
+                                                        @*   <div class="row push-10">
+                                                                <div class="col-sm-6 col-lg-3">
+                                                                    <label>Categoria</label>
+                                                                </div>
+                                                                <div class="col-sm-6 col-lg-9">
+                                                                    <label id="lblCategoria"></label>
+                                                                </div>
+                                                            </div>*@
+                                                        <div class="row push-10">
+                                                            <div class="col-sm-6 col-lg-3">
+                                                                <label>Profilo formativo</label>
+                                                            </div>
+                                                            <div class="col-sm-6 col-lg-9">
+                                                                <label id="lblProfiloFormativo"></label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row push-10" id="RiepilogoTutor">
+                                                            <div class="col-sm-6 col-lg-3">
+                                                                <label>Tutor</label>
+                                                            </div>
+
+                                                        </div>
+                                                        <!--  <div class="row push-10">
+                                                                                                        <div class="col-sm-6 col-lg-3">
+                                                                                                            <label>Tutor</label>
+                                                                                                        </div>
+                                                                                                        <div class="col-sm-6 col-lg-9">
+                                                            <label id="lblTutor"></label>
+                                                        </div>-->
+                                                    </div>
+
+
+
+                                                }
+                                                @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "DETTAGLIO APPRENDISTA"))
+                                                {
+                                                    <div class="rai-table-info">
+                                                        <div class="row push-10" id="RiepilogotitoloDiStidio">
+                                                            <div class="col-sm-6 col-lg-3">
+                                                                <label>Titolo di studio</label>
+                                                            </div>
+
+                                                        </div>
+                                                        <div class="row push-10" id="RiepilogoesperienzeProfessionali">
+                                                            <div class="col-sm-6 col-lg-3">
+                                                                <label>Esperienze professionali</label>
+                                                            </div>
+
+                                                        </div>
+                                                    </div>
+                                                }
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </form>
+
+            <div class="row push-10-t">
+                <div class="col-sm-12">
+                    <div class="rai-btn-fill">
+                        <button class="btn rai-btn-secondary disable" onclick="GotoPreviousTab()" id="btnPrevTab">Indietro</button>
+                        <input type="button" id="btnProsegui" class="btn btn-primary full-width" title="Prosegui" value="Continua" onclick="GotoNextTab()" />
+                        <input type="button" id="btnProsegui_" style="display:none;" class="btn btn-primary full-width" title="Continuas" value="Continua" onclick="GotoNextTab1()" />
+                        <input type="button" id="btnProsegui_1" style="display:none;" class="btn btn-primary full-width" title="Continuas" value="Continua" onclick="GotoNextTab2()" />
+                        <input type="button" id="btnSave" class="btn btn-primary full-width" style="display:none;" title="Salva" value="Conferma" onclick="SavePianoFormativo()" />
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+<script type="text/javascript">
+    var htmlContent = "";
+    var idPersona = @Model.IdPersona;
+    $(function(){
+        callHeaderDatiNeoMatricola();
+        InitDatePicker();
+
+        $("input:radio").on('click', function () {
+            var $box = $(this);
+            if ($box.is(":checked")) {
+                var group = "input:radio[name='" + $box.attr("name") + "']";
+                $(group).prop("checked", false);
+                $box.prop("checked", true);
+            } else {
+                $box.prop("checked", false);
+            }
+        });
+    });
+
+
+
+
+    function GotoPreviousTab() {
+
+        var steps = $('.wizard-steps > li');
+        var activeTab = $('.wizard-steps > li.active');
+        var stepCount = $(steps).length;
+        var stepIndex = $(steps).index(activeTab);
+        event.preventDefault();
+
+        if (stepIndex == 0) {
+            $('#btnPrevTab').prop('disabled', true);
+            $('#btnProsegui').show();
+        } else if (stepIndex == 1) {
+            $('#btnPrevTab').prop('disabled', true);
+            $('#btnProsegui').show();
+            $('#btnProsegui_').hide();
+            $('#btnProsegui_1').hide();
+            $('#btnSave').hide();
+        }else if (stepIndex == 2) {
+            $('#btnPrevTab').prop('disabled', false);
+            $('#btnProsegui').hide();
+            $('#btnProsegui_1').hide();
+            $('#btnSave').hide();
+            $('#btnProsegui_').show();
+        } else if (stepIndex == 3) {
+            $('#btnPrevTab').prop('disabled', false);
+            $('#btnProsegui_').hide();
+            $('#btnProsegui_1').hide();
+            $('#btnSave').hide();
+            $('#btnProsegui').show();
+        }
+        $(activeTab).removeClass("completed");
+        $(steps).eq(stepIndex - 1).find('a').click();
+    }
+    //first next
+    function GotoNextTab() {
+        var steps = $('.wizard-steps > li');
+        var activeTab = $('.wizard-steps > li.active');
+        var stepCount = $(steps).length;
+        var stepIndex = $(steps).index(activeTab);
+
+        event.preventDefault();
+        var tipologiaApprendistato =$("input[name='SelectedTipologia']:checked").val();
+        var durataApprendistato = $('#DurataApprendistato').val();
+        var profiloFormativo = $('#Profilo_CodiceRuolo').val();
+        var competenze = $(':checkbox.checkbox_Competenze:checked').map(function () {
+            return { CodiceRequisito: this.value.trim() };
+        }).get();
+       
+        if ((tipologiaApprendistato == "") || (durataApprendistato == "") || (profiloFormativo == "" || competenze.length==0))
+            return swal({ title: "Errore Validazione", text: "Compilare tutti i campi obbligatori", type: "error" });
+        else {
+                       if (stepIndex == 0) {
+                $('#btnProsegui').hide();
+                $('#btnPrevTab').removeClass('disable');
+                $('#btnProsegui_').show();
+                $('#btnProsegui_1').hide();
+                $('#btnSave').hide();
+                           if ($('#sezioneFormazioneApprendista').children().length==0) {
+                    $.ajax({
+                        url: '@Url.Action("GetDatiApprendista","PianoFormativo")',
+                        data: { id: idPersona },
+                        success: function (data) {
+                            $('#sezioneFormazioneApprendista').html(data);
+                            $(steps).eq(stepIndex + 1).find('a').click();
+                            $(activeTab).addClass("completed");
+                        },
+                        error: function (a, e, i) {
+                            (a, e, i);
+                        }
+                    });
+                }
+                else {
+                    $('#sezioneFormazioneApprendista').show();
+                    $(steps).eq(stepIndex + 1).find('a').click();
+                    $(activeTab).addClass("completed");
+                }
+            }
+        }
+    }
+    //second next
+    function GotoNextTab1() {
+        event.preventDefault();
+        var steps = $('.wizard-steps > li');
+        var activeTab = $('.wizard-steps > li.active');
+        var stepCount = $(steps).length;
+        var stepIndex = $(steps).index(activeTab);
+        if (stepIndex ==  1) {
+            $('#btnPrevTab').prop('disabled', false);
+            $('#btnProsegui').hide();
+            $('#btnProsegui_').hide();
+            $('#btnProsegui_1').show();
+            $('#btnSave').hide();
+            if ($('#sezioneAggiuntaTutor').children().length == 0) {
+                $.ajax({
+                    url: '@Url.Action("GetSezioneTutor","PianoFormativo")',
+                    data: { id: idPersona },
+                    type: "POST",
+                    success: function (data) {
+                        $(steps).eq(stepIndex + 1).find('a').click();
+                        $(activeTab).addClass("completed");
+                        $('#sezioneAggiuntaTutor').html(data);
+                    }
+                });
+            }
+            else {
+                $(steps).eq(stepIndex + 1).find('a').click();
+                $(activeTab).addClass("completed");
+                $('#sezioneAggiuntaTutor').show();
+            }
+        }
+    }
+    function GotoNextTab2() {
+        var steps = $('.wizard-steps > li');
+        var activeTab = $('.wizard-steps > li.active');
+        var stepCount = $(steps).length;
+        var stepIndex = $(steps).index(activeTab);
+        if (stepIndex == 2) {
+            $('#btnPrevTab').removeClass('disable');
+            $('#btnPrevTab').prop('disabled', false);
+            $('#btnProsegui').hide();
+            $('#btnProsegui_').hide();
+            $('#btnProsegui_1').hide();
+            $('#btnSave').show();
+
+            populateLabelsOfRiepilogoDettaglioApprendistato();
+            var htmlTitoliDiStudio = reloadHtmlRiepilogoTitoli();
+            $('#RiepilogotitoloDiStidio').append(htmlTitoliDiStudio);
+            var htmlEsperienzeLavorative = reloadHtmlRiepilogoEsperienze();
+            $('#RiepilogoesperienzeProfessionali').append(htmlEsperienzeLavorative);
+            $(activeTab).addClass("completed");
+            $(steps).eq(stepIndex + 1).find('a').click();
+        }
+    }
+    function populateLabelsOfRiepilogoDettaglioApprendistato() {
+        if ($('.radioButtonTipologiaApprendistato').val() == "BR") {
+            $('#lblTipologiaApprendistato').text("Apprendistato diplomato");
+            document.getElementById('lblDurataApprendistato').innerText = "36 mesi";
+
+        } else if ($('.radioButtonTipologiaApprendistato').val() == "BB") {
+            $('#lblTipologiaApprendistato').text("Apprendistato laureato");
+            document.getElementById('lblDurataApprendistato').innerText = "36 mesi";
+
+        } else {
+            $('#lblTipologiaApprendistato').text("Apprendistato titolo studio inf.");
+            document.getElementById('lblDurataApprendistato').innerText = "30 mesi";
+        }
+          //  $('#lblCategoria').text($('#lblCategoria').text());
+              $('#lblDurataApprendistato').text($('#DurataApprendistato').val());
+        $('#lblProfiloFormativo').text($('#Profilo_CodiceRuolo').text());
+
+        reloadHtmlTutor();
+
+            }
+    function reloadHtmlRiepilogoTitoli() {
+        htmlContent = $('#RiepilogotitoloDiStidio');
+        var html = createHtmlOfRiepilogoDettaglioApprendistaTitoliDiStudio();
+             htmlContent.html(html);
+    }
+    function reloadHtmlRiepilogoEsperienze() {
+        htmlContent = $('#RiepilogoesperienzeProfessionali');
+        var html = createHtmlOfRiepilogoDettaglioApprendistaEsperienzeLavorative();
+          htmlContent.html(html);
+    }
+    function reloadHtmlTutor() {
+        htmlContent = $('#RiepilogoTutor');
+        $('#RiepilogoTutor').html('');
+        var html = createHtmlOfRiepilogoDettaglioTutor();;
+   htmlContent.html(html);
+    }
+    function createHtmlOfRiepilogoDettaglioTutor() {
+        var html = "";
+        tutors.forEach(function (element) {
+            html = html + '<div class="col-sm-6">'
+                + '<label>' + element.Nominativo + '-' + element.Dal + '-' + element.Al +'</label>'
+                + '</div>'
+        });
+        return html;
+    }
+    function createHtmlOfRiepilogoDettaglioApprendistaTitoliDiStudio() {
+        var html = "";
+        titoliDiStudio.forEach(function (element) {
+            html =html + '<div class="col-sm-6">'
+                + '<label>' + element.DesTipoTitolo + '-' + element.DesTitolo + '</label>'
+                + '</div>'
+        });
+        return html;
+    }
+    function createHtmlOfRiepilogoDettaglioApprendistaEsperienzeLavorative() {
+        var html = "";
+        esperienzeLavorative.forEach(function (element) {
+           html = html + '<div class="col-sm-6">'
+                + '<label>' + element.Azienda + '-' + element.Attivita + '<br/>' + element.DescrizioneCitta + '</label>'
+                + '</div>'
+        });
+        return html;
+    }
+
+
+
+    function onChangeCheckedBox(value) {
+        if (!$(`.radioButtonTipologiaApprendistato[value="${value}"]`).prop('checked')) {
+            $('#DurataApprendistato').text("");
+            console.log("deselezione")
+            return
+        }
+        if (value == "BR") {
+
+            document.getElementById('DurataApprendistato').value = "36 mesi";
+
+        }else if (value == "BB") {
+            document.getElementById('DurataApprendistato').value = "36 mesi";
+
+        } else {
+
+            document.getElementById('DurataApprendistato').value = "30 mesi";
+        }
+    }
+    function changeCompetenzeProfiloFormativo() {
+        var profiloSelezionato = $('#Profilo_CodiceRuolo').val();
+        $.ajax({
+            url: '@Url.Action("GetSezioneCompetenze", "PianoFormativo")',
+            data: { codiceRuolo: profiloSelezionato },
+            type: "POST",
+            success: function (response) {
+                $('#sezione_competenze').html(" ");
+                $('#sezione_competenze').html(response);
+            }
+        });
+    }
+
+    function callHeaderDatiNeoMatricola() {
+
+        var idPersona = @Model.IdPersona;
+        var viewInfo = 'matricola,data_assunzione,servizio,qualifica';
+        $.ajax({
+            url: '@Url.Action("Header_DatiDipendente", "Anagrafica")',
+            type: "GET",
+            data: { idPersona: idPersona, isNeoMatr: true, viewInfo: viewInfo},
+            success: function (response) {
+
+                $('#schedaDatiDipendente').html(response);
+            },
+            errror: function (a, b, c) {
+                      (a, b, c);
+            }
+        });
+    }
+
+    function SavePianoFormativo() {
+        var tipologia = $('.radioButtonTipologiaApprendistato').val();
+        var durata = null;
+
+        if (tipologia == "BR")
+            durata = "36"
+        else if (tipologia == "BB")
+            durata = "36"
+        else
+            durata = "30"
+        var datiApprendista = {
+            TipologiaApprendistato: tipologia,
+            DurataApprendistato: durata,
+            ProfiloFormativo: $('#Profilo_CodiceRuolo').val(),
+            IdPersona: $('#IdPersona').val(),
+            Competenze: $(':checkbox.checkbox_Competenze:checked').map(function () {
+                return { CodiceRequisito: this.value.trim() };
+            }).get()
+        }
+        if (!datiApprendista || titoliDiStudio.length == 0 || tutors.length==0) {
+            return swal({ title: "Errore Validazione", text: "Compilare dati apprendistato, titolo di studio e tutor", type: "error" });
+        }
+        var data = { Titoli: titoliDiStudio, Esperienze: esperienzeLavorative, Tutor: tutors, DatiApprendistato :datiApprendista };
+        console.log(data);
+        $.ajax({
+            url: '@Url.Action("SalvaPianoFormativo","PianoFormativo")',
+            type: "POST",
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            data: JSON.stringify(data),
+            success: function (data) {
+
+                switch (data.Data) {
+                    case "OK":
+                        swal({
+                            title: 'Inserimento effettuato con successo',
+                            type: "success",
+                            customClass: 'rai',
+                            confirmButtonClass: "btn-primary",
+                            confirmButtonText: 'Scarica piano formativo'
+                        }).then(function () {
+                            window.location.href = '@Url.Action("GeneraWordPianoFormativoIndividuale", "PianoFormativo", new  { idPersona = Model.IdPersona })';
+                            debugger;
+                            });
+
+                    break;
+                default:
+                    swal("Oops...", data, 'error')
+
+                }
+                debugger;
+                if (data.Data == "OK") {
+  $.ajax({
+            url: '@Url.Action("Index", "PianoFormativo")',
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            dataType: "html",
+            data: {idPersona: id},
+            success: function (data) {
+                return data;
+            }
+        });                }
+            }
+
+        });
+    }
+    @*function generaWord(id) {
+        $.ajax({
+            url: '@Url.Action("", "PianoFormativo")',
+            type: "POST",
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            data: {idPersona: id},
+            success: function (data) {
+                return data;
+            }
+        });
+    }*@
+</script>

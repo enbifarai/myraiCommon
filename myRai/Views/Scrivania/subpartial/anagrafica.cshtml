@@ -1,0 +1,166 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model UtenteTerzoAnagrafica
+
+@if (Model._matricola == null)// se Model è null proviene da scrivania per visualizzare il profilo dell'utente in sessione
+{
+    <section class="panel panel-group">
+        <header class="panel-heading rai-bg-primary">
+            <label class="panel-title">Su di te</label>
+        </header>
+
+        <div class="panel-body">
+            <div class="row push-10">
+                <div class="col-sm-12">
+                    @{
+                        string nominativo = UtenteHelper.EsponiAnagrafica()._nome + " " + UtenteHelper.EsponiAnagrafica()._cognome;
+                        string detail1 = "matricola  " + UtenteHelper.EsponiAnagrafica()._matricola;
+                        string detail2 = UtenteHelper.EsponiAnagrafica()._dataAssunzione != null ? "in servizio dal " + UtenteHelper.EsponiAnagrafica()._dataAssunzione.Value.ToString("dd/MM/yyyy") : "";
+                    }
+
+                    @Html.ProfileWidget(UtenteHelper.EsponiAnagrafica()._matricola, nominativo, null, detail1, detail2)
+                </div>
+            </div>
+            <div class="row push-10">
+
+                <div class="col-sm-12">
+                    @if (UtenteHelper.EsponiAnagrafica() != null)
+                    {
+                        int i = 0;
+                        foreach (string s in UtenteHelper.EsponiAnagrafica()._inquadramento.Split(';'))
+                        {
+                            <span>
+                                @for (int j = 0; j < i; j++)
+                                {
+                                    @:&nbsp;
+                                }
+                                @("- " + s)
+                            </span><br/>
+                            i++;
+                        }
+                    }
+                </div>
+            </div>
+            <div class="row push-10">
+                <div class="col-sm-6">
+                    Figura Professionale<br />
+                    <b>@UtenteHelper.EsponiAnagrafica()._figProfessionale</b>
+                </div>
+                <div class="col-sm-6">
+                    Contratto<br />
+                    <b>@UtenteHelper.EsponiAnagrafica()._contratto</b>
+                </div>
+            </div>
+            <div class="row push-10">
+                <div class="col-sm-6">
+                    Mansione<br />
+                    <b>@UtenteHelper.EsponiAnagrafica()._qualifica</b>
+                </div>
+                <div class="col-sm-6">
+                    Telefono<br />
+                    <b>@UtenteHelper.EsponiAnagrafica()._telefono</b>
+                </div>
+            </div>
+            <div class="row">
+                @{ int comp = CommonHelper.GetPercentualCV(UtenteHelper.EsponiAnagrafica()._matricola);}
+                <div class="col-sm-4">
+                    <div style="position:relative;text-align:center" class="chart-small" data-percent="@comp">
+                        <span style="position:absolute;left:43%;top:30%;">@comp</span>
+                    </div>
+                </div>
+                <div class="col-sm-8">
+                    Il tuo curriculum è completo al @comp %
+                </div>
+            </div>
+        </div>
+        <div class="panel-footer">
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="rai-btn-fill">
+                        <a class="btn rai-btn-secondary" href="/CurriculumVitae">STAMPA CV</a>
+                        <a href="/CurriculumVitae" class="btn rai-btn-primary">@(comp < 100 ? "COMPLETA CV" : "VAI AL CV")</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+}
+else //altrimenti proviene da popup boss per dettaglio del dipendente
+{
+    string details2 = "";
+    if (Model._dataAssunzione != null)
+    {
+        details2 = String.Format("in RAI dal {0:dd/MM/yyyy}", Model._dataAssunzione.Value);
+    }
+
+    <div class="row">
+        <div class="col-sm-12">
+            @Html.ProfileWidget(Model._matricola, Model._nome + " " + Model._cognome, null, "Matricola " + Model._matricola, details2)
+        </div>
+    </div>
+
+    <div class="block block-transparent block-content-table">
+        <div class="block-header block-content-mini">
+            <label class="rai-font-table-heading">Dati generali</label>
+        </div>
+        <div class="block-content block-content-mini">
+            <div class="rai-table-info">
+                <div class="row">
+                    <div class="col-sm-5">
+                        Figura Profess.
+                    </div>
+                    <div class="col-sm-7">
+                        <b>@Model._figProfessionale</b>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-5">
+                        Contratto
+                    </div>
+                    <div class="col-sm-7">
+                        <b>@Model._contratto</b>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-5">
+                        Mansione
+                    </div>
+                    <div class="col-sm-7">
+                        <b>@Model._qualifica</b>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-5">
+                        Telefono
+                    </div>
+                    <div class="col-sm-7">
+                        @{
+                            string linkSkype = "#";
+
+                            if (Model._email.Contains("@rai.it"))
+                            {
+                                linkSkype = "sip:" + Model._email.Replace("@rai.it", "@ucms.rai.it");
+                            }
+                        }
+
+                        <a href="@(linkSkype)">
+                            <b>@Model._telefono</b>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="rowProssimaTrasferta" class="row">
+                    <div class="col-sm-5">
+                        Prossima trasferta
+                    </div>
+                    <div class="col-sm-7" id="divProssimaTrasferta">
+                        <div><span class="rai-font-md-neutral">Non ci sono dati da visualizzare</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}

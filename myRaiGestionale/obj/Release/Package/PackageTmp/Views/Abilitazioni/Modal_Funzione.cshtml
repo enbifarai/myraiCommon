@@ -1,0 +1,106 @@
+﻿@using myRaiHelper
+@using myRaiDataTalentia
+@model XR_HRIS_ABIL_FUNZIONE
+
+<div class="row">
+    <div class="col-md-8">
+        @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Dati funzione", false))
+        {
+            using (Html.BeginForm("Save_Funzione", "Abilitazioni", FormMethod.Post, new { id = "form-funz", @class = "form-group" }))
+            {
+                @Html.HiddenFor(m => m.ID_FUNZIONE)
+
+                <div class="row">
+                    <div class="col-sm-12 push-10">
+                        @Html.LabelForRequiredObbl(m => m.COD_FUNZIONE, "Codice", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.COD_FUNZIONE, new { @class = "form-control", required = "required" })
+                        @Html.ValidationMessageFor(m => m.COD_FUNZIONE)
+                    </div>
+                    <div class="col-sm-12 push-10">
+                        @Html.LabelForRequiredObbl(m => m.DES_FUNZIONE, "Descrizione", new { @class = "rai-caption" })
+                        @Html.TextBoxFor(m => m.DES_FUNZIONE, new { @class = "form-control" })
+                        @Html.ValidationMessageFor(m => m.DES_FUNZIONE)
+                    </div>
+                    <div class="col-sm-12 push-10 push-10-t">
+                        @Html.RaiCheckBoxLabelFor(m => m.IND_ABIL_INTEGRATION, "Integrazione abilitazione esterna", "")
+                    </div>
+                    <div class="col-sm-12 push-10 push-10-t">
+                        @Html.RaiCheckBoxLabelFor(m => m.IND_ATTIVO, "Attivo", "")
+                    </div>
+                </div>
+                <div class="row form-button">
+                    <div class="col-sm-12 ">
+                        <button class="btn rai-btn-primary full-width" onclick="SaveAbilFunc(this)">Salva</button>
+                    </div>
+                </div>
+            }
+        }
+        @if (Model.ID_FUNZIONE > 0)
+        {
+            @Html.Partial("ElencoSottofunzioni", Model.XR_HRIS_ABIL_SUBFUNZIONE)
+        }
+    </div>
+    <div class="col-sm-4">
+        @if (Model.ID_FUNZIONE > 0)
+        {
+
+            ActionTemplate actionNew = new ActionTemplate()
+            {
+                OnClick = "AbilSubfuncDett(0, 0, 'Nuova sottofunzione');",
+                Text = "Aggiungi"
+            };
+
+            @Html.RenderWidget(myRaiHelper.WidgetType.Normal, "Nuova sottofunzione", "fa fa-plus", "Aggiungi una sottofunzione", action: actionNew)
+        }
+    </div>
+</div>
+
+
+<script>
+    function SaveAbilFunc(button) {
+        event.preventDefault();
+
+        var idForm = 'form-funz';
+
+        $(button).addClass("disable");
+
+        var form = $("#" + idForm).first();
+        var validator = $(form).validate();
+
+        if (!$(form).valid()) {
+            $(button).removeClass("disable");
+            return false;
+        }
+
+        var formData = new FormData($(form)[0]);
+
+        $(form).parent().addClass("rai-loader");
+
+        $.ajax({
+            url: $(form).attr("action"),
+            processData: false,
+            contentType: false,
+            type: "POST",
+            data: formData,
+            dataType: 'json',
+            success: function (data) {
+                if (data.esito) {
+                    swal({ title: "Funzione salvata con successo", type: 'success', customClass: 'rai' });
+
+                    RaiUpdateWidget("box-funzioni", "/Abilitazioni/ElencoFunzioni", "html", null);
+                    RaiOPNavGoToNext('nav-abil', 'nav-abil-funz', 'Funzione ' + $('#COD_FUNZIONE').val() + ' - ' + $('#DES_FUNZIONE').val(), '/Abilitazioni/Modal_Funzione', { id: data.idFunz }, 'POST');
+                } else {
+                    swal({ title: "Ops...", text: data.message, type: 'error', customClass: 'rai' });
+                }
+                $(button).removeClass("disable");
+                $(form).parent().removeClass("rai-loader");
+            },
+            error: function (a, b, c) {
+                swal({ title: "Ops...", text: ' ' + b + ' ' + c, type: 'error', customClass: 'rai' });
+                $(button).removeClass("disable");
+                $(form).parent().removeClass("rai-loader");
+            }
+        })
+    }
+</script>
+

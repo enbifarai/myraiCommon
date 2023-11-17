@@ -1,0 +1,170 @@
+﻿@using myRaiCommonModel;
+@using myRaiHelper;
+
+@model AnagraficaDematerializzazioneDocumenti
+@{
+    List<XR_DEM_DOCUMENTI_EXT> richiesteInlavorazione = new List<XR_DEM_DOCUMENTI_EXT>();
+    List<XR_DEM_DOCUMENTI_EXT> richiesteCompletate = new List<XR_DEM_DOCUMENTI_EXT>();
+
+    if (Model.Documenti != null && Model.Documenti.Any())
+    {
+        richiesteInlavorazione = Model.Documenti.Where(w => w.Id_Stato != (int)StatiDematerializzazioneDocumenti.InviatoAlDipendente).ToList();
+        richiesteCompletate = Model.Documenti.Where(w => w.Id_Stato == (int)StatiDematerializzazioneDocumenti.InviatoAlDipendente).ToList();
+    }
+
+    int countRichiesteInLavorazione = richiesteInlavorazione.Count();
+    int countRichiesteCompletate = richiesteCompletate.Count();
+}
+
+@*<div id="dem-miei-documenti" class="block panel-body no-padding">*@
+<div id="dem-miei-documenti" class="block remove-margin-bottom">
+    <ul class="nav nav-tabs nav-tabs-alt  nav-justified" data-toggle="tabs" role="tablist">
+        <li class="tabbianco active" role="presentation">
+            <a href="#btab1" tabindex="0" role="tab" aria-controls="btabswo-static-home" style="border:0px;">
+                IN LAVORAZIONE
+                @if (countRichiesteInLavorazione > 0)
+                {
+                    <span id="in-lavorazione-badge" style="margin-left: 5px;margin-top: -4px;" class=" rai-badge-tab">
+                        @countRichiesteInLavorazione
+                    </span>
+                }
+            </a>
+        </li>
+        <li class=" tabbianco" role="presentation">
+            <a href="#btab2" tabindex="-1" role="tab" aria-controls="btab4" style="border:0px;">
+                COMPLETATE
+                @if (countRichiesteCompletate > 0)
+                {
+                    <span id="completate-badge" style="margin-left: 5px;margin-top: -4px;" class=" rai-badge-tab">
+                        @countRichiesteCompletate
+                    </span>
+                }
+            </a>
+        </li>
+    </ul>
+
+    <div class="block-content tab-content no-padding" id="dem-miei-doc-refresh">
+        <div data-toggle="slimscroll" data-height="50px" data-color="#46c37b" data-always-visible="true" style="width: auto;" class="table-responsive tab-pane active" id="btab1" role="tabpanel">
+            @if (richiesteInlavorazione.Any())
+            {
+                <table class="table rai-table rai-table-vcenter rai-table-high-row rai-table-panel">
+                    <thead>
+                        <tr>
+                            <th class="text-left">Tipologia richiesta</th>
+                            <th class="text-left">Data richiesta</th>
+                            <th colspan="2" class="text-left">Avanzamento</th>
+                            <th class="text-left">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in richiesteInlavorazione)
+                        {
+                            <tr>
+                                <td><label class="rai-font-lg text-left">@r.Descrizione</label></td>
+                                <td>
+                                    <label class="rai-font-lg text-left">@r.DataCreazione.ToString("dd/MM/yyyy")</label>
+                                </td>
+                                <td colspan="2">
+                                    <div class="row">
+                                        @{
+                                            if (r.Id_Stato == (int)StatiDematerializzazioneDocumenti.RifiutatoDalDipendente)
+                                            {
+                                                <div class="col-sm-12" style="padding:0px; padding-left: 5px; padding-top:5px">
+                                                    <label class="rai-font-sm-bold feedback-error-color" style="margin-left:4px">@StatiDematerializzazioneDocumenti.RifiutatoDalDipendente.GetDescription()</label>
+                                                </div>
+                                            }
+                                            else if (r.Id_Stato == (int)StatiDematerializzazioneDocumenti.RifiutatoFirma)
+                                            {
+                                                <div class="col-sm-12" style="padding:0px; padding-left: 5px; padding-top:5px">
+                                                    <label class="rai-font-sm-bold feedback-error-color" style="margin-left:4px">@StatiDematerializzazioneDocumenti.RifiutatoFirma.GetDescription()</label>
+                                                </div>
+                                            }
+                                            else if (r.Id_Stato == (int)StatiDematerializzazioneDocumenti.RifiutoApprovatore)
+                                            {
+                                                <div class="col-sm-12" style="padding:0px; padding-left: 5px; padding-top:5px">
+                                                    <label class="rai-font-sm-bold feedback-error-color" style="margin-left:4px">@StatiDematerializzazioneDocumenti.RifiutoApprovatore.GetDescription()</label>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="col-sm-9" style="padding:0px; padding-left: 5px; padding-top:5px">
+                                                    <div class="rai progress progress-xs m-2 light" style="margin-bottom:0px">
+                                                        <div class="progress-bar progress-bar-info" role="progressbar" aria-valuemin="0" aria-valuemax="100" style="width: @r.Avanzamento%;">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-3" style="padding:0px">
+                                                    <label class="rai-font-lg" style="margin-left:4px">@r.Avanzamento%</label>
+                                                </div>
+                                            }
+                                        }
+                                    </div>
+                                </td>
+                                <td class="text-left">
+                                    <button class="btn rai-btn-small" aria-label="Visualizza" title="Visualizza" style="min-width:80px" onclick="Dematerializzazione_OpenDettaglio('@(Model.Matricola)', '@(Model.IdPersona)', @r.Id)">Visualizza</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div style="text-align :center;margin:20px">
+                    <span class="rai-font-md-neutral">Non ci sono dati da visualizzare</span>
+                </div>
+            }
+        </div>
+        <div data-toggle="slimscroll" data-height="50px" data-color="#46c37b" data-always-visible="true" style="width: auto;" class="table-responsive tab-pane" id="btab2" role="tabpanel">
+            @if (richiesteCompletate.Any())
+            {
+                <table class="table rai-table rai-table-vcenter rai-table-high-row rai-table-panel">
+                    <thead>
+                        <tr>
+                            <th class="text-left">Tipologia richiesta</th>
+                            <th class="text-left">Data richiesta</th>
+                            <th colspan="2" class="text-left">Avanzamento</th>
+                            <th class="text-left">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in richiesteCompletate)
+                        {
+                            <tr>
+                                <td><label class="rai-font-lg text-left">@r.Descrizione</label></td>
+                                <td>
+                                    <label class="rai-font-lg text-left">@r.DataCreazione.ToString("dd/MM/yyyy")</label>
+                                </td>
+                                <td colspan="2">
+                                    <div class="row">
+                                        <div class="col-sm-8" style="padding:0px; padding-left: 5px; padding-top:5px">
+                                            <div class="rai progress progress-xs m-2 light" style="margin-bottom:0px">
+                                                <div class="progress-bar progress-bar-info" role="progressbar" aria-valuemin="0" aria-valuemax="100" style="width: @r.Avanzamento%;">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-2" style="padding:0px">
+                                            <label class="rai-font-lg" style="margin-left:4px">@r.Avanzamento%</label>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-left">
+                                    <button class="btn rai-btn-small" aria-label="Visualizza" title="Visualizza" style="min-width:80px" onclick="OpenModalGetDettaglioDematerializzazione('@(Model.Matricola)', '@(Model.IdPersona)', @r.Id)">Visualizza</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div style="text-align :center;margin:20px">
+                    <span class="rai-font-md-neutral">Non ci sono dati da visualizzare</span>
+                </div>
+            }
+
+        </div>
+    </div>
+</div>
+
+

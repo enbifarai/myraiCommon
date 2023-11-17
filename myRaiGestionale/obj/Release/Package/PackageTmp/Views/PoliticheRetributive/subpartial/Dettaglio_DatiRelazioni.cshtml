@@ -1,0 +1,145 @@
+﻿@using myRaiHelper
+@using myRaiGestionale.Controllers
+@model myRaiCommonModel.Gestionale.Pratica
+
+@{
+    //var rifDate = DateTime.Today.AddMonths(-12);
+    //var datiUltim12Mesi = Model.Dipendente.XR_PRV_DIPENDENTI_ASSENZE.Where(x => (x.ANNO == rifDate.Year && x.MESE >= rifDate.Month) || (x.ANNO == DateTime.Today.Year)).GroupBy(y => y.COD_ECCEZIONE);
+
+    string eccezioniammesse = CommonHelper.GetParametri<string>(EnumParametriSistema.PoliticheEccezioniAssenze)[0];
+    int numgiornieccezioniammesse = Convert.ToInt16(CommonHelper.GetParametri<string>(EnumParametriSistema.PoliticheEccezioniAssenze)[1]);
+}
+
+<div class="block block-content-table block-transparent">
+    <div class="block-header block-content-mini">
+        <label class="rai-font-table-heading">Dati posizione</label>
+    </div>
+
+    <!--contenuto-->
+    <div class="block-content block-content-mini">
+
+            <div class="rai-table-info">
+                <div class="row">
+                    <div class="col-sm-5 col-xs-6 ">
+                        <label class="">Direzione/Servizio</label>
+                    </div>
+                    <div class="col-sm-7 col-xs-6">
+                        @*<label>@(Model.Dipendente.XR_PRV_DIREZIONE.CODICE + " - " + Model.Dipendente.XR_PRV_DIREZIONE.NOME)</label>*@
+                        <label>@(Model.Dipendente.XR_PRV_DIREZIONE.NOME.TitleCase())</label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-5 col-xs-6 ">
+                        <label class="">Aggregato sede</label>
+                    </div>
+                    <div class="col-sm-7 col-xs-6">
+                        <label>@Model.Dipendente.DES_SEDE</label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-5 col-xs-6 ">
+                        <label class="">Struttura/Sezione</label>
+                    </div>
+                    <div class="col-sm-7 col-xs-6">
+                        @*<label>@Model.Dipendente.SINTESI1.COD_UNITAORG - @Model.Dipendente.SINTESI1.DES_DENOMUNITAORG</label>*@
+                        <label>@Model.Dipendente.SINTESI1.DES_DENOMUNITAORG.TitleCase()</label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-5 col-xs-6 ">
+                        <label class="">Profilo professionale</label>
+                    </div>
+                    <div class="col-sm-7 col-xs-6">
+                        <label>@Model.Dipendente.SINTESI1.QUALIFICA.TB_QUALSTD.DES_QUALSTD.TitleCase()</label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-5 col-xs-6 ">
+                        <label class="">Livello attuale</label>
+                    </div>
+                    <div class="col-sm-7 col-xs-6">
+                        <label>@Model.Dipendente.SINTESI1.DES_QUALIFICA.TitleCase()</label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-5 col-xs-6 ">
+                        <label class="">Anzianità di livello</label>
+                    </div>
+                    <div class="col-sm-7 col-xs-6">
+                        @*@if (Model.Dipendente.SINTESI1.ASSQUAL!=null && Model.Dipendente.SINTESI1.ASSQUAL.JSSQUAL != null && Model.Dipendente.SINTESI1.ASSQUAL.JSSQUAL.DTA_ANZCAT != null)
+                        {
+                            <label>@Model.Dipendente.SINTESI1.ASSQUAL.JSSQUAL.DTA_ANZCAT.Value.ToString("dd/MM/yyyy")</label>
+                        }*@
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-5 col-xs-6 ">
+                        <label class="">Part-time</label>
+                    </div>
+                    <div class="col-sm-7 col-xs-6">
+                        <label>@Model.Dipendente.PART_TIME</label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-5 col-xs-6 ">
+                        <label class="">Assenze (Ultimi 12 mesi)</label>
+                        <h6 class="pull-5-t"><i>tipo @eccezioniammesse di almeno @numgiornieccezioniammesse giorni</i></h6>
+                    </div>
+                    <div class="col-sm-7 col-xs-6">
+                        @{
+                            if (Model.Dipendente.XR_PRV_DIPENDENTI_ASSENZE.Sum(y => y.QUANTITA) > numgiornieccezioniammesse)
+                            {
+                                var tmp = Model.Dipendente.XR_PRV_DIPENDENTI_ASSENZE.Sum(y => y.QUANTITA);
+                                <label><a href="#" onclick="ShowAssenze()">@tmp giorni </a></label>
+                            }
+                            else
+                            {
+                                <label>0 giorni</label>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+    </div>
+    <!--fine contenuto-->
+</div>
+@{
+    string assenze = "<table class='table table-hover table-responsive' role='grid' style='font-size:14px; text-align:left;'>";
+    assenze += "<thead><tr>" +
+            "<th>Codice</th>" +
+            "<th>Descrizione</th>" +
+            "<th>Quantità</th>" +
+            "<th>Unità di misura</th>" +
+            "</tr></thead><tbody>";
+    //foreach (var ass in Model.Dipendente.XR_PRV_DIPENDENTI_ASSENZE.Where(x=> (x.ANNO == rifDate.Year && x.MESE >= rifDate.Month) || (x.ANNO == DateTime.Today.Year)).OrderBy(x=>x.ANNO).ThenBy(x=>x.MESE))
+    foreach (var ass in Model.Dipendente.XR_PRV_DIPENDENTI_ASSENZE)
+    {
+        assenze += "<tr>" +
+        "<td>" + ass.COD_ECCEZIONE + "</td>" +
+        "<td>" + ass.DES_ECCEZIONE + "</td>" +
+        "<td>" + ass.QUANTITA + "</td>" +
+        "<td>" + ass.UNITA_MISURA + "</td>" +
+        "</tr>";
+    }
+    assenze += "</table>";
+}
+<script>
+    function ShowAssenze() {
+        swal({
+            title: 'Elenco assenze',
+            text: "",
+            html: "@Html.Raw(assenze)",
+            width: 700,
+            //input: 'text',
+            //type: 'warning',
+            //showCancelButton: true,
+            //confirmButtonColor: '#3085d6',
+            //cancelButtonColor: '#d33',
+            confirmButtonText: 'Ok',
+            //cancelButtonText: 'No, cancel!',
+            confirmButtonClass: 'btn btn-primary btn-lg',
+            //cancelButtonClass: 'btn btn-danger',
+            buttonsStyling: false
+        });
+    }
+</script>

@@ -1,0 +1,148 @@
+﻿<section class="block block-transparent no-margin-bottom">
+
+    @* Hidden field fissi dell'utente *@
+    <input type="hidden" value="@ViewBag.MatricolaUtente" id="hdnSceltaDestinazioneTfrMatricolaUtente" />
+    <input type="hidden" value="@ViewBag.IdUtente" id="hdnSceltaDestinazioneTfrIdUtente" />
+    <input type="hidden" value="@ViewBag.IdRecordScelta" id="hdnSceltaDestinazioneTfrIdRecordScelta" />
+
+    <div class="block-header">
+        <label class="rai-font-modal-heading">Trattamento di fine rapporto</label>
+        <div class="block-options">
+            <button data-dismiss="modal" class="btn btn-action-icon"
+                    onclick="chiudiSceltaTrattamentoTfrFinale()">
+                <i class="glyphicon glyphicon-remove"></i>
+            </button>
+        </div>
+    </div>
+
+    <section class="body-side-panel" style="margin-top: 3rem;">
+        <div class="row">
+            <div class="col-md-8">
+                <div id="div-modulo-trattamento-fine-rapporto-finale">
+                    
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div id="div-modulo-trattamento-fine-rapporto-finale-immagine-dipendente">
+                    
+                </div>
+            </div>
+        </div>
+    </section>
+</section>
+
+<script>
+    $(document).ready(function () {
+        loadModuloDestinazioneTfrFinale();
+
+        loadUtenteConSituazioneTfrFinale();
+    })
+
+    /**
+     * Funzione che carica il ripeilogo finale dell'utente
+     * */
+    function loadModuloDestinazioneTfrFinale() {
+        var datiUtente = {
+            'matricolaUtente': $('#hdnSceltaDestinazioneTfrMatricolaUtente').val(),
+            'idUtente': $('#hdnSceltaDestinazioneTfrIdUtente').val(),
+            'idRecordScelta': $('#hdnSceltaDestinazioneTfrIdRecordScelta').val(),
+        }
+
+        $.ajax({
+            type: 'GET',
+            cache: false,
+            url: "/SceltaDestinazioneTfr/GetModuloFinale",
+            data: datiUtente,
+            success: function (data) {
+                //console.dir(data);
+                $('#div-modulo-trattamento-fine-rapporto-finale').html(data);
+            }
+        });
+    }
+
+    function loadUtenteConSituazioneTfrFinale() {
+        var datiUtente = {
+            'matricolaUtente': $('#hdnSceltaDestinazioneTfrMatricolaUtente').val(),
+            'idUtente': $('#hdnSceltaDestinazioneTfrIdUtente').val(),
+            'idRecordScelta': $('#hdnSceltaDestinazioneTfrIdRecordScelta').val(),
+        }
+
+        $.ajax({
+            type: 'GET',
+            cache: false,
+            url: "/SceltaDestinazioneTfr/GetUtenteConSituazioneModuloFinale",
+            data: datiUtente,
+            success: function (data) {
+                //console.dir(data);
+                $('#div-modulo-trattamento-fine-rapporto-finale-immagine-dipendente').html(data);
+            }
+        });
+    }
+
+    /**
+     * Funzione che chiede conferma sulla chiusura del model e, eventualmente, esegue azioni
+     * */
+    function chiudiSceltaTrattamentoTfrFinale() {
+        //swal({
+        //    title: 'Attenzione',
+        //    type: 'question',
+        //    html: "Si desidera eliminare i dati inseriti",
+        //    showCancelButton: true,
+        //    confirmButtonText: 'Sì',
+        //    cancelButtonText: 'No',
+        //    reverseButtons: true,
+        //    customClass: 'rai rai-confirm-cancel'
+        //}).then(function () {
+        //    // Cliccato su 'Sì, elimina i dati'
+        //    eseguiEliminazioneDatiInseriti();
+        //}).catch(function () {
+        //    // Cliccato su 'No, mantieni i dati'
+        //    sceltaDestinazioneTFR_ChiudiInserimento();
+        //});
+
+        sceltaDestinazioneTFR_ChiudiInserimento();
+    }
+
+    /**
+     * Funzione che si occupa di chiamare il metodo per l'eiminazione dei dati dell'utente
+     * */
+    function eseguiEliminazioneDatiInseriti() {
+
+        //console.log('eseguiEliminazioneDatiInseriti');
+
+        var dati = {
+            'idUtente': $('#hdnSceltaDestinazioneTfrIdUtente').val(),
+            'matricolaUtente': $('#hdnSceltaDestinazioneTfrMatricolaUtente').val(),
+            'idRecordScelta': $('#hdnSceltaDestinazioneTfrIdRecordScelta').val(),
+        };
+
+        //console.dir(dati);
+
+        $.ajax({
+            type: 'POST',
+            cache: false,
+            url: "/SceltaDestinazioneTfr/EliminaDatiInseriti",
+            data: dati,
+            success: function (data) {
+                swal({
+                    title: 'Dati eliminati correttamente',
+                    type: 'success',
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+                sceltaDestinazioneTFR_ChiudiInserimento();
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                swal({
+                    title: jqXHR.statusText,
+                    type: 'error',
+                    confirmButtonClass: "btn btn-primary btn-lg",
+                    showConfirmButton: true,
+                    confirmButtonText: 'Ok',
+                    customClass: 'rai'
+                });
+            }
+        });
+    }
+</script>

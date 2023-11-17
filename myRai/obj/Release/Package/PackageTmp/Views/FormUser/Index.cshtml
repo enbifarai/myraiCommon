@@ -1,0 +1,120 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using myRaiData;
+@model IEnumerable<myRaiData.MyRai_FormPrimario>
+
+@{
+    ViewBag.Title = "Elenco questionari";
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    string matricola = myRai.Business.CommonManager.GetCurrentUserMatricola();
+    var alberghiVisitati = myRai.Controllers.HotelManager.GetAlberghiVisitati();
+    var today = DateTime.Today;
+    var dataLimitePerScadenza = DateTime.Today.AddDays(-5);
+    alberghiVisitati = alberghiVisitati.Where(x => x.DataVisita.AddDays(30).Subtract(dataLimitePerScadenza).TotalDays < 5).ToList();
+
+
+    List<myRaiData.MyRai_FormPrimario> listaQuest = Model.ToList();
+
+    if (alberghiVisitati == null || !alberghiVisitati.Any())
+    {
+        if (listaQuest != null && listaQuest.Count() > 0)
+        {
+            listaQuest = Model.Where(x => x.MyRai_FormTipologiaForm.tipologia != "Hotel").ToList();
+        }
+    }
+    else
+    {
+        if (listaQuest == null || !listaQuest.Any(x => x.MyRai_FormTipologiaForm.tipologia == "Hotel"))
+        {
+            if (listaQuest == null)
+            {
+                listaQuest = new List<myRaiData.MyRai_FormPrimario>();
+            }
+            digiGappEntities db = new digiGappEntities();
+            var formPrimario = db.MyRai_FormPrimario.FirstOrDefault(x => x.MyRai_FormTipologiaForm.tipologia == "Hotel" && x.attivo && x.data_inizio_validita <= today && today < x.data_fine_validita && (x.filtro_matricola == null || x.filtro_matricola.Contains(matricola)));
+            if (formPrimario != null)
+            {
+                listaQuest.Add(formPrimario);
+            }
+        }
+    }
+}
+
+
+<section role="main" class="content-body">
+    <main id="main-container">
+        <div class="content">
+            <div class="row">
+                <div class="col-sm-12">
+                    @{
+                        bool GappChiuso = false;
+                    }
+
+                        @if (!myRai.Models.Utente.GappChiuso())
+                        {
+                            @*@Html.Partial("formuser", Model)*@
+                            <div class="col-md-8">
+                                @Html.RenderAsyncPanel(myRaiHelper.PanelType.Panel, "Elenco questionari", "ElencoQuestionari", "FormUser", false)
+                            </div>
+                            <div class="col-md-4">
+                                @if (listaQuest != null && listaQuest.Any())
+                                {
+                                    using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "In scadenza", false))
+                                    {
+                                        <table class="table rai-table rai-table-vcenter">
+                                            @foreach (var item in listaQuest)
+                                            {
+                                                if (item.MyRai_FormTipologiaForm.tipologia != "Hotel")
+                                                {
+                                                    <tr>
+                                                        <td><a href="@Url.Action("Fill", "FormUser", new { idForm = item.id })" title="@item.titolo">@item.titolo</a></td>
+                                                    </tr>
+                                                }
+                                                else
+                    {
+                                                    foreach (var albergo in alberghiVisitati)
+                                                    {
+                                                        string title = item.titolo + ": " + albergo.Albergo.Nome + " - " + albergo.Albergo.Città.Nome_Città + "(" + albergo.Albergo.Città.Province.Sigla_Provincia + ")";
+
+                                                        <tr>
+                                                            <td><a href="@Url.Action("Fill", "FormUser", new { idForm = item.id })" title="@title">@title</a></td>
+                                                        </tr>
+                                                    }
+
+
+                                                }
+                                            }
+                                        </table>
+                                    }
+                    }
+                    else
+                    {
+                                    @Html.RenderWidget(myRaiHelper.WidgetType.Normal, "In scadenza", "fa fa-clock-o", "Non ci sono questionari in scadenza")
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="col-sm-12">
+                        @Html.Partial("_cics_chiuso")
+                            </div>
+
+                        GappChiuso = true;
+                    }
+                </div>
+            </div>
+        </div>
+    </main>
+    <!-- end: page -->
+</section>
+
+
+@section afterjs {
+    @Html.Raw(TempData["script"])
+}
+
+<div id="pg-visible-xs" class="visible-xs"></div>
+<div id="pg-visible-sm" class="visible-sm"></div>
+<div id="pg-visible-md" class="visible-md"></div>
+<div id="pg-visible-lg" class="visible-lg"></div>

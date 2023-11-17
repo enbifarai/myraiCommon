@@ -1,0 +1,213 @@
+﻿@model myRaiCommonModel.cvModels.cvModel
+
+@{
+    int anno_now = DateTime.Now.Year;
+    int anno_base = 2002;
+    int diff;
+    int[,] arr_fasce;
+    string isGiornalista;
+    string matricola;
+
+    matricola = myRaiHelper.UtenteHelper.EsponiAnagrafica()._matricola;
+    //freak - cancellare dopo per test
+    matricola = "003055";
+
+    if ((myRaiHelper.UtenteHelper.EsponiAnagrafica()._codiceFigProf == "MBA") || (myRaiHelper.UtenteHelper.EsponiAnagrafica()._codiceFigProf == "MAA"))
+    {
+        isGiornalista = "1";
+    }
+    else
+    {
+        isGiornalista = "0";
+    }
+
+    //test
+
+
+    int range = 5;
+    int count_final, count;
+
+    int anno_tmp;
+
+    diff = anno_now - anno_base;
+    if (diff % range == 0)
+    {
+        count_final = diff / range + 1;
+    }
+    else
+    {
+        count_final = (diff / range) + 1;
+    }
+
+    arr_fasce = new int[count_final, 2];
+
+    count = -1;
+    anno_tmp = anno_base;
+    while (count < count_final - 1)
+    {
+        count++;
+        arr_fasce[count, 0] = anno_tmp;
+        arr_fasce[count, 1] = anno_tmp + range - 1;
+        anno_tmp += range;
+    }
+    
+}
+
+@* divisione per fasce *@
+@for (int i = count_final - 1; i >= 0; i--)
+{
+    string testo_panel = "";
+    if (arr_fasce[i, 1] <= anno_now)
+    {
+        testo_panel = "Dal " + arr_fasce[i, 0] + " Al " + arr_fasce[i, 1];
+    }
+    else
+    {
+        testo_panel = "Dal " + arr_fasce[i, 0] + " in corso";
+    }
+                                                    
+
+<div class="col-sm-12 col-lg-12">
+<div class="block">
+<div class="block-header bg-gray-lighter">
+<ul class="block-options">
+
+</ul>
+<div class="block-title text-normal">
+@testo_panel
+</div>
+</div>
+<div class="block-content">
+
+<div class="pull-r-l">
+    <table class="js-table-checkable table table-hover table-vcenter">
+        <tbody>
+                    <thead class="hidden-xs hidden-sm bg-primary">
+                    <tr>
+                        <th style="width: 240px;" class="text-center"><span>Data</span></th>
+                        <th class="text-left"><span>Incarico/Società</span></th>
+                        <th style="width: 15px" class="text-center"><span>&nbsp;</span></th>
+                        <th style="width: 15px" class="text-center"><span>&nbsp;</span></th>
+                    </tr>
+                    </thead>
+            @foreach (var elem in Model.experencies)
+            {
+                string inizio, fine;
+                int data_inizio, data_fine;
+                
+                data_inizio = Convert.ToInt32(elem._dataInizio.Substring(0,4));
+                data_fine=Convert.ToInt32(elem._dataFine.Substring(0,4));
+                
+                if (data_inizio >= arr_fasce[i,0] && data_inizio <= arr_fasce[i,1])
+                {
+                    string composizione;                   
+                    inizio = elem._dataInizio.Substring(6,2)+"/"+elem._dataInizio.Substring(4,2)+"/"+elem._dataInizio.Substring(0,4);
+                    fine = (data_fine >= anno_now) ? "in corso" : elem._dataFine.Substring(6, 2) + "/" + elem._dataFine.Substring(4, 2) + "/" + elem._dataFine.Substring(0, 4);
+                    composizione = inizio + " - " + fine;
+            <tr>
+
+            <td class="hidden-xs font-w600 text-center" style="width: 240px;">@composizione</td>
+            <td>
+            <a class="font-w600" data-toggle="modal" data-target="#modal-message" href="#">@elem._ultRuolo</a>
+            <div class="text-muted push-5-t">@elem._societa</div>
+            </td>
+            @if (elem._flagEspRai == "1")
+            {
+            <td class="visible-lg text-muted" style="width: 15px;">
+            <span class="h3 font-w300 push"><a class="icons icon-pencil h4" href="#" data-toggle="modal" data-target="#frkmodal"  onclick="ModificaExperiencesRai(@myRaiHelper.CommonHelper.TransformDates(Json.Encode(elem)))"></a> </span>
+            </td>
+            }
+            else
+            {
+            <td class="visible-lg text-muted" style="width: 15px;">
+            <span class="h3 font-w300 push"><a class="icons icon-pencil h4 " href="#" data-toggle="modal" data-target="#frkmodal"  onclick="ModificaExperiencesExtraRai(@myRaiHelper.CommonHelper.TransformDates(Json.Encode(elem)))"></a> </span>
+            </td>
+            }
+            <td class="visible-lg text-muted" style="width: 50px;">
+            <span class="h3 font-w300"><a class="icons icon-trash h4" href="#"  onclick="ConfermaCancellazione_Experencies('@elem._matricola', '@elem._prog')"></a> </span>
+            </td>
+            </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+</div>
+</div>
+</div>
+
+}
+
+
+@* PARTE ANTE 2002 - ANNO BASE *@
+<div class="col-sm-12 col-lg-12">
+<div class="block">
+<div class="block-header bg-gray-lighter">
+<ul class="block-options">
+
+</ul>
+<div class="block-title text-normal">
+ante 2002
+</div>
+</div>
+<div class="block-content">
+
+<div class="pull-r-l">
+    <table class="js-table-checkable table table-hover table-vcenter">
+        <tbody>
+                    <thead class="hidden-xs hidden-sm bg-primary">
+                    <tr>
+                        <th style="width: 240px;" class="text-center"><span>Data</span></th>
+                        <th class="text-left"><span>Incarico/Società</span></th>
+                        <th style="width: 15px" class="text-center"><span>&nbsp;</span></th>
+                        <th style="width: 15px" class="text-center"><span>&nbsp;</span></th>
+                    </tr>
+                    </thead>
+            @foreach (var elem in Model.experencies)
+            {
+                string inizio, fine;
+                int data_inizio, data_fine;
+                
+                data_inizio = Convert.ToInt32(elem._dataInizio.Substring(0,4));
+                data_fine=Convert.ToInt32(elem._dataFine.Substring(0,4));
+                
+                if (data_inizio < @anno_base)
+                {
+                    string composizione;                   
+                    inizio = elem._dataInizio.Substring(6,2)+"/"+elem._dataInizio.Substring(4,2)+"/"+elem._dataInizio.Substring(0,4);
+                    fine =  elem._dataFine.Substring(6, 2) + "/" + elem._dataFine.Substring(4, 2) + "/" + elem._dataFine.Substring(0, 4);
+                    composizione = inizio + " - " + fine;
+            <tr>
+
+            <td class="hidden-xs font-w600 text-center" style="width: 240px;">@composizione</td>
+            <td>
+            <a class="font-w600" data-toggle="modal" data-target="#modal-message" href="#">@elem._ultRuolo</a>
+            <div class="text-muted push-5-t">@elem._societa</div>
+            </td>
+            @if (elem._flagEspRai == "1")
+            {
+            <td class="visible-lg text-muted" style="width: 15px;">
+            <span class="h3 font-w300 push"><a class="icons icon-pencil h4 "  href="#" data-toggle="modal" data-target="#frkmodal"  onclick="ModificaExperiencesRai(@myRaiHelper.CommonHelper.TransformDates(Json.Encode(elem)))"></a> </span>
+            </td>
+            }
+            else
+            {
+            <td class="visible-lg text-muted" style="width: 15px;">
+             <span class="h3 font-w300 push"><a class="icons icon-pencil h4 " href="#" data-toggle="modal" data-target="#frkmodal" onclick="ModificaExperiencesExtraRai(@myRaiHelper.CommonHelper.TransformDates(Json.Encode(elem)))"></a> </span>
+            </td>
+            }
+            <td class="visible-lg text-muted" style="width: 50px;">
+            <span class="h3 font-w300"><a class="icons icon-trash h4" href="#" onclick="ConfermaCancellazione_Experencies('@elem._matricola', '@elem._prog')"></a> </span>
+            </td>
+            </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+</div>
+</div>
+</div>
+
+ 
+   

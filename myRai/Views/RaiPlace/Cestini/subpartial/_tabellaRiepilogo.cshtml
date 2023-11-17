@@ -1,0 +1,149 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonModel.raiplace;
+@using MVCProject.Custom_Helpers;
+@using myRaiCommonManager;
+
+@model CestiniModel
+
+@{
+    string myStyle = "";
+}
+
+@if ( !Model.ReadOnlyMode )
+{
+    myStyle = "style=\"overflow-x:auto;\"";
+}
+<div class="col-xs-12" @(myStyle)>
+    <br />
+    <div class="col-xs-12">
+        <div class="row text-center">
+            <h5 class="text-bold">Destinatari pasti</h5>
+        </div>
+    </div>
+    <br />
+    <table class="js-table-sections table table-hover" id="tbrichieste">
+        <thead>
+            <tr class="nessuna-richiesta @(Model.richieste.Count > 0 ? "hidden" : "")">
+                @if ( Model.richieste.Count == 0 )
+                {
+                    <td class="text-bold">nessuna richiesta presente</td>
+                }
+            </tr>
+            <tr class="trovata-richiesta text-bold @(Model.richieste.Count == 0 ? "hidden" : "")">
+                <td>Destinatario</td>
+                <td>Tipologia</td>
+                @{
+                    if ( !Model.ReadOnlyMode )
+                    {
+                        <td></td>
+                        <td></td>
+                    }
+                }
+            </tr>
+        </thead>
+        <tbody id="richieste">
+            @for ( int i = 0 ; i < Model.richieste.Count ; i++ )
+            {
+
+                if ( !Model.richieste[i].Deleted )
+                {
+                    <tr class="tr-ric @(Model.ReadOnlyMode ? "readonly" : "editMode" )" id="@Model.richieste[i].idRichiesta">
+                        <td hidden>
+                            <label id="idRichiesta" title="@Model.richieste[i].idRichiesta"></label>
+                        </td>
+                        <td hidden>
+                            <label id="flagRisorsa" title="@Model.richieste[i].flagRisorsa"></label>
+                        </td>
+                        <td hidden>
+                            <label id="motivoEsterno" title="@Model.richieste[i].motivoEsterno"></label>
+                        </td>
+                        <td hidden>
+                            <label id="progressivo" title="@Model.richieste[i].progressivo">@Model.richieste[i].progressivo</label>
+                        </td>
+                        <td hidden>
+                            <label id="cognomeRisorsa" title="@Model.richieste[i].cognomeRisorsa">@Model.richieste[i].cognomeRisorsa</label>
+                        </td>
+                        <td hidden>
+                            <label id="nomeRisorsa" title="@Model.richieste[i].nomeRisorsa">@Model.richieste[i].nomeRisorsa</label>
+                        </td>
+                        <td hidden>
+                            <label id="matricolaRisorsa" title="@Model.richieste[i].matricolaRisorsa">@Model.richieste[i].matricolaRisorsa</label>
+                        </td>
+                        @{
+                            string nominativo = "";
+                            if ( String.IsNullOrEmpty( Model.richieste[i].matricolaRisorsa ) )
+                            {
+                                nominativo = String.Format( "{0} {1}" , @Model.richieste[i].cognomeRisorsa.ToUpper( ) , @Model.richieste[i].nomeRisorsa.ToUpper( ) );
+                            }
+                            else
+                            {
+                                nominativo = String.Format( "{0} {1} ({2})" , @Model.richieste[i].cognomeRisorsa.ToUpper( ) , @Model.richieste[i].nomeRisorsa.ToUpper( ) , @Model.richieste[i].matricolaRisorsa );
+                            }
+                        }
+                        <td>
+                            <label id="nominativo" title="@nominativo">@(nominativo)</label>
+                        </td>
+                        <td>
+                            <label id="tipoCestino" data-toggle="tooltip" title="@Model.richieste[i].tipoCestino.GetAmbientValue()">@Model.richieste[i].tipoCestino.GetDescription( )</label>
+                        </td>
+                        <td hidden>
+                            <label id="codiceRichiesta" data-toggle="tooltip" title="@Model.richieste[i].codiceRichiesta">@Model.richieste[i].codiceRichiesta</label>
+                        </td>
+                        @{
+                            if ( !Model.ReadOnlyMode )
+                            {
+                                <td>
+                                    <a class="icon-trash h4" href="#" onclick="ConfermaCancellazione_Richiesta(@(Model.richieste[i].idRichiesta))" />
+                                </td>
+                                <td>
+                                    <a class="btn btn-default btn-scriv text-uppercase bg-puls_dash" onclick="DettaglioRichiesta('@(Model.richieste[i].idRichiesta)');">Modifica</a>
+                                </td>
+                            }
+                        }
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+    @if ( Model.ReadOnlyMode )
+    {
+        <br />
+        <br />
+        <br />
+        <div class="col-xs-12">
+            <div class="row text-center">
+                <h5 class="text-bold">Riepilogo pasti</h5>
+            </div>
+        </div>
+        <br />
+        var distinctList = Model.richieste.GroupBy( t => t.tipoCestino )
+                                        .Select( g => g.First( ) )
+                                        .ToList( );
+
+        if ( distinctList != null )
+        {
+            foreach ( var d in distinctList )
+            {
+                var count = Model.richieste.Where( m => m.tipoCestino.Equals( d.tipoCestino ) && !m.Deleted ).Count( );
+
+                <div class="row">
+                    <div class="col-xs-6 text-left">
+                        <b>Tipologia:</b> @(d.tipoCestino)
+                    </div>
+                    <div class="col-xs-6 text-left"><b>Quantità: </b> @(count)</div>
+                </div>
+            }
+        }
+        <hr />
+        <div class="row">
+            <div class="col-xs-6 text-left">
+                <b>Totale pasti:</b> @(Model.richieste.Where( r => !r.Deleted ).Count( ))
+            </div>
+            <div class="col-xs-6 text-left"></div>
+        </div>
+        <hr />
+    }
+</div>

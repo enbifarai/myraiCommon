@@ -1,0 +1,484 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model PopupEccezioneModel
+@using (Html.BeginPanel(PanelType.Panel, "Dati eccezione", false))
+{
+
+<div class="form-group">
+
+    @using (Html.BeginForm("SalvaEccezione", "schedaeccezioni", FormMethod.Post, new { id = "form-eccezioni" }))
+    {
+        @Html.HiddenFor(m => m.IdEccezione)
+
+        <div class="row">
+            <div class="col-sm-3">
+                @Html.Label("Codice eccezione", new { @class = "rai-caption" })
+            </div>
+            <div class="col-sm-9">
+                @if (Model.IsNew)
+                {
+                    @Html.DropDownListFor(m => m.CodiceEccezione, Model.Eccezioni_list, "Eccezione...",
+              new { @class = "form-control", @style = "width:200px", onchange = "EccezioneScelta()" })
+                    @Html.ValidationMessageFor(m => m.CodiceEccezione)
+                }
+                else
+                {
+                    <span>@Model.CodiceEccezione</span>
+                    @Html.HiddenFor(m => m.CodiceEccezione)
+                }
+
+
+            </div>
+        </div>
+
+        <div class="row" style="margin-top:20px">
+            <div class="col-sm-3">
+                @Html.Label("Descrittiva", new { @class = "rai-caption" })
+            </div>
+            <div class="col-sm-9">
+
+                @Html.TextBoxFor(m => m.DescrittivaEccezione, new
+           {
+               @class = "form-control",
+               @readonly = "readonly",
+               placeholder = "Descrittiva",
+               @style = "width:100%",
+               maxlength = "1000"
+           })
+                @Html.ValidationMessageFor(m => m.DescrittivaEccezione)
+
+            </div>
+        </div>
+
+
+        <div class="row" style="margin-top:20px">
+            <div class="col-sm-3">
+                @Html.Label("Descrittiva estesa", new { @class = "rai-caption" })
+            </div>
+            <div class="col-sm-9">
+                @Html.TextBoxFor(m => m.DescrittivaLibera, new
+           {
+               @class = "form-control",
+               placeholder = "Descrittiva estesa",
+               @style = "width:100%",
+               maxlength = "1000"
+           })
+            </div>
+        </div>
+
+        <div class="row" style="margin-top:20px">
+            <div class="col-sm-3">
+                @Html.Label("Pubblicata", new { @class = "rai-caption" })
+            </div>
+            <div class="col-sm-9">
+
+                <div class="rai-checkbox">
+                    <input type="checkbox" name="Pubblicata" value="1"
+                           @if (Model.Pubblicata)
+                           { @: checked="checked"
+                           } />
+                    <label for="_lode"></label>
+                </div>
+
+
+
+            </div>
+        </div>
+
+
+        <div class="row" style="margin-top:20px">
+            <div class="col-sm-3">
+                @Html.Label("Tipo assenza", new { @class = "rai-caption" })
+            </div>
+            <div class="col-sm-9">
+                @Html.DropDownListFor(m => m.TipoAssenza, Model.TipoAssenza_list, "Tipo assenza...", new { @class = "form-control" })
+                @Html.ValidationMessageFor(m => m.TipoAssenza)
+
+            </div>
+        </div>
+
+        <div class="row" style="margin-top:20px">
+            <div class="col-sm-3">
+                @Html.Label("Tematica", new { @class = "rai-caption" })
+            </div>
+            <div class="col-sm-9">
+
+                <div class="rai-checkbox-container">
+                    @foreach (var te in Model.ListaTematiche)
+                    {
+                        <div class="col-sm-4">
+                        <div class="rai-checkbox">
+                            <input type="checkbox" name="tematiche" value="@te.id" id="tematica@(te.id)"
+                                   @if (Model.tematiche != null && Model.tematiche.Contains(te.id))
+                                   { @: checked="checked"
+                                   } />
+                            <label for="tematica@(te.id)"> @te.tematica</label>
+                        </div>
+                        </div>
+                    }
+                </div>
+                <span class="field-validation-error">
+                    <span id="tematica-error" style="display:none" class="">Il campo Tematica è obbligatorio.</span>
+                </span>
+
+            </div>
+        </div>
+
+        <div class="row" style="margin-top:20px">
+            <div class="col-sm-3">
+                <label class="rai-caption">Utenti</label>
+            </div>
+            <div class="col-sm-9">
+
+                <div class="rai-checkbox-container">
+                    @foreach (var ut in Model.ListaUtenti)
+                    {
+                        <div class="col-sm-4">
+                            <div class="rai-checkbox">
+                                <input type="checkbox" name="utenti" value="@ut.id" id="ut@(ut.id)"
+                                       @if (Model.utenti != null && Model.utenti.Contains(ut.id))
+                                       { @: checked="checked"
+                                       } />
+                                <label for="ut@(ut.id)"> @ut.utente</label>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <span class="field-validation-error">
+                    <span id="utenti-error" style="display:none" class="">Il campo Utenti è obbligatorio.</span>
+                </span>
+            </div>
+        </div>
+
+
+        <div class="row" style="margin-top:20px">
+            <div class="col-sm-3">
+                <label class="rai-caption">Destinatari</label>
+
+            </div>
+            <div class="col-sm-9">
+
+                <div class="rai-checkbox-container">
+                    @foreach (var d in Model.ListaDestinatari)
+                    {
+                    <div class="col-sm-4">
+                        <div class="rai-checkbox">
+                            <input type="checkbox" name="destinatari" value="@d.id" id="dest@(d.id)"
+                                   @if (Model.destinatari != null && Model.destinatari.Contains(d.id)) { @: checked="checked"
+                                   } />
+                            <label for="dest@(d.id)"> @d.destinatario</label>
+                        </div>
+                    </div>
+                    }
+                </div>
+                <span class="field-validation-error">
+                    <span id="destinatari-error" style="display:none" class="">Il campo Destinatari è obbligatorio.</span>
+                </span>
+            </div>
+        </div>
+
+
+        <div class="row" style="margin-top:20px">
+            <div class="col-sm-3">
+                <label class="rai-caption">Rinvii</label>
+            </div>
+            <div class="col-sm-9">
+                <div class="row">
+                    <div class="col-sm-4 no-padding-left">
+                        @Html.DropDownListFor(m => m.EccezioneSelezionata, Model.EccezioniCollegate_list, "Eccezioni collegate...", new { @class = "form-control", @style = "display:inline-block", onchange = "EccezioneCollegataChanged()" })
+
+                    </div>
+                    <div class="col-sm-2">
+                        <input id="buttonAggiungiEcc" class="btn rai-btn-small disable" onclick="AggiungiEccColl()" style="margin:0px;margin-bottom:5px;display:inline-block" type="button" value="Aggiungi" aria-invalid="false">
+
+                    </div>
+                    <div class="col-sm-6">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row" style="margin-top:2px">
+            <div class="col-sm-3">
+                <span class="rai-caption"> </span>
+            </div>
+            <div class="col-sm-9">
+                @Html.TextBoxFor(x => x.EccezioniCollegate, new { @class = "form-control" })
+            </div>
+        </div>
+
+        <div class="row" style="margin-top:20px">
+            <div class="col-sm-3">
+                @Html.Label("Definizione", new { @class = "rai-caption" })
+            </div>
+            <div class="col-sm-9">
+                @Html.TextAreaFor(m => m.Definizione, new { @class = "form-control html-editor", placeholder = "Definizione", rows = "5" })
+                @Html.ValidationMessageFor(m => m.Definizione)
+
+            </div>
+        </div>
+
+        <div class="row" style="margin-top:20px">
+            <div class="col-sm-3">
+                @Html.Label("Criteri di inserimento", new { @class = "rai-caption" })
+            </div>
+            <div class="col-sm-9">
+                @Html.TextAreaFor(m => m.CriteriInserimento, new { @class = "form-control html-editor", placeholder = "Criteri di inserimento", rows = "5" })
+                @Html.ValidationMessageFor(m => m.CriteriInserimento)
+
+            </div>
+        </div>
+
+        <div class="row" style="margin-top:20px">
+            <div class="col-sm-3">
+                @Html.Label("Trattamento economico", new { @class = "rai-caption" })
+            </div>
+            <div class="col-sm-9">
+                @Html.TextAreaFor(m => m.TrattamentoEconomico, new { @class = "form-control html-editor", placeholder = "Trattamento economico", rows = "5" })
+                @Html.ValidationMessageFor(m => m.TrattamentoEconomico)
+
+            </div>
+        </div>
+
+        <div class="row" style="margin-top:20px">
+            <div class="col-sm-3">
+                @Html.Label("Tipo documentazione", new { @class = "rai-caption" })
+            </div>
+            <div class="col-sm-9">
+                @Html.DropDownListFor(m => m.TipoDocumentazione, Model.TipoDocumentazione_list, "Tipo documentazione...", new { @class = "form-control" })
+                @Html.ValidationMessageFor(m => m.TipoDocumentazione)
+
+            </div>
+        </div>
+        <div class="row" style="margin-top:4px">
+            <div class="col-sm-3">
+                @Html.Label("Documentazione", new { @class = "rai-caption" })
+            </div>
+            <div class="col-sm-9">
+                @Html.TextAreaFor(m => m.Presupposti, new { @class = "form-control html-editor", placeholder = "Presupposti/documentazione", rows = "5" })
+                @Html.ValidationMessageFor(m => m.Presupposti)
+
+            </div>
+        </div>
+        <div class="row" style="margin-top:4px">
+            <div class="col-sm-3">
+                @Html.Label("Presupposti e procedure", new { @class = "rai-caption" })
+            </div>
+            <div class="col-sm-9">
+                @Html.TextAreaFor(m => m.PresuppostiProcedure, new { @class = "form-control html-editor", placeholder = "Presupposti e procedure", rows = "5" })
+                @Html.ValidationMessageFor(m => m.PresuppostiProcedure)
+
+            </div>
+        </div>
+
+        <div class="row" style="margin-top:20px">
+            <div class="col-sm-3">
+                @Html.Label("Note", new { @class = "rai-caption" })
+            </div>
+            <div class="col-sm-9">
+                @Html.TextAreaFor(m => m.Note, new { @class = "form-control html-editor", placeholder = "Note", rows = "5" })
+                @Html.ValidationMessageFor(m => m.Note)
+
+            </div>
+        </div>
+
+        <div id="allegati-container" class="row" style="margin-top:20px">
+            <div class="col-sm-12" style="margin-bottom:14px">
+                <label class="rai-caption">Allegati</label>
+            </div>
+            <div class="col-sm-12" id="alleg-box">
+                @if (!Model.IsNew)
+                {
+                    if (Model.allegati != null && Model.allegati.Any())
+                    {
+                        <table style="width:100%;border:solid 1px #ddd" class="table" id="tabella-allegati">
+                            <tr style="background-color:#eee">
+                                <td>Nome File</td>
+                                <td style="width:60px;vertical-align:middle">Apri</td>
+                                <td style="width:60px;vertical-align:middle">Canc.</td>
+                                <td style="width:80px;vertical-align:middle">Progr.</td>
+                            </tr>
+
+                            @foreach (var allegato in Model.allegati.OrderBy(x => x.progressivo).ThenBy(x => x.nomefile))
+                            {
+                                <tr id="tr-allegato-@allegato.id">
+                                    <td style="vertical-align:middle">@allegato.nomefile</td>
+
+                                    <td style="width:60px;vertical-align:middle">
+                                        <a target="_blank" href="/schedaeccezioni/getdoc?idAllegato=@allegato.id">
+                                            <i class="text-primary icon-doc-0 icons icon-doc" style="font-size:130%"></i>
+                                        </a>
+                                    </td>
+
+                                    <td style="width:60px;vertical-align:middle"><span class="pointer icons icon-trash h4 text-primary" onclick="CancellaAllegatoEcc(@allegato.id)"></span></td>
+
+                                    <td style="width:80px">
+                                        <input id="progressivo-id-@allegato.id" data-id-allegato="@allegato.id" type="text" value="@allegato.progressivo" class="form-control ordine-allegati" style="width:60px" />
+                                    </td>
+                                </tr>
+                                @*@Html.Partial("_allegatiEccReadOnly", new myRai.Models.AllegatoEccezione() {nomefile = allegato.nomefile , idDocumentoAllegato = allegato.id})*@
+                            }
+
+                            <tr>
+                                <td colspan="4" style="text-align:center">
+                                    <input id="buttonSalvaOrdine" class="btn btn-primary valid" onclick="SalvaOrdineAllegati()" style="margin:0px" type="button" value="Salva ordine">
+                                </td>
+                            </tr>
+
+
+                        </table>
+                    }
+
+
+                }
+
+                @Html.Partial("_allegatiEcc", new AllegatoEccezione() { indice = 0 })
+
+            </div>
+        </div>
+
+        using (Html.BeginBlock(BlockType.ContentTable, "Fonti della disciplina"))
+        {
+
+        <div id="fontidinamiche" class="row" style="margin-top:20px">
+            
+            @if (Model.IsNew || Model.fonti == null || Model.fonti.Length == 0)
+            {
+                <div class="col-sm-12">
+                    <label class="rai-caption">Fonte:</label>
+                </div>
+
+                <div class="col-sm-12">
+                    <input type="text" name="fonti" class="form-control fontedin" style="width:100%" />
+                </div>
+                <div class="col-sm-12">
+                    <label class="rai-caption">Url:</label>
+                </div>
+
+                <div class="col-sm-10">
+                    <input type="text" name="urlfonti" class="form-control urldin" style="width:100%" />
+                </div>
+                <div class="col-sm-2" style="text-align:right">
+                    <input id="buttonAggiungiFonte" class="btn rai-btn-small" onclick="AggiungiFonteDin()"
+                           style="margin:0px" type="button" value="+ Fonte" />
+                </div>
+            }
+            else
+            {
+                for (int i = 0; i < Model.fonti.Length; i++)
+                {
+                    <div class="col-sm-12">
+                        <label class="rai-caption">Fonte:</label>
+                    </div>
+                    <div class="col-sm-12">
+                        <input value="@Model.fonti[i]" type="text" name="fonti" class="form-control fontedin" style="width:100%" />
+                    </div>
+
+                    <div class="col-sm-12">
+                        <label class="rai-caption">Url:</label>
+                    </div>
+
+                    <div class="col-sm-10">
+                        <input value="@Model.urlfonti[i]" type="text" name="urlfonti" class="form-control urldin" style="width:100%" />
+                    </div>
+                    if (i == Model.fonti.Length - 1)
+                    {
+                        <div class="col-sm-2" style="text-align:right">
+                            <input id="buttonAggiungiFonte" class="btn btn-primary" onclick="AggiungiFonteDin()"
+                                   style="margin:0px" type="button" value="+ Fonte" />
+                        </div>
+                    }
+                }
+
+            }
+
+
+
+        </div>
+
+        }
+
+
+
+        using (Html.BeginBlock(BlockType.ContentTable, "Ulteriori informazioni"))
+        {
+
+        <div id="contenitore-dinamico" class="row">
+            @if (Model.IsNew || Model.campodinamico == null || Model.campodinamico.Length == 0)
+            {
+                @Html.Partial("getCampoDin", "")
+
+                @*<div class="col-sm-12" style="margin-top:10px">
+                        <p><b>Nome campo: </b></p>
+                        <input type="text" name="campodinamico" class="form-control campodin" style="width:100%" />
+                    </div>
+                    <div class="col-sm-12" style="margin-top:10px">
+                        <p>Valore campo:</p>
+                        <textarea name="valoredinamico" class="form-control valoredin" style="width:100%" rows="5" />
+                    </div>
+                    <div class="col-sm-12" style="margin-top:10px">
+                        <p>Posizione campo:</p>
+
+                        <select class="form-control" id="posizionedinamico_" name="posizionedinamico">
+                            <option>Scegli posizione...</option>
+                            @foreach (var item in Model.PosizioneCampoDinamico_list)
+                            {
+                                <option value="@item.Value">@item.Text</option>
+                            }
+                        </select>
+
+                    </div>*@
+            }
+            else
+            {
+
+                for (int i = 0; i < Model.campodinamico.Length; i++)
+                {
+                    <div class="col-sm-12" >
+                        <label class="rai-caption">Nome campo: </label>
+                        <input value="@Model.campodinamico[i]" type="text" name="campodinamico" class="form-control campodin" style="width:100%" />
+                    </div>
+                    <div class="col-sm-12" style="margin-top:10px">
+                        <label class="rai-caption">Valore campo:</label>
+                        <textarea name="valoredinamico" class="form-control html-editor valoredin" style="width:100%" rows="5">@Model.valoredinamico[i]</textarea>
+                    </div>
+                    <div class="col-sm-12" style="margin-top:10px">
+                        <label class="rai-caption">Posizione campo:</label>
+
+                        <select class="form-control" id="posizionedinamico_@i" name="posizionedinamico">
+                            <option value="">Scegli posizione...</option>
+                            @foreach (var item in Model.PosizioneCampoDinamico_list)
+                            {
+                                <option value="@item.Value" @( Model.posizionedinamico[i] == item.Value ? "selected" : "")>@item.Text</option>
+                            }
+                        </select>
+
+                    </div>
+                }
+
+            }
+        </div>
+        }
+
+        <div class="row" style="margin-top:20px">
+            <div class="col-sm-12">
+                <div class="rai-btn-fill">
+                    <input id="buttonAggiungiCampo" class="btn btn-primary" onclick="AggiungiCampoDin()"
+                           style="margin-top:14px" type="button" value="Aggiungi campo">
+                    <button id="buttonSalvaEccezione" class="btn btn-primary"
+                            style="margin-top:14px">
+                        Salva eccezione
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    }
+
+</div>
+}
+<script>
+
+</script>

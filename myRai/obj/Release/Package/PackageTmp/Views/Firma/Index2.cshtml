@@ -1,0 +1,247 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model DaFirmareModel
+
+@{
+    ViewBag.Title = "Livello 2";
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+}
+@{ 
+    string[] msgSecondoLiv = null;
+    using (myRaiData.digiGappEntities db = new myRaiData.digiGappEntities())
+    {
+        var param = db.MyRai_ParametriSistema.FirstOrDefault(x => x.Chiave == "MessaggioSecondoLiv");
+        if (param != null && !String.IsNullOrWhiteSpace(param.Valore1) && !String.IsNullOrWhiteSpace(param.Valore2))
+        {
+            msgSecondoLiv = new string[] { param.Valore1, param.Valore2 };
+        }
+    }
+}
+
+    
+        <section role="main" class="content-body">
+            <main id="main-container">
+                <div class="content">
+                    @if (msgSecondoLiv != null)
+                    {
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <div class="alert alert-danger full-width">
+                                    <h4 class="text-bold">@msgSecondoLiv[0]</h4>
+                                    <span>@Html.Raw(msgSecondoLiv[1])</span>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    }
+                    <div class="row">
+                        <div class="col-md-8">
+                            @if ( !UtenteHelper.GappChiuso( ) )
+                            {
+                                if ( UtenteHelper.IsBossLiv2( CommonHelper.GetCurrentUserPMatricola( ) ) )
+                                {
+                                    @Html.Partial( "../Responsabile/da_firmare" , Model.Sedi )
+                                    @Html.Partial( "../Responsabile/da_firmarePF" , Model.Sedi )
+                                }
+                            }
+                            else
+                            {
+                                @Html.Partial( "_cics_chiuso" )
+                            }
+                        </div>
+                        <div class="col-md-4">
+                            @Html.RenderPanel(myRaiHelper.PanelType.Panel, "Da firmare", "~/Views/Firma/dafirmare.cshtml", Model.TotaliDaFirmare, true, null, null, null, false, false, "", "tot-car")
+                            @Html.RenderPanel(myRaiHelper.PanelType.SearchPanel, "Cerca tra i documenti", "~/Views/Firma/RicercaPdf.cshtml", Model.RicercaPdf)
+                        </div>
+                    </div>
+                </div>
+            </main>
+            <!-- end: page -->
+        </section>
+    
+    <div class="modal fade right" id="pdf-modal" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+        <div class="modal-dialog modal-dialog-popin modal-lg">
+            <div class="block-header bg-cdf" style="height: 0px; padding:0px;">
+                <ul class="block-options visible-xs">
+                    <li>
+                        <button data-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+                    </li>
+                </ul>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-content" id="pdfcontent">
+            </div>
+        </div>
+    </div>
+    <div class="modal fade right" id="pdf-modal-pf" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+        <div class="modal-dialog modal-dialog-popin modal-lg">
+            <div class="block-header bg-cdf" style="height: 0px; padding:0px;">
+                <ul class="block-options visible-xs">
+                    <li>
+                        <button data-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+                    </li>
+                </ul>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-content" id="pdfcontent-pf">
+            </div>
+        </div>
+    </div>
+    <aside id="sidebar-right" class="sidebar-right">
+        <div class="nano has-scrollbar">
+            <div class="nano-content" tabindex="0" style="right: -17px;">
+            </div>
+        </div>
+        <div class="nano-pane" style="opacity: 1; visibility: visible;">
+            <div class="nano-slider" style="height: 583px; transform: translate(0px, 0px);"></div>
+        </div>
+    </aside>
+    <div class="modal fade" id="firma-panel" data-backdrop="static" data-keyboard="false" style="z-index: 3000" tabindex="-1" role="dialog" aria-hidden="true"
+         style="width: 600px; display: none;">
+        <div class="modal-dialog modal-dialog-popin">
+            <div class="modal-content" id="firmacontent">
+                <section class="panel" style="margin-bottom: 0px!important;">
+                    <header class="panel-heading">
+                        <h2 class="panel-title">Firma Documenti</h2>
+                    </header>
+                    <div class="panel-body" style="padding: 0px">
+                        <div class="modal-wrapper">
+                            @if ( Model.ListaAlias.Any( ) )
+                            {
+                                <div class="form-group" style="height:40px">
+                                    <label class="col-md-3 control-label">
+                                        Firma per conto di :
+                                    </label>
+                                    <div class="col-md-6">
+                                        <select id="firma-per-conto" class="form-control">
+                                            <option value="@CommonHelper.GetCurrentUserPMatricola()">@UtenteHelper.Nominativo( ) </option>
+                                            @foreach ( var item in Model.ListaAlias )
+                                            {
+                                                <option value="@item.PmatricolaDaImpersonare">@item.NominativoDaImpersonare</option>
+                                            }
+                                        </select>
+                                    </div>
+
+                                </div>
+                            }
+                            <div class="form-group" style="height:40px">
+                                <label class="col-md-3 control-label" for="inputPassword">
+                                    Password della firma
+                                    @{
+                                        string tx = null;
+
+                                        using ( var db = new myRaiData.digiGappEntities( ) )
+                                        {
+                                            var item = db.MyRai_ParametriSistema.Where( p => p.Chiave.Equals( "TestoIconaPinFirma" ) ).FirstOrDefault( );
+
+                                            if ( item != null )
+                                            {
+                                                tx = item.Valore1;
+                                            }
+                                        }
+                                        if ( !String.IsNullOrEmpty( tx ) )
+                                        {
+                                            <i id="" class="fa fa-info-circle" title="@(tx)"></i>
+                                        }
+                                    }
+                                </label>
+                                <div class="col-md-6">
+                                    <input type="password" class="form-control" placeholder="Password della firma" id="inputPassword">
+                                    <input type="hidden" id="inputPasswordLastAuthFail" value="">
+                                </div>
+                                <div class="col-md-1" style="
+    padding: 0px;
+    margin: 0px;
+    width: 20px;
+">
+                                    <input type="checkbox" id="rememberme" style="
+    display: -webkit-inline-box;
+">
+                                </div>
+                                <div class="col-md-2" style="
+    padding: 2px;
+    font-size: 90%;
+    margin: 0px;
+    line-height: 1.4;
+">Ricordami su questo computer</div>
+                            </div>
+                            <div class="form-group" style="height:40px">
+                                <label style="padding:10px" class="col-md-3 control-label" for="inputPlaceholder">One Time Password</label>
+                                <div class="col-md-6">
+                                    <input type="text" class="form-control" placeholder="One Time Password" id="inputPIN">
+                                    <input type="hidden" id="inputPINLastAuthFail">
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-center">Inserire nel campo One Time Password il SOLO codice di 6 cifre generato dal software VASCO</p>
+                            </div>
+                        </div>
+                    </div>
+                    </>
+                    <footer class="panel-footer">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div id="waitfirma" style="display: none"><i class="fa fa-spin fa-spinner"></i>Firma/convalida in corso..</div>
+                                <div id="okfirma" style="display: none"><span id="okspan" style="color: #008000">Firma completata con successo</span></div>
+                                <input type="hidden" id="quantifirmati" value="" />
+
+                            </div>
+                            <div class="col-md-6 text-right">
+                                <button id="conf-btn" disabled="disabled" onclick="FirmaDocEsegui()" class="btn btn-primary modal-confirm">Conferma</button>
+                                <button id="close-btn" class="btn btn-default modal-dismiss" onclick="PopupFirmaClose()">Chiudi</button>
+                            </div>
+                            <div class="col-md-12">
+                                <div id="errorfirma" style="display: none; max-height: 100px; overflow: auto; margin-top: 10px"><span id="errorspan" style="color: red"></span></div>
+                            </div>
+                        </div>
+                    </footer>
+                </section>
+            </div>
+
+        </div>
+    </div>
+
+
+@section afterjs
+{
+
+    <script>
+        $(document).ready(function () {
+            var color = "#0088CC";
+
+            if (document.getElementsByClassName("bg-cdf").length) {
+                var style = window.getComputedStyle(document.getElementsByClassName("bg-cdf")[0], null);
+                if (style.length) {
+                    var rgb = style["background-color"];
+                    if (rgb.length) {
+                        var color = rgb.replace('rgb(', '').replace(')', '').split(',');
+
+                        var r, g, b;
+                        r = parseInt(color[0].trim());
+                        g = parseInt(color[1].trim());
+                        b = parseInt(color[2].trim());
+
+                        color = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+                    }
+                }
+            }
+
+            $('.chart').easyPieChart({
+                "barColor": color, "delay": 300, scaleColor: false, lineWidth: 7, size: 125
+            });
+            $('.chart-small').easyPieChart({
+                "barColor": color, "delay": 300, scaleColor: false, lineWidth: 4, size: 55
+            });
+
+
+
+        });
+
+    </script>
+
+}
+
+

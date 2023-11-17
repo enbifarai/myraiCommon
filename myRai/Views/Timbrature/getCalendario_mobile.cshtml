@@ -1,0 +1,272 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model CartellinoTimbratureModel
+
+@{ int timbratureVisibili = 7; }
+
+<section class="panel" id="persrichieste">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+        </div>
+        <h2 class="panel-title">Schede presenze</h2>
+    </header>
+    <div id="get-calendario" class="block panel-body no-padding" style="overflow-x:hidden">
+        <div class="row" style="padding-bottom: 20px; margin-top: 20px; border-bottom: solid 1px #eee">
+            <div class="col-xs-4" style="text-align: right">
+                @if ( Model.FrecciaIndietro )
+                {
+                    <span style="font-size: 10px" onclick="getMeseTimbrature(@Model.MeseCorrente, @Model.AnnoCorrente,false)"
+                          class="glyphicon glyphicon-triangle-left text-primary pointer"></span>
+                }
+            </div>
+            <div class="col-xs-4 text-center">
+                <h4 class="text-primary" style="margin: 3px"><i id="waitmese" style="display:none" class="fa fa-spinner fa-spin"></i>@Model.MeseCorrenteString @Model.AnnoCorrente</h4>
+            </div>
+            <div class="col-xs-1" style="text-align: left">
+                @if ( Model.FrecciaAvanti )
+                {
+                    <span style="font-size: 10px" onclick="getMeseTimbrature(@Model.MeseCorrente, @Model.AnnoCorrente,true)"
+                          class="glyphicon glyphicon-triangle-right  text-primary pointer"></span>
+                }
+            </div>
+            <div class="col-xs-3 text-center"></div>
+        </div>
+        <ul class="nav row text-center text-uppercase" data-toggle="tabs">
+            <li class="tabbianco tabcart active nav-item">
+                <a href="#" onclick="javascript:showTab('tab1_orologio')">CARTELLINO OROLOGIO</a>
+            </li>
+            <li class=" tabbianco tabpres">
+                <a href="#" onclick="javascript:showTab('tab2_presenza')">SCHEDA PRESENZE</a>
+            </li>
+            <li class="pull-right">
+                <ul class="block-options push-10-t push-10-r">
+                    <li>
+                        <button type="button" data-toggle="block-option" data-action="refresh_toggle" id="refresh-mie-richieste"
+                                data--refreshurl="/timbrature/getcalendario" data-parentdiv="mierichieste" data-refreshelements="btabswo-static-home,btabswo-static-profile,btab3,btab4"
+                                data-action-mode="demo">
+                            <i class="si si-refresh"></i>
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button" data-toggle="block-option" data-action="content_toggle"></button>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+        <div id="divcont" class="block-content tab-content" style="padding-top: 0px; overflow-x:hidden; overflow-y:auto">
+            <div id="tab1_orologio">
+                <div style="float:left; width:35%;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <td class="col-sm-1 col-sm-1nono h-timb cc">GG</td>
+                                <td class="col-sm-1 col-sm-1nono h-timb cc">CO</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ( var giorno in Model.DettaglioTimbrature.Giorni )
+                            {
+                                <tr>
+                                    <td class="col-sm-1 col-sm-1nono h-timb cc" style="padding: 0px">
+                                        <h5 class="day-num" style="font-size: 100%;">@giorno.data.ToString( "dd" )</h5>
+                                        <h5 class="day-name" style="font-size: 100%;">@giorno.data.ToString( "ddd" ).ToUpper( )</h5>
+
+                                    </td>
+                                    <td class="col-sm-1 col-sm-1nono h-timb cod-or" style="padding: 0px">
+                                        <h5 style="padding-top: 8px; font-size: 100%">@giorno.CodiceOrario</h5>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div style="float:left; width:65%;" class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                @for ( int i = 1 ; i <= timbratureVisibili ; i++ )
+                                {
+                                    <td class="col-sm-1 col-sm-1nono h-timb @(i==1?"box1":"") @(i==timbratureVisibili?"box2 last-right":"")">
+                                        <i class="icons icon-@(i%2==1?"login":"logout") icon-orario icon5"></i>
+                                    </td>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ( var giorno in Model.DettaglioTimbrature.Giorni )
+                            {
+                                <tr>
+                                    @{
+                                        int c = 1;
+                                    }
+                                    @foreach ( var t in giorno.Timbrature )
+                                    {
+                                        <td class="colo-@c col-sm-1 col-sm-1nono h-timb cod-or @(c> timbratureVisibili?"hide page2":"page1") @(c==timbratureVisibili?"last-right":"") @(c==timbratureVisibili+1?"first-left":"")"
+                                            style="padding: 0px">
+                                            <h5 style="padding-top: 8px; font-size: 110%">@t.Ingresso</h5>
+                                        </td>
+
+                                        c++;
+
+                                        <td class="colo-@c col-sm-1 col-sm-1nono h-timb cod-or @(c>timbratureVisibili?"hide page2":" page1") @(c==timbratureVisibili?"last-right":"") @(c==timbratureVisibili+1?"first-left":"")"
+                                            style="padding: 0px">
+                                            <h5 style="padding-top: 8px; font-size: 110%">@t.Uscita</h5>
+                                        </td>
+                                        c++;
+                                    }
+                                    @if ( c <= timbratureVisibili )
+                                    {
+                                        for ( int k = c ; k <= timbratureVisibili ; k++ )
+                                        {
+                                            <td class=" colo-@k col-sm-1 col-sm-1nono h-timb cod-orp page1 @(k==timbratureVisibili?"last-right":"")"
+                                                style="padding: 0px"></td>
+                                            c = k;
+                                        }
+                                        c = timbratureVisibili + 1;
+
+                                    }
+                                    @if ( c <= 2 * timbratureVisibili )
+                                    {
+                                        for ( int k = c ; k <= 2 * timbratureVisibili ; k++ )
+                                        {
+                                            <td class="colo-@k col-sm-1 col-sm-1nono h-timb cod-or page2 @(k==timbratureVisibili+1?"first-left":"")" style="padding: 0px"></td>
+                                        }
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div style="clear:both;"></div>
+            </div>
+            <div id="tab2_presenza" class="hidden">
+                <div style="float:left; width:35%;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <td class="col-sm-1 col-sm-1nono h-timb cc">GG</td>
+                                <td class="col-sm-1 col-sm-1nono h-timb cc">CO</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ( var giorno in Model.DettaglioTimbrature.Giorni )
+                            {
+                                <tr>
+                                    <td class="col-sm-1 col-sm-1nono h-timb cc" style="padding: 0px">
+                                        <h5 class="day-num" style="font-size: 100%;">@giorno.data.ToString( "dd" )</h5>
+                                        <h5 class="day-name" style="font-size: 100%;">@giorno.data.ToString( "ddd" ).ToUpper( )</h5>
+
+                                    </td>
+                                    <td class="col-sm-1 col-sm-1nono h-timb cod-or" style="padding: 0px">
+                                        <h5 style="padding-top: 8px; font-size: 100%">@giorno.CodiceOrario</h5>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div style="float:left; width:65%;" class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <td class="col-sm-1 col-sm-1nono h-timb page1pres">
+                                    <i class="icons icon-login icon-orario icon5"></i>
+                                </td>
+
+                                <td class="col-sm-1  col-sm-1nono h-timb page1pres">
+                                    <i class="icons icon-logout icon-orario icon5"></i>
+                                </td>
+
+                                <td class="col-sm-1 col-sm-1nono h-timb nohpad page1pres">
+                                    <b>Ore</b>
+                                </td>
+
+                                <td class="col-sm-3 col-sm-3noni h-timb nohpad page1pres" colspan="3">
+                                    <b>Macroassenze</b>
+                                </td>
+
+                                <td class="col-sm-1 col-sm-1nono h-timb nohpad page1pres last-right">
+                                    <b>Pas</b>
+                                </td>
+
+                                <td class="col-sm-2 col-sm-2noni h-timb nohpad page2pres first-left" colspan="2">
+                                    <b>Straordinari </b>
+                                </td>
+
+                                <td class="col-sm-4  col-sm-4noni h-timb nohpad page2pres" colspan="4">
+                                    <b>Micro</b>
+                                </td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ( var giorno in Model.DettaglioPresenze.Giorni )
+                            {
+                                <tr>
+                                    <td class="col-sm-1 col-sm-1nono h-timb cod-or page1pres" style="padding: 0px">
+                                        <h4 style="padding-top: 8px; font-size: 110%">@giorno.Ingresso</h4>
+                                    </td>
+
+                                    <td class="col-sm-1 col-sm-1nono h-timb cod-or page1pres" style="padding: 0px">
+                                        <h4 style="padding-top: 8px; font-size: 110%">@giorno.Uscita</h4>
+                                    </td>
+
+                                    <td class="col-sm-1 col-sm-1nono h-timb cod-or page1pres" style="padding: 0px">
+                                        <h4 class="@(giorno.CopreOrario ==true?"giorno-ok":giorno.CopreOrario ==false?"giorno-nok":"")" style="padding-top: 8px; font-size: 110%">@giorno.OreServizio</h4>
+                                    </td>
+
+                                    @foreach ( var m in giorno.MacroAssenze )
+                                    {
+                                        <td class="col-sm-1 col-sm-1nono h-timb cod-or page1pres" style="padding: 0px">
+                                            <h4 style="padding-top: 8px; font-size: 110%" class="@(m.Substring(0,1)=="B"?"pagato":"")">@m.Substring( 1 )</h4>
+                                        </td>
+                                    }
+
+                                    <td class="col-sm-1 col-sm-1nono h-timb cod-or last-right page1pres" style="padding: 0px">
+                                        <h4 style="padding-top: 8px; font-size: 110%">@giorno.Pasti</h4>
+                                    </td>
+
+                                    @{bool primoS = true; }
+
+                                    @foreach ( var s in giorno.Straordinari )
+                                    {
+                                        <td class="col-sm-1 col-sm-1nono h-timb cod-or" style="padding: 0px">
+                                            <h4 style="padding-top: 8px; font-size: 110%" class="@(s.Substring(0,1)=="B"?"pagato":"")">@s.Substring( 1 )</h4>
+                                        </td>
+                                        primoS = false;
+                                    }
+
+                                    @foreach ( var a in giorno.MicroAssenze.Where( x => x.nome != "N" ) )
+                                    {
+                                        <td class="col-sm-1 col-sm-1nono h-timb cod-or" style="padding: 0px">
+                                            <h4 style="padding-top: 8px; font-size: 110%" class="@(a.nome.Substring(0,1)=="B"?"pagato":"")">@a.nome.Substring( 1 ) @a.quantita</h4>
+                                        </td>
+                                    }
+
+                                    @for ( int j = 1 ; j <= 4 - giorno.MicroAssenze.Where( x => x.nome != "N" ).Count( ) ; j++ )
+                                    {
+                                        <td class="col-sm-1 col-sm-1nono h-timb cod-or" style="padding: 0px">
+                                            <h4 style="padding-top: 8px; font-size: 110%"></h4>
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div style="clear:both;"></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script type="text/javascript">
+    function showTab(nomeTab) {
+        $('#tab1_orologio').addClass('hidden');
+        $('#tab2_presenza').addClass('hidden');
+
+        $('#' + nomeTab).removeClass('hidden');
+    }
+</script>

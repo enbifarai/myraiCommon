@@ -1,0 +1,405 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model CartellinoTimbratureModel
+
+@{ int timbratureVisibili = 16; }
+
+@if ( Request.Browser.IsMobileDevice )
+{
+    @Html.Partial( "~/Views/Timbrature/getCalendario_mobile.cshtml" )
+    return;
+}
+
+@{int row = 0;}
+
+<section class="panel" id="persrichieste">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" tabindex="0" aria-label="Schede presenze" aria-expanded="true"></a>
+        </div>
+        <h2 class="panel-title">Schede presenze</h2>
+    </header>
+    <div id="get-calendario" class="block panel-body no-padding" style="overflow-x:hidden">
+        <div class="row push-5-t push-5">
+            <div class="col-sm-12">
+                <div class="rai-nav-fill">
+                    <div class="rai-nav-fill-item">
+                        @if (!(Model.AnnoCorrente == DateTime.Now.Year - 5 && Model.MeseCorrente == 1))
+                        {
+                            <a href="javascript:getMeseTimbrature(@Model.MeseCorrente, @Model.AnnoCorrente,false)" aria-label="Vai al mese precedente">
+                                <span class="icons icon-arrow-left-circle"></span>
+                            </a>
+                        }
+                    </div>
+                    <div class="rai-nav-fill-item-label">
+                        <select id="mese-sel" class="form-control text-primary" style="width:130px;display:inline" onchange="changeMese()">
+                            @for (int i = 1; i <= 12; i++)
+                            {
+                                <option @if (i == Model.MeseCorrente) { @: selected
+                                        }
+                                        value="@i">
+                                    @(new DateTime(2000, i, 1).ToString("MMMM").ToUpper())
+                                </option>
+                            }
+                        </select>
+                        <select id="anno-sel" class="form-control text-primary" style="width:130px;display:inline" onchange="changeMese()">
+                            @for (int a = DateTime.Now.Year - 5; a <= DateTime.Now.Year + 1; a++)
+                            {
+                                <option @if (a == Model.AnnoCorrente) { @: selected
+                                        }
+                                        value="@a">
+                                    @a
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="rai-nav-fill-item">
+                        @if (!(Model.AnnoCorrente == DateTime.Now.Year + 1 && Model.MeseCorrente == 12))
+                        {
+                            <a href="javascript:getMeseTimbrature(@Model.MeseCorrente, @Model.AnnoCorrente,true)">
+                                <span class="icons icon-arrow-right-circle"></span>
+                            </a>
+                        }
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <ul class="nav nav-tabs nav-tabs-alt  nav-justified" data-toggle="tabs" role="tablist">
+            <li class=" tabbianco tabpres active" role="presentation">
+                <a href="#schedapres" role="tab" tabindex="0" aria-controls="schedapres">SCHEDA PRESENZE</a>
+            </li>
+            <li class="tabbianco tabcart" role="presentation">
+                <a href="#schedacart" role="tab" tabindex="-1" aria-controls="schedacart">CARTELLINO OROLOGIO</a>
+            </li>
+            <li class="pull-right">
+                <ul class="block-options push-10-t push-10-r">
+                    <li>
+                        <button type="button" tabindex="-1" data-toggle="block-option" data-action="refresh_toggle" id="refresh-mie-richieste"
+                                data--refreshurl="/timbrature/getcalendario" data-parentdiv="mierichieste" data-refreshelements="btabswo-static-home,btabswo-static-profile,btab3,btab4"
+                                data-action-mode="demo">
+                            <i class="si si-refresh"></i>
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button" tabindex="-1" data-toggle="block-option" data-action="content_toggle"></button>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+        <div id="divcont" class="block-content tab-content" style="padding-top: 0px;overflow-x:hidden;overflow-y:auto">
+            <div data-toggle="slimscroll" data-height="50px" data-color="#46c37b" data-always-visible="true" style="width: auto;"
+                 class="tab-pane" id="schedacart" role="grid">
+                <div class="row icone-timb cart-oro">
+                    <div class="col-sm-1 col-sm-1nono">&nbsp;</div>
+                    <div class="col-sm-1 col-sm-1nono h-timb " style="padding:20px 15px;"><span class="rai-font-md-bold">CO</span></div>
+                    @for (int i = 1; i <= timbratureVisibili; i++)
+                    {
+                        <div class="col-sm-1 col-sm-1nono h-timb @(i == 1 ? "box1" : "") @(i == timbratureVisibili ? "box2 " : "")">
+                            <i class="icons icon-@(i % 2 == 1 ? "login" : "logout") icon-orario icon5"></i>
+                        </div>
+                    }
+                </div>
+                @{row = 0;}
+                @foreach (var giorno in Model.DettaglioTimbrature.Giorni)
+                {
+                    row++;
+                    string ariaLabel = "";
+                    ariaLabel = giorno.data.ToString("dddd d") + ". ";
+                    ariaLabel += "Codice orario " + giorno.CodiceOrario + ". ";
+                    int nCount = 0;
+                    foreach (var t in giorno.Timbrature)
+                    {
+                        nCount++;
+                        ariaLabel += "Ingresso " + nCount + " alle " + t.Ingresso + ". ";
+                        ariaLabel += "Uscita " + nCount + " alle " + t.Uscita + ". ";
+                    }
+                    <div class="row cart-oro" role="row" tabindex="@(row == 1 ? "0" : "-1")" aria-label="@ariaLabel">
+                        <div class="col-sm-1 col-sm-1nono " style="padding: 10px">
+                            <div class="rai-day-card" style="margin:auto;">
+                                <div class="rai-day-number">@giorno.data.ToString("dd")</div>
+                                <div class="rai-day-name">@giorno.data.ToString("ddd").ToUpper()</div>
+                            </div>
+                        </div>
+                        <div class="col-sm-1 col-sm-1nono h-timb cod-or" style="padding: 0px">
+                            <h4 class="" style="padding-top: 8px; font-size: 110%">@giorno.CodiceOrario</h4>
+                        </div>
+                        @{
+                            int c = 1;
+                        }
+                        @foreach (var t in giorno.Timbrature)
+                        {
+                            <div class="colo-@c col-sm-1 col-sm-1nono h-timb cod-or @(c > timbratureVisibili ? "hide page2" : "page1") @(c == timbratureVisibili ? "last-right" : "") @(c == timbratureVisibili + 1 ? "first-left" : "")"
+                                 style="padding: 0px">
+                                <h4 class="" style="padding-top: 8px; font-size: 110%">@t.Ingresso</h4>
+                            </div>
+
+                            c++;
+
+                            <div class="colo-@c col-sm-1 col-sm-1nono h-timb cod-or @(c > timbratureVisibili ? "hide page2" : " page1") @(c == timbratureVisibili ? "last-right" : "") @(c == timbratureVisibili + 1 ? "first-left" : "")"
+                                 style="padding: 0px">
+                                <h4 class="" style="padding-top: 8px; font-size: 110%">@t.Uscita</h4>
+                            </div>
+                            c++;
+                        }
+                        @if (c <= timbratureVisibili)
+                        {
+                            for (int k = c; k <= timbratureVisibili; k++)
+                            {
+                                <div class=" colo-@k col-sm-1 col-sm-1nono h-timb cod-orp page1"
+                                     style="padding: 0px">
+                                </div>
+                                c = k;
+                            }
+                            c = timbratureVisibili + 1;
+
+                        }
+                        @if (c <= 2 * timbratureVisibili)
+                        {
+                            for (int k = c; k <= 2 * timbratureVisibili; k++)
+                            {
+                                <div class="colo-@k col-sm-1 col-sm-1nono h-timb cod-or hide page2 @(k == timbratureVisibili + 1 ? "first-left" : "")" style="padding: 0px">
+                                </div>
+                            }
+                        }
+
+                    </div>
+                }
+            </div>
+
+            <div class="tab-pane active" id="schedapres" role="grid">
+                <div class="row scheda-pres">
+                    <div class="col-sm-1 col-sm-1nono"><span class="rai-font-md-bold" style="display:none;">GG</span></div>
+                    <div class="col-sm-1 col-sm-1nono h-timb"><span class="rai-font-md-bold">CO</span></div>
+                    <div class="col-sm-1 col-sm-1nono h-timb page1pres">
+                        <i class="icons icon-login icon-orario icon5 feedback-success-color"></i>
+                    </div>
+                    <div class="col-sm-1  col-sm-1nono h-timb page1pres">
+                        <i class="icons icon-logout icon-orario icon5 feedback-warning-color"></i>
+                    </div>
+                    <div class="col-sm-1 col-sm-1nono h-timb nohpad page1pres">
+                        <span class="rai-font-md-bold">Ore</span>
+                    </div>
+                    <div class="col-sm-3 col-sm-3noni h-timb nohpad page1pres">
+                        <span class="rai-font-md-bold">Macroassenze</span>
+                    </div>
+                    <div class="col-sm-1 col-sm-1nono h-timb nohpad page1pres  ">
+                        <span class="rai-font-md-bold">Pas</span>
+                    </div>
+                    <div class="col-sm-2 col-sm-2noni h-timb nohpad page2pres hidex  ">
+                        <span class="rai-font-md-bold">Straordinari </span>
+                    </div>
+                    <div class="col-sm-4  col-sm-3noni h-timb nohpad page2pres hidex">
+                        <span class="rai-font-md-bold">Micro</span>
+                    </div>
+                </div>
+
+                @{
+                    row = 0;
+                    DateTime rifSirioDate = DateTime.Today;
+                    if (UtenteHelper.GestitoSirio())
+                    {
+                        rifSirioDate = myRaiHelper.Sirio.Helper.GetLimitDate();
+                    }
+                }
+
+                @foreach (var giorno in Model.DettaglioPresenze.Giorni)
+                {
+                    row++;
+                    string ariaLabel = "";
+                    ariaLabel += giorno.data.ToString("dddd d") + ". ";
+                    ariaLabel += "Codice orario " + giorno.CodiceOrario + ". ";
+                    if (!String.IsNullOrWhiteSpace(giorno.Ingresso))
+                    { ariaLabel += "Orario ingresso " + giorno.Ingresso + ". "; }
+                    if (!String.IsNullOrWhiteSpace(giorno.Uscita))
+                    { ariaLabel += "Orario uscita " + giorno.Uscita + ". "; }
+                    if (!String.IsNullOrWhiteSpace(giorno.OreServizio))
+                    { ariaLabel += "Ore servizio " + giorno.OreServizio + ". "; }
+                    foreach (var m in giorno.MacroAssenze)
+                    {
+                        if (!String.IsNullOrWhiteSpace(m) && m != "N")
+                        { ariaLabel += "Macroassenza " + m.Substring(1) + (m.Substring(0, 1) == "B" ? " (pagato)" : "") + ". "; }
+                    }
+                    foreach (var s in giorno.Straordinari)
+                    {
+                        if (!String.IsNullOrWhiteSpace(s) && s != "N")
+                        { ariaLabel += "Straordinario " + s.Substring(1) + (s.Substring(0, 1) == "B" ? " (pagato)" : "") + ". "; }
+                    }
+                    foreach (var a in giorno.MicroAssenze.Where(x => x.nome != "N"))
+                    {
+                        { ariaLabel += "Microassenza " + a.nome.Substring(1) + " " + a.quantita + (a.nome.Substring(0, 1) == "B" ? " (pagato)" : "") + ". "; }
+                    }
+					var msg = myRai.Business.CommonManager.GetParametro<string>( EnumParametriSistema.MessaggioAssenteIngiustificato );
+
+                <div class="row scheda-pres" role="row" tabindex="@(row == 1 ? "0" : "-1")" aria-label="@ariaLabel">
+                    @{
+                        if (myRai.Models.Utente.IsAbilitatoGapp())
+                        {
+
+                            <div class="col-sm-1 col-sm-1nono " style="padding: 0px; cursor:pointer;" onclick="ShowPopupInizialeGoDate('@msg',false, '@giorno.data.ToString( "dd/MM/yyyy" )')">
+                                <h4 class="interactive-primary-color day-num" style="color:#1d79cb;">@giorno.data.ToString("dd")</h4>
+                                <h4 class="interactive-primary-color day-name" style="color:#1d79cb;">@giorno.data.ToString("ddd").ToUpper()</h4>
+                            </div>
+                            <div class="col-sm-1 col-sm-1nono h-timb cod-or " style="padding: 0px">
+                                <h4 style="padding-top: 8px; font-size: 110%" class="">
+                                    @if (!UtenteHelper.GestitoSirio() || giorno.data <= rifSirioDate)
+                                    {
+                                        @giorno.CodiceOrario
+                                    }
+                                </h4>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="col-sm-1 col-sm-1nono " style="padding: 10px;">
+                                <div class="rai-day-card" style="margin:auto;">
+                                    <div class="rai-day-number">@giorno.data.ToString("dd")</div>
+                                    <div class="rai-day-name">@giorno.data.ToString("ddd").ToUpper()</div>
+                                </div>
+                            </div>
+                            <div class="col-sm-1 col-sm-1nono h-timb cod-or " style="padding: 0px">
+                                <h4 style="padding-top: 8px; font-size: 110%" class="">
+                                    @if (!UtenteHelper.GestitoSirio() || giorno.data <= rifSirioDate)
+                                    {
+                                        @giorno.CodiceOrario
+                                    }
+                                </h4>
+                            </div>
+                        }
+                    }
+
+                    <div class="col-sm-1 col-sm-1nono h-timb cod-or page1pres" style="padding: 0px">
+                        <h4 style="padding-top: 8px; font-size: 110%" class="">@giorno.Ingresso</h4>
+                    </div>
+                    <div class="col-sm-1 col-sm-1nono h-timb cod-or page1pres" style="padding: 0px">
+                        <h4 style="padding-top: 8px; font-size: 110%" class="">@giorno.Uscita</h4>
+                    </div>
+                    <div class="col-sm-1 col-sm-1nono h-timb cod-or page1pres" style="padding: 0px">
+                        <h4 class="@(giorno.CopreOrario == true ? "giorno-ok" : giorno.CopreOrario == false ? "giorno-nok" : "")"
+                            style="padding-top: 8px; font-size: 110%">
+                            @giorno.OreServizio
+                        </h4>
+                    </div>
+                    @foreach (var m in giorno.MacroAssenze)
+                    {
+                        <div class="col-sm-1 col-sm-1nono h-timb cod-or page1pres" style="padding: 0px">
+                            @{
+                                string classi = "";
+
+                                string eccezioneSearch = m.Substring(1);
+                                var elemento = Model.ListaEccezioniMese.Where(w => w.Data.Date == giorno.data && w.Cod_Eccezione.Trim() == eccezioneSearch).FirstOrDefault();
+
+                                if (elemento != null)
+                                {
+                                    if (elemento.StatoRichiesta == EnumStatiRichiesta.InApprovazione)
+                                    {
+                                        classi = "inapprovazione";
+                                    }
+                                    else if (elemento.StatoRichiesta == EnumStatiRichiesta.Approvata)
+                                    {
+                                        classi = "approvato";
+                                    }
+                                    else if (elemento.StatoRichiesta == EnumStatiRichiesta.Rifiutata)
+                                    {
+                                        classi = "inevidenza";
+                                    }
+                                }
+                            }
+                            <h4 style="padding-top: 8px; font-size: 110%"
+                                class="@(m.Substring(0, 1) == "B" ? "pagato" : "") @classi">
+                                @m.Substring(1)
+                            </h4>
+                        </div>
+                    }
+                    <div class="col-sm-1 col-sm-1nono h-timb cod-or   page1pres" style="padding: 0px">
+                        <h4 class="" style="padding-top: 8px; font-size: 110%">@giorno.Pasti</h4>
+                    </div>
+                    @{bool primoS = true; }
+                    @foreach (var s in giorno.Straordinari)
+                    {
+                        string classi = "";
+
+                        string eccezioneSearch = s.Substring(1);
+                        var elemento = Model.ListaEccezioniMese.Where(w => w.Data.Date == giorno.data && w.Cod_Eccezione.Trim() == eccezioneSearch).FirstOrDefault();
+
+                        if (elemento != null)
+                        {
+                            if (elemento.StatoRichiesta == EnumStatiRichiesta.InApprovazione)
+                            {
+                                classi = "inapprovazione";
+                            }
+                            else if (elemento.StatoRichiesta == EnumStatiRichiesta.Approvata)
+                            {
+                                classi = "approvato";
+                            }
+                            else if (elemento.StatoRichiesta == EnumStatiRichiesta.Rifiutata)
+                            {
+                                classi = "inevidenza";
+                            }
+                        }
+
+                        <div class="col-sm-1  col-sm-1nono h-timb cod-or hidex  page2pres  " style="padding: 0px">
+                            <h4 style="padding-top: 8px; font-size: 110%"
+                                class="@(s.Substring(0, 1) == "B" ? "pagato" : "") @classi">
+                                @s.Substring(1)
+                            </h4>
+                        </div>
+                        primoS = false;
+                    }
+                    @foreach (var a in giorno.MicroAssenze.Where(x => x.nome != "N"))
+                    {
+                        bool daEvidenziare = false;
+                        string classi = "";
+
+                        string eccezioneSearch = a.nome.Substring(1);
+                        var elemento = Model.ListaEccezioniMese.Where(w => w.Data.Date == giorno.data && w.Cod_Eccezione.Trim() == eccezioneSearch).FirstOrDefault();
+
+                        if (elemento != null)
+                        {
+                            if (elemento.StatoRichiesta == EnumStatiRichiesta.InApprovazione)
+                            {
+                                classi = "inapprovazione";
+                            }
+                            else if (elemento.StatoRichiesta == EnumStatiRichiesta.Approvata)
+                            {
+                                classi = "approvato";
+                            }
+                            else if (elemento.StatoRichiesta == EnumStatiRichiesta.Rifiutata)
+                            {
+                                classi = "inevidenza";
+                            }
+                        }
+
+                        if (String.IsNullOrEmpty(classi))
+                        {
+                            if (Model.ListaGiorniEvidenza.GiornateDaEvidenziare != null && Model.ListaGiorniEvidenza.GiornateDaEvidenziare.Any())
+                            {
+                                daEvidenziare = Model.ListaGiorniEvidenza.GiornateDaEvidenziare.Exists(w => w.Date == giorno.data);
+                                if (daEvidenziare)
+                                {
+                                    classi = "inevidenza";
+                                }
+                            }
+                        }
+                        <div class="col-sm-1 col-sm-1nono h-timb cod-or hidex page2pres" style="padding: 0px">
+                            <h4 style="padding-top: 8px; font-size: 110%"
+                                class="@(a.nome.Substring(0, 1) == "B" ? "pagato" : "") @classi">
+                                @a.nome.Substring(1) @a.quantita
+                            </h4>
+                        </div>
+                    }
+                    @for (int j = 1; j <= 4 - giorno.MicroAssenze.Where(x => x.nome != "N").Count(); j++)
+                    {
+                        <div class="col-sm-1 col-sm-1nono h-timb cod-or hidex page2pres" style="padding: 0px">
+                            <h4 class="" style="padding-top: 8px; font-size: 110%"></h4>
+                        </div>
+                    }
+                </div>
+                }
+            </div>
+        </div>
+    </div>
+</section>

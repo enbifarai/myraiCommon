@@ -1,0 +1,577 @@
+﻿@model myRaiCommonModel.TaskModel
+
+
+
+@if (Model.Richiesta.DA_RIAVVIARE)
+{
+    <div class="row push-10">
+        <div class="col-sm-12">
+            <div class="alert alert-warning">
+                <b>Pratica da ricalcolare</b><br>
+                <span>E' stato rilevato un cambiamento nei dati che richiede un riavvio della pratica. Clicca su 'Riavvia' per tornare alla pagina iniziale e proseguire fino al riavvio delle operazioni</span>
+                <div style="text-align: right;">
+                    <a class="rai-font-sm" href="javascript:AmmPage(1)">Riavvia</a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="row border-b-1px-neutrals-30" style="margin-top:30px;padding-bottom:20px">
+    <div class="col-sm-9"><span class="rai-font-md-neutral-bold">Operazioni</span></div>
+    <div class="col-sm-3" style="text-align:right"><span class="rai-font-md-neutral-bold">Esito</span></div>
+    <input type="hidden" value="@Model.RichiesteCompreseInQuestoPeriodo.Count()" id="richieste-comprese" />
+</div>
+
+@{
+    var db = new myRaiData.Incentivi.IncentiviEntities();
+    int meseCorrente = 0;
+    var stato = Model.Richiesta.XR_WKF_MATCON_OPERSTATI.OrderByDescending(x => x.ID_STATO).FirstOrDefault();
+    bool InCaricoAMe = stato.COD_USER == myRaiHelper.CommonHelper.GetCurrentUserMatricola() && stato.ID_STATO ==
+        (int)myRaiCommonManager.MaternitaCongediManager.EnumStatiRichiesta.InCaricoAmmin;
+}
+
+
+@foreach (var item in Model.Richiesta.XR_MAT_TASK_IN_CORSO.OrderBy(x => x.ANNO)
+    .ThenBy(x => x.MESE)
+    .ThenBy(x => x.PROGRESSIVO)
+    .ThenBy(x => x.ID)
+
+    )
+{
+    var task = db.XR_MAT_ELENCO_TASK.Where(x => x.ID == item.ID_TASK).FirstOrDefault();
+    if (item.MESE != meseCorrente)
+    {
+        meseCorrente = item.MESE;
+        DateTime mese = new DateTime(item.ANNO, item.MESE, 1);
+        <div class="row ">
+            <div class="col-sm-8" style="padding-top:22px">
+                <span class="rai-font-md-bold text-primary">@(mese.ToString("MMMM yyyy").Substring(0, 1).ToUpper() + mese.ToString("MMMM yyyy").Substring(1)) </span>
+            </div>
+
+        </div>
+        <div class="row border-b-1px-neutrals-30 push-5-t">
+            <div class="col-sm-12">
+                @*<div style="background-color: #eee;height: 1px;margin-top: 11px;"></div>*@
+            </div>
+        </div>
+    }
+    <table class="rai-table-collapsable table rai-table" role="grid">
+        <tbody class="rai-table-collapsable-header">
+            <tr role="row" tabindex="0" class="border-b-1px-neutrals-30">
+                <td class="">
+                    <div class="row" style="padding-top:16px;padding-bottom:16px">
+                        <div class="col-sm-8">
+                            <span class="rai-font-md-bold">@task.NOME_TASK</span><br />
+                            <span class="rai-font-sm">@task.DESCRIZIONE_TASK @(item.RIMBORSO_TRACCIATO != null ? " - Rimborso" : "") </span>
+                            @if (!String.IsNullOrWhiteSpace(item.NOTE))
+                            {
+                                DateTime dt;
+                                DateTime dt2;
+
+                                string testodaStampare = "";
+                                string[] p = item.NOTE.Split('-');
+                                if (p.Length > 1)
+                                {
+                                    int t1 = Int32.Parse(p[1].Split('/')[2]);
+                                    int t2 = Int32.Parse(p[1].Split('/')[1]);
+                                    int t3 = Int32.Parse(p[1].Split('/')[0]);
+                                    dt = new DateTime(t1, t2, t3);
+                                    t1 = Int32.Parse(p[2].Split('/')[2]);
+                                    t2 = Int32.Parse(p[2].Split('/')[1]);
+                                    t3 = Int32.Parse(p[2].Split('/')[0]);
+                                    dt2 = new DateTime(t1, t2, t3);
+
+
+
+
+                                    if (p.Length > 2)
+                                    {
+                                        testodaStampare = p[1] + " - " + p[2];
+                                    }
+                                }
+                                else
+                                {
+                                    dt = item.XR_MAT_RICHIESTE.INIZIO_GIUSTIFICATIVO.Value;
+                                    dt2 = item.XR_MAT_RICHIESTE.FINE_GIUSTIFICATIVO.Value;
+                                    testodaStampare = item.NOTE;
+                                }
+
+
+
+                                if (item.TERMINATA && !item.XR_MAT_RICHIESTE.XR_MAT_TASK_IN_CORSO.Any(x => x.RIMBORSO_TRACCIATO == item.ID)
+                                    // && item.XR_MAT_RICHIESTE.ASSENZA_LUNGA!=true
+                                    )
+                                {
+                                    testodaStampare += "<br/><a class='rai-font-sm-bold text-primary' href='javascript:StornaTracciato(" + item.ID + ")' >Crea rimborso</a>";
+                                }
+
+                                if (item.RIMBORSO_TRACCIATO == null)
+                                {
+                                    if (String.IsNullOrWhiteSpace(item.MESE_ANNO_PAGATO))
+                                    {
+                                        myRaiCommonModel.AmministrazioneModel.BustaPaga res1 = myRaiCommonManager.AmministrazioneManager.GetPagamenti(item.XR_MAT_RICHIESTE.MATRICOLA, item.XR_MAT_RICHIESTE.ECCEZIONE + dt.ToString("dd") + "/" + dt2.ToString("dd-MM-yy"), item.ESEGUIBILE_DA_DATA);
+                                        if (res1.elencoVoci.Count() > 0)
+                                        {
+                                            System.Web.Script.Serialization.JavaScriptSerializer ser = new System.Web.Script.Serialization.JavaScriptSerializer();
+
+                                            string data = Int32.Parse(res1.dataCompetenza.Substring(0, 2)) > 40 ? "19" + res1.dataCompetenza : "20" + res1.dataCompetenza;
+
+                                            if (res1.elencoVoci.Count() > 0)
+                                            {
+                                                string jsonString = ser.Serialize(res1);
+
+                                                DateTime Dtest;
+                                                if (DateTime.TryParseExact(data + "01", "yyyyMMdd", null, System.Globalization.DateTimeStyles.None, out Dtest) &&
+                                                    String.IsNullOrWhiteSpace(item.MESE_ANNO_PAGATO))
+                                                {
+                                                    myRaiCommonManager.MaternitaCongediManager.AggiornaTracciatoPagato(Dtest.ToString("MM/yyyy"), item.ID, jsonString);
+                                                }
+
+
+                                                testodaStampare = testodaStampare + " </span> <br><br><a class='rai-label rai-label-interactive' style='padding-top:5px' data-table-collapsable-toggle='ignore' href='javascript:ShowViewCedolinoPagato(" + jsonString + ")' title='Vedi il cedolino'> PAGATO in " + DateTime.ParseExact(data + "01", "yyyyMMdd",
+                                                                                    System.Globalization.CultureInfo.InvariantCulture).ToString("MMMM yyyy");
+                                                testodaStampare = testodaStampare + "</a>";
+                                            }
+                                        }
+
+                                    }
+                                    else
+                                    {
+                                        DateTime DM;
+                                        DateTime.TryParseExact("01/" + item.MESE_ANNO_PAGATO, "dd/MM/yyyy", null, System.Globalization.DateTimeStyles.None, out DM);
+
+                                        testodaStampare = testodaStampare + " </span> <br><br><a class='rai-label rai-label-interactive' style='padding-top:5px' data-table-collapsable-toggle='ignore' href='javascript:ShowViewCedolinoPagato(" + item.MESE_ANNO_PAGATO_JSON
+                                            + ")' title='Vedi il cedolino'> PAGATO in " + DM.ToString("MMMM yyyy");
+                                        testodaStampare = testodaStampare + "</a>";
+                                    }
+                                }
+
+
+
+
+
+
+
+
+                                if (p.Length > 2)
+                                {
+                                    <br />
+                                    <span class="rai-font-sm">@Html.Raw(testodaStampare) </span>
+                                }
+
+
+                            }
+
+                        </div>
+                        <div class="col-sm-4" style="text-align:right">
+                            @if (item.TERMINATA)
+                            {
+                                <span>Completata</span> <i class="fa fa-circle circle-green" aria-hidden="true"></i>
+                                <br />
+                                <span class="rai-font-sm-neutral">@item.DATA_ULTIMO_TENTATIVO.Value.ToString("dd/MM/yyyy, HH.mm")</span>
+                            }
+                            else if (item.ERRORE_BATCH != null)
+                            {
+                                <span>In errore</span> <i class="fa fa-circle circle-red" aria-hidden="true"></i>
+                                <br />
+                                <span class="rai-font-sm-neutral">@item.DATA_ULTIMO_TENTATIVO.Value.ToString("dd/MM/yyyy, HH.mm")</span>
+                            }
+                            else
+                            {
+                                if (item.TRACCIATO_DA_DEM)
+                                {
+                                    string OnOff = "off";
+                                    if (item.BLOCCATA_DATETIME == null)
+                                    {
+                                        OnOff = "on";
+                                    }
+                                    <div data-idtaskincorso="@item.ID"
+                                         class="switch switch-sm switch-primary">
+                                        <div class="ios-switch @OnOff">
+                                            <div class="on-background background-fill"></div>
+                                            <div class="state-background background-fill"></div>
+                                            <div class="handle"></div>
+
+                                        </div>
+                                        <input data-mese="" data-stornocedolino="" value="1" class="task-switch" type="checkbox" name="" data-plugin-ios-switch=""
+                                               @if (OnOff == "on") { @: checked="checked"
+                                               }
+                                               style="display: none;">
+                                    </div><br />
+                                }
+
+
+                                if (item.BLOCCATA_DATETIME == null)
+                                {
+                                    <span id="stato-@item.ID">In attesa</span>
+                                    <i id="icon-@item.ID" style="color:#aaa" class="fa fa-circle" aria-hidden="true"></i>
+                                    <br />
+                                    <span id="info-@item.ID" class="rai-font-sm-neutral">Invio: @item.ESEGUIBILE_DA_DATA.ToString("dd/MM/yyyy")</span>
+                                }
+                                else
+                                {
+                                    <span id="stato-@item.ID">Sospesa da operatore</span>
+                                    <i id="icon-@item.ID" class="fa fa-circle circle-orange" aria-hidden="true"></i>
+                                    <br />
+                                    <span id="info-@item.ID" class="rai-font-sm-neutral">@item.BLOCCATA_DATETIME.Value.ToString("dd/MM/yyyy, HH.mm")</span>
+                                }
+                            }
+
+                        </div>
+
+                    </div>
+                </td>
+                <td style="padding-top: 24px;width:20px" class="interactive-primary-color text-center ">
+                    @{
+                        bool dettagliListoneStorni = item.ID_TASK == 15 && !String.IsNullOrWhiteSpace(item.OUTPUT);
+                    }
+                    <i class="fa fa-angle-down" style="font-size:20px;@( dettagliListoneStorni==false && task.TIPO != "TRACCIATO"?"visibility:hidden":"")"></i>
+                </td>
+            </tr>
+        </tbody>
+        <tbody class="tbodydata" style="border:none ">
+            <tr>
+                <td style="padding-left:18px">
+                    @if (item.ID_TASK == 15 && !String.IsNullOrWhiteSpace(item.OUTPUT))
+                    {
+                        <span class="rai-font-sm">Tracciati cancellati :  </span><br />
+                        <span style="font-family:Courier New">
+                            @Html.Raw(item.OUTPUT.Replace(",", "<br/>"))
+                        </span>
+                    }
+
+                    @if (item.ERRORE_BATCH != null)
+                    {
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <label id="errore-@item.ID" class="rai-font-sm error">@item.ERRORE_BATCH</label>
+                                @if (item.ERRORE_RESETTABILE)
+                                {
+                                    <button id="reset-err-@item.ID" class="btn rai-btn-small" onclick="ResetErrore(@item.ID)"
+                                            style="min-width:80px;float:right">
+                                        Resetta errore
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        var cont = Model.ContenutoCampi.Where(x => x.ID_task == item.ID).FirstOrDefault();
+                        if (cont != null && cont.Contenuti != null)
+                        {
+                            foreach (var campo in cont.Contenuti)
+                            {
+                                <div class="row" style="margin-top:6px;margin-bottom:6px">
+                                    <div class="col-sm-4">
+                                        @campo.NomeCampo
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <span class="rai-font-sm-neutral">@campo.TipoCampo (@campo.LunghezzaCampo)</span>
+                                    </div>
+                                    <div class="col-sm-4 campo-tr" style="text-align:right">
+
+                                        <label class="campi-trac">@campo.ContenutoCampo</label>
+                                        <input style="display:none;height:36px;padding:0px;padding-left:8px;width:@(campo.LunghezzaCampo*20)px"
+                                               value="@campo.ContenutoCampo"
+                                               data-idtracciato="@item.ID"
+                                               type="text" class="form-control campi-trac-edit" maxlength="@campo.LunghezzaCampo" />
+                                        <button class="campo-butt btn btn-action-icon" style="display:none" onclick="ModificaTracc(this)">
+                                            <i class="fa fa-check" style="color:green"></i>
+                                        </button>
+                                        @if (item.TRACCIATO_DA_DEM && item.BLOCCATA_DATETIME != null)
+                                        {
+                                            <i style="cursor:pointer" data-lunghezza="@campo.LunghezzaCampo"
+                                               data-posizionestart="@campo.PosizioneTracciato"
+                                               onclick="MostraEdit(this)"
+                                               class="fa fa-pencil text-primary"></i>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                    }
+
+
+
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+
+}
+<script>
+
+    $(".switch-primary").on("click", function (evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+        ChangeSwitchFromTE($(this));
+
+    });
+
+    function ModificaTracc(Vbutton) {
+        var div = $(Vbutton).parent("div");
+        var label = $(div).find(".campi-trac");
+        var textbox = $(div).find(".campi-trac-edit");
+        var pencilButton = $(div).find(".fa-pencil");
+
+        var lung = $(pencilButton).attr("data-lunghezza");
+       
+        if ($(textbox).val().length != lung) {
+            swal({
+                title: "Attenzione",
+                text: "Lunghezza campo errata",
+                type: 'error',
+                customClass: 'rai'
+            });
+            return;
+        }
+
+        if ($(textbox).val() == $(label).text()) {
+            $(textbox).css("display", "none");
+            $(label).css("display", "");
+            $(label).text($(textbox).val());
+            $(pencilButton).css("display", "inline");
+            $(Vbutton).css("display", "none")
+            return;
+        }
+
+        var pos = $(pencilButton).attr("data-posizionestart");
+        var id = $(textbox).attr("data-idtracciato");
+        var newText = $(textbox).val();
+        debugger
+        swal({
+            title: "Invia",
+            type: 'question',
+            html: "Confermi di modificare il campo nel tracciato ?",
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+
+            $.ajax({
+                url: '/MaternitaCongedi/ModCampoTracciato',
+                type: "POST",
+                data: { id: id, pos:pos, testo:newText },
+                dataType: "json",
+                complete: function () { },
+                success: function (data) {
+
+                    if (data.esito == true) {
+                        swal({
+                            title: 'Operazione eseguita correttamente.',
+                            type: "success",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        }).then(function () {
+
+                            $(textbox).css("display", "none");
+                            $(label).css("display", "");
+                            $(label).text($(textbox).val());
+                            $(pencilButton).css("display", "inline");
+                            $(Vbutton).css("display", "none")
+
+                        });
+
+                    }
+                    else {
+                        swal({
+                            title: 'Operazione non riuscita - ' + data.errore,
+                            type: "error",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                    }
+                }
+            });
+
+           
+        });
+
+      
+    }
+    function MostraEdit(element) {
+
+        var div = $(element).parent("div");
+        var label = $(div).find(".campi-trac");
+        var textbox = $(div).find(".campi-trac-edit");
+        var butt = $(div).find(".campo-butt");
+        $(textbox).val($(label).text());
+        $(textbox).css("width", $(label).outerWidth() + "px");
+        $(textbox).css("display", "inline");
+        $(label).hide();
+        $(butt).css("display", "inline");
+        $(element).hide();
+        $(textbox).focus();
+        debugger
+    }
+   
+
+    function BloccaSbloccaTracciato(idTaskInCorso, NuovoStatoSospeso, callback) {
+        $.ajax({
+            url: '/MaternitaCongedi/SospendiTracciato',
+            type: "GET",
+            data: { id: idTaskInCorso, sospendi: NuovoStatoSospeso},
+            dataType: "json",
+            complete: function () { },
+            success: function (data) {
+                debugger
+                if (data.esito == true) {
+                    swal({
+                        title: 'Operazione eseguita correttamente.',
+                        type: "success",
+                        confirmButtonText: 'OK',
+                        customClass: 'rai'
+                    }).then(function () { callback(); });
+
+                }
+                else {
+                    swal({
+                        title: 'Operazione non riuscita - ' + data.errore,
+                        type: "error",
+                        confirmButtonText: 'OK',
+                        customClass: 'rai'
+                    });
+                }
+            }
+        });
+    }
+    function ChangeSwitchFromTE(element) {
+        debugger
+        var idTaskInCorso = $(element).attr("data-idtaskincorso");
+        var div = $(element).find(".ios-switch")[0];
+        var cb = $(element).parent().find("input");
+
+        if ($(div).hasClass("on")) {
+
+            BloccaSbloccaTracciato(idTaskInCorso, NuovoStatoSospeso = true, function () {
+
+                $(div).removeClass("on");
+                $(cb)[0].checked = false;
+                $("#stato-" + idTaskInCorso).text("Sospesa da operatore");
+                $("#icon-" + idTaskInCorso).show();
+                $("#info-" + idTaskInCorso).hide();
+
+            });
+
+        }
+        else {
+            swal({
+                title: "Invia",
+                type: 'question',
+                html: "Confermi di attivare l'invio del tracciato ?",
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+                cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+                reverseButtons: true,
+                customClass: 'rai rai-confirm-cancel'
+            }).then(function () {
+
+                BloccaSbloccaTracciato(idTaskInCorso, NuovoStatoSospeso = false, function () {
+
+                    $(div).addClass("on");
+                    $(cb)[0].checked = true;
+                    $("#stato-" + idTaskInCorso).text("");
+                    $("#icon-" + idTaskInCorso).hide();
+                    $("#info-" + idTaskInCorso).text("");
+
+                });
+
+            });
+
+
+        }
+
+    }
+
+    function StornaTracciato(id) {
+        swal({
+            title: "Rimborso",
+            type: 'question',
+            html: "Confermi di creare il rimborso ?",
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+            $.ajax({
+                url: '/MaternitaCongedi/rimborsaTracciato',
+                type: "GET",
+                data: { id: id },
+                dataType: "json",
+                complete: function () { },
+                success: function (data) {
+                    debugger
+                    if (data.esito == true) {
+                        swal({
+                            title: 'Rimborso creato correttamente. Riavviare la pratica per attivarlo.',
+                            type: "success",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        }).then(function () { AmmPage(1); });
+                        //AmmPage(3);
+                    }
+                    else {
+                        swal({
+                            title: 'Operazione non riuscita - ' + data.errore,
+                            type: "error",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                    }
+                }
+            });
+
+
+
+        });
+
+    }
+
+
+    @if (Model.PuoConcluderePratica && InCaricoAMe
+        && Model.Richiesta.DA_RIAVVIARE == false
+        && Model.Richiesta.XR_WKF_MATCON_OPERSTATI.OrderByDescending(x=>x.ID_STATO).Select(x=>x.ID_STATO).FirstOrDefault()<80)
+    {
+        @:$("#concludi-pratica").removeClass("disable");
+    }
+    else
+    {
+        @:$("#concludi-pratica").addClass("disable");
+    }
+
+        function ResetErrore(id) {
+
+            swal({
+                title: "Elimina errore",
+                type: 'question',
+                html: "Eliminando l'errore, l'operazione verrà rieseguita al prossimo passaggio della elaborazione del sistema. Confermi?",
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+                cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+                reverseButtons: true,
+                customClass: 'rai rai-confirm-cancel'
+            }).then(function () {
+                $.ajax({
+                    url: '/MaternitaCongedi/resetErrore',
+                    type: "GET",
+                    data: { id: id },
+                    dataType: "json",
+                    complete: function () { },
+                    success: function (data) {
+                        if (data.esito == true) {
+                            $("#errore-" + id).text("");
+                            $("#reset-err-" + id).hide();
+                        }
+                    }
+                });
+            });
+        }
+</script>
+
+

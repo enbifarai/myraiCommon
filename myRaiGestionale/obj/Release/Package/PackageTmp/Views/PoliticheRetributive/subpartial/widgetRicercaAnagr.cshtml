@@ -1,0 +1,88 @@
+﻿@using myRaiGestionale.Controllers
+@model myRaiCommonModel.Gestionale.RicercaAnagrafica
+
+@{
+    var formId = "form-ricerca-" + Model.BoxDest;
+}
+
+<div class="block block-content-table block-transparent ">
+    <!--contenuto-->
+    <div class="block-content block-content-mini">
+        @using (Ajax.BeginForm("RicercaAnagrafiche", "PoliticheRetributive", new AjaxOptions
+        {
+            InsertionMode = InsertionMode.Replace,
+            HttpMethod = "POST",
+            UpdateTargetId = Model.BoxDest,
+            OnBegin = "gestPreSubmit('" + Model.BoxDest + "')",
+            OnSuccess = "gestSuccessSubmit('" + formId + "','" + Model.BoxDest + "')"
+        }, new { id = formId, @class = "", role = "search" }))
+        {
+
+            @Html.HiddenFor(m => m.HasFilter, new { @class = formId + " form-control-bool" })
+            @Html.HiddenFor(m => m.ResultView)
+
+            <div class="form-group">
+                <div class="row">
+                    <div class="col-sm-12">
+                        @Html.Label("Scelta piano", new { @class = "rai-caption" })
+                    </div>
+                    <div class="col-sm-8 push-10">
+                        @Html.DropDownListFor(m => m.Piano, new SelectList(PoliticheRetributiveController.getCampagnaList(), "Value", "Text", null), new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Piano", onchange = "PopolaDecorrenzaCampagna()", id = "SceltaCampagna" })
+                    </div>
+                    <div class="col-sm-4 push-10">
+                        @*<select class="form-control"  style="display:none;"></select>*@
+                        @Html.DropDownListFor(m => m.Decorrenza, new SelectList(new List<System.Web.UI.WebControls.ListItem>(), "Value", "Text", null), new { @class = "form-control form-control-value", style = "display:none;width: 100%", placeholder = "Piano", onchange = "GestAggiornaDec()", id = "SceltaDecorrenza" })
+                    </div>
+                </div>
+
+                @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Parametri di ricerca"))
+                {
+                    <div class="row push-10">
+                        <div class="col-xl-4 col-sm-6 push-10">
+                            @Html.LabelFor(model => model.Matricola, "Matricola", new { @class = "rai-caption" })
+                            @Html.TextBoxFor(m => m.Matricola, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Matricola" })
+                        </div>
+                        <div class="col-xl-4 col-sm-6 push-10">
+                            @Html.LabelFor(model => model.Cognome, "Cognome", new { @class = "rai-caption" })
+                            @Html.TextBoxFor(m => m.Cognome, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Cognome" })
+                        </div>
+                        <div class="col-xl-4 col-sm-6 push-10">
+                            @Html.LabelFor(model => model.Nome, "Nome", new { @class = "rai-caption" })
+                            @Html.TextBoxFor(m => m.Nome, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Nome" })
+                        </div>
+                        @*<div class="col-xl-4 col-sm-6 push-10">
+                                @Html.LabelFor(model => model.Direzione, "Direzione", new { @class = "" })
+                                @Html.DropDownListFor(m => m.Direzione, new SelectList(PoliticheRetributiveController.getUnitaOrgList(), "Value", "Text", null), new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Direzione" })
+                            </div>*@
+                        <div class="col-xl-4 col-sm-6 push-10">
+                            @Html.LabelFor(model => model.Servizio, "Direzione", new { @class = "rai-caption" })
+
+                            <select class="@formId form-control form-control-value " data-val="true" id="Servizio" name="Servizio">
+                                <option value="">Direzione</option>
+                                @foreach (var group in PoliticheRetributiveController.getServizioList())
+                                {
+                                    <optgroup label="@group.Name">
+                                        @foreach (var item in group.ListItems)
+                                        {
+                                            <option value="@item.Value">@item.Text</option>
+                                        }
+                                    </optgroup>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="rai-btn-fill">
+                                <input type="button" id="btnAzzera" class="btn rai-btn-secondary" title="Azzera" value="Azzera" onclick="GestPulisciFiltri('@(formId)',true)" />
+                                <input type="submit" id="btnCerca" class="btn btn-primary" title="Cerca" value="Cerca" onclick="GestCheckHasFilter('@(formId)')" />
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+    <!--fine contenuto-->
+</div>

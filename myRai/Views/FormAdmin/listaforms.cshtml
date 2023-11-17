@@ -1,0 +1,281 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+
+@model List<myRaiData.MyRai_FormPrimario>
+
+@helper DrawTable(IEnumerable<myRaiData.MyRai_FormPrimario> list)
+{
+    foreach (var item in list)
+        {
+            <tbody class="js-table-sections-header id-@item.id">
+                <tr>
+                    <td>
+                    <span class="rai-font-md-bold">@item.titolo</span><br />
+                    <span class="rai-font-sm-neutral">Valido dal @item.data_inizio_validita.ToString("dd/MM/yyyy") al @item.data_fine_validita.ToString("dd/MM/yyyy")</span>
+                    </td>
+                    <td><label class="rai-label">@item.MyRai_FormTipologiaForm.tipologia</label></td>
+
+                    <td colspan="4" class="text-right">
+                        <div class="btn-action-icon-container">
+                            @if (item.attivo)
+                            {
+                                <button class="btn btn-action-icon" data-toggle="tooltip" title="Aggiungi una sezione" onclick="newFormSec(0,@item.id)">
+                                    <i class="fa fa-plus"></i>
+                                </button>
+
+                            }
+                            <button class="btn btn-action-icon" data-toggle="tooltip" title="Modifica i dati generali del questionario"
+                                    onclick="newForm(@item.id)">
+                            <i class="fa fa-pencil"></i>
+                            </button>
+                        <button class="btn btn-action-icon" data-toggle="tooltip" title="Duplica il questionario" onclick="copyForm(@item.id)"><i class="fa fa-copy"></i></button>
+                            @if (item.attivo)
+                            {
+                            <button class="btn btn-action-icon" data-toggle="tooltip" title="Disattiva il questionario" onclick="delForm(@item.id,1)"><i class="fa fa-trash-o "></i></button>
+                            }
+                        </div>
+                    </td>
+                    <td class="rai-table-td-toggle">
+                        @if (item.MyRai_FormSecondario.Count() > 0)
+                        {
+                        <i class="fa fa-chevron-down"></i>
+                        }
+                    </td>
+                </tr>
+            </tbody>
+
+            <tbody class="id-@item.id">
+            <tr class="bg-neutrals-xl-10">
+                <td colspan="7" class="text-right">
+                    <a class="btn rai-btn-small" target="_blank" href="/formuser/fill?idform=@item.id"><i class="icons icon-note" data-toggle="tooltip" title="Apri link per utente"></i> Compila</a>
+                    <a class="btn rai-btn-small" target="_blank" href="/formstats/getformdetails?idform=@item.id"><i class="icons icon-chart" data-toggle="tooltip" title="Vedi grafici"></i> Vedi grafici</a>
+                    <a class="btn rai-btn-small" href="/formstats/getdata?idform=@item.id"><i class="icons icon-book-open" data-toggle="tooltip" title="Estrai dati su foglio Excel"></i> Excel</a>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="7" class="no-padding">
+                    <table class="table js-table-sections rai-table rai-table-panel rai-table-vcenter">
+                @foreach (var m in item.MyRai_FormSecondario.OrderBy(x => x.progressivo))
+                {
+                            <tbody class="js-table-sections-header">
+                                <tr class="">
+                        <td colspan="3" class="va-middle">
+                                        <span class="rai-font-md">@m.progressivo - @m.titolo </span>
+                            <br />
+                                        @Html.Raw(m.descrizione)
+                            @if (!m.attivo)
+                            {
+                                            <br /> 
+                                            <span class="rai-label rai-label-error">Eliminato</span>
+                            }
+                        </td>
+
+                        <td colspan="3" class="text-right">
+                            <div class="btn-action-icon-container">
+                                @if (m.attivo)
+                                {
+                                    <button  class="btn btn-action-icon"  data-toggle="tooltip" title="Aggiungi una domanda" onclick="newQuestion(0,@m.id)"><i class="fa fa-plus"></i></button>
+                                }
+                                            <button class="btn btn-action-icon" data-toggle="tooltip" title="Modifica questa sezione" onclick="newFormSec(@m.id,@item.id)"><i class="fa fa-pencil "></i></button>
+                                @if (m.attivo)
+                                {
+                                                <button class="btn btn-action-icon" data-toggle="tooltip" title="Disattiva la sezione" onclick="delForm(@m.id,2)"><i class="fa fa-trash-o "></i></button>
+                                }
+                            </div>
+                        </td>
+                                    <td class="rai-table-td-toggle"><i class="fa fa-chevron-down"></i></td>
+                    </tr>
+                            </tbody>
+                            <tbody>
+                                <tr>
+                                    <td colspan="7" class="no-padding">
+                                        <table class="table rai-table rai-table-panel rai-table-bordered">
+                                            @foreach (var dom in m.MyRai_FormDomande.Where(x => x.id_domanda_parent == null).OrderBy(x => x.progressivo))
+                    {
+                        <tr>
+                                                    <td colspan="3" style="">
+                                                        <span class="rai-font-sm-bold">@dom.progressivo - @dom.titolo</span><br />
+                                                        @Html.Raw(dom.descrizione)
+
+                                @if (!dom.attiva)
+                                {
+                                                            <br />
+                                                            <span class="rai-label rai-label-error">Eliminato</span>
+                                }
+                                <div style="padding-left: 20px">
+                                    @dom.MyRai_FormTipologieDomande.tipologia<br />
+                                    @if (dom.MyRai_FormTipologieDomande.scelta_risposte == true)
+                                    {
+                                        foreach (var risp in dom.MyRai_FormRispostePossibili)
+                                        {
+                                            <em>@risp.item_risposta</em><br />
+                                        }
+                                    }
+                                </div>
+                            </td>
+                            <td></td>
+                            <td colspan="2" class="text-right">
+                                <div class="btn-action-icon-container">
+                                    @if (dom.max_scelte != 999999)
+                                    {
+                                                                <button class="btn btn-action-icon" data-toggle="tooltip" title="Modifica questa domanda" onclick="newQuestion(@dom.id,@m.id)"><i class="fa fa-pencil "></i></button>
+                                    }
+                                    @if (dom.attiva && dom.max_scelte != 999999)
+                                    {
+                                                                <button class="btn btn-action-icon" data-toggle="tooltip" title="Disattiva la domanda" onclick="delQuestion(@dom.id)"><i class="fa fa-trash-o "></i></button>
+                                    }
+                                </div>
+                            </td>
+                                                    <td class="rai-table-td-toggle"></td>
+                        </tr>
+                                                if (dom.MyRai_FormDomande1.Any())
+                                                {
+                                                    <tr>
+                                                        <td colspan="7" class="no-padding" >
+                                                            <table class="table rai-table rai-table-panel">
+                                                                @foreach (var dom_slave in dom.MyRai_FormDomande1.OrderBy(x => x.progressivo))
+                        {
+                            <tr>
+
+                                                                    <td colspan="3" >
+                                                                        <em class="rai-font-sm-neutral-bold">@dom.progressivo-@dom_slave.progressivo - @dom_slave.titolo</em><br />
+                                    @dom_slave.descrizione <br />
+                                    @if (!dom_slave.attiva)
+                                    {
+                                                                            <span class="text-danger">Eliminato</span>
+                                    }
+                                    <div style="padding-left:20px">
+                                        @dom_slave.MyRai_FormTipologieDomande.tipologia<br />
+                                        @if (dom_slave.MyRai_FormTipologieDomande.scelta_risposte == true)
+                                        {
+                                            foreach (var risp in dom_slave.MyRai_FormRispostePossibili)
+                                            {
+                                                <em>@risp.item_risposta</em><br />
+                                            }
+                                        }
+                                    </div>
+                                </td>
+                                <td></td>
+                                <td colspan="2" class="text-right">
+                                    <div class="btn-action-icon-container">
+                                                                            <button class="btn btn-action-icon" onclick="newQuestion(@dom_slave.id,@m.id)"><i class="fa fa-pencil"></i></button>
+                                        @if (dom_slave.attiva)
+                                        {
+                                                                                <button class="btn btn-action-icon" onclick="delQuestion(@dom_slave.id)"><i class="fa fa-trash-o"></i></button>
+                                        }
+                                    </div>
+                                </td>
+                                                                    <td class="rai-table-td-toggle"></td>
+                            </tr>
+                        }
+
+                                                            </table>
+                                                        </td>
+                                                    </tr>
+                                                }
+                    }
+                                        </table>
+                                    </td>
+                                </tr>
+                            </tbody>
+                }
+                    </table>
+                </td>
+            </tr>
+            </tbody>
+
+        }
+}
+
+
+@{
+    var formChiusi = Model.Where(x => x.attivo && x.data_fine_validita < DateTime.Now);
+    var formAperti = Model.Where(x => x.attivo && x.data_fine_validita >= DateTime.Now);
+    var formNonAttivi = Model.Where(x => !x.attivo);
+
+    bool firstActive = true;
+    string isActive = "";
+}
+
+<div class="block no-margin-bottom">
+    <ul class="nav nav-tabs nav-tabs-alt nav-justified" data-toggle="tabs" role="tablist">
+        @if (formAperti.Any())
+        {
+            <li class="@(firstActive?"active":"") role="presentation">
+                <a href="#formAperti" class="rai-badge-ancor" id="tabFormAperti">
+                    Aperti
+                    <div class="rai-badge-tab">
+                        @(formAperti.Count())
+                    </div>
+                </a>
+            </li>
+
+            firstActive = false;
+            isActive = "Aperti";
+        }
+        @if (formChiusi.Any())
+        {
+            <li class="@(firstActive?"active":"") role="presentation">
+                <a href="#formChiusi" class="rai-badge-ancor" id="tabFormChiusi">
+                    Chiusi
+                    <div class="rai-badge-tab">
+                        @(formChiusi.Count())
+                    </div>
+                </a>
+            </li>
+
+            firstActive = false;
+            if (String.IsNullOrWhiteSpace(isActive))
+            {
+                isActive = "Chiusi";
+            }
+        }
+        @if (formNonAttivi.Any())
+        {
+            <li class="@(firstActive?"active":"") role="presentation">
+                <a href="#formNonValidi" class="rai-badge-ancor" id="tabFormNonValidi">
+                    Non attivi
+                    <div class="rai-badge-tab">
+                        @(formNonAttivi.Count())
+                    </div>
+                </a>
+            </li>
+
+            firstActive = false;
+            if (String.IsNullOrWhiteSpace(isActive))
+            {
+                isActive = "NonValidi";
+            }
+        }
+    </ul>
+</div>
+
+<div class="block-content tab-content" style="padding:0px;">
+    @if (formAperti.Any())
+    {
+        <div class="tab-pane @(isActive=="Aperti"?"active":"")" id="formAperti" role="tabpanel">
+            <table class="rai js-table-sections table rai-table rai-table-panel rai-table-vcenter" style="font-family:'Open Sans', sans-serif;">
+                @DrawTable(formAperti)
+            </table>
+        </div>
+    }
+    @if (formChiusi.Any())
+    {
+        <div class="tab-pane @(isActive=="Chiusi"?"active":"")" id="formChiusi" role="tabpanel">
+            <table class="rai js-table-sections table rai-table rai-table-panel rai-table-vcenter" style="font-family:'Open Sans', sans-serif;">
+                @DrawTable(formChiusi)
+    </table>
+        </div>
+    }
+    @if (formNonAttivi.Any())
+    {
+        <div class="tab-pane @(isActive=="NonValidi"?"active":"")" id="formNonValidi" role="tabpanel">
+            <table class="rai js-table-sections table rai-table rai-table-panel rai-table-vcenter" style="font-family:'Open Sans', sans-serif;">
+                @DrawTable(formNonAttivi)
+            </table>
+        </div>
+    }
+</div>
+

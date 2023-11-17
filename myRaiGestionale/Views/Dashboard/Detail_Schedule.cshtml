@@ -1,0 +1,219 @@
+﻿@using myRaiData.Incentivi
+@model XR_TSK_SCHEDULER
+
+@{
+    bool isNew = Model.ID == 0;
+    if (isNew)
+    {
+        Model.DTA_START = DateTime.Now;
+    }
+    IncentiviEntities db = new IncentiviEntities();
+    List<SelectListItem> list = new List<SelectListItem>(){
+new SelectListItem(){Value="",Text="Tutte"}
+};
+    list.AddRange(db.XR_TSK_TIPOLOGIE.Select(x => x.COD_TIPOLOGIA).Distinct().OrderBy(x => x).Select(x => new SelectListItem() { Value = x, Text = x }));
+
+    List<SelectListItem> listSottotipologia = new List<SelectListItem>(){
+new SelectListItem(){Value="",Text="Tutte"}
+};
+    listSottotipologia.AddRange(db.XR_TSK_TIPOLOGIE.Where(x => x.COD_SOTTOTIPOLOGIA != null).Select(x => x.COD_SOTTOTIPOLOGIA).OrderBy(x => x).Select(x => new SelectListItem() { Value = x, Text = x }));
+}
+
+
+@using (Html.BeginModal("Dettaglio schedulazione"))
+{
+    <div class="row">
+        <div class="col-sm-12">
+            @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, ""))
+            {
+                using (Html.BeginForm("Save_Schedule", "Dashboard", FormMethod.Post, new { id = "form-schedule" }))
+                {
+                    @Html.HiddenFor(m => m.ID)
+                    <div class="form-group">
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                @Html.LabelForRequiredObbl(m => m.COD_NAME, "Nome", new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.COD_NAME, new { @class = "form-control", required = "required" })
+                                @Html.ValidationMessageFor(m => m.COD_NAME)
+                            </div>
+                        </div>
+                        <div class="row push-10">
+                            <div class="col-sm-6">
+                                @Html.LabelForRequiredObbl(m => m.COD_TIPOLOGIA, "Tipologia", new { @class = "rai-caption" })
+                                @Html.RaiSelectFor(m => m.COD_TIPOLOGIA, list)
+                                @Html.ValidationMessageFor(m => m.COD_TIPOLOGIA)
+                            </div>
+                            <div class="col-sm-6">
+                                @Html.LabelFor(m => m.COD_SOTTOTIPOLOGIA, "Sottotipologia", new { @class = "rai-caption" })
+                                @Html.RaiSelectFor(m => m.COD_SOTTOTIPOLOGIA, listSottotipologia)
+                                @Html.ValidationMessageFor(m => m.COD_SOTTOTIPOLOGIA)
+                            </div>
+                        </div>
+                        <div class="row push-10">
+                            <div class="col-sm-6">
+                                @Html.LabelForRequiredObbl(m => m.DTA_START, "Data attivazione", new { @class = "rai-caption" })
+                                <div class="input-group">
+                                    <div class="input-group-addon">
+                                        <i class="fa fa-calendar"></i>
+                                    </div>
+                                    @Html.TextBoxFor(m => m.DTA_START, new { @class = "js-datetimepicker  form-control", data_format = "DD/MM/YYYY HH:mm", data_locale = "it", placeholder = "Data attivazione", autocomplete = "off", required = "required" })
+                                </div>
+                                @Html.ValidationMessageFor(m => m.DTA_START)
+                            </div>
+                            <div class="col-sm-6">
+                                @Html.LabelFor(m => m.DTA_EXPIRE, "Data scadenza", new { @class = "rai-caption" })
+                                <div class="input-group">
+                                    <div class="input-group-addon">
+                                        <i class="fa fa-calendar"></i>
+                                    </div>
+                                    @Html.TextBoxFor(m => m.DTA_EXPIRE, new { @class = "js-datetimepicker  form-control", data_format = "DD/MM/YYYY HH:mm", data_locale = "it", placeholder = "Periodo a", autocomplete = "off" })
+                                </div>
+                                @Html.ValidationMessageFor(m => m.DTA_EXPIRE)
+                            </div>
+                        </div>
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                @Html.LabelFor(m => m.SCHEDULE_TYPE, "Tipo attivazione", new { @class = "rai-caption" })
+                                @Html.RaiSelectFor(m=>m.SCHEDULE_TYPE, new List<SelectListItem>()
+                                   {
+                                    new SelectListItem(){Value="ONCE", Text="Una tantum"},
+                                    new SelectListItem(){Value="DAILY", Text="Giornaliera"},
+                                    new SelectListItem(){Value="WEEKLY", Text="Settimanale"},
+                                    new SelectListItem(){Value="MONTHLY", Text="Mensile"}
+                                   }, onSelectchange:"AttivazioneChange()")
+                                @Html.ValidationMessageFor(m => m.SCHEDULE_TYPE)
+                            </div>
+                        </div>
+
+                        <div class="row push-10" data-tipo-sch="DAILY" style="display:none">
+                            <div class="col-sm-12">
+                                <em>Per attivazione giornaliera</em>
+                            </div>
+                            <div class="col-sm-4">
+                                @Html.LabelFor(m => m.DAILY_RECURRENCE, "Ogni quanti giorni?", new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.DAILY_RECURRENCE, new { @class = "form-control" })
+                            </div>
+                        </div>
+                        <div class="row push-10" data-tipo-sch="WEEKLY" style="display:none">
+                            <div class="col-sm-12">
+                                <em>Per attivazione settimanale</em>
+                            </div>
+                            <div class="col-sm-4">
+                                @Html.LabelFor(m => m.WEEKLY_RECURRENCE, "Ogni quante settimane?", new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.WEEKLY_RECURRENCE, new { @class = "form-control" })
+                            </div>
+                            <div class="col-sm-4">
+                                @Html.LabelFor(m => m.WEEKLY_WEEKDAYS, "In quali giorni?", new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.WEEKLY_WEEKDAYS, new { @class = "form-control" })
+                                <em class="rai-font-sm">Indica l'indice dei giorni della settimana separati da virgola</em>
+                            </div>
+                        </div>
+                        <div class="row push-10" data-tipo-sch="MONTHLY" style="display:none">
+                            <div class="col-sm-12">
+                                <em>Per attivazione mensile</em>
+                            </div>
+                            <div class="col-sm-4">
+                                @Html.LabelFor(m => m.MONTHLY_MONTHS, "In quali mesi?", new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.MONTHLY_MONTHS, new { @class = "form-control" })
+                                <em class="rai-font-sm">Indica il numero dei mesi separati da virgola</em>
+                            </div>
+                            <div class="col-sm-4">
+                                @Html.LabelFor(m => m.MONTHLY_DAYS, "In quali giorni del mese?", new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.MONTHLY_DAYS, new { @class = "form-control" })
+                                <em class="rai-font-sm">Indica il numero dei giorni separati da virgola</em>
+                            </div>
+                        </div>
+
+                        <div class="row push-10">
+                            <div class="col-sm-6">
+                                @Html.LabelFor(m => m.REPEAT_RECURRENCE, "Ripeti ogni (minuti)", new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.REPEAT_RECURRENCE, new { @class = "form-control" })
+                            </div>
+                            <div class="col-sm-6">
+                                @Html.LabelFor(m => m.REPEAT_DURATION, "Durata ripetizione (minuti)", new { @class = "rai-caption" })
+                                @Html.TextBoxFor(m => m.REPEAT_DURATION, new { @class = "form-control" })
+                                <em class="rai-font-sm">Se vuoto, la ripetizione verrà effettuata illimitatamente</em>
+                            </div>
+                        </div>
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                <label class="rai-caption">Input</label><br />
+                                @Html.TextAreaFor(m => m.INPUT, new { rows = "10", @class = "form-control", data_format = "json" })
+                            </div>
+                        </div>
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                @Html.RaiCheckBoxLabelFor(m => m.IND_ACTIVE, "Attivo", "")
+                            </div>
+                        </div>
+                        <div class="row push-20">
+                            <div class="col-sm-12">
+                                <button class="btn btn-primary full-width" onclick="HrisScheduleSave(this)">Salva schedulazione</button>
+                            </div>
+                        </div>
+
+                    </div>
+                }
+            }
+        </div>
+    </div>
+}
+
+<script>
+    InitDatePicker();
+    function formatJson() {
+        $('[data-format="json"]').each(function () {
+            let obj = JSON.parse($(this).val());
+            let jsonRes = JSON.stringify(obj, undefined, 4);
+            $(this).val(jsonRes);
+        })
+    }
+    formatJson();
+
+    function AttivazioneChange() {
+        let schType = $('#SCHEDULE_TYPE').val();
+        $('[data-tipo-sch]').hide();
+        $('[data-tipo-sch="' + schType + '"]').show();
+    }
+    AttivazioneChange();
+
+    function HrisScheduleSave(button) {
+        event.preventDefault();
+        var paramGetter = function () {
+            var obj = new FormData($('#form-schedule')[0]);
+            return obj;
+        };
+
+        var onSuccess = function () {
+            $('#modal-schedule').modal("hide");
+            $('#form-ricerca-schedule').submit();
+        }
+
+        var message = "Vuoi confermare i dati inseriti?";
+        var confirmMessage = "Richiesta inserita con successo";
+
+        swal({
+            title: 'Sei sicuro?',
+            type: 'question',
+            html: message,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+            var paramGetter = function () {
+                var obj = new FormData($('#form-schedule')[0]);
+                return obj;
+            };
+
+            var onSuccess = function () {
+                $('#modal-schedule').modal("hide");
+                $('#form-ricerca-schedule').submit();
+            }
+
+            RaiSubmitForm(button, 'form-schedule', paramGetter, false, false, confirmMessage, onSuccess, false);
+        });
+    }
+</script>
+

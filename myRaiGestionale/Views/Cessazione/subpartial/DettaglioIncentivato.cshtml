@@ -1,0 +1,226 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiHelper
+@using myRaiCommonModel.Gestionale
+@model CessazioneModel
+
+@{
+    int stato = Model.IsPreview ? 0 : Model.Stato.ID_STATO;
+    bool showHalfModal = Model.IsPreview
+                        //|| Model.Pratica.XR_INC_OPERSTATI.Count() == 1
+                        || !Model.Pratica.XR_INC_OPERSTATI.Any(x => x.XR_INC_STATI.IND_DETAIL_WIDGET)
+                        //|| Model.IsAnpal
+                        || (Model.AbilitaAvviaPratica && !CessazioneHelper.IsRoleAdmin(CommonHelper.GetCurrentUserMatricola()));
+    string nominativo = Model.Pratica.SINTESI1.Nominativo();
+
+    bool collapsable = false;// CommonHelper.GetCurrentUserMatricola() == "103650";
+}
+
+
+@if (!showHalfModal)
+{
+    <style>
+        #modal-dettaglioInc .modal-dialog {
+            width: 75%;
+        }
+    </style>
+}
+
+@using (Html.BeginModal("Scheda dipendente"))
+{
+    <div id="incContent" class="row">
+        <input type="hidden" id="openFunction" value="@(Model.OpenFunction)" />
+        <input type="hidden" id="idDipModal" value="@Model.Pratica.ID_DIPENDENTE" />
+        <div class="@(showHalfModal ?"col-md-12":"col-md-7")">
+            <section class="panel ">
+                @if (!Model.IsPreview)
+                {
+                    <header class="panel-heading">
+                        <h2 id="lblRightBox" class="panel-title">@Model.Tipologia.DES_TIPOLOGIA</h2>
+                    </header>
+                }
+
+                <div class="panel-body">
+                    @*<div style="max-height:80vh;overflow:hidden;overflow-y:auto">*@
+                    <div>
+                        @Html.Partial("subpartial/Dettaglio_DatiAnagrafici", Model)
+                        @if (!Model.IsPreview)
+                        {
+                            @Html.Partial("subpartial/GestioneStati")
+                        }
+                        else
+                        {
+                            @Html.Partial("subpartial/Dettaglio_DatiRelazioni", Model.Pratica, ViewData)
+                        }
+                    </div>
+                </div>
+            </section>
+        </div>
+        @if (!showHalfModal)
+        {
+            <div class="col-md-5">
+                @*<div style="overflow:hidden;overflow-y:auto;max-height:90vh">*@
+                <div>
+                    @foreach (var item in Model.Tipologia.XR_WKF_WORKFLOW.Where(x => x.XR_INC_STATI.IND_DETAIL_WIDGET || (x.ID_STATO == 1 && Model.Pratica.DTA_RICHIESTA.HasValue)).OrderBy(x => x.ORDINE))
+                    {
+                        var oper = Model.Pratica.XR_INC_OPERSTATI.FirstOrDefault(x => x.ID_STATO == item.ID_STATO && !x.DATA_FINE_VALIDITA.HasValue);
+                        if (oper != null)
+                        {
+                            bool inseritaMaSospesa = item.ID_STATO == (int)IncStato.RichiestaInserita
+                                                        && Model.Pratica.XR_INC_OPERSTATI.Any(x => x.ID_STATO != (int)IncStato.RichiestaInserita
+                                                                                                    && x.DATA_FINE_VALIDITA == null
+                                                                                                    && (x.XR_INC_STATI.IND_SYSTEM == null || !x.XR_INC_STATI.IND_SYSTEM.Value));
+                            if (item.ID_STATO == (int)IncStato.RichiestaInserita && !inseritaMaSospesa)
+                            {
+                                continue;
+                            }
+
+                            using (Html.BeginBlock(BlockType.ContentTable, CessazioneController.GetBoxDescription((IncStato)item.ID_STATO), collapsable: collapsable))
+                            {
+                                if (!String.IsNullOrWhiteSpace(item.XR_INC_STATI.NOT_DETAIL_VIEW))
+                                {
+                                    @Html.Partial(item.XR_INC_STATI.NOT_DETAIL_VIEW, Model, ViewData)
+                                }
+                                else
+                                {
+                                    switch (item.ID_STATO)
+                                    {
+                                        case (int)IncStato.RichiestaDecaduta:
+                                        case (int)IncStato.RichiestaRifiutata:
+                                            if (!Model.Pratica.XR_INC_OPERSTATI.Any(x => x.ID_STATO == (int)IncStato.RichiestaAccettata && !x.DATA_FINE_VALIDITA.HasValue))
+                                            {
+                                                @Html.Partial("subpartial/Dettaglio_DatiRichiesta", Model, ViewData)
+                                            }
+                                            else
+                                            {
+                                                @Html.Partial("subpartial/Dettaglio_DatiRecesso", Model, ViewData)
+                                            }
+                                            break;
+                                        case (int)IncStato.RichiestaInserita:
+                                            if (inseritaMaSospesa)
+                                            {
+                                                @Html.Partial("subpartial/Dettaglio_DatiRichiesta", Model, ViewData)
+                                                inseritaMaSospesa = true;
+                                            }
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                }
+                                @Html.Partial("subpartial/Dettaglio_OperNote", oper)
+
+                                if (item.XR_INC_STATI.IND_CANADDFILE && (item.ID_STATO != (int)IncStato.Appuntamento || Model.Stato.ID_STATO != item.ID_STATO || inseritaMaSospesa))
+                                {
+                                    <div @*class="push-20"*@ style="margin-top:-15px;">
+                                        <div id="dett-all-@item.ID_STATO" class="rai-table-info"></div>
+                                        <script>
+                                            RaiUpdateWidget('dett-all-@(item.ID_STATO)', '/Cessazione/Dettaglio_OperAllegati', 'html', { idDip: @Model.Pratica.ID_DIPENDENTE, stato:@item.ID_STATO});
+                                        </script>
+                                    </div>
+                                }
+                            }
+
+                            switch (item.ID_STATO)
+                            {
+                                case (int)IncStato.RichiestaAccettata:
+                                    if (Model.AllegatiCont != null && Model.AllegatiCont.Any())
+                                    {
+                                        using (Html.BeginBlock(BlockType.ContentTable, "Conteggi incentivi", collapsable: collapsable))
+                                        {
+                                            foreach (var all in Model.AllegatiCont)
+                                            {
+                                                <div class="row">
+                                                    <div class="col-sm-12">
+                                                        <a href="@Url.Action("GetDoc", "Cessazione", new { idDoc = all.ID_ALLEGATO })" title="@all.DES_ALLEGATO"><i class="fa fa-download"></i>&nbsp; @all.COD_TITLE</a>
+                                                    </div>
+                                                </div>
+                                            }
+                                        }
+                                    }
+
+                                    if (Model.Pratica.DATA_RICH_TESS_CONTR.HasValue)
+                                    {
+                                        @Html.Partial("subpartial/Dettaglio_Tessere", Model)
+                                    }
+
+                                    break;
+                                case (int)IncStato.RecessoEffettuato:
+                                    if (Model.CanAnpal && !Model.Pratica.DATA_RECESSO_ANPAL.HasValue)
+                                    {
+                                        using (Html.BeginBlock(BlockType.ContentTable, "Dati Anpal", collapsable: collapsable))
+                                        {
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <button class="btn rai-btn-small full-width" onclick="ShowIncentivato(@Model.Pratica.ID_DIPENDENTE, 'ANPAL')">Carica ricevuta Anpal</button>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+
+                                    if (Model.Pratica.DATA_RECESSO_ANPAL.HasValue && Model.AllegatiAnpal != null && Model.AllegatiAnpal.Any())
+                                    {
+                                        using (Html.BeginBlock(BlockType.ContentTable, "Dati Anpal", collapsable: collapsable))
+                                        {
+                                            <div class="rai-table-info">
+                                                <div class="row">
+                                                    <div class="col-sm-6">
+                                                        <label class="rai-caption">Data invio</label>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <label>@Model.Pratica.DATA_RECESSO_ANPAL.Value.ToString("dd/MM/yyyy")</label>
+                                                    </div>
+                                                </div>
+                                                @foreach (var all in Model.AllegatiAnpal)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-sm-12">
+                                                            <a href="@Url.Action("GetDoc", "Cessazione", new { idDoc = all.ID_ALLEGATO })" title="@all.DES_ALLEGATO"><i class="fa fa-download"></i>&nbsp; @all.COD_TITLE</a>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+
+                                    }
+
+                                    if (Model.CanCertificatoServizio)
+                                    {
+                                        using (Html.BeginBlock(BlockType.ContentTable, "Certificato di servizio", collapsable: collapsable))
+                                        {
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <button class="btn rai-btn-small full-width" onclick="LoadCertificato(@Model.Pratica.ID_DIPENDENTE)">Mostra certificato</button>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                    break;
+                                case (int)IncStato.RichiestaDecaduta:
+                                case (int)IncStato.RichiestaRifiutata:
+                                case (int)IncStato.PropostaRifiutata:
+                                case (int)IncStato.PropostaDecaduta:
+                                    if (!Model.Pratica.XR_INC_OPERSTATI.Any(x => x.ID_STATO == (int)IncStato.RichiestaAccettata && !x.DATA_FINE_VALIDITA.HasValue) && Model.AllegatiCont.Any())
+                                    {
+                                        using (Html.BeginBlock(BlockType.ContentTable, "Conteggi incentivi", collapsable: collapsable))
+                                        {
+                                            foreach (var all in Model.AllegatiCont)
+                                            {
+                                                <div class="row">
+                                                    <div class="col-sm-12">
+                                                        <a href="@Url.Action("GetDoc", "Cessazione", new { idDoc = all.ID_ALLEGATO })" title="@all.DES_ALLEGATO"><i class="fa fa-download"></i>&nbsp; @all.COD_TITLE</a>
+                                                    </div>
+                                                </div>
+                                            }
+                                        }
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+

@@ -1,0 +1,326 @@
+﻿@using myRai.Models.DashboardResponsabile
+@model StatoFerieVM
+
+<style>
+    .ct-series-a .ct-line,
+    .ct-series-a .ct-point {
+        stroke: blue !important;
+    }
+
+    .ct-series-b .ct-line,
+    .ct-series-b .ct-point {
+        stroke: green !important;
+    }
+
+    div.ct-series-a {
+        background: blue !important;
+    }
+
+    div.ct-series-b {
+        background: green !important;
+    }
+
+    i.ct-series-a {
+        background: blue !important;
+    }
+
+    i.ct-series-b {
+        background: green !important;
+    }
+</style>
+
+<div class="block block-themed block-transparent remove-margin-b">
+    <div class="block-header">
+        <label class="rai-font-modal-heading">
+            MONITORAGGIO FERIE
+        </label>
+        <div class="block-options">
+            <button id="@(Model.WidgetId)_ChiudiModale" data-dismiss="modal" class="btn btn-action-icon"><i class="glyphicon glyphicon-remove"></i></button>
+    </div>
+    </div>
+
+    <div class="row no-margin-left-right">
+        <!-- Colonna -->
+        <div class="col-sm-12 no-pad-left no-pad-right border-right ">
+            <div class="block-content block-content-full boxdate" style="margin-bottom: 0px; padding-bottom:5px; overflow-y: auto; height: 90vh">
+                <div class="row">
+                    <div class="col-xs-12" id="statoferie-content-body">
+                        <div class="row" style="text-align:center">
+                            <div class="col-xs-12">
+                                <label><b>@Model.DescrizioneSedeGapp</b></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row" style="max-height:300px;">
+                    <div class="col-xs-12" style="max-height:300px;">
+                        <div id="chart-statoFerie" style="width:100%;max-height:300px;" class="ct-chart ct-perfect-fourth ct-golden-section"></div>
+                        <div id="wait-sede" style="color:#aaa;padding-left:8px;display:none;float:right">
+                            <i class="fa fa-refresh fa-spin text-primary"></i> ATTENDERE...
+                        </div>
+                    </div>
+                </div>
+                <br />
+                <br />
+                <div class="row">
+                    <div class="col-xs-12">
+                        <span><i class="rai-chart-legend bg-default ct-series-a"></i>Ferie pianificate ad oggi <b>@(Model.GiorniPianificatiAdOggi)</b> di <b>@(Model.GiorniPianificatiTotali)</b></span>
+                    </div>
+                    <div class="col-xs-12">
+                        <span><i class="rai-chart-legend bg-default ct-series-b"></i>Ferie effettive ad oggi <b>@(Model.GiorniEffettiviAdOggi)</b></span>
+                    </div>
+                </div>
+                <br />
+                <br />
+
+                @{
+                    bool almenoUnNegativo = Model.Dipendenti.Where( w => w.Scostamento < 100 ).Count( ) > 0;
+
+                    if ( almenoUnNegativo )
+                    {
+                        <div class="row">
+                            <div class="col-xs-12">
+                                <div class="row" style="text-align:center">
+                                    <div class="col-xs-12">
+                                        <label><b>Dipendenti della sede</b></label>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-xs-12" style="max-height:250px; overflow-y:auto;">
+                                        <table class="js-table-sections table table-hover" id="table-ecc" role="grid">
+                                            <thead>
+                                                <tr>
+                                                    <th>Matricola</th>
+                                                    <th>Nominativo</th>
+                                                    <th>Scostamento</th>
+                                                    <th>Giorni effettivi/Giorni pianificati</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @{
+                                                    var myList = Model.Dipendenti.Where( w => w.Scostamento < 100 ).ToList( );
+                                                    myList = myList.OrderBy( w => w.Nominativo ).ToList( );
+                                                    foreach ( var dipendente in myList )
+                                                    {
+                                                        <tr>
+                                                            <td>@(dipendente.Matricola)</td>
+                                                            <td>@(dipendente.Nominativo)</td>
+                                                            @{
+                                                                string text = dipendente.Scostamento.ToString( ) + "%";
+                                                            }
+
+                                                            <td>@(text)</td>
+                                                            <td>@(dipendente.GiorniEffettivi)/@(dipendente.GiorniPianificatiAdOggi) </td>
+                                                        </tr>
+                                                    }
+                                                    myList = Model.Dipendenti.Where( w => w.Scostamento >= 100 ).ToList( );
+                                                    myList = myList.OrderBy( w => w.Nominativo ).ToList( );
+                                                    foreach ( var dipendente in myList )
+                                                    {
+                                                        <tr>
+                                                            <td>@(dipendente.Matricola)</td>
+                                                            <td>@(dipendente.Nominativo)</td>
+                                                            @{
+                                                                string text = dipendente.Scostamento.ToString( ) + "%";
+                                                            }
+                                                            <td>@(text)</td>
+                                                            <td>@(dipendente.GiorniEffettivi)/@(dipendente.GiorniPianificatiAdOggi)</td>
+                                                        </tr>
+                                                    }
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        bool zeroElementi = Model.Dipendenti.Count == 0;
+
+                        if ( zeroElementi )
+                        {
+                            <div class="row">
+                                <div class="col-xs-12">
+                                    <div class="row" style="text-align:center">
+                                        <div class="col-xs-12">
+                                            <label><b>Dipendenti della sede</b></label>
+                                        </div>
+                                    </div>
+                <div class="row">
+                                        <div class="col-xs-12" style="max-height:250px; overflow-y:auto;">
+                                            <table class="js-table-sections table table-hover" id="table-ecc" role="grid">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Matricola</th>
+                                                        <th>Nominativo</th>
+                                                        <th>Scostamento</th>
+                                                        <th>Giorni effettivi/Giorni pianificati</th>
+                                                    </tr>
+                                                </thead>
+                            <tbody>
+                                <tr>
+                                                        @*<td colspan="4" class="text-center">Ad oggi tutte le giornate del piano ferie risultano fruite</td>*@
+                                                        <td colspan="4" class="text-center">Non ci sono dati sui dipendenti della sede</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="row">
+                                <div class="col-xs-12">
+                                    <div class="row" style="text-align:center">
+                                        <div class="col-xs-12">
+                                            <label><b>Dipendenti della sede</b></label>
+                </div>
+            </div>
+                                    <div class="row">
+                                        <div class="col-xs-12" style="max-height:250px; overflow-y:auto;">
+                                            <table class="js-table-sections table table-hover" id="table-ecc" role="grid">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Matricola</th>
+                                                        <th>Nominativo</th>
+                                                        <th>Scostamento</th>
+                                                        <th>Giorni effettivi/Giorni pianificati</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @{
+                                                        var myList = Model.Dipendenti.Where( w => w.Scostamento >= 100 ).ToList( );
+                                                        myList = myList.OrderBy( w => w.Nominativo ).ToList( );
+                                                        foreach ( var dipendente in myList )
+                                                        {
+                                                            <tr>
+                                                                <td>@(dipendente.Matricola)</td>
+                                                                <td>@(dipendente.Nominativo)</td>
+                                                                @{
+                                                                    string text = dipendente.Scostamento.ToString( ) + "%";
+                                                                }
+                                                                <td>@(text)</td>
+                                                                <td>@(dipendente.GiorniEffettivi)/@(dipendente.GiorniPianificatiAdOggi)</td>
+                                                            </tr>
+                                                        }
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        <br />
+                    }
+                }
+
+            </div>
+        </div>
+        <!-- Fine colonna -->
+    </div>
+</div>
+
+<script type="text/javascript">
+    function CaricaGrafico() {
+
+        var periodo = new Array();
+
+        @{ 
+            foreach(var e in Model.EtichetteGrafico)
+            {
+            <text>
+                periodo.push('@e');
+            </text>
+            }
+        }
+
+        var pianificate = [@(String.Join(",", Model.PianificateGrafico.Select (a=>a).ToArray() ))];
+        var effettive = [@(String.Join(",", Model.EffettiveGrafico.Select (a=>a).ToArray() ))];
+        var namesP = ['Ferie programmate a fine gennaio', 'Ferie programmate a fine febbraio', 'Ferie programmate a fine marzo', 'Ferie programmate a fine aprile', 'Ferie programmate a fine maggio', 'Ferie programmate a fine giugno', 'Ferie programmate a fine luglio', 'Ferie programmate a fine agosto', 'Ferie programmate a fine settembre', 'Ferie programmate a fine ottobre', 'Ferie programmate a fine novembre', 'Ferie programmate a fine dicembre'];
+
+        var chart2 = new Chartist.Line('#chart-statoFerie', {
+            labels: periodo,
+            series: [{
+                name: 'Ferie programmate',
+                data: pianificate
+            },
+                {
+                    name: 'Ferie effettive',
+                    data: effettive
+                }]
+        }, {
+                fullWidth: true,
+                chartPadding: { right: 10 }
+            }
+        );
+
+        var $chart = $('#chart-statoFerie');
+
+        var $toolTip = $chart
+            .append('<div class="tooltip"></div>')
+            .find('.tooltip')
+            .hide();
+
+        $chart.on('mouseenter', '.ct-point', function (data) {
+            var $point = $(this),
+                value = $point.attr('ct:value'),
+                seriesName = $point.parent().attr('ct:series-name');
+            if (seriesName == "Ferie programmate") {
+                var index = $point.parent().find('.ct-point').index($point);
+                seriesName = namesP[index];
+            }
+
+            $toolTip.html(seriesName + '<br>' + value).show();
+        });
+
+        $chart.on('mouseleave', '.ct-point', function () {
+            $toolTip.hide();
+        });
+
+        $chart.on('mousemove', function (event) {
+            $toolTip.css({
+                left: (event.offsetX || event.originalEvent.layerX) - $toolTip.width() / 2 - 10,
+                top: (event.offsetY || event.originalEvent.layerY) - $toolTip.height() - 40
+            });
+        });
+    }
+
+    $(function () {
+        CaricaGrafico();
+    });
+
+    function reloadChartStatoFerie(sede, anno, page) {
+        if (sede == null) {
+            sede = "@(Model.CodiceSedeSelected)";
+        }
+
+        $('#chart-statoFerie').hide();
+        $('#wait-sede').show();
+
+        $.ajax({
+            type: "POST",
+            url: "@Url.Action( Model.Action, "DashboardResponsabile" )",
+            data: {
+                sede: sede,
+                anno: anno,
+                page: page
+            },
+            dataType: "html",
+            success: function (risposta) {
+                $("#statoferie-modal-content").html(risposta);
+                $("#statoferie-modal").modal("show");
+                $("#statoferie-modal").on('shown.bs.modal', function () {
+                    CaricaGrafico();
+                });
+            },
+            error: function () {
+                    alert("Chiamata fallita!");
+                }
+            });
+    }
+</script>

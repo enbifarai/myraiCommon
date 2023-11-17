@@ -1,0 +1,377 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel.Gestionale;
+@using myRaiData.Incentivi;
+@model myRaiCommonModel.Gestionale.Valutazione
+
+@{
+    bool isSuperior = Model.VistaResponsabile;
+    var stringQuestions = Model.Scheda.XR_VAL_EVAL_SHEET_QST.Where(x => x.XR_VAL_QUESTION.XR_VAL_QUESTION_TYPE.NAME == "Stringa");
+
+    var owners = Model.Rating.GroupBy(x => x.ID_OWNER).Select(x => x.First().XR_VAL_EVAL_RATING_OWNER);
+
+    bool showPianoSvil = Model.Stato >= (int)ValutazioniState.Analizzata && Model.CampagnaScheda.IND_PIANOSVIL.GetValueOrDefault();
+}
+
+<div class="block block-transparent" style="margin-left:-15px;margin-right-15px;">
+    @if (showPianoSvil)
+    {
+        <ul class="nav nav-tabs nav-tabs-alt nav-justified push-10" data-toggle="tabs" role="tablist">
+            <li class="active" role="presentation">
+                <a href="#tabVal" class="rai-badge-anchor" id="hrefTab1" tabindex="0" role="tab" aria-selected="true" aria-controls="tabVal">
+                    Valutazione
+                </a>
+            </li>
+
+            <li class="" role="presentation">
+                <a href="#tabPiano" class="rai-badge-anchor" id="hrefTab2" tabindex="0" role="tab" aria-selected="false" aria-controls="tabPiano">
+                    Piano sviluppo
+                </a>
+            </li>
+        </ul>
+    }
+
+
+    <div class="tab-content no-border no-shadow transparent" style="padding-top:0px;">
+        <div class="tab-pane active" id="tabVal" role="tabpanel">
+            <table class="table table-striped rai-table rai-table-vcenter rai-table-collapsable" id="table-Valutazione">
+                @{
+                    List<XR_VAL_QUESTION_GROUP> dGroups = new List<XR_VAL_QUESTION_GROUP>();
+                    IEnumerable<XR_VAL_QUESTION_GROUP> groups = Model.Scheda.XR_VAL_EVAL_SHEET_QST.OrderBy(x => x.ORDER).GroupBy(x => x.XR_VAL_QUESTION.XR_VAL_QUESTION_GROUP).Select(x => x.Key);
+                    while (groups.Any(x => x.ID_QST_GROUP_MACRO != null))
+                    {
+                        foreach (var item in groups)
+                        {
+                            var index = dGroups.FindIndex(x => x.ID_QST_GROUP_MACRO == item.ID_QST_GROUP);
+                            if (index >= 0)
+                            {
+                                dGroups.Insert(index, item);
+                            }
+                            else
+                            {
+                                dGroups.Add(item);
+                            }
+                        }
+
+                        groups = groups.GroupBy(x => x.XR_VAL_QUESTION_GROUP2).Select(x => x.Key);
+                    }
+                    foreach (var item in groups)
+                    {
+                        var index = dGroups.FindIndex(x => x.ID_QST_GROUP_MACRO == item.ID_QST_GROUP);
+                        if (index >= 0)
+                        {
+                            dGroups.Insert(index, item);
+                        }
+                        else
+                        {
+                            dGroups.Add(item);
+                        }
+                    }
+
+                    int bgColorMax = 40;
+                    int bgColorMin = 20;
+                    int bgColor = 40;
+                    bool hasAnswerHeader = false;
+                }
+
+                @foreach (var item in dGroups)
+                {
+                    if (item.XR_VAL_QUESTION_GROUP1 != null && item.XR_VAL_QUESTION_GROUP1.Any())
+                    {
+                        bool drawQstHeader = false;
+                        XR_VAL_QUESTION rifHeader = null;
+                        var tmp = Model.Scheda.XR_VAL_EVAL_SHEET_QST.Where(x => x.XR_VAL_QUESTION.XR_VAL_QUESTION_GROUP.ID_QST_GROUP_MACRO == item.ID_QST_GROUP).Select(x => x.XR_VAL_QUESTION);
+
+                        if (tmp.Any())
+                        {
+                            hasAnswerHeader = false;
+                            if (tmp.All(x => x.XR_VAL_QUESTION_DISPLAY.NAME == "Radio button"))
+                            {
+                                var answCount = tmp.Select(x => x.XR_VAL_QUESTION_ANSWER.Count()).Distinct();
+                                if (answCount.Count() == 1)
+                                {
+                                    var answList = tmp.SelectMany(x => x.XR_VAL_QUESTION_ANSWER.Select(y => y.ID_ANSWER)).Distinct();
+                                    drawQstHeader = answList.Count() == answCount.ElementAt(0);
+                                    if (drawQstHeader)
+                                    {
+                                        hasAnswerHeader = true;
+                                        rifHeader = tmp.First();
+                                    }
+                                }
+                            }
+                        }
+                        else if (item.XR_VAL_QUESTION_GROUP1.All(x => x.XR_VAL_QUESTION_GROUP1 == null || !x.XR_VAL_QUESTION_GROUP1.Any()))
+                        {
+                            //Se il macrogruppo non ha domande nella scheda, e tutti i suoi sotto-gruppi non hanno ulteriori sotto-gruppi
+                            continue;
+                        }
+                        else
+                        {
+                            bgColor = bgColor < bgColorMax ? bgColor + 20 : bgColor;
+                        }
+
+                        <tr>
+                            <td colspan="2" class="text-center bg-neutrals-xl-@bgColor.ToString("00")"><label class="rai-font-md-bold">@item.NAME</label></td>
+                            <td class="bg-neutrals-xl-@bgColor.ToString("00")" style="width:1%;white-space:nowrap;" colspan="2">
+                                @if (drawQstHeader)
+                                {
+                                    <div class="answers-container">
+                                        @foreach (var answ in rifHeader.XR_VAL_QUESTION_ANSWER.ValidNow().OrderBy(x => x.NUM_ORDER))
+                                        {
+                                            <div class="answer-item" data-toggle="tooltip" data-delay="750" data-html="true" title="@Html.Raw(answ.XR_VAL_ANSWER.NOT_HELP)">
+                                                <span class="rai-font-sm-bold">@Html.Raw(answ.XR_VAL_ANSWER.DESCRIPTION)</span>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </td>
+                        </tr>
+
+                        bgColor = bgColor > bgColorMin ? bgColor - 20 : bgColor;
+                    }
+
+                    if (item.XR_VAL_QUESTION.Any())
+                    {
+                        string groupname = item.NAME;
+                        string groupDes = item.DESCRIPTION;
+                        int qstGroup = item.XR_VAL_QUESTION.Count();
+                        bool isFirst = true;
+
+                        var lstQst = Model.Scheda.XR_VAL_EVAL_SHEET_QST.Where(x => x.XR_VAL_QUESTION.ID_QST_GROUP == item.ID_QST_GROUP);
+
+                        if (!Model.Preview && Model.Rating.Any())
+                        {
+                            decimal sumPesi = lstQst.Sum(x => x.WEIGHT) * Model.Rating.Select(x => x.ID_OWNER).Distinct().Count();
+                            decimal countElem = Model.Rating.Count(x => lstQst.Any(y => y.ID_SHEET_QST == x.ID_QUESTION));
+                            decimal sumElem = Model.Rating.Where(x => lstQst.Any(y => y.ID_SHEET_QST == x.ID_QUESTION)).Select(x => x.VALUE_INT.GetValueOrDefault()).Sum();
+                            decimal averageGroup = sumElem / sumPesi;
+
+                            decimal valMin = lstQst.First().XR_VAL_QUESTION.XR_VAL_QUESTION_ANSWER.Min(x => x.XR_VAL_ANSWER.VALUE_INT.Value);
+                            decimal valMax = lstQst.First().XR_VAL_QUESTION.XR_VAL_QUESTION_ANSWER.Max(x => x.XR_VAL_ANSWER.VALUE_INT.Value);
+                            decimal prWidth = (averageGroup - valMin) * 100 / (valMax - valMin);
+
+                            <tbody class="rai-table-collapsable-header">
+                                <tr>
+                                    <td colspan="2" class="bg-base" data-text-gr="@item.ID_QST_GROUP">
+                                        <span class="rai-font-md-bold">@Html.Raw(groupname)</span>
+                                        @if (!String.IsNullOrWhiteSpace(groupDes))
+                                        {
+                                            <text>&nbsp;</text><a class="fa fa-info-circle" id="grpOwner@(Model.IdValutazione)_@(item.ID_QST_GROUP)" data-toggle="collapse" data-target="#grpDes@(Model.IdValutazione)_@(item.ID_QST_GROUP)" data-table-collapsable-toggle="ignore"></a><br />
+                                            <div class="collapse" id="grpDes@(Model.IdValutazione)_@(item.ID_QST_GROUP)">
+                                                <span class="rai-font-sm-neutral">@Html.Raw(groupDes)</span>
+                                            </div>
+                                        }
+                                    </td>
+                                    <td class="bg-base">
+                                        <div class="rai progress progress-md" style="margin-bottom: 8px;margin-top: 10px;margin-left:35px;margin-right:35px;">
+                                            <div class="progress-bar progress-bar-info bg-90" role="progressbar" aria-valuenow="@averageGroup.ToString()" valuemin="" aria-valuemax="@(valMax.ToString())" style="width: @(prWidth.ToString("0"))%;">
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        }
+
+                            <tbody>
+                                @foreach (var qst in lstQst.OrderBy(x => x.ORDER))
+                                {
+                                    var question = qst.XR_VAL_QUESTION;
+                                    string strValue = "";
+                                    int intValue = 0;
+
+                                    var ratings = Model.Rating.Where(x => x.ID_QUESTION == qst.ID_SHEET_QST).OrderBy(x => x.XR_VAL_EVAL_RATING_OWNER.ORDER);
+
+                                    <tr>
+                                        @if (isFirst && !Model.Rating.Any())
+                                        {
+                                            <td rowspan="@(qstGroup)" class="bg-base">
+                                                <span class="rai-font-md-bold">@Html.Raw(groupname)@(!String.IsNullOrWhiteSpace(item.NOT_ADDITIONAL_INFO)? " *" : "")</span>
+                                                @if (!String.IsNullOrWhiteSpace(groupDes))
+                                                {
+                                                    <text>&nbsp;</text><a class="fa fa-info-circle" id="grpOwner@(Model.IdValutazione)_@(item.ID_QST_GROUP)" data-toggle="collapse" data-target="#grpDes@(Model.IdValutazione)_@(item.ID_QST_GROUP)"></a><br />
+                                                    <div class="collapse" id="grpDes@(Model.IdValutazione)_@(item.ID_QST_GROUP)">
+                                                        <span class="rai-font-sm-neutral">@Html.Raw(groupDes)</span>
+                                                    </div>
+                                                }
+                                            </td>
+                                            isFirst = false;
+                                        }
+
+                                        @if (question.XR_VAL_QUESTION_DISPLAY.NAME == "Radio button")
+                                        {
+                                            if (Model.Rating.Any())
+                                            {
+                                                <td>&nbsp;</td>
+                                            }
+
+                                            <td>
+                                                <span class="rai-font-md">@Html.Raw(question.NAME)</span>
+                                                @if (!String.IsNullOrWhiteSpace(question.DESCRIPTION))
+                                                {
+                                                    <text>&nbsp;</text><a class="fa fa-info-circle" id="qstOwner@(Model.IdValutazione)_@(qst.ID_SHEET_QST)" data-toggle="collapse" data-target="#qstDes@(Model.IdValutazione)_@(qst.ID_SHEET_QST)"></a><br />
+                                                    <div class="collapse" id="qstDes@(Model.IdValutazione)_@(qst.ID_SHEET_QST)">
+                                                        <span class="rai-font-sm-neutral">@Html.Raw(question.DESCRIPTION)</span>
+                                                    </div>
+                                                }
+                                            </td>
+                                            bool areDifferent = !Model.Preview && ratings.Select(x => x.VALUE_INT).Distinct().Count() > 1;
+                                            <td style="width:1%;white-space:nowrap;" class="@(areDifferent?"border-right-warning":"")" colspan="2">
+
+                                                @if (Model.Preview || !Model.Rating.Any())
+                                                {
+                                                    <div data-val-question="@qst.ID_SHEET_QST" data-val-typequestion="int" data-val-type="superiore" data-val-weight="@qst.WEIGHT" data-val-average="@(qst.WEIGHT > 0 ? "true" : "false")" data-val-optional="@(qst.IND_OPTIONAL.GetValueOrDefault()?"true":"false")">
+                                                        <div>
+                                                            <div class="answers-container">
+                                                                @foreach (var answ in question.XR_VAL_QUESTION_ANSWER.OrderBy(x => x.NUM_ORDER))
+                                                                {
+                                                                    string tooltip = "";
+                                                                    if (hasAnswerHeader)
+                                                                    {
+                                                                        tooltip = answ.XR_VAL_ANSWER.DESCRIPTION;
+                                                                    }
+
+                                                                    if (!String.IsNullOrWhiteSpace(answ.XR_VAL_ANSWER.NOT_HELP))
+                                                                    {
+                                                                        if (!String.IsNullOrWhiteSpace(tooltip))
+                                                                        {
+                                                                            tooltip = "<b>" + tooltip + "</b><br />";
+                                                                        }
+                                                                        tooltip += answ.XR_VAL_ANSWER.NOT_HELP;
+                                                                    }
+
+                                                                    <div class="answer-item">
+                                                                        @if (hasAnswerHeader)
+                                                                        {
+                                                                            <div class="rai-font-sm-bold" style="visibility:collapse;height:0px">@Html.Raw(answ.XR_VAL_ANSWER.DESCRIPTION)<br /></div>
+                                                                        }
+                                                                        <div class="rai-radio radio-inline @(isSuperior || !Model.CanModify ? "disable" : "")" data-toggle="tooltip" data-delay="750" data-html="true" title="@Html.Raw(tooltip)">
+                                                                            <input type="radio" id="radio@(qst.ID_SHEET_QST)_@answ.ID_QST_ANSWER" name="radio@(qst.ID_SHEET_QST)" data-val-value="@answ.XR_VAL_ANSWER.VALUE_INT" @(intValue == answ.XR_VAL_ANSWER.VALUE_INT ? "checked is-checked=\"true\"" : "") onclick="ValCheckOptional(this);ValCalcMediaPond('superiore'); ValModalValutazioneUpdateStatus()">
+                                                                            @if (hasAnswerHeader)
+                                                                            {
+                                                                                <label for="radio@(qst.ID_SHEET_QST)_@answ.ID_QST_ANSWER"></label>
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                <label for="radio@(qst.ID_SHEET_QST)_@answ.ID_QST_ANSWER"> @Html.Raw(answ.XR_VAL_ANSWER.DESCRIPTION) </label>
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    int ratingColor = 80;
+                                                    decimal valMin = question.XR_VAL_QUESTION_ANSWER.Min(x => x.XR_VAL_ANSWER.VALUE_INT.Value);
+                                                    decimal valMax = question.XR_VAL_QUESTION_ANSWER.Max(x => x.XR_VAL_ANSWER.VALUE_INT.Value);
+
+                                                    foreach (var rating in ratings)
+                                                    {
+                                                        decimal prWidth = ((decimal)rating.VALUE_INT.GetValueOrDefault() - valMin) * 100 / (valMax - valMin);
+
+                                                        <div data-val-type="@rating.XR_VAL_EVAL_RATING_OWNER.NAME.ToLower()" data-val-weight="@qst.WEIGHT" data-val-average="@(qst.WEIGHT > 0 ? "true" : "false")" data-val-optional="@(qst.IND_OPTIONAL.GetValueOrDefault()?"true":"false")">
+                                                            <span class="rai-font-sm-bold" style="margin-left:35px;">@rating.XR_VAL_EVAL_RATING_OWNER.DESCRIPTION</span>
+                                                            <div class="rai progress progress-xs" style="margin-bottom: 8px;margin-left:35px;margin-right:35px;">
+                                                                <div class="progress-bar progress-bar-info bg-@ratingColor" role="progressbar" aria-valuenow="@(rating.VALUE_INT.GetValueOrDefault().ToString())" valuemin="0" aria-valuemax="@(valMax.ToString())" style="width: @(prWidth.ToString("0"))%;">
+                                                                </div>
+                                                            </div>
+
+                                                            <div style="visibility:collapse;height:0px">
+                                                                <input type="radio" class="hidden" id="radio_rating_@rating.ID_RATING" data-val-value="@rating.VALUE_INT.GetValueOrDefault()" @(rating.VALUE_INT.HasValue ? "checked=\"checked\"" : "")>
+                                                            </div>
+                                                        </div>
+
+                                                        ratingColor -= 20;
+                                                    }
+                                                }
+
+                                            </td>
+                                        }
+                                        else if (question.XR_VAL_QUESTION_DISPLAY.NAME == "Custom")
+                                        {
+                                            <td>
+                                                <div data-val-question="@qst.ID_SHEET_QST" data-val-typequestion="">
+                                                    <textarea class="form-control" rows="2" style="width:100%" readonly>@strValue</textarea>
+                                                </div>
+                                            </td>
+                                            <td style="width:1%;white-space:nowrap;" colspan="2">
+                                                <div data-val-question="@qst.ID_SHEET_QST" data-val-typequestion="">
+                                                    <div class="answers-container">
+                                                        @if (Model.Preview)
+                                                        {
+                                                            foreach (var answ in question.XR_VAL_QUESTION_ANSWER.ValidNow().OrderBy(x => x.NUM_ORDER))
+                                                            {
+                                                                <div class="answer-item">
+                                                                    <div class="rai-radio @(isSuperior || !Model.CanModify ? "disable" : "")">
+                                                                        @*Da verificare*@
+                                                                        <input type="radio" id="radio@(qst.ID_SHEET_QST)_@answ.ID_QST_ANSWER" name="radio@(qst.ID_SHEET_QST)" data-val-value="@answ.XR_VAL_ANSWER.VALUE_INT" @(intValue == answ.XR_VAL_ANSWER.VALUE_INT ? "checked" : "") onclick="ValCalcMediaPond('superiore'); ValModalValutazioneUpdateStatus()">
+                                                                        <label for="radio@(qst.ID_SHEET_QST)_@answ.ID_QST_ANSWER">@Html.Raw(answ.XR_VAL_ANSWER.DESCRIPTION)</label>
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            foreach (var rating in ratings)
+                                                            {
+                                                                var answ = question.XR_VAL_QUESTION_ANSWER.FirstOrDefault(x => x.XR_VAL_ANSWER.VALUE_INT == rating.VALUE_INT);
+                                                                if (answ != null)
+                                                                {
+                                                                    string tooltip = "";
+                                                                    if (hasAnswerHeader)
+                                                                    {
+                                                                        tooltip = answ.XR_VAL_ANSWER.DESCRIPTION;
+                                                                    }
+
+                                                                    if (!String.IsNullOrWhiteSpace(answ.XR_VAL_ANSWER.NOT_HELP))
+                                                                    {
+                                                                        if (!String.IsNullOrWhiteSpace(tooltip))
+                                                                        {
+                                                                            tooltip = "<b>" + tooltip + "</b><br/>";
+                                                                        }
+                                                                        tooltip += answ.XR_VAL_ANSWER.NOT_HELP;
+                                                                    }
+
+                                                                    <div class="answer-item" data-toggle="tooltip" data-delay="750" data-html="true" title="@Html.Raw(tooltip)">
+                                                                        <div class="rai-font-sm-bold" style="visibility:collapse;height:0px">@Html.Raw(rating.XR_VAL_EVAL_RATING_OWNER.DESCRIPTION)<br /></div>
+                                                                        <div>@Html.Raw(answ.XR_VAL_ANSWER.DESCRIPTION)</div>
+                                                                    </div>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <div class="answer-item">
+                                                                        <span>-</span>
+                                                                    </div>
+                                                                }
+                                                            }
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+
+                                @if (!String.IsNullOrWhiteSpace(item.NOT_ADDITIONAL_INFO) && (Model.Preview|| !Model.Rating.Any()))
+                                {
+                                    <tr>
+                                        <td colspan="3">
+                                            <em class="rai-font-sm">* @item.NOT_ADDITIONAL_INFO</em>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                    }
+                }
+            </table>
+        </div>
+        @if (showPianoSvil)
+        {
+            <div class="tab-pane" id="tabPiano" role="tabpanel">
+                @Html.Partial("pianosviluppo/Modal_" + Model.NomePianoSviluppo, Model.PianoSviluppo)
+            </div>
+        }
+    </div>
+</div>
+

@@ -1,0 +1,280 @@
+﻿@model myRaiCommonModel.cvModels.cvModel.AltreInfo
+@using myRaiHelper;
+@using MVCProject.Custom_Helpers
+
+@{
+    myRai.Data.CurriculumVitae.cv_ModelEntities cvEnt = new myRai.Data.CurriculumVitae.cv_ModelEntities();
+
+    string matricola = myRaiHelper.UtenteHelper.EsponiAnagrafica()._matricola;
+
+    List<myRai.Data.CurriculumVitae.DTipoPatente> listaPatente = cvEnt.DTipoPatente.ToList();
+
+
+
+
+
+    string[] AccountUtenteServizio = CommonHelper.GetParametri<string>(EnumParametriSistema.AccountUtenteServizio);
+    myRai.it.rai.servizi.hrce.hrce_ws hrcews = new myRai.it.rai.servizi.hrce.hrce_ws();
+    myRai.it.rai.servizi.hrce.retData retdata = new myRai.it.rai.servizi.hrce.retData();
+    hrcews.Credentials = new System.Net.NetworkCredential(AccountUtenteServizio[0], AccountUtenteServizio[1], "RAI");
+    List<string> matricole = new List<string>();
+    matricole.Add(myRaiHelper.CommonHelper.GetCurrentUserMatricola());
+    string[] AppKeyhrce = CommonHelper.GetParametri<string>(EnumParametriSistema.AppKeyhrce);
+    Boolean usaServ = myRaiHelper.CommonHelper.GetParametro<Boolean>(EnumParametriSistema.UsaServizioPerProfiloPersonale);
+
+
+    System.Data.DataTable dr_recapiti = new System.Data.DataTable();
+    try
+    {
+        if (usaServ)
+        {
+            retdata = hrcews.getDatiUtente(AppKeyhrce[0], matricole.ToArray());
+        }
+        else
+        {
+            retdata.ds = myRaiCommonManager.ProfiloPersonaleManager.GetProfiloPersonaleFromDB(myRaiHelper.CommonHelper.GetCurrentUserMatricola());
+        }
+
+        if (retdata != null && retdata.ds != null)
+        {
+            dr_recapiti = retdata.ds.Tables["Table1"];
+            string matricolaUtente = myRaiHelper.CommonHelper.GetCurrentUserMatricola();
+            if (dr_recapiti.Rows.Count == 0 || dr_recapiti.Rows[0]["Matricola"].ToString() != matricolaUtente)
+            {
+                dr_recapiti = null;
+            }
+        }
+        else
+        {
+            dr_recapiti = null;
+        }
+    }
+    catch (Exception ex)
+    {
+        dr_recapiti = null;
+    }
+}
+
+
+
+@using (Html.BeginModal("Su di te"))
+{
+    using (Html.BeginPanel(PanelType.Panel, "Dati personali", false, new List<ActionTemplate>()
+{
+new ActionTemplate()
+{
+OnClick="StartTour('#dati-personali', '#frkModalAltreInfo .modal-content', true);return false;",
+Icon = "fa fa-life-ring",
+Text = " Tutorial"
+}
+}))
+    {
+        <form class="mb-lg frm_InsertAltreInfo" id="frm-InsertAltreInfo" novalidate="novalidate" action="/CV_Online/InsertAltreInfo" method="post">
+
+            <div class="rai form-group" id="dati-personali">
+                <div class="row">
+                    <div class="push-10-t col-md-12">
+                        <label for="_tipoTel1" class="titleElements rai-caption">Contatto telefonico (es. telefono casa, cellulare privato)</label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="push-10 col-md-6" data-tourdb="tour-datipers-contatto" @Html.TourAttributes(Model.TourElements, "tour-datipers-contatto")>
+                        <select class="rai form-control " id="_tipoTel1" name="_tipoTel1" style="width: 100%;" data-placeholder="Seleziona tipologia">
+                            <option></option>
+                            @{
+                                string selectedTipologia1_a = "";
+                                string selectedTipologia1_b = "";
+                                string selectedTipologia1_c = "";
+                                switch (Model._tipoTel1)
+                                {
+                                    case "Telefono casa":
+                                        selectedTipologia1_a = "selected=\"selected\"";
+                                        break;
+                                    case "Cellulare privato":
+                                        selectedTipologia1_b = "selected=\"selected\"";
+                                        break;
+                                    case "Fax":
+                                        selectedTipologia1_c = "selected=\"selected\"";
+                                        break;
+                                }
+                            }
+                            <option value="Telefono casa" @selectedTipologia1_a>Telefono Casa</option>
+                            <option value="Cellulare privato" @selectedTipologia1_b>Cellulare privato</option>
+                            <option value="Fax" @selectedTipologia1_c>Fax</option>
+                        </select>
+                    </div>
+                    <div class="push-10 col-md-6">
+                        <input type="text" class="rai form-control " id="_numTel1" name="_numTel1" placeholder="Inserisci il numero telefonico" value="@Model._numTel1" />
+                    </div>
+                </div>
+
+
+                <div class="row">
+                    <div class="push-10-t col-md-12">
+                        <label for="_tipoTel2" class="titleElements rai-caption">Contatto telefonico (es. telefono casa, cellulare privato)</label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="push-10 col-md-6">
+                        <select class="rai form-control " id="_tipoTel2" name="_tipoTel2" style="width: 100%;" data-placeholder="Seleziona tipologia">
+                            <option></option>
+                            @{
+                                string selectedTipologia2_a = "";
+                                string selectedTipologia2_b = "";
+                                string selectedTipologia2_c = "";
+                                switch (Model._tipoTel2)
+                                {
+                                    case "Telefono casa":
+                                        selectedTipologia2_a = "selected=\"selected\"";
+                                        break;
+                                    case "Cellulare privato":
+                                        selectedTipologia2_b = "selected=\"selected\"";
+                                        break;
+                                    case "Fax":
+                                        selectedTipologia2_c = "selected=\"selected\"";
+                                        break;
+                                }
+                            }
+                            <option value="Telefono casa" @selectedTipologia2_a>Telefono Casa</option>
+                            <option value="Cellulare privato" @selectedTipologia2_b>Cellulare privato</option>
+                            <option value="Fax" @selectedTipologia2_c>Fax</option>
+                        </select>
+                    </div>
+                    <div class="push-10 col-md-6">
+                        <input type="text" class="rai form-control " id="_numTel2" name="_numTel2" placeholder="Inserisci il numero telefonico" value="@Model._numTel2" />
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="push-10-t col-md-6">
+                        <label for="_email" class="titleElements rai-caption">Domicilio</label>
+
+
+                        <div class="input-group ">
+                            <input type="text" readonly="readonly" class="rai form-control "
+                                   style="background-color:#fff"
+                                   value="@(dr_recapiti != null ? dr_recapiti.Rows[0]["indirizzodom"].ToString() : "")" />
+                            <span class="input-group-addon">
+                                <span class="fa fa-lock"></span>
+                            </span>
+                        </div>
+
+                    </div>
+                    <div class="push-10-t col-md-6">
+                        <label for="_email" class="titleElements rai-caption">Citta</label>
+
+
+                        <div class="input-group ">
+                            <input type="text" readonly="readonly" class="rai form-control "
+                                   style="background-color:#fff"
+                                   value="@(dr_recapiti != null ? dr_recapiti.Rows[0]["cittadom"].ToString() : "" )" />
+                            <span class="input-group-addon">
+                                <span class="fa fa-lock"></span>
+                            </span>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="push-10-t col-md-6">
+                        <label for="_email" class="titleElements rai-caption">Residenza</label>
+
+                        <div class="input-group ">
+                            <input type="text" readonly="readonly" class="rai form-control "
+                                   style="background-color:#fff"
+                                   value="@(dr_recapiti != null ? dr_recapiti.Rows[0]["indirizzores"].ToString() : "" )" />
+                            <span class="input-group-addon">
+                                <span class="fa fa-lock"></span>
+                            </span>
+                        </div>
+
+                    </div>
+                    <div class="push-10-t col-md-6">
+                        <label for="_email" class="titleElements rai-caption">Citta</label>
+
+
+
+                        <div class="input-group ">
+                            <input type="text" readonly="readonly" class="rai form-control "
+                                   style="background-color:#fff"
+                                   value="@(dr_recapiti != null ? dr_recapiti.Rows[0]["cittares"].ToString() : "")" />
+                            <span class="input-group-addon">
+                                <span class="fa fa-lock"></span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="push-10-t col-md-6" @Html.TourAttributes(Model.TourElements, "tour-datipers-mail")>
+                        <label for="_email" class="titleElements rai-caption">Email personale</label>
+                        @*<input type="text" class="rai form-control " id="_email" name="_email" placeholder="Inserisci la tua email personale" value="@Model._email"/>*@
+                        @Html.TextBoxFor(model => model._email, new { @class = "rai form-control ", placeholder = "Inserisci la tua email personale" })
+                        @Html.ValidationMessageFor(model => model._email)
+                    </div>
+                    <div class="push-10-t col-md-6" @Html.TourAttributes(Model.TourElements, "tour-datipers-link")>
+                        <label for="_email" class="titleElements rai-caption">Sito web/blog/pagina social</label>
+                        <input type="text" class="rai form-control " id="_sitoWeb" name="_sitoWeb" placeholder="Inserisci il link al tuo sito web,blog o pagina social" value="@Model._sitoWeb" />
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="push-10-t col-md-12">
+                        <label for="_email" class="titleElements rai-caption">Patente</label>
+                        <select class="js-select2 rai form-control SelectMultiple" multiple="multiple" id="tipoPatente" name="tipoPatente" style="width: 100%;" data-placeholder="Selezionare dalla lista">
+                            <option></option>
+                            @foreach (var elem in listaPatente)
+                            {
+                                string checkedPatente = "";
+                                if (Model._tipoPatente != null)
+                                {
+                                    if (Model._tipoPatente.Where(x => x.CodTipoPatente == elem.CodTipoPatente).Count() > 0)
+                                    {
+                                        checkedPatente = "selected=\"selected\"";
+                                    }
+                                }
+                                <option value="@elem.CodTipoPatente" @checkedPatente>@elem.DescTipoPatente</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="push-10-t col-md-12">
+                        <div>
+                            <label for="_note" class="titleElements rai-caption">Ulteriori informazioni</label>
+                            <textarea maxlength="1000" class="rai form-control" id="_note" name="_note" rows="5" placeholder="Inserisci ulteriori informazioni di carattere personale utilizzando al massimo 1000 caratteri">@Model._note</textarea>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+
+            <div class="row push-20-t">
+                <div class="col-sm-12 text-center">
+                    <a href="@Html.Raw(Request.Url.Scheme + "://" + Request.Url.Authority + Request.ApplicationPath.TrimEnd('/') + "/cv_online/pdf")" target="_blank" target="_blank"><p class="text-bold">Visualizza l'anteprima del tuo CV</p></a><br />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12">
+                    <button class="btn rai-btn-primary full-width" type="submit" onclick="submit_AltreInfo(this)">Salva</button>
+                </div>
+            </div>
+        </form>
+    }
+
+    <div id="savedbaltre" class="alert alert-primary" style="position:fixed;bottom:10px;right:10px;display:none;z-index:100; width:250px;">
+        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+        <i class="fa fa-refresh fa-spin"></i> Salvataggio in corso
+    </div>
+}
+
+<script>
+
+     $.validator.unobtrusive.parse("#frm-InsertAltreInfo");
+
+</script>
+
+

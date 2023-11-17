@@ -1,0 +1,274 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+
+@model  MPGGruppo
+@{
+    var title = Model.Codice + " - " + String.Join("/", Model.Stanze.Select(x => x.PrenStanza.NoteStanza).Distinct());
+    var daInt = Model.PrenDip.Where(x => x.Intervista == null && x.Prenotazione == null);
+    var prenNotInt = Model.PrenDip.Where(x => x.Intervista == null && x.Prenotazione != null);
+    var interv = Model.PrenDip.Where(x => x.Intervista != null);
+}
+
+<div class="row">
+    <div class="col-md-8" id="dettaglio-gruppo-col">
+        @using (Html.BeginPanel(PanelType.PanelNoPadding, title, true))
+        {
+            <div class="block no-margin-bottom">
+                <ul class="nav nav-tabs nav-tabs-alt nav-justified" data-toggle="tabs" role="tablist">
+                    <li class="active" role="presentation">
+                        <a href="#btab-daint" class="rai-badge-anchor" id="hrefDaInt" tabindex="0" role="tab" aria-selected="true" aria-controls="btab-daint">Associati <span class="rai-badge-tab" id="counter-daint">@daInt.Count()</span></a>
+                    </li>
+                    <li role="presentation">
+                        <a href="#btab-pren" class="rai-badge-anchor @(prenNotInt!=null && prenNotInt.Any()?"":"disable")" id="hrefInt" tabindex="0" role="tab" aria-selected="false" aria-controls="btab-pren">Prenotati <span class="rai-badge-tab" id="counter-pren">@(prenNotInt != null ? prenNotInt.Count() : 0)</span></a>
+                    </li>
+                    <li role="presentation">
+                        <a href="#btab-int" class="rai-badge-anchor @(interv!=null && interv.Any()?"":"disable")" id="hrefInt" tabindex="0" role="tab" aria-selected="false" aria-controls="btab-int">Intervistati <span class="rai-badge-tab" id="counter-int">@(interv != null ? interv.Count() : 0)</span></a>
+                    </li>
+                </ul>
+
+                <div class="block-content tab-content no-padding">
+                    <div class="tab-pane active" id="btab-daint" role="tabpanel">
+                        <table class="table rai-table rai-table-vcenter" id="dip-filter-row" style="display:none;">
+                            <tr>
+                                <td class="bg-neutrals-xl-10">
+                                    <label id="dip-filter-counter"></label>
+                                </td>
+                                <td class="bg-neutrals-xl-10 text-right">
+                                    <button class="btn rai-btn-small" disabled id="btn-disassoc-sel" onclick="DisassociaSelezionati('@Model.Codice')">Disassocia i selezionati</button>
+                                </td>
+                            </tr>
+                        </table>
+                        <table class="table rai-table rai-table-vcenter">
+                            <thead>
+                                <tr>
+                                    <td class="rai-table-td-action" style="border-bottom:1px solid #ddd;">
+                                        <div class="rai-checkbox">
+                                            <input type="checkbox" data-check-group-all="dip-assoc-filter" onclick="ToggleAllDip('dip-assoc-filter', 'dip-assoc', 'btn-disassoc-sel');" />
+                                            <label>&nbsp;</label>
+                                        </div>
+                                    </td>
+                                    <td class="text-right" style="border-bottom:1px solid #ddd;">
+                                        &nbsp;
+                                    </td>
+                                </tr>
+                            </thead>
+                        </table>
+
+                        <div style="overflow:hidden;overflow-y:auto;max-height:65vh;padding-right:2px; margin-right:1px;">
+                            <table class="table rai-table rai-table-vcenter" id="dip-assoc">
+                                @if (daInt == null || !daInt.Any())
+                                {
+                                    <tr data-assigned-dip-empty="">
+                                        <td class="text-center" colspan="3">
+                                            Non ci sono dati da visualizzare
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    foreach (var dip in daInt.OrderBy(x => x.Dip.Matricola))
+                                    {
+                                        string sedeCont = dip.SedeContabile.codice + " - " + dip.SedeContabile.descrizione;
+                                        string servizio = dip.Servizio.Codice + " - " + dip.Servizio.DescrLunga;
+
+                                        bool notEditable = dip.Intervista != null || dip.Prenotazione != null;
+
+                                        <tr data-search="dip-assoc" data-search-name="@dip.Dip.Nominativo" data-search-matr="@dip.Dip.Matricola" data-search-sedecont="@sedeCont" data-search-dir="@servizio" aria-hidden="false">
+                                            <td class="rai-table-td-action">
+                                                <div class="rai-checkbox">
+                                                    <input data-matr="@dip.Dip.Matricola" @(notEditable ? "disabled" : "") type="checkbox" data-check-group="@(notEditable ? "" : "dip-assoc-filter")"
+                                                           onclick="@(notEditable ? "" : "ToggleSingleDip('dip-assoc-filter', 'dip-assoc', 'btn-disassoc-sel');")" />
+                                                    <label>&nbsp;</label>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <b>@dip.Dip.Matricola</b> - @dip.Dip.Nominativo.TitleCase()<br />
+                                                <span class="rai-font-sm">@sedeCont</span><br />
+                                                <span class="rai-font-sm-neutral">@servizio</span>
+                                            </td>
+                                            <td>
+                                                @if (dip.Intervista != null)
+                                                {
+                                                    <span class="rai-label rai-label-interactive">Intervistato il @dip.Intervista.DataInterv.Value.ToString("dd/MM/yyyy")</span>
+                                                }
+                                                else if (dip.Prenotazione != null)
+                                                {
+                                                    <span class="rai-label rai-label-interactive">Prenotazione effettuata</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </table>
+                        </div>
+                    </div>
+                    <div id="btab-pren" class="tab-pane">
+                        <div style="overflow:hidden;overflow-y:auto;max-height:65vh;padding-right:2px; margin-right:1px;">
+                            <table class="table rai-table rai-table-vcenter">
+                                @if (prenNotInt == null || !prenNotInt.Any())
+                                {
+                                    <tr>
+                                        <td class="text-center" colspan="3">
+                                            Non ci sono dati da visualizzare
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    foreach (var dip in prenNotInt.OrderBy(x => x.Dip.Matricola))
+                                    {
+                                        string sedeCont = dip.SedeContabile.codice + " - " + dip.SedeContabile.descrizione;
+                                        string servizio = dip.Servizio.Codice + " - " + dip.Servizio.DescrLunga;
+
+                                        bool notEditable = dip.Intervista != null || dip.Prenotazione != null;
+
+                                        <tr data-search="dip-assoc" data-search-name="@dip.Dip.Nominativo" data-search-matr="@dip.Dip.Matricola" data-search-sedecont="@sedeCont" data-search-dir="@servizio" aria-hidden="false">
+                                            <td class="rai-table-td-action">
+                                                &nbsp;
+                                            </td>
+                                            <td>
+                                                <b>@dip.Dip.Matricola</b> - @dip.Dip.Nominativo.TitleCase()<br />
+                                                <span class="rai-font-sm">@sedeCont</span><br />
+                                                <span class="rai-font-sm-neutral">@servizio</span>
+                                            </td>
+                                            <td>
+                                                @if (dip.Intervista != null)
+                                                {
+                                                    <span class="rai-label rai-label-interactive">Intervistato il @dip.Intervista.DataInterv.Value.ToString("dd/MM/yyyy")</span>
+                                                }
+                                                else if (dip.Prenotazione != null)
+                                                {
+                                                    <span class="rai-label rai-label-interactive">Prenotazione effettuata</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </table>
+                        </div>
+                    </div>
+                    <div id="btab-int" class="tab-pane">
+                        <div style="overflow:hidden;overflow-y:auto;max-height:65vh;padding-right:2px; margin-right:1px;">
+                            <table class="table rai-table rai-table-vcenter">
+                                @if (interv == null || !daInt.Any())
+                                {
+                                    <tr>
+                                        <td class="text-center" colspan="3">
+                                            Non ci sono dati da visualizzare
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    foreach (var dip in interv.OrderBy(x => x.Dip.Matricola))
+                                    {
+                                        string sedeCont = dip.SedeContabile.codice + " - " + dip.SedeContabile.descrizione;
+                                        string servizio = dip.Servizio.Codice + " - " + dip.Servizio.DescrLunga;
+
+                                        bool notEditable = dip.Intervista != null || dip.Prenotazione != null;
+
+                                        <tr data-search="dip-assoc" data-search-name="@dip.Dip.Nominativo" data-search-matr="@dip.Dip.Matricola" data-search-sedecont="@sedeCont" data-search-dir="@servizio" aria-hidden="false">
+                                            <td class="rai-table-td-action">
+                                                &nbsp;
+                                            </td>
+                                            <td>
+                                                <b>@dip.Dip.Matricola</b> - @dip.Dip.Nominativo.TitleCase()<br />
+                                                <span class="rai-font-sm">@sedeCont</span><br />
+                                                <span class="rai-font-sm-neutral">@servizio</span>
+                                            </td>
+                                            <td>
+                                                @if (dip.Intervista != null)
+                                                {
+                                                    <span class="rai-label rai-label-interactive">Intervistato il @dip.Intervista.DataInterv.Value.ToString("dd/MM/yyyy")</span>
+                                                }
+                                                else if (dip.Prenotazione != null)
+                                                {
+                                                    <span class="rai-label rai-label-interactive">Prenotazione effettuata</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+    <div class="col-md-4">
+        @Html.RenderWidget(WidgetType.Normal, "Associazione", "fa fa-user", "Aggiungi nuovi dipendenti", action: new ActionTemplate() { OnClick = "OpenModalAdd('" + Model.Codice + "')", Text = "Aggiungi" })
+
+        @using (Html.BeginPanel(PanelType.Panel, "Ricerca", true))
+        {
+
+            <div class="form-group">
+                <div class="row push-10">
+                    <div class="col-sm-12">
+                        <label class="rai-caption">Matricola</label>
+                        <input type="text" class="form-control" placeholder="Filtra per matricola" data-search="dip-assoc" data-search-multi="on" data-search-attr="matr" onkeyup="RaiClickOnKeyUp('SearchAssoc')"/>
+                    </div>
+                </div>
+                <div class="row push-10">
+                    <div class="col-sm-12">
+                        <label class="rai-caption">Nominativo</label>
+                        <input type="text" class="form-control" placeholder="Filtra per nominativo" data-search="dip-assoc" data-search-multi="on" data-search-attr="name" onkeyup="RaiClickOnKeyUp('SearchAssoc')" />
+                    </div>
+                </div>
+            </div>
+            <div class="row push-10">
+                <div class="col-sm-12">
+                    <div class="rai-btn-fill">
+                        <button class="btn rai-btn-secondary" onclick="AzzeraFiltri('dip-assoc-filter', 'dip-assoc', 'btn-disassoc-sel');">Azzera filtri</button>
+                        <button class="btn rai-btn-primary" id="SearchAssoc" onclick="ApplicaFiltri('dip-assoc-filter', 'dip-assoc', 'btn-disassoc-sel');">Cerca</button>
+                    </div>
+                </div>
+            </div>
+
+        }
+
+        @using (Html.BeginPanel(PanelType.PanelNoPadding, "Elenco stanze", true))
+        {
+            <table class="table rai-table rai-table-vcenter rai-table-panel js-table-sections">
+                @foreach (var item in Model.Stanze)
+                {
+                    <tbody class="js-table-sections-header">
+                        <tr>
+                            <td>
+                                @item.PrenStanza.DesStanza
+                            </td>
+                            <td class="rai-table-td-toggle">
+                                <i class="fa fa-chevron-down"></i>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tdbody>
+                        <tr>
+                            <td class="no-padding" colspan="2">
+                                <table class="table rai-table rai-table-vcenter rai-table-panel table-striped">
+                                    @foreach (var slot in item.PrenSlots.OrderBy(x => x.DataDispo.Value).ThenBy(x => x.OrarioInizioDispo.Value))
+                                    {
+                                        <tr>
+                                            <td>@slot.DataDispo.Value.ToString("dd/MM/yyyy") - @slot.OrarioInizioDispo.Value.ToString("HH:mm")/@slot.OrarioFineDispo.Value.ToString("HH:mm")</td>
+                                            <td class="text-right">
+                                                @if (slot.NumPostiDispo == 1)
+                                                {
+                                                    <span class="">1 posto disponibile</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="">@slot.NumPostiDispo posti disponibili</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </table>
+                            </td>
+                        </tr>
+                    </tdbody>
+
+                }
+            </table>
+        }
+    </div>
+</div>

@@ -1,0 +1,336 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+@model AnagraficaModel
+
+@{
+    List<string> stati = new List<string>();
+    bool isSmartWorker = false;
+    if (Model.DataCessazione >= DateTime.Today)
+    {
+        isSmartWorker = Model.DatiStatiRapporti.Eventi.Any(x => x.Codice == "SW" && x.DataInizio <= DateTime.Now && DateTime.Now <= x.DataFine);
+        var labelStato = isSmartWorker ? "Smart worker" : "In presenza";
+
+        if (!isSmartWorker) { stati.Add(labelStato); }
+        stati.AddRange(Model.DatiStatiRapporti.Eventi.Where(x => x.DataInizio <= DateTime.Now && DateTime.Now <= x.DataFine && !x.ValiditaFine.HasValue).Select(x => x.Descrizione));
+    }
+    else
+    {
+        stati.Add("Cessato");
+    }
+
+    bool ifStateCTA = Model.ActionState;
+
+    AbilSubFunc subFunc = null;
+    string func = myRaiGestionale.Controllers.StatiRapportoController.GetSWAbilFunc();
+    bool abilSW = AuthHelper.EnabledToSubFunc(CommonHelper.GetCurrentUserMatricola(), func, "SWKGES", out subFunc)
+                    || AuthHelper.EnabledToSubFunc(CommonHelper.GetCurrentUserMatricola(), func, "SWKVIS", out subFunc);
+}
+
+<div class="panel">
+    <div class="panel-body">
+
+        @if (true || !Model.IsNeoMatr)
+        {
+            <div class="row push-20-t push-10">
+                <div class="col-sm-12 text-center">
+                    @{
+                        string matricola = Model.Matricola;
+                        if (Model.IsNeoMatr)
+                        {
+                            matricola = Model.Sesso;
+                        }
+                    }
+                    @Html.ProfileWidget(matricola, htmlImgAttributes: new { @class = "img-doubled" },details1:"medium")
+                </div>
+            </div>
+        }
+        <div class="row" style="margin-bottom:32px;">
+            <div class="col-sm-12 text-center">
+                <span class="rai-font-text-heading-bold">@Model.Nome  @Model.Cognome</span><br />
+                <span class="rai-font-md-neutral" id="matricola" data-matricola="@Model.Matricola">Matricola @Model.Matricola</span><br />
+
+                @if (!Model.IsNeoMatr && Model.DatiProcure.IsEnabled && Model.DatiProcure.Procure.Any())
+                {
+                    <label class="rai-label push-5">Titolare di procure</label><br />
+                }
+
+                @if (!ifStateCTA)
+                {
+                    foreach (var item in stati)
+                    {
+                        <span class="rai-label push-10-t">@item</span>
+                    }
+                }
+                else
+                {
+                    foreach (var item in stati)
+                    {
+                        if (item == "Cessato" || !abilSW)
+                        {
+                            <span class="rai-label">@item</span>
+                        }
+                        else
+                        {
+                            <a class="rai-label rai-label-interactive" onclick="OpenModalDipStati(@Model.IdPersona,'modal-stati-rapporto')">@item</a>
+                        }
+                    }
+                }
+
+            </div>
+        </div>
+
+        <div class="row border-top">
+            <div class="col-sm-6 push-5-t push-5" style="padding-top:10px;">
+                <span class="rai-font-md-bold">Data assunzione</span><br />
+                <span class="rai-font-md-neutral">@Model.DataAssunzione.ToString("dd/MM/yyyy")</span>
+            </div>
+            @if (Model.DataCessazione < DateTime.Today)
+            {
+                <div class="col-sm-6 push-5-t push-5" style="padding-top:10px;">
+                    <span class="rai-font-md-bold">Data cessazione</span><br />
+                    <span class="rai-font-md-neutral">@Model.DataCessazione.ToString("dd/MM/yyyy")</span>
+                </div>
+            }
+            <div class="col-sm-6 push-5-t push-5" style="padding-top:10px;">
+                <span class="rai-font-md-bold">Contratto</span><br />
+                <span class="rai-font-md-neutral">@(Model.TipoContratto ?? "-")</span>
+            </div>
+            <div class="col-sm-6 push-5-t push-5" style="padding-top:10px;">
+                <span class="rai-font-md-bold">Sede</span><br />
+                <span class="rai-font-md-neutral">@Model.CodSede - @Model.Sede</span>
+            </div>
+            <div class="col-sm-6 push-5-t push-5" style="padding-top:10px;">
+                <span class="rai-font-md-bold">Direzione</span><br />
+                <span class="rai-font-md-neutral">@Model.CodServizio - @Model.Servizio</span>
+            </div>
+            <div class="col-sm-6 push-5-t push-5" style="padding-top:10px;">
+                <span class="rai-font-md-bold">Categoria</span>
+                @if (Model.DataAnzianitaCategoria.HasValue)
+                {
+                    <span class="rai-font-sm"><em>Dal @Model.DataAnzianitaCategoria.Value.ToString("dd/MM/yyyy")</em></span>
+                }
+                <br />
+                <span class="rai-font-md-neutral">@Model.Qualifica</span>
+            </div>
+            @if (!String.IsNullOrWhiteSpace(Model.Ruolo))
+            {
+                <div class="col-sm-6 push-5-t push-5" style="padding-top:10px;">
+                    <span class="rai-font-md-bold">Mansione</span><br />
+                    <span class="rai-font-md-neutral">@Model.Ruolo</span>
+                </div>
+            }
+        </div>
+
+
+        <div class="row">
+            <div class="col-sm-12 push-10-t " style="padding-top:10px;">
+                <span class="rai-font-md-bold">Sezione</span><br />
+                <span class="rai-font-md-neutral">@Model.CodSezione - @Model.Sezione</span>
+            </div>
+        </div>
+        @*if (Model.DatiStruttOrg != null && Model.DatiStruttOrg.Incarichi != null && Model.DatiStruttOrg.Incarichi.Any())*@
+        @if (!Model.IsNeoMatr && Model.ShowInc)
+        {
+            <div class="row">
+                <div class="col-sm-12 push-10-t " style="padding-top:10px;">
+                    <span class="rai-font-md-bold">Incarichi</span>
+                    @if (myRaiHelper.CommonHelper.GetCurrentUserMatricola() == "103650")
+                    {
+                        <button class="btn btn-action-icon"
+                                onclick="CreaNuovoIncaricoDaAnagrafica('@Model.Matricola', '@Model.Cognome', '@Model.Nome')" style="float: right;">
+                            <i class="fa fa-plus"></i>
+                        </button>
+                    }
+
+                    <br />
+                    @if (Model.DatiStruttOrg.Incarichi.Any())
+                    {
+                        foreach (var incarico in Model.DatiStruttOrg.Incarichi)
+                        {
+                            switch (incarico.CodIncarico)
+                            {
+                                case "000007"://Direttore Generale Corporate
+                                case "000010"://Amministratore Delegato
+                                    <a style="cursor:pointer" onclick="PopupSezione('@incarico.CodStruttura')" class="rai-font-md-neutral text-primary">@incarico.DesIncarico</a>
+                                    break;
+                                case "000016":
+                                    <a style="cursor:pointer" onclick="PopupSezione('@incarico.CodStruttura')" class="rai-font-md-neutral text-primary">@incarico.DesIncarico</a>
+                                    break;
+                                default:
+                                    <a style="cursor:pointer" onclick="PopupSezione('@incarico.CodStruttura')" class="rai-font-md-neutral text-primary">@(incarico.DesIncarico != "Job Title Personalizzato" ? incarico.DesIncarico : "") @incarico.DesStruttura</a>
+                                    break;
+                            }
+                            <br />
+
+                        }
+                    }
+                    else
+                    {
+                        <span class="rai-font-md-neutral">-</span>
+                    }
+
+                </div>
+            </div>
+
+        }
+
+
+        @if (Model.DatiApprendistato != null)
+        {
+            <div class="row  push-10-t border-top">
+                <div class="col-xs-12" style="padding-top:10px;">
+                    <span class="rai-font-md-bold">Apprendistato</span><br />
+                    <span class="rai-font-md-neutral">@Model.DatiApprendistato.DesAppr.UpperFirst() - Dal @Model.DatiApprendistato.DtaInizio.ToString("dd/MM/yyyy") al @Model.DatiApprendistato.DtaFine.ToString("dd/MM/yyyy")</span>
+                </div>
+            </div>
+        }
+
+        @if (Model.DatiTutoraggio != null && Model.DatiTutoraggio.Any())
+        {
+            <div class="row push-10-t border-top">
+                <div class="col-xs-12" style="padding-top:10px;">
+                    <span class="rai-font-md-bold">Tutor</span>
+                    <table class="table rai-table rai-table-borderless table-striped">
+                        @foreach (var item in Model.DatiTutoraggio.OrderBy(x => x.Apprendista.Matricola))
+                        {
+                            <tr>
+                                <td>
+                                    @Html.ProfileWidgetAction(item.Apprendista.Matricola,
+                                                        item.Apprendista.Cognome.TitleCase() + " " + item.Apprendista.Nome.TitleCase(),
+                                                        Url.Action("Index", new { m=item.Apprendista.Matricola } ), null,
+                                                        "Dal " + item.DtaInizio.ToString("dd/MM/yyyy") + " al " + item.DtaFine.ToString("dd/MM/yyyy"))
+
+                                </td>
+                            </tr>
+                        }
+                    </table>
+                </div>
+            </div>
+        }
+
+        @if (ifStateCTA)
+        {
+            <div class="row  push-10-t border-top">
+                <div class="col-xs-9" style="padding-top:10px;">
+                    <span class="rai-font-md-bold">Stato</span><br />
+                    <span class="rai-font-md-neutral">@String.Join(" - ", stati)</span>
+                    @if (isSmartWorker)
+                    {
+                        var rec = Model.DatiStatiRapporti.Eventi.FirstOrDefault(x => x.Codice == "SW" && x.DataInizio <= DateTime.Now && DateTime.Now <= x.DataFine);
+                        if (rec != null && rec.NumeroGiorniMax.HasValue)
+                        {
+                            <span class="rai-font-md-neutral"> - @rec.NumeroGiorniMax.Value@(rec.NumeroGiorniExtra.HasValue ? "+" + rec.NumeroGiorniExtra.Value.ToString() : "") giorni</span>
+                        }
+
+                    }
+                </div>
+                <div class="col-xs-3 text-right" style="padding-top:10px;">
+                    @if (Model.DataCessazione >= DateTime.Today && abilSW)
+                    {
+                        <button class="btn btn-action-icon" onclick="OpenModalDipStati(@Model.IdPersona,'modal-stati-rapporto')">
+                            @if (subFunc.Create || subFunc.Delete || subFunc.Update)
+                            {
+                                <i class="fa fa-pencil"></i>
+                            }
+                            else
+                            {
+                                <i class="fa fa-info"></i>
+                            }
+                        </button>
+                    }
+                </div>
+            </div>
+
+            if (isSmartWorker)
+            {
+                if (Model.DatiStatiRapporti.Richieste != null && Model.DatiStatiRapporti.Richieste.Any())
+                {
+                    var dbSt = new myRaiData.Incentivi.IncentiviEntities();
+                    var listWkfStati = dbSt.XR_MAT_STATI.ToList();
+
+                    <div class="row  push-10-t border-top">
+                        <div class="col-xs-12" style="padding-top:10px;">
+                            <span class="rai-font-md-bold">Richiesta giorni o periodi aggiuntivi di smartworking</span>
+                            <ul>
+                                @foreach (var rich in Model.DatiStatiRapporti.Richieste)
+                                {
+                                    var oper = rich.XR_WKF_OPERSTATI.OrderByDescending(y => y.ID_STATO).FirstOrDefault();
+                                    var stato = listWkfStati.FirstOrDefault(x => x.ID_STATO == oper.ID_STATO);
+
+
+                                    <li>
+                                        <span class="rai-font-md-neutral">
+                                            @rich.XR_MAT_CATEGORIE.TITOLO<br />
+                                            @if (rich.DATA_INIZIO_SW.HasValue)
+                                            {
+                                                @:Dal @(rich.DATA_INIZIO_SW.Value.ToString("dd/MM/yyyy")) al @rich.DATA_FINE_SW.Value.ToString("dd/MM/yyyy")
+                                            }
+                                            else if (rich.INIZIO_GIUSTIFICATIVO.HasValue)
+                                            {
+
+                                                @:Dal @(rich.INIZIO_GIUSTIFICATIVO.Value.ToString("dd/MM/yyyy")) al @rich.FINE_GIUSTIFICATIVO.Value.ToString("dd/MM/yyyy")
+                                            }
+                                            @if (rich.GIORNI_APPROVATI.HasValue)
+                                            {
+                                                if (rich.GIORNI_APPROVATI.Value == 1)
+                                                {
+                                                    @:- 1 giorno
+                                                }
+                                                else
+                                                {
+                                                    @:- @rich.GIORNI_APPROVATI.Value giorni
+                                                }
+                                            }
+                                            else
+                                            {
+                                                @:- @Convert.ToInt32(rich.XR_MAT_CATEGORIE.DESCRIZIONE_ECCEZIONE.Split(',')[1]) giorni
+                                            }
+                                            <br />
+                                            <span class="rai-label">
+                                                @if (stato.ID_STATO < 20)
+                                                {
+                                                    <span>@*<span class="fa fa-circle feedback-warning-color"></span>*@In attesa</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>@*<span class="fa fa-circle feedback-success-color"></span>*@Approvata</span>
+                                                }
+                                            </span>
+                                        </span>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    </div>
+                }
+            }
+        }
+
+
+        @if (Model.ShowCV && !Model.IsNeoMatr && Model.DatiCurriculum.IsEnabled && Model.DatiCurriculum.DatiCompletamento != null)
+        {
+            <div class="row  push-10-t border-top">
+                <div class="col-xs-9" style="padding-top:10px;">
+                    <span class="rai-font-md-bold">Curriculum Vitae</span><br />
+                    <span class="rai-font-md-neutral">Completato al @(Model.DatiCurriculum.DatiCompletamento.Percentuale)%</span>
+                </div>
+                <div class="col-xs-3 text-right" style="padding-top:10px;">
+                    <a class="btn btn-action-icon" target="_blank" href="@Url.Action("CVPdf","Anagrafica",new {matricola=Model.Matricola })"><i class="fa fa-file-pdf-o"></i></a>
+                </div>
+            </div>
+        }
+
+        @if (Model.ActionToAnagrafica)
+        {
+            <div class="row push-10-t">
+                <div class="col-sm-12">
+                    <div class="rai-btn-fill">
+                        <a class="btn rai-btn-small" href="@Url.Action("Index", "Anagrafica", new { m = Model.Matricola, idPersona = Model.IdPersona,  isNeoMatr=Model.IsNeoMatr })">Visualizza scheda anagrafica</a>
+                    </div>
+                </div>
+            </div>
+        }
+
+
+    </div>
+</div>

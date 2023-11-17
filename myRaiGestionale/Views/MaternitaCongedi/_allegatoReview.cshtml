@@ -1,0 +1,225 @@
+﻿
+@model myRaiCommonModel.AllegatiReviewModel
+@{
+    bool segnalazioneAperta = false;
+    if (Model.Allegati.Any())
+    {
+        if (Model.Allegati.FirstOrDefault().XR_MAT_RICHIESTE.XR_MAT_SEGNALAZIONI.Any(x => x.RISOLTA == false))
+        {
+            segnalazioneAperta = true;
+        }
+    }
+ }
+
+@foreach (var a in Model.Allegati)
+{
+    <div data-id-allegato="@a.ID" style="
+    background-color: #fff;
+    @if (Model.NoMarginTop)
+    {
+        @:margin-top:0px;
+    }
+    else
+    {
+        @:margin-top:12px;
+    }
+    border-radius: 3px;
+    padding: 12px;
+">
+        <div class="row">
+            <div class="col-sm-9" style="padding-left:5px">
+                <span class="rai-font-md-bold" style="font-size: 130%;">@(Model.TipoAllegati.Where(x => x.TIPO == a.TIPOLOGIA).Select(x => x.TITOLO).FirstOrDefault())</span>
+            </div>
+            <div class="col-sm-3" style="text-align:right;padding-right:0px">
+
+            </div>
+        </div>
+
+
+        <div class="widget-summary" style="
+    margin-top: 8px;
+">
+            <div class="widget-summary-col widget-summary-col-icon">
+                <div class="summary-icon bg-cda" style="width:42px; height:42px;line-height:32px;background-color:#eee">
+                    <i class="icons icon-doc" style="font-size: 65%;"></i>
+                </div>
+            </div>
+            <div class="widget-summary-col">
+                <div class="row">
+                    <div class="col-sm-8">
+                        <div class="summary">
+                            <span class="rai-font-md" style="word-break:break-word;display: block;">@a.NOMEFILE</span>
+                            <span class="rai-font-sm-neutral">@(a.BYTECONTENT.Length / 1000) KB</span>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-4" style="text-align:right;padding-right:0px;padding-left:0px" id="cont-span@(a.ID)">
+
+                        @if (Model.InCaricoAMe)
+                        {
+                            <button data-idallegato-valutato="@a.ID" id="nok-@a.ID" class="valuta-allegato nok-notselected btn btn-action-icon" style="margin-right: 4px;" onclick="SelectNok(@a.ID)">
+                                <i class="fa fa-times"></i>
+                            </button>
+                            <button data-idallegato-valutato="@a.ID" id="ok-@a.ID" class="valuta-allegato ok-notselected btn btn-action-icon" onclick="SelectOk(@a.ID)">
+                                <i class="fa fa-check"></i>
+                            </button>
+                        }
+
+
+
+                        @if (Model.InCaricoAMe || 
+                            segnalazioneAperta || 
+                            Model.StatoRichiesta >= (int) myRaiCommonManager.MaternitaCongediManager.EnumStatiRichiesta.ApprovataGestione ||
+                            Model.Categoria=="SW")
+                        {
+                            <a target="_blank" href="/maternitacongedi/getpdf?id=@a.ID" class="btn rai-btn-small" onclick="" aria-label="Scegli file" title="Visualizza" style="min-width:80px;">Visualizza</a>
+                        }
+                        else
+                        {
+                            <a target="_blank" href="/maternitacongedi/getpdf?id=@a.ID" class="
+                               disable 
+                               btn rai-btn-small" onclick="" aria-label="Scegli file" title="Visualizza" style="min-width:80px;">Visualizza</a>
+                        }
+
+
+
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </div>
+        @if (a.TIPOLOGIA == "USER")
+        {
+            <div class="row" style="padding-left: 10px;padding-top: 12px;">
+                @if (!String.IsNullOrEmpty(a.TITOLO))
+                {
+                    <span class="rai-font-sm-neutral">@a.TITOLO </span>
+                    <br>
+                }
+                @if (!String.IsNullOrEmpty(a.DESCRIZIONE))
+                {
+                    <span class="rai-font-sm">@a.DESCRIZIONE</span>
+                }
+
+            </div>
+        }
+
+    </div>
+}
+<script>
+    
+
+    function SelectOk(idAllegato,forInviaRisposta) {
+        $("#ok-" + idAllegato).removeClass("ok-notselected");
+        $("#ok-" + idAllegato).addClass("ok-selected");
+
+        $("#nok-" + idAllegato).addClass("nok-notselected");
+        $("#nok-" + idAllegato).removeClass("nok-selected");
+
+        if (forInviaRisposta)
+            CheckButtonInviaRisposta();
+        else
+            SbloccaTasti();
+    }
+    function SelectNok(idAllegato, forInviaRisposta) {
+        debugger
+        $("#nok-" + idAllegato).removeClass("nok-notselected");
+        $("#nok-" + idAllegato).addClass("nok-selected");
+
+        $("#ok-" + idAllegato).addClass("ok-notselected");
+        $("#ok-" + idAllegato).removeClass("ok-selected");
+        if (forInviaRisposta)
+            CheckButtonInviaRisposta();
+        else
+            SbloccaTasti();
+    }
+    function SbloccaTasti() {
+        var totale = $(".valuta-allegato").length;
+        var ok = $(".ok-selected").length;
+        var nok = $(".nok-selected").length;
+        debugger
+        if (ok + nok >= totale / 2) {
+            if (nok == 0) {
+               
+                $("#approva-richiesta").removeClass("disable");
+                var nota = $("#nota-risposta").val().trim();
+                if (nota.length > 4) {
+                    $("#respingi-richiesta").removeClass("disable");
+                }
+                else {
+                    $("#respingi-richiesta").addClass("disable");
+                }
+            }
+            else {
+                $("#approva-richiesta").addClass("disable");
+                var nota = $("#nota-risposta").val().trim();
+                if (nota.length > 4) {
+                    $("#respingi-richiesta").removeClass("disable");
+                   
+                }
+                else {
+                    $("#respingi-richiesta").addClass("disable");
+                   
+                }
+
+            }
+        }
+    }
+    function ReplaceFile(idAllegato) {
+
+        var nomefile = ($("#fileupload" + idAllegato).val().split("\\").pop())
+        debugger
+        if (nomefile.toLowerCase().indexOf(".pdf") < 0) {
+            swal("Sono ammessi soltanto file pdf");
+            return;
+        }
+
+        // $("#uploading" + i).show();
+        var formdata = new FormData();
+
+        formdata.append('file', $('#fileupload' + idAllegato)[0].files[0]);
+        formdata.append("nome", nomefile);
+        formdata.append("id", idAllegato);
+
+        var request = new XMLHttpRequest();
+        request.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+                if (this.responseText.indexOf("E") >= 0)
+                    swal(this.responseText);
+                else {
+
+                    $("#cont" + idAllegato).hide();
+                    $("#span" + idAllegato).text("In approvazione");
+                    $("#span" + idAllegato).attr("data-stato", "10");
+                    $("#span" + idAllegato).css("color", "#EE9600");
+                    GetDettagliVisualizzazione($("#id-richiesta-visualizzata").val());
+                    CheckButtonInviaRisposta();
+                }
+            }
+        };
+        //request.upload.addEventListener('progress', function (e) {
+
+        //    var filesize = $('#fileupload' + i)[0].files[0].size;
+        //    $("#total" + i).text(parseInt(filesize / 1000) + " KB");
+        //    $("#loaded" + i).text(parseInt(e.loaded / 1000) + " KB");
+        //    var percent = Math.round(e.loaded / filesize * 100);
+        //    $("#progress-bar" + i).css("width", percent + "%");
+
+        //    if (e.loaded >= filesize) {
+        //        $("#rimuovi" + i).show();
+        //    }
+        //    else
+        //        $("#rimuovi" + i).hide();
+
+        //});
+
+        request.open('post', '/maternitacongedi/postfileSostitutivo');
+        request.timeout = 45000;
+        request.send(formdata);
+    }
+</script>
+

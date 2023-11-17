@@ -1,0 +1,71 @@
+﻿@using myRaiHelper
+@model myRaiData.Incentivi.XR_INC_DIPENDENTI
+
+@{
+    List<string> enabledMatr = null;
+    bool applyFilters = CessazioneHelper.GetEnabledNoteChange(CommonHelper.GetCurrentUserMatricola(), out enabledMatr);
+}
+
+<div id="NotePratica">
+    @if (Model.XR_INC_DIPENDENTI_NOTE != null && Model.XR_INC_DIPENDENTI_NOTE.Count() > 0)
+    {
+        <div class="block block-content-table block-transparent" style="margin-bottom:0px;">
+            <div class="block-header block-content-mini">
+                <label class="block-title">Note</label>
+            </div>
+            <div class="block-content block-content-mini">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <table class="table table-hover" id="elencoNote" style="margin-bottom:0px;" role="grid">
+                            <tbody class="" aria-expanded="false">
+                                @foreach (var nota in Model.XR_INC_DIPENDENTI_NOTE.OrderBy(x => x.TMS_TIMESTAMP))
+                                {
+                                    <tr tabindex="0" aria-label="" role="row">
+                                        <td>
+                                            @nota.TMS_TIMESTAMP.ToString("dd/MM/yyyy")
+                                        </td>
+                                        <td style="width: 100%" class="text-left">
+                                            <span data-nota="@nota.ID_NOTA">@Html.Raw(nota.NOTA.Replace("\r\n", "<br/>"))</span>
+                                            @if (nota.ID_PERSONA.ToString() != Model.ID_PERSONA.ToString())
+                                            {
+                                                if (nota.ANAGPERS != null)
+                                                {
+                                                    if (nota.ID_PERSONA != CommonHelper.GetCurrentIdPersona())
+                                                    {
+                                                    <br />
+                                                    <span class="rai-font-sm-neutral text-italic">Inserita da @(nota.ANAGPERS.DES_COGNOMEPERS.TitleCase() + " " + nota.ANAGPERS.DES_NOMEPERS.TitleCase())</span>
+                                                    }
+                                                    else
+                                                    {
+                                                    <br />
+                                                    <span class="rai-font-sm-neutral text-italic">Inserita da te</span>
+                                                    }
+                                                }
+                                            }
+                                            @if (nota.LAST_MOD_ID_PERSONA != null)
+                                            {
+                                                <br />
+                                                <span class="rai-font-sm-neutral text-italic">Ultima modifica di @nota.LAST_MOD_SINTESI11.Nominativo() il @String.Format("{0:dd/MM/yyyy} alle {0:HH:mm}",nota.LAST_MOD_TIMESTAMP.Value)</span>
+                                            }
+                                        </td>
+                                        <td style="padding-right:0px;">
+                                            @if (nota.ID_PERSONA == CommonHelper.GetCurrentIdPersona() || (!applyFilters || enabledMatr.Contains(nota.SINTESI1.COD_MATLIBROMAT)))
+                                            {
+                                                <div class="btn-action-icon-container">
+                                                    <a class="btn-action-icon" href="#" onclick="IncModificaNotaPratica(@Model.ID_DIPENDENTE, @nota.ID_NOTA)" title="Modifica questa nota"><i class="fa fa-pencil"></i></a>
+                                                    <a class="btn-action-icon" href="#" onclick="CancellazioneNotaPratica(@Model.ID_DIPENDENTE, @nota.ID_NOTA)" title="Elimina questa nota"><i class="fa fa-trash"></i></a>
+                                                </div>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    }
+</div>
+<!--fine contenuto-->

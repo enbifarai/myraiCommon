@@ -1,0 +1,420 @@
+﻿@using myRaiCommonManager
+@using myRaiCommonModel
+@using myRaiHelper
+@model CercaDipendenteVM
+
+@{
+    string hrisAbil = AuthHelper.HrisFuncAbil(CommonHelper.GetCurrentUserMatricola());
+    if (String.IsNullOrWhiteSpace(hrisAbil))
+    {
+        hrisAbil = "HRCE";
+    }
+
+    string abilKey = "HRCE";
+    if (hrisAbil != "HRCE")
+    {
+        abilKey = "HRIS_PERS";
+    }
+    string currentMatr = CommonHelper.GetCurrentUserMatricola();
+    var abilInfo = AuthHelper.EnabledInfo(currentMatr, abilKey);
+
+    var azienda = AnagraficaManager.GetSocieta("", "", true, abilInfo.AbilSocieta, true, true);
+    var categorie = AnagraficaManager.GetCategorie("", "", true, abilInfo.AbilCat, null, true, "ND", "", true);
+    var tipiContr = AnagraficaManager.GetTipiContratto("", "", true);
+    var servizi = AnagraficaManager.GetServizi("", "", true, abilInfo.AbilDir, true, abilInfo.AbilSocieta, addDefault: true);
+    var sedi = AnagraficaManager.GetSedi("", "", true, abilInfo.AbilSedi, addDefault: true);
+
+    var albero = new myRaiCommonModel.Gestionale.IncarichiTreeModel("P");
+    albero.GetModel(new myRaiDataTalentia.TalentiaEntities(), DateTime.Now.ToString("dd/MM/yyyy"), abilInfo.AbilDir);
+
+    string formId = "form-searchbar";
+
+}
+
+<style>
+    #additional-item-toggle[aria-expanded="false"] i:before {
+        content: "\f067";
+    }
+
+    #additional-item-toggle[aria-expanded="true"] i:before {
+        content: "\f068";
+    }
+
+    #searchbar-additional .block-header, #searchbar-additional .block-content {
+        margin: 0px !important;
+    }
+
+        #searchbar-additional .block-content .row {
+            margin-left: -15px;
+            margin-right: -15px;
+        }
+</style>
+
+@using (Html.BeginForm("RicercaDipendentiSearchBar", "Ricerca", FormMethod.Post, new { id = formId, @class = "", role = "search" }))
+{
+    @Html.HiddenFor(m => m.Provenienza)
+    @Html.HiddenFor(m => m.Action)
+    @Html.HiddenFor(m => m.ActionText)
+    @Html.HiddenFor(m => m.CampidaEsportare)
+    <div class="form-group" id="searchbar-int-cont">
+        <div class="row">
+            <div class="col-sm-12 push-10">
+                <label class="rai-caption">Nominativo o matricola</label>
+                @Html.TextBoxFor(m => m.Filtri.Query, new { @class = "form-control", placeholder = "Inserisci nome o matricola di un dipendente" })
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-6 push-10">
+                <label class="rai-caption">Servizi</label>
+                @Html.RaiSelectFor(m => m.Filtri.Servizi, servizi, multiple: true)
+            </div>
+            <div class="col-sm-6 push-10">
+                <label class="rai-caption">Categoria</label>
+                @Html.RaiSelectFor(m => m.Filtri.Categoria, categorie, multiple: true)
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-6 push-10-t push-10">
+                <div class="rai-checkbox rai-checkbox-inline">
+                    @Html.CheckBoxFor(m => m.Filtri.EscludiCessati)
+                    <label for="Filtri_EscludiCessati">Escludi cessati</label>
+                </div>
+            </div>
+            <div class="col-sm-6 text-right push-10-t push-10 ">
+                <a href="#searchbar-additional" id="additional-item-toggle" style="text-decoration:none" data-toggle="collapse" aria-expanded="false" onclick="$('#searchbar-int-cont .searchbar-item-box .collapse.in').collapse('toggle');"><i class="fa"></i>&nbsp;Ricerca avanzata&nbsp;<span class="rai-notification" data-filter-counter="avanzate" style="display:none">0</span>&nbsp;</a>
+            </div>
+        </div>
+        <div id="searchbar-additional" class="collapse">
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="block block-content-table block-transparent push-10">
+                        <div class="block-header">
+                            <label class="block-title">
+                                Informazioni personali&nbsp;<span class="rai-notification" data-filter-counter="info" style="display:none">0</span>
+                            </label>
+                        </div>
+                        <div id="searchbar-info" class="block-content form-group form-group-sm">
+                            <div class="row">
+                                <div class="col-sm-6 push-10">
+                                    <div class="row">
+                                        <div class="col-sm-12"><label class="rai-caption">Anno di nascita</label></div>
+                                        <div class="col-sm-6 push-10">
+                                            <div class="input-group">
+                                                <div class="input-group-addon">
+                                                    <i class="fa fa-calendar"></i>
+                                                </div>
+                                                @Html.TextBoxFor(m => m.Filtri.NascitaDa, new { @class = "form-control js-datetimepicker", data_format = "YYYY", style = "width:5em", data_filter_element = "info", onchange = "AnagSearchBarCheckFilter(this)", placeholder = "Dal" })
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6 push-10">
+                                            <div class="input-group">
+                                                <div class="input-group-addon">
+                                                    <i class="fa fa-calendar"></i>
+                                                </div>
+                                                @Html.TextBoxFor(m => m.Filtri.NascitaA, new { @class = "form-control js-datetimepicker", data_format = "YYYY", style = "width:5em", data_filter_element = "info", onchange = "AnagSearchBarCheckFilter(this)", placeholder = "Al" })
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6 push-10">
+                                    <label class="rai-caption">Sesso</label>
+                                    <div class="rai-checkbox-container rai-checkbox-inline">
+                                        <div class="rai-checkbox">
+                                            <input type="checkbox" id="Sesso-M" name="Filtri.Sesso" value="M" data-filter-element="info" onclick="AnagSearchBarCheckFilter(this)" />
+                                            <label for="Sesso-M">Uomo</label>
+                                        </div>
+                                        <div class="rai-checkbox">
+                                            <input type="checkbox" id="Sesso-F" name="Filtri.Sesso" value="F" data-filter-element="info" onclick="AnagSearchBarCheckFilter(this)" />
+                                            <label for="Sesso-F">Donna</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    @Html.TextBoxFor(m => m.Filtri.CodiceFiscale, new { @class = "form-control", placeholder = "Codice Fiscale", style = "min-width:17em", data_filter_element = "info", onchange = "AnagSearchBarCheckFilter(this)" })
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="block block-content-table block-transparent push-10">
+                        <div class="block-header">
+                            <label class="block-title">
+                                Contratto&nbsp;<span class="rai-notification" data-filter-counter="contr" style="display:none">0</span>
+                            </label>
+                        </div>
+                        <div id="searchbar-contratto" class="block-content form-group form-group-sm">
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <div class="row push-20">
+                                        <div class="col-sm-12">
+                                            <label class="rai-caption">Assunzione</label>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <div class="input-group">
+                                                <div class="input-group-addon">
+                                                    <i class="fa fa-calendar"></i>
+                                                </div>
+                                                @Html.TextBoxFor(m => m.Filtri.AssunzioneDa, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY", data_locale = "it", style = "width:8em", data_filter_element = "contr", onchange = "AnagSearchBarCheckFilter(this)", placeholder = "Dal" })
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <div class="input-group">
+                                                <div class="input-group-addon">
+                                                    <i class="fa fa-calendar"></i>
+                                                </div>
+                                                @Html.TextBoxFor(m => m.Filtri.AssunzioneA, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY", data_locale = "it", style = "width:8em", data_filter_element = "contr", onchange = "AnagSearchBarCheckFilter(this)", placeholder = "Al" })
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <label class="rai-caption">Cessazione</label>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <div class="input-group">
+                                                <div class="input-group-addon">
+                                                    <i class="fa fa-calendar"></i>
+                                                </div>
+                                                @Html.TextBoxFor(m => m.Filtri.CessazioneDa, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY", data_locale = "it", style = "width:8em", data_filter_element = "contr", onchange = "AnagSearchBarCheckFilter(this)", placeholder = "Dal" })
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <div class="input-group">
+                                                <div class="input-group-addon">
+                                                    <i class="fa fa-calendar"></i>
+                                                </div>
+                                                @Html.TextBoxFor(m => m.Filtri.CessazioneA, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY", data_locale = "it", style = "width:8em", data_filter_element = "contr", onchange = "AnagSearchBarCheckFilter(this)", placeholder = "Al" })
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <label class="rai-caption">Tipo di contratto</label>
+                                        </div>
+                                        <div class="col-sm-12">
+                                            <div class="rai-checkbox-container" style="max-height:9em;overflow:hidden;overflow-y:auto;">
+                                                @foreach (var item in tipiContr)
+                                                {
+                                                    <div class="rai-checkbox full-width push-10">
+                                                        <input type="checkbox" id="cat-@item.Value" name="Filtri.TipiContratto" value="@item.Value" data-filter-element="contr" onclick="AnagSearchBarCheckFilter(this)" />
+                                                        <label for="cat-@item.Value">@item.Text</label>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="block block-content-table block-transparent push-10">
+                        <div class="block-header">
+                            <label class="block-title">
+                                Sedi&nbsp;<span class="rai-notification" data-filter-counter="sed" style="display:none">0</span>
+                            </label>
+                        </div>
+                        <div id="searchbar-sedi" class="block-content form-group form-group-sm">
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    @Html.RaiSelectFor(m => m.Filtri.Sedi, sedi, multiple: true, attributes: new { data_filter_element = "sed" }, onSelectchange: "AnagSearchBarCheckSelectFilter('sed')")
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="block block-content-table block-transparent push-10">
+                        <div class="block-header">
+                            <label class="block-title">
+                                Azienda&nbsp;<span class="rai-notification" data-filter-counter="azi" style="display:none">0</span>
+                            </label>
+                        </div>
+                        <div id="searchbar-azi" class="block-content form-group form-group-sm">
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    @Html.RaiSelectFor(m => m.Filtri.Azienda, azienda, multiple: true, attributes: new { data_filter_element = "azi" }, onSelectchange: "AnagSearchBarCheckSelectFilter('azi')")
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="block block-content-table block-transparent push-10">
+                        <div class="block-header">
+                            <label class="block-title">
+                                Sezione&nbsp;<span class="rai-notification" data-filter-counter="str" style="display:none">0</span>
+                            </label>
+                        </div>
+                        <div class="block-content form-group form-group-sm" id="searchbar-strorg">
+                            @{
+                                string icon_l1 = "fa fa-home";
+                            }
+
+                            @helper DrawTree(myRaiCommonModel.Gestionale.IncarichiTreeModel albero, myRaiCommonModel.Gestionale.TAlberoSezioneModel node)
+                            {
+                                bool hasChild = albero.AlberoItems.Any(x => x.subordinato_a == node.id);
+                                string treeIcon = "";
+                                if (!hasChild)
+                                {
+                                    treeIcon = "fa fa-file";
+                                }
+                                else
+                                {
+                                    treeIcon = "fa fa-folder";
+                                }
+
+                                <li data-jstree='{"icon":"@treeIcon"}' data-codice="@node.codice_visibile" data-idsezione="@node.id">
+                                    @node.descrizione_lunga
+                                    @if (hasChild)
+                                    {
+                                        <ul>
+                                            @foreach (var child in albero.AlberoItems.Where(x => x.subordinato_a == node.id).OrderBy(x => x.num_ordina))
+                                            {
+                                                @DrawTree(albero, child)
+                                            }
+                                        </ul>
+                                    }
+                                </li>
+                            }
+
+                            <div class="row push-10">
+                                <div class="col-sm-12">
+                                    <input class="form-control" type="text" data-search="searchbar-str" onkeyup="AnagSearchOrgCheckCont(this)" placeholder="Cerca una sezione..." />
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <div style="max-height:25em;overflow:hidden;overflow-y:auto;padding-left:15px;" id="sb-jstree">
+                                        @foreach (var item in albero.AlberoItems.Where(x => x.id == x.subordinato_a).OrderBy(x => x.codice_visibile))
+                                        {
+                                            <ul>
+                                                <li data-jstree='{"icon":"@icon_l1"}' data-codice="@item.codice_visibile" data-idsezione="@item.id">
+                                                    @item.descrizione_lunga
+
+                                                    @if (albero.AlberoItems.Any(x => x.subordinato_a == item.id && x.subordinato_a != x.id))
+                                                    {
+                                                        <ul>
+                                                            @foreach (var child in albero.AlberoItems.Where(x => x.subordinato_a == item.id && x.subordinato_a != x.id).OrderBy(x => x.num_ordina))
+                                                            {
+                                                                @DrawTree(albero, child)
+                                                            }
+                                                        </ul>
+                                                    }
+
+                                                </li>
+                                            </ul>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row" id="filtriAggiuntivi">
+
+                @foreach (var filtro in Model.Filtri.FiltriAggiuntivi.GroupBy(x => x.NomeFiltro))
+                {
+                    var nomefiltro = @filtro.Key.TrimEnd();
+                <div class="col-sm-6" id="filtroAggiuntivo" name="@nomefiltro">
+                    <div class="block block-content-table block-transparent push-10">
+                        <div class="block-header">
+                            <label class="block-title">
+                                @nomefiltro&nbsp;<span class="rai-notification" data-filter-counter="@nomefiltro" style="display:none">0</span>
+                            </label>
+                        </div>
+                        <div id="searchbar-@nomefiltro" class="block-content form-group form-group-sm">
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    @Html.RaiSelect("select-" + @nomefiltro, filtro.Select(x => new SelectListItem { Text = x.Descrizione, Value = x.Valore }), multiple: true, attributes:  new { data_filter_element = @nomefiltro, text=filtro.Select(x=>x.Descrizione),value=filtro.Select(x=>x.Valore) }, onSelectchange: "AnagSearchBarCheckSelectFilter('" + @nomefiltro + "')")
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                }
+
+
+            </div>
+
+        </div>
+
+        <div class="row form-button">
+            <div class="col-sm-12 rai-btn-fill">
+                <button class="btn rai-btn-secondary" style="min-width:100px;" type="reset" onclick="AnagSearchClear()">Azzera filtri</button>
+                <button class="btn rai-btn-primary" style="min-width:100px;" type="submit" onclick="AnagSearchFromBar()">Ricerca</button>
+            </div>
+        </div>
+
+    </div>
+}
+
+<script>
+    InitDatePicker();
+
+    $("#sb-jstree")
+        .on('open_node.jstree', function (e, data) {
+            if (data.node.icon != 'fa fa-home') {
+                data.node.icon = 'fa fa-folder-open';
+                $('#' + data.node.id + '_anchor i.jstree-icon').removeClass('fa-folder').addClass('fa-folder-open');
+            }
+        })
+        .on('close_node.jstree', function (e, data) {
+            if (data.node.icon != 'fa fa-home') {
+                data.node.icon = 'fa fa-folder';
+                $('#' + data.node.id + '_anchor i.jstree-icon').removeClass('fa-folder-open').addClass('fa-folder');
+            }
+        })
+        .on('select_node.jstree', function (node, selected, event) {
+            let cont = 'str';
+            let countSelElem = $('#sb-jstree').jstree().get_selected(true).length;
+            $('[data-filter-container="' + cont + '"]').attr('data-filter-selected', countSelElem > 0);
+            $('[data-filter-counter="' + cont + '"]').text(countSelElem);
+            if (countSelElem > 0) {
+                $('[data-filter-counter="' + cont + '"]').show();
+            } else {
+                $('[data-filter-counter="' + cont + '"]').hide();
+            }
+        })
+        .on('deselect_node.jstree', function (node, selected, event) {
+            let cont = 'str';
+            let countSelElem = $('#sb-jstree').jstree().get_selected(true).length;
+            $('[data-filter-container="' + cont + '"]').attr('data-filter-selected', countSelElem > 0);
+            $('[data-filter-counter="' + cont + '"]').text(countSelElem);
+            if (countSelElem > 0) {
+                $('[data-filter-counter="' + cont + '"]').show();
+            } else {
+                $('[data-filter-counter="' + cont + '"]').hide();
+            }
+        })
+        .jstree({
+            'search': {
+                'show_only_matches': true,
+                'show_only_matches_children': true
+            },
+            'checkbox': {
+                //'three_state': false,
+                "keep_selected_style": false
+            },
+            "plugins": ["checkbox", "search"]
+        });
+
+
+    $("#sb-jstree").show();
+    $('#filtriAggiuntivi :input').attr("name", "Filtri.Aggiuntivi");
+    var bo = $('#filtriAggiuntivi').children("#filtroAggiuntivo");
+    $(bo).each(function (index,value) {
+        $(value).find(":input:checkbox").attr("data-filter-element", $(value).attr("name"));
+        $(value).find(':input:checkbox').each(function (index, val) {
+            var valore = $(val).closest(".rai-select-option").attr("data-option-value");
+            var testo = $(val).closest(".rai-select-option").attr("data-search-text");
+            $(val).attr("value", valore);
+            $(val).attr("text", testo);
+        } );
+    });
+</script>

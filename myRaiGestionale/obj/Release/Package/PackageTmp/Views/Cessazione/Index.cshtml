@@ -1,0 +1,258 @@
+﻿@using myRaiHelper
+@using MVCProject.Custom_Helpers
+@using myRaiCommonModel.Gestionale
+
+@{
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    ViewBag.Title = "HRIS - Cessazione";
+}
+
+@{
+    string matricola = CommonHelper.GetCurrentUserMatricola();
+    bool isAdmin = AuthHelper.EnabledToSubFunc(matricola, CessazioneHelper.INCENTIVI_HRGA_FUNC, "ADM");
+    bool isGest = isAdmin || AuthHelper.EnabledToSubFunc(matricola, CessazioneHelper.INCENTIVI_HRGA_FUNC, "GEST");
+    bool isAmm = isAdmin || AuthHelper.EnabledToSubFunc(matricola, CessazioneHelper.INCENTIVI_HRGA_FUNC, "AMM");
+    bool isRelind = isAdmin || AuthHelper.EnabledToSubFunc(matricola, CessazioneHelper.INCENTIVI_HRGA_FUNC, "RELIND");
+    bool isNorm = isAdmin || AuthHelper.EnabledToSubFunc(matricola, CessazioneHelper.INCENTIVI_HRGA_FUNC, "NORM");
+
+    bool isInc = AuthHelper.EnabledTo(matricola, CessazioneHelper.INCENTIVI_HRGA_FUNC);
+    bool isAnpal = isAdmin || CessazioneHelper.EnableToAnpal(matricola);
+
+    string actionElenco = (isInc ? "GetElencoIncentivati" : "GetElencoAnpal");
+}
+
+<style>
+    .progress.progress-chart .progress-bar:last-child {
+        border-radius: 0px 4px 4px 0px;
+    }
+
+    .review {
+        display: normal;
+    }
+</style>
+
+<section role="main" class="content-body" style="padding-top:10px;">
+
+
+    <!-- start: page -->
+    <!-- Main Container -->
+
+    <main id="main-container">
+
+        <div class="content">
+            <div class="row">
+                <div class="col-md-8">
+                    <section class="panel ">
+                        <header class="panel-heading">
+                            <div class="panel-actions visible-xs">
+                                <a href="#" class="panel-action  panel-action-toggle" data-panel-toggle="" aria-labelledby="lblLeftBox" aria-expanded="true"></a>
+                            </div>
+                            <h2 id="lblLeftBox" class="panel-title">Elenco dipendenti</h2>
+                        </header>
+
+                        <div class="panel-body no-padding">
+                            <div id="ElencoIncentivatiExt" class="overflow-hidden">
+                                <div id="ElencoIncentivati" data-action="@actionElenco">
+                                    @Html.AsyncPartial("Cessazione", actionElenco, "~/Views/Cessazione/subpartial/elencoIncentivati_skeleton.cshtml", TempData)
+                                </div>
+                            </div>
+                        </div>
+
+                    </section>
+                </div>
+                <div class="col-md-4">
+                    @if (isNorm || isGest || isAmm)
+                    {
+                        <div id="wdgt-costi">
+                            @Html.AsyncPartial("Cessazione", "Widget_Costi", "~/Views/_RaiDesign/PanelNoHeader_skeleton.cshtml", TempData)
+                        </div>
+
+                        <div class="panel">
+                            <div class="panel-body">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <label class="rai-font-md-bold">Esporta documenti</label>&nbsp;
+                                        @*<a class="btn rai-btn-small" href="@Url.Action("Export","Cessazione", new { tipoExport = "nPratiche" })"><i class="fa fa-external-link"></i>&nbsp;Esporta report</a>*@
+                                        <button class="btn rai-btn-small" data-toggle="modal" data-target="#modal-export"><i class="fa fa-external-link"></i>&nbsp;Esporta documenti</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (isInc && isAnpal)
+                    {
+                        <div class="panel">
+                            <div class="panel-body">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <label class="rai-font-md-bold">Carica ricevuta Anpal</label>&nbsp;
+                                        @*<a class="btn rai-btn-small" href="@Url.Action("Export","Cessazione", new { tipoExport = "nPratiche" })"><i class="fa fa-external-link"></i>&nbsp;Esporta report</a>*@
+                                        <button class="btn rai-btn-small" onclick="IncModalAnpal()">Carica documenti</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (isGest)
+                    {
+                        <section class="panel" id="panelAggiungiDipendente">
+                            <header class="panel-heading">
+                                <h2 class="panel-title">Gestione</h2>
+                                <div class="panel-actions visible-xs" style="position: absolute">
+                                    <a href="#" class="panel-action  panel-action-toggle" data-panel-toggle="" aria-labelledby="lblRightBox" aria-expanded="true"></a>
+                                </div>
+                            </header>
+                            <div class="panel-body">
+                                <div class="widget-summary push-10">
+                                    <div class="widget-summary-col widget-summary-col-icon">
+                                        <div class="summary-icon">
+                                            <i class="fa fa-user"></i>
+                                        </div>
+                                    </div>
+                                    <div class="widget-summary-col">
+                                        <div class="summary">
+                                            <h3 class="title" style="word-break: break-word;">Inserisci una nuova richiesta</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="summary-footer">
+                                    <a href="#" class="btn btn-sm rai-btn-small full-width" onclick="IncAggiungi()">Aggiungi dipendente</a>
+                                </div>
+                            </div>
+                        </section>
+                        <div id="AvanzamentoExt">
+                            <div id="Avanzamento">
+                                @Html.AsyncPartial("Cessazione", "GetIncentivatiCount", "~/Views/Cessazione/subpartial/Widget_avanzamento_skeleton.cshtml", TempData)
+                            </div>
+                        </div>
+                    }
+
+                    @Html.Partial("~/Views/Cessazione/subpartial/Widget_ricerca.cshtml", new CessazioneFilter())
+
+                    @*@if (isAmm)
+                        {
+                            @Html.Partial("~/Views/Cessazione/subpartial/Widget_caricamento.cshtml")
+                        }*@
+                    @if (isRelind || isGest)
+                    {
+                        <div id="AppuntamentiExt">
+                            <div id="Appuntamenti">
+                                @Html.AsyncPartial("Cessazione", "GetCalendarioAppuntamenti", "~/Views/Cessazione/subpartial/Widget_calendario_skeleton.cshtml", TempData)
+                                @*@Html.Partial("~/Views/Cessazione/subpartial/Widget_calendario_skeleton.cshtml")*@
+                            </div>
+                        </div>
+                        @Html.Partial("~/Views/Cessazione/subpartial/Widget_bozze.cshtml")
+                    }
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- end: page -->
+</section>
+
+
+@Html.RenderModal("anpal", size: ModalSize.Half)
+
+@Html.RenderModal("dettaglioInc", size: ModalSize.Half)
+@Html.RenderModal("ricerca", size: ModalSize.Half)
+@Html.RenderModal("add-dip", size: ModalSize.Half)
+
+@Html.RenderModal("pratica", size: ModalSize.Half)
+@Html.RenderModal("costi", size: ModalSize.Half)
+
+@Html.RenderModal("pratica-review")
+
+@Html.RenderModal("gestione-bozza", size: ModalSize.Half)
+@Html.RenderModal("gestione-bozza-verbale", size: ModalSize.Half)
+
+
+
+<div class="modal right fade" id="modal-pratica" role="dialog" aria-hidden="true" style="display: none;">
+    <div id="modal-pratica-internal" style="overflow-x:hidden;overflow-y:auto"></div>
+</div>
+
+<div class="modal right fade" id="modal-export" role="dialog" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-popin modal-half-dialog">
+        <div class="modal-content">
+            <div id="modal-export-internal" data-modal-wrapper>
+                @using (Html.BeginModal("Esporazione documenti"))
+                {
+                    if (isNorm || isGest)
+                    {
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <div class="panel">
+                                    <div class="panel-heading">
+                                        <label class="panel-title">Report Incentivazione</label>
+                                        <div class="panel-actions rai-panel-actions">
+                                            <a href="#" class="panel-action rai panel-action-toggle" data-panel-toggle="" aria-labelledby="lblRightBox" aria-expanded="true"></a>
+                                        </div>
+                                    </div>
+                                    <div class="panel-body panel-body-nopadding">
+                                        <table class="table rai-table rai-table-vcenter rai-table-panel">
+                                            <tr>
+                                                <td>
+                                                    Riepilogo richieste per direzione
+                                                </td>
+                                                <td class="text-right">
+                                                    <a class="btn rai-btn-small" href="@Url.Action("Export", "Cessazione", new { tipoExport = "nPratiche" })">Vedi</a>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    Elenco richieste
+                                                </td>
+                                                <td class="text-right">
+                                                    <a class="btn rai-btn-small" href="@Url.Action("Export", "Cessazione", new { tipoExport = "riepilogoPratiche" })">Vedi</a>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    Elenco richieste annullate
+                                                </td>
+                                                <td class="text-right">
+                                                    <a class="btn rai-btn-small" href="@Url.Action("Export", "Cessazione", new { tipoExport = "riepilogoAnnullate" })">Vedi</a>
+                                                </td>
+                                            </tr>
+
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    if (isAmm)
+                    {
+                        <div class="row">
+                            <div class="col-sm-12">
+                                @Html.Partial("~/Views/Cessazione/subpartial/Widget_caricamento.cshtml")
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section afterjs {
+    @Html.Raw(TempData["script"])
+
+
+    <script>
+
+        function OpenBozza(idDip) {
+            SubmitAvviaPratica(false, false, '', false);
+            RaiOpenAsyncModal("modal-gestione-bozza", '/Cessazione/Modal_BozzaMail', { idDip: idDip, tipo: 'proposta' }, null, 'POST')
+        }
+
+        function OpenBozzaVerbale(idDip) {
+            //SubmitModificaBozzaVerbale(idDip, false);
+            SubmitModificaAppuntamento(idDip, false);
+            RaiOpenAsyncModal("modal-gestione-bozza", '/Cessazione/Modal_BozzaMail', { idDip: idDip, tipo: 'verbale' }, null, 'POST')
+        }
+    </script>
+}
+

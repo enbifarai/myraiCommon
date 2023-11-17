@@ -1,0 +1,705 @@
+﻿@using myRaiData;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+@using MyRaiServiceInterface.it.rai.servizi.digigappws;
+
+@model ModelDash
+@{
+    bool hide = false;
+    if (Model.QuadraturaUtenteTerzo != null)
+    {
+        hide = Model.QuadraturaUtenteTerzo != "g";
+    }
+    else
+    {
+        hide = UtenteHelper.TipoDipendente() == "D" || UtenteHelper.TipoDipendente() == "G";
+    }
+}
+
+<section class="panel @(hide ? "hide" : "")" id="inevidenza">
+
+    @if (Model.QuadraturaUtenteTerzo == null)
+    {
+        <header class="panel-heading">
+            <div class="panel-actions rai-panel-actions">
+                <button href="#" aria-label="Aggiorna le tue evidenze" class=" btn-action-icon" id="button-refresh-evid" type="button"
+                        data-toggle="block-option" data-action="refresh_toggle"
+                        data-refreshurl="/home/refreshInEvidenza" data-parentdiv="inevidenza"
+                        data-refreshelements="btab-incon,btab-da-giustifcare,btab-con-maggiorpresenza,btab-carenza,tab1text,tab2text,tab3text" data-action-mode="demo">
+                    <i class="fa fa-refresh"></i>
+                </button>
+                <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblInEvidenza" tabindex="0" aria-expanded="true"></a>
+            </div>
+            <h2 id="lblInEvidenza" class="panel-title">Giornate in Evidenza</h2>
+        </header>
+    }
+
+    @{
+        string quadratura = "g";
+        if (Model.QuadraturaUtenteTerzo != null)
+        {
+            quadratura = Model.QuadraturaUtenteTerzo;
+        }
+        else if (UtenteHelper.GetQuadratura() == Quadratura.Settimanale)
+        {
+            quadratura = "s";
+        }
+    }
+
+    @if (Model.QuadraturaUtenteTerzo == "g")
+    {
+        <div class="row" style="padding-bottom: 7px;border-bottom:solid 1px #eee">
+            <div class="col-sm-5" style="padding-left:30px">Bilancio POH</div>
+            <div class="col-sm-7" style="padding-left:20px">
+                <b>
+                    @Model.BilancioPoh
+                    @{
+                        var myList = UtenteHelper.GetPOHdays();
+
+                        if (myList != null && myList.Any() &&
+                            Model.DataVisualizzata.HasValue)
+                        {
+                            int pohReq = 0;
+                            foreach (var itm in myList)
+                            {
+                                if (itm.Date.Month.Equals(Model.DataVisualizzata.GetValueOrDefault().Month))
+                                {
+                                    pohReq++;
+                                }
+                            }
+                            string tx = String.Format("( {0} nel mese corr. )", pohReq);
+                            @tx
+                        }
+                    }
+                </b>
+            </div>
+        </div>
+    }
+
+    @if (Model.QuadraturaUtenteTerzo == "s")
+    {
+        <div class="row" style="padding-bottom: 7px;border-bottom:solid 1px #eee">
+            <div class="col-sm-5" style="padding-left:30px">Riep. settimanale</div>
+            <div class="col-sm-7" style="padding-left:20px"><b>@Model.BilancioDettSettimanale</b></div>
+        </div>
+    }
+    <div class="block panel-body no-padding" id="evidenzeblock">
+        <ul class="nav nav-tabs nav-tabs-alt nav-justified" data-toggle="tabs" role="tablist">
+            <li class="dagiust active" role="presentation">
+                @if (Model.listaEvidenze != null && Model.listaEvidenze.data != null)
+                {
+                    int q = 0;
+                    if (quadratura == "g")
+                    {
+                        q = Model.listaEvidenze.data.giornate.
+                                   Where(a => a.TipoEcc == TipoEccezione.AssenzaIngiustificata || a.TipoEcc == TipoEccezione.Incongruenza ||
+                                           a.TipoEcc == TipoEccezione.Carenza).Count();
+                    }
+                    else
+                    {
+                        q = Model.listaEvidenze.data.giornate.
+                                    Where(a => a.TipoEcc == TipoEccezione.AssenzaIngiustificata || a.TipoEcc == TipoEccezione.Incongruenza).Count();
+                    }
+                    <a href="#btab-da-giustifcare" id="tab1text" role="tab" aria-controls="btab-da-giustifcare">
+                        DA GIUSTIFICARE
+                        @if (q > 0)
+                        {
+                            <span id="badge-tot-u" style="color:white;" class="rai-badge-tab bg-feedback-error">@q.ToString()</span>
+                        }
+                    </a>
+                }
+                else
+                {
+                    <a href="#btab-da-giustifcare" id="tab1text" role="tab" aria-controls="btab-da-giustifcare">
+                        DA GIUSTIFICARE
+                    </a>
+                }
+            </li>
+
+            @if (quadratura == "g")
+            {
+                <li class="maggior" role="presentation">
+
+                    @if (Model.listaEvidenze != null && Model.listaEvidenze.data != null)
+                    {
+                        var items = Model.listaEvidenze.data.giornate.Where(a => a.TipoEcc == TipoEccezione.MaggiorPresenza);
+
+                        <a href="#btab-con-maggiorpresenza" id="tab2text" role="tab" aria-controls="btab-con-maggiorpresenza">
+                            @if (Model.QuadraturaUtenteTerzo == null)
+
+                            {
+                                <text>
+                                    CON MAGGIOR PRESENZA
+                                </text>
+                            }
+                            else
+                            {
+                                <text>
+                                    MAGG. PRESENZA
+                                </text>
+                            }
+                            @if (items.Count() > 0)
+                            {
+                                <span id="badge-tot-u" style="color:white;" class="rai-badge-tab bg-feedback-success">@items.Count().ToString()</span>
+                            }
+                        </a>
+                    }
+                    else
+                    {
+                        <a href="#btab-con-maggiorpresenza" id="tab2text" role="tab" aria-controls="btab-con-maggiorpresenza">CON MAGGIOR PRESENZA</a>
+                    }
+
+
+                </li>
+            }
+            @if (quadratura == "s")
+            {
+                <li class="dagiust" role="presentation">
+
+                    @if (Model.listaEvidenze != null && Model.listaEvidenze.data != null)
+                    {
+                        var items = Model.listaEvidenze.data.giornate.Where(a => a.TipoEcc == TipoEccezione.Carenza);
+                        <a href="#btab-carenza" id="tab3text" role="tab" aria-controls="btab-carenza">
+                            CARENZA
+                            @{
+                                string tx = null;
+
+                                using (var db = new digiGappEntities())
+                                {
+                                    var item = db.MyRai_ParametriSistema.Where(p => p.Chiave.Equals("TestoIconaCarenzaInEvidenza")).FirstOrDefault();
+
+                                    if (item != null)
+                                    {
+                                        tx = item.Valore1;
+                                    }
+                                }
+
+                                <i id="" class="fa fa-info-circle" data-placement="top" data-html="true" data-content="@(tx)" data-toggle="popover"></i>
+
+                            }
+
+                            @if (items.Count() > 0)
+                            {
+                                <span id="badge-tot-u" style="color:white;" class="rai-badge-tab bg-feedback-error">@items.Count().ToString()</span>
+                            }
+                        </a>
+                    }
+                    else
+                    {
+                        string tx = null;
+
+                        using (var db = new digiGappEntities())
+                        {
+                            var item = db.MyRai_ParametriSistema.Where(p => p.Chiave.Equals("TestoIconaCarenzaInEvidenza")).FirstOrDefault();
+
+                            if (item != null)
+                            {
+                                tx = item.Valore1;
+                            }
+                        }
+                        <a href="#btab-carenza" id="tab3text" role="tab" aria-controls="btab-carenza">
+                            CARENZA
+                            <i id="" class="fa fa-info-circle" data-placement="top" data-html="true" data-content="@(tx)" data-toggle="popover"></i>
+                        </a>
+                    }
+                </li>
+            }
+
+
+        </ul>
+        <div class="block-content tab-content no-padding">
+            <div class="tab-pane active" id="btab-da-giustifcare" role="tabpanel">
+                <table class="js-table-sections table table-hover rai-table rai-table-vcenter" id="lemieevidenze">
+
+                    <tbody class="js-table-sections-header">
+                        @{
+                            string tipoIcona = "fa-edit";
+                            int rows = 0;
+
+                        }
+                        @if (Model.listaEvidenze != null && Model.listaEvidenze.data != null)
+                        {
+
+                            List<Evidenza> items = new List<Evidenza>();
+                            if (quadratura == "g")
+                            {
+                                items = Model.listaEvidenze.data.giornate.
+                                  Where(a => (a.TipoEcc == TipoEccezione.AssenzaIngiustificata) ||
+                                         (a.TipoEcc == TipoEccezione.Carenza)
+                                         || a.TipoEcc == TipoEccezione.Incongruenza
+                                      ).ToList();
+                            }
+                            else
+                            {
+                                items = Model.listaEvidenze.data.giornate.
+                                      Where(a => a.TipoEcc == TipoEccezione.AssenzaIngiustificata || a.TipoEcc == TipoEccezione.Incongruenza).ToList();
+                            }
+                            foreach (Evidenza Evidenza in items)
+                            {
+                                /* if (Evidenza.TipoEcc == myRai.digigappWS_ws1.TipoEccezione.Carenza
+                                     && quadratura=="s")
+                                 { continue; }
+                                 */
+                                rows++;
+
+                                //se questa row è una carenza e ci sono altre rows assente ingiustificato, disabilita carenza
+                                Boolean SpegniCarenza = Evidenza.TipoEcc == TipoEccezione.Carenza && Model.listaEvidenze.data.giornate.Any(z => z.TipoEcc == TipoEccezione.AssenzaIngiustificata);
+                                SpegniCarenza = SpegniCarenza || (UtenteHelper.GetQuadratura() == Quadratura.Giornaliera && Evidenza.TipoEcc == TipoEccezione.Carenza && rows > 1);
+
+                                string colore = "danger";
+                                string descEcc = "Assente Ingiustificato";
+                                string minuti = "";
+                                string ariaLabel = "Hai un'assenza ingiustificata in data " + Evidenza.data.ToString("dd MMMM, yyyy", System.Globalization.CultureInfo.CreateSpecificCulture("it-IT"));
+                                Boolean ShowButton = true;
+                                bool ShowBtnTransitoSfasato = false;
+
+                                if (Evidenza.TipoEcc == TipoEccezione.Incongruenza)
+                                {
+                                    colore = "danger";
+                                    descEcc = "Incongruenza";
+                                    ariaLabel = "Hai una incongruenza in data " + Evidenza.data.ToString("dd MMMM, yyyy", System.Globalization.CultureInfo.CreateSpecificCulture("it-IT"));
+                                }
+                                if (Evidenza.TipoEcc == TipoEccezione.TimbratureInSW)
+                                {
+                                    colore = "danger";
+                                    descEcc = "Timbrature in SW";
+                                    ariaLabel = "Hai una timbratura in SW in data " + Evidenza.data.ToString("dd MMMM, yyyy", System.Globalization.CultureInfo.CreateSpecificCulture("it-IT"));
+                                }
+
+                                if (Evidenza.TipoEcc == TipoEccezione.Carenza)
+                                {
+                                    colore = "warning";
+                                    descEcc = "Carenza";
+                                    minuti = "(" + @Evidenza.carenza + " minuti " + (String.IsNullOrWhiteSpace(Evidenza.CarenzaEffettiva) ? "" : " - Effettivi: " + Evidenza.CarenzaEffettiva + " minuti") + " )";
+                                    ariaLabel = "Hai una carenza di " + @Evidenza.carenza + " minuti in data " + Evidenza.data.ToString("dd MMMM, yyyy", System.Globalization.CultureInfo.CreateSpecificCulture("it-IT"));
+                                }
+                                if (Evidenza.TipoEcc == TipoEccezione.AssenzaIngiustificata && Evidenza.timbrature != null && Evidenza.timbrature.Count() > 0)
+                                {
+                                    descEcc = "Transiti Sfasati";
+                                    minuti = "Contattare la Segreteria";
+                                    ShowButton = false;
+                                    ariaLabel = "Transiti sfasati in data " + Evidenza.data.ToString("dd MMMM, yyyy", System.Globalization.CultureInfo.CreateSpecificCulture("it-IT"));
+                                    ShowBtnTransitoSfasato = true;
+                                }
+
+                                <tr tabindex="@(rows==1?"0":"-1")" aria-label="@ariaLabel" role="row" onfocus="onFocusRow(this)">
+                                    <td class="text-@colore" width="@(Model.QuadraturaUtenteTerzo==null?"25%":"50%")">
+                                        <span class="hidden-xs rai-font-md-neutral">
+                                            @Evidenza.data.ToString("dd MMMM, yyyy", System.Globalization.CultureInfo.CreateSpecificCulture("it-IT"))
+                                        </span>
+                                        <span class="visible-xs rai-font-md-neutral">@Evidenza.data.ToString("dd/MM/yyyy")</span>
+                                        <div class="text-muted hidden-xs visible-sm visible-md visible-lg">
+                                            <em>@(Evidenza.descOrarioReale == null ? "" : Evidenza.descOrarioReale.ToLower())</em>
+                                        </div>
+                                        <em></em>
+                                    </td>
+                                    <td class="font-w600" style="text-align: center;" width="45%">
+                                        @if (ShowBtnTransitoSfasato)
+                                        {
+                                            <a href="#" data-transitosfasato="" data-giornata="@Evidenza.data.ToString("ddMMyyyy")" onclick="javascript: getTransitiSfasati('@Evidenza.data.ToString("ddMMyyyy")')">@descEcc</a>
+                                            @*<a href="#" data-transitosfasato="" data-giornata="@Evidenza.data.ToString("ddMMyyyy")">@descEcc</a>*@
+                                        }
+                                        else
+                                        {
+                                            @descEcc
+                                        }
+
+                                        @if (descEcc != null && descEcc.ToLower().StartsWith("transiti"))
+                                        {
+                                            <div class="rai-font-sm-neutral">
+                                                <span>
+                                                    @minuti
+                                                </span>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="rai-font-sm-neutral">
+                                                <span>
+                                                    @minuti
+                                                </span>
+                                            </div>
+                                        }
+
+                                        <div class="text-muted visible-xs">
+                                            <em>
+                                                @(Evidenza.descOrarioReale == null ? "" : Evidenza.descOrarioReale.ToLower())
+                                            </em>
+                                        </div>
+                                    </td>
+
+                                    @if (Model.QuadraturaUtenteTerzo == null)
+                                    {
+
+                                        <td class="text-center" colspan="2" width="30%">
+                                            @if (ShowButton)
+                                    {
+                                        if (Evidenza.TipoEcc == myRai.digigappWS_ws1.TipoEccezione.TimbratureInSW)
+                                        {
+                                            <a role="link" aria-label="Gestisci l'evidenza"
+                                               tabindex="-1"
+                                               href="#" 
+                                               onclick="CancellaRichiesta_NonRipianifica(@Evidenza.IdSWdaStornare, true,'@Evidenza.data.ToString("dd/MM/yyyy")')"
+                                               @*onclick="CancellaRichiestaDaSegnalazioni (@Evidenza.IdSWdaStornare,true )"*@
+                                               data-day="@Evidenza.data.ToString("ddMMyyyy")"
+                                               class="btn btn-default btn-scriv text-uppercase bg-puls_dash @(SpegniCarenza ? "disable" : "")">
+                                                @if (Evidenza.descOrarioReale != null && Evidenza.descOrarioReale.Trim() == "Transiti Sfasati" && Model.dettaglioGiornata.giornata.tipoDipendente != "G")
+                                                {
+                                                    tipoIcona = "fa-eye";
+
+                                                }
+                                                else
+                                                { tipoIcona = "fa-edit"; }
+
+                                                GESTISCI
+                                            </a>
+
+                                        }
+                                        else
+                                            {
+                                                <a role="link" aria-label="Gestisci l'evidenza"
+                                                   tabindex="-1"
+                                                   href="#" data-toggle="modal"
+                                                   onclick="ShowPopup('','','@Evidenza.data.ToString("dd/MM/yyyy")','@Evidenza.data.ToString("dd/MM/yyyy")')"
+                                                   data-day="@Evidenza.data.ToString("ddMMyyyy")"
+                                                   class="btn btn-default btn-scriv text-uppercase bg-puls_dash @(SpegniCarenza ? "disable" : "")">
+                                                    @if (Evidenza.descOrarioReale != null && Evidenza.descOrarioReale.Trim() == "Transiti Sfasati" && Model.dettaglioGiornata.giornata.tipoDipendente != "G")
+                                                    {
+                                                        tipoIcona = "fa-eye";
+
+                                                    }
+                                                    else
+                                                    { tipoIcona = "fa-edit"; }
+
+                                                    GESTISCI
+                                                </a>
+                                            }
+
+                                    }
+                                            @Html.Partial("_nascondi", Evidenza)
+
+                                        </td>
+
+
+                                    }
+
+                                </tr>
+                            }
+                            if (rows == 0)
+                            {
+                                @Html.Partial("_nodati");
+
+                            }
+                        }
+                        else
+                        {
+                            @Html.Partial("_nodati");
+                        }
+
+                    </tbody>
+
+                </table>
+                @if (Model.listaEvidenze != null && Model.listaEvidenze.data != null)
+                {
+                    if (Model.listaEvidenze.data.giornate.Where(a =>
+                         (a.TipoEcc == TipoEccezione.AssenzaIngiustificata) ||
+                             (quadratura == "g" && a.TipoEcc == TipoEccezione.Carenza)).Count() > 7)
+                    {
+                        <table class="js-table-sections table table-hover">
+                            <tr>
+                                <td style="text-align: center; width: 100%">
+                                    <i class="si si-arrow-right fa-2x text-success" />
+                                </td>
+                            </tr>
+                        </table>
+                    }
+                }
+
+
+
+            </div>
+
+
+            <div class="tab-pane" id="btab-con-maggiorpresenza" role="tabpanel">
+                <table class="js-table-sections table table-hover rai-table rai-table-vcenter">
+
+                    <tbody class="js-table-sections-header">
+                        @if (Model.listaEvidenze != null && Model.listaEvidenze.data != null)
+                        {
+                            rows = 0;
+                            var items = Model.listaEvidenze.data.giornate.Where(a => a.TipoEcc == TipoEccezione.MaggiorPresenza);
+                            foreach (Evidenza Evidenza in items)
+                            {
+                                rows++;
+                                string ariaLabel = "In data " + Evidenza.data.ToString("dd MMMM, yyyy") + " hai lavorato ore " + Evidenza.maggiorPresenza + " in più";
+
+                                <tr tabindex="@(rows==1?"0":"-1")" aria-label="@ariaLabel">
+
+                                    @{ string colore = "success";
+                                        string minuti = ""; }
+
+
+
+                                    <td class="font-w600 text-@colore" width="@(Model.QuadraturaUtenteTerzo==null?"25%":"50%")">
+                                        <span class="hidden-xs" style="font-weight: bold;">@Evidenza.data.ToString("dd MMMM, yyyy")</span>
+                                        <span class="visible-xs" style="font-weight: bold;">@Evidenza.data.ToString("dd/MM/yyyy")</span>
+                                        <div class="text-muted hidden-xs visible-sm visible-md visible-lg">
+                                            <em>
+                                                @(Evidenza.descOrarioReale != null ? Evidenza.descOrarioReale.ToLower() : "")
+                                            </em>
+                                        </div>
+                                        <em></em>
+                                    </td>
+                                    <td width="45%" style="text-align: center;">
+                                        <i class="icons icon-login icon-orario"></i> @Evidenza.timbrature[0].entrata.orario -
+                                        @Evidenza.timbrature[0].uscita.orario <i class="icons icon-login icon-orario"></i>
+                                        <div class="text-muted" <div class="text-muted" >
+                                        <span style="font-weight: bold;">+ @(Evidenza.maggiorPresenza.IndexOf(":")>0?Evidenza.maggiorPresenza:"00:"+Evidenza.maggiorPresenza.PadLeft(2,'0'))
+                                        </span>
+                                    </div>
+                                    <em></em>
+                                    </td>
+
+                                    @if (Model.QuadraturaUtenteTerzo == null)
+                                    {
+                                        <th width="30%" class="text-center" style="width: 100px;">
+                                            <a aria-label="Gestisci l'evidenza"
+                                               tabindex="0"
+                                               onclick="ShowPopup('','','@Evidenza.data.ToString("dd/MM/yyyy")','@Evidenza.data.ToString("dd/MM/yyyy")')"
+                                               class="btn btn-default btn-scriv text-uppercase bg-puls_dash @(quadratura=="g" && UtenteHelper.GiornateConCarenza()!=null?"disable":"")">GESTISCI</a>
+                                            @Html.Partial("_nascondi", Evidenza)
+                                        </th>
+                                    }
+                                </tr>
+                            }
+                            if (items.Count() == 0)
+                            {
+                                @Html.Partial("_nodati");
+                            }
+                        }
+                        else
+                        {
+                            @Html.Partial("_nodati");
+                        }
+
+                    </tbody>
+
+                </table>
+            </div>
+
+
+
+            <div class="tab-pane" id="btab-carenza" role="tabpanel">
+                <table class="js-table-sections table table-hover rai-table rai-table-vcenter" id="lemieevidenze" tabindex="0" aria-label="Carenze">
+
+                    <tbody class="js-table-sections-header">
+                        @{
+                            tipoIcona = "fa-edit";
+                            rows = 0;
+
+                        }
+                        @if (Model.listaEvidenze != null && Model.listaEvidenze.data != null)
+                        {
+
+
+                            var items = Model.listaEvidenze.data.giornate.
+                               Where(a => a.TipoEcc == TipoEccezione.Carenza);
+
+                            foreach (Evidenza Evidenza in items)
+                            {
+                                /* if (Evidenza.TipoEcc == myRai.digigappWS_ws1.TipoEccezione.Carenza
+                                     && quadratura=="s")
+                                 { continue; }
+                                 */
+
+                                rows++;
+
+                                //se questa row è una carenza e ci sono altre rows assente ingiustificato, disabilita carenza
+                                Boolean SpegniCarenza = Evidenza.TipoEcc == TipoEccezione.Carenza && Model.listaEvidenze.data.giornate.Any(z => z.TipoEcc == TipoEccezione.AssenzaIngiustificata);
+                                SpegniCarenza = SpegniCarenza || (UtenteHelper.GetQuadratura() == Quadratura.Giornaliera && Evidenza.TipoEcc == TipoEccezione.Carenza && rows > 1);
+
+
+
+                                string colore = "danger";
+                                string descEcc = "Assente Ingiustificato";
+                                string minuti = "";
+                                string ariaLabel = "Hai un'assenza ingiustificata in data " + Evidenza.data.ToString("dd MMMM, yyyy", System.Globalization.CultureInfo.CreateSpecificCulture("it-IT"));
+                                Boolean ShowButton = true;
+
+                                if (Evidenza.TipoEcc == TipoEccezione.Carenza)
+                                {
+                                    colore = "warning";
+                                    descEcc = "Carenza";
+                                    minuti = "(" + @Evidenza.carenza + " minuti " + (String.IsNullOrWhiteSpace(Evidenza.CarenzaEffettiva) ? "" : " - Effettivi: " + Evidenza.CarenzaEffettiva + " minuti") + " )";
+                                    ariaLabel = "Hai una carenza di " + @Evidenza.carenza + " minuti in data " + Evidenza.data.ToString("dd MMMM, yyyy", System.Globalization.CultureInfo.CreateSpecificCulture("it-IT"));
+                                }
+                                if (Evidenza.TipoEcc == TipoEccezione.AssenzaIngiustificata && Evidenza.timbrature != null && Evidenza.timbrature.Count() > 0)
+                                {
+                                    descEcc = "Transiti Sfasati";
+                                    ShowButton = false;
+                                    ariaLabel = "Transiti sfasati in data " + Evidenza.data.ToString("dd MMMM, yyyy", System.Globalization.CultureInfo.CreateSpecificCulture("it-IT"));
+                                }
+
+                                <tr tabindex="@(rows==1?"0":"-1")" aria-label="@ariaLabel">
+
+
+
+                                    <td class="" width="@(Model.QuadraturaUtenteTerzo==null?"25%":"50%")">
+                                        <span class="hidden-xs rai-font-md-neutral text-@colore">
+                                            @Evidenza.data.ToString("dd MMMM, yyyy", System.Globalization.CultureInfo
+                                        .CreateSpecificCulture("it-IT"))
+                                        </span>
+                                        <span class="visible-xs rai-font-md-neutral text-@colore">@Evidenza.data.ToString("dd/MM/yyyy")</span>
+                                        <div class="text-muted hidden-xs visible-sm visible-md visible-lg">
+                                        <em>@(Evidenza.descOrarioReale!=null?Evidenza.descOrarioReale.ToLower():"")</em>
+                                    </div>
+                                    <em></em></td>
+                                <td class="font-w600" style="font-weight: bold;text-align: center;" width="45%" >
+                                    @descEcc
+                                    <div class="text-muted">
+                                        <em>@minuti
+                                        </em>
+                                    </div>
+                                    <div class="text-muted visible-xs">
+                                            <em>@(Evidenza.descOrarioReale != null ? Evidenza.descOrarioReale.ToLower() : "")</em>
+                                        </div>
+                                    </td>
+
+                                    @if (Model.QuadraturaUtenteTerzo == null)
+                                    {
+                                        <td class="text-center" colspan="2" width="30%">
+                                            @if (ShowButton)
+                                            {
+                                                <a href="#" data-toggle="modal"
+                                                   tabindex="@(SpegniCarenza?"-1":"0")"
+                                                   onclick="ShowPopup('','','@Evidenza.data.ToString("dd/MM/yyyy")','@Evidenza.data.ToString("dd/MM/yyyy")')"
+                                                   data-day="@Evidenza.data.ToString("ddMMyyyy")"
+                                                   class="btn rai-btn-small @(SpegniCarenza ? "disable" : "")">
+                                                    @if (Evidenza.descOrarioReale != null && Evidenza.descOrarioReale.Trim() == "Transiti Sfasati" && Model.dettaglioGiornata.giornata.tipoDipendente != "G")
+                                                    {
+                                                        tipoIcona = "fa-eye";
+
+                                                    }
+                                                    else
+                                                    { tipoIcona = "fa-edit"; }
+
+                                                    GESTISCI
+                                                </a>
+                                                @Html.Partial("_nascondi", Evidenza)
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+
+                            if (rows == 0)
+                            {
+                                @Html.Partial("_nodati");
+
+                            }
+                        }
+                        else
+                        {
+                            @Html.Partial("_nodati");
+                        }
+
+                    </tbody>
+
+                </table>
+                @if (Model.listaEvidenze != null && Model.listaEvidenze.data != null)
+                {
+                    if (Model.listaEvidenze.data.giornate.Where(a =>
+                         (a.TipoEcc == TipoEccezione.AssenzaIngiustificata) ||
+                             (quadratura == "g" && a.TipoEcc == TipoEccezione.Carenza)).Count() > 7)
+                    {
+                        <table class="js-table-sections table table-hover">
+                            <tr>
+                                <td style="text-align: center; width: 100%">
+                                    <i class="si si-arrow-right fa-2x text-success" />
+                                </td>
+                            </tr>
+                        </table>
+                    }
+                }
+            </div>
+
+            @*<div id="btab-incon" class="tab-pane">
+                @if (Model.listaEvidenze != null && Model.listaEvidenze.data != null && Model.listaEvidenze.data.giornate.Any(x => x.TipoEcc == myRai.digigappWS_ws1.TipoEccezione.Incongruenza))
+                {
+                    <table class="js-table-sections table table-hover" id="lemieevidenze">
+
+                        <tbody class="js-table-sections-header">
+
+                            @foreach (var ev in Model.listaEvidenze.data.giornate.Where(x => x.TipoEcc == myRai.digigappWS_ws1.TipoEccezione.Incongruenza))
+                            {
+                                string data = ev.data.ToString("dd/MM/yyyy");
+
+                                <tr tabindex="-1"  role="row" onfocus="onFocusRow(this)">
+                                    <td class="font-w600 text-warning" width="25%">
+                                        <span class="hidden-xs" style="font-weight: bold;">
+                                           @ev.data.ToString("dd MMMM, yyyy")
+                                        </span>
+                                        <span class="visible-xs">30/09/2019</span>
+                                        <div class="text-muted hidden-xs visible-sm visible-md visible-lg">
+                                            <em></em>
+                                        </div>
+                                        <em></em>
+                                    </td>
+                                    <td class="font-w600" style="font-weight: bold;text-align: center;" width="45%">
+                                        Giornata con incongruenza
+                                        <div class="text-muted">
+                                            <small>
+                                                <i>Contattare la Segreteria</i>
+                                            </small>
+                                        </div>
+                                    </td>
+
+                                    <td class="text-center" colspan="2" width="30%">
+                                        <a role="link" aria-label="Gestisci l'evidenza" tabindex="0" href="#" data-toggle="modal" onclick="ShowPopup('','','@data','@data')" data-day="@data.Replace("/", "")" class="btn btn-default btn-scriv text-uppercase bg-puls_dash ">
+
+                                            VEDI
+                                        </a>
+
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+               
+            </div>*@
+        </div>
+    </div>
+</section>
+
+<script type="text/javascript">
+   
+    $('[data-toggle=popover]').popover();
+    //$( '[data-toggle="popover"]' ).popover( {
+    //    template: '<div class="popover"><div class="arrow"></div><div><span style="float:left; width:100%; display:inline;" class="popover-title"></span><span class="customPopOverCloser" style="float:right; width:5%; margin-top: -30px; margin-left: -3px; dispay:inline; cursor:pointer;" aria-hidden="true" > </span></div><div class="clearfix"></div><div class="popover-content"></div></div>',
+    //    html: true
+    //});
+
+    function getTransitiSfasati(giorno)
+    {
+        $.ajax({
+            url: '@Url.Action("GetTransitiSfasatiView", "Ajax")',
+            type: "GET",
+            dataType: "html",
+            data: {
+                giorno: giorno
+            },
+            success: function (data) {
+                swal({
+                    title: 'Transiti sfasati',
+                    html: data,
+                    showCloseButton: true,
+                    showCancelButton: false,
+                    confirmButtonText: '<i class="fa fa-exit"></i> Chiudi'
+                });
+            }
+        });
+    }
+</script>

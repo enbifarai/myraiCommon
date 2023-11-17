@@ -1,0 +1,389 @@
+﻿@using myRaiHelper;
+@using myRai.Models;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+@using myRaiData;
+
+@model InfoGiornataModel
+
+@{
+    bool showOrario = true;
+    if (myRai.Models.Utente.GestitoSirio())
+    {
+        DateTime rifSirioDate = DateTime.Today;
+        rifSirioDate = rifSirioDate.AddDays(7 - (int)DateTime.Today.DayOfWeek);
+        if (DateTime.Today.DayOfWeek >= DayOfWeek.Friday)
+        {
+            rifSirioDate = rifSirioDate.AddDays(7);
+        }
+
+        if (Model.DataGiornata > rifSirioDate)
+        { showOrario = false; }
+    }
+    string tipoEvidenza = ScrivaniaManager.GetEvidenzaPerGiornata(Model.DataGiornata);
+    string[] par = myRai.Business.CommonManager.GetParametri<string>(EnumParametriSistema.CambioTurniNLRIP);
+}
+
+    <div class="row" id="giornata-info-attr"
+     data-cambiturno-tipidip="@par[0]"
+     data-cambiturno-numgiorni="@par[1]"
+     data-tipoevidenza="@tipoEvidenza"
+         data-ceiton-obbl="@Model.CeitonAttivitaObbligatoriaPerSede.ToString()"
+         data-prima-timbratura="@Model.PrimaTimbratura"
+         data-ultima-timbratura="@Model.UltimaTimbratura"
+         data-max-urh="@Model.MaxDurataURH"
+     data-mensa="@(myRai.Business.EccezioniManager.calcolaMinuti(Model.minutiMensa))"
+     data-carenza="@(myRai.Business.EccezioniManager.calcolaMinuti(Model.Carenza))"
+         data-prevista-presenza="@Model.PrevistaPresenza"
+     data-maggior-presenza="@(myRai.Business.EccezioniManager.calcolaMinuti(Model.MaggiorPresenza))"
+         data-mensa-pr="@Model.intervallo_mensa"
+         data-mensa-se="@Model.intervallo_mensa_serale"
+         data-mensa-pr-from="@Model.intervallo_mensa_pranzo_minuti_from"
+         data-mensa-pr-to="@Model.intervallo_mensa_pranzo_minuti_to"
+         data-mensa-se-from="@Model.intervallo_mensa_serale_minuti_from"
+         data-mensa-se-to="@Model.intervallo_mensa_serale_minuti_to"
+         data-mensa-disponibile="@Model.MensaDisponibilePC"
+         data-eccezioni-ceiton="@Model.EccezioniRichiedentiCeiton"
+     @{ int maxemol = Convert.ToInt32(Model.PrevistaPresenza) - myRai.Business.EccezioniManager.calcolaMinuti(Model.Carenza) + myRai.Business.EccezioniManager.calcolaMinuti(Model.MaggiorPresenza); }
+         data-max-emol="@maxemol"
+         data-quadratura="@Model.TipoQuadratura"
+         data-poh-recuperare="@Model.POHdaRecuperare">
+        <input id="cod-orario-reale" type="hidden" value="@Model.codOrarioReale" />
+    <div style="display:none;"></div>
+    <div class="col-xs-5"><span>Giorno: </span></div>
+    <div class="col-xs-7"><b>@Model.giornoSettimana </b></div>
+
+
+
+    </div>
+
+    @if (showOrario)
+    {
+        <div class="row">
+        <div class="col-xs-5"><span>Orario Previsto: </span></div>
+            <div class="col-xs-7">
+
+            <b>
+                    @*@Model.codOrarioPrevisto  @Model.descOrarioPrevisto*@
+                    @if (Model.OrarioPrevisto != null && Model.OrarioPrevisto.OrarioEntrataIniziale != null &&
+                            Model.OrarioPrevisto.OrarioEntrataIniziale.Trim() == "00:00"
+                                && Model.OrarioPrevisto.OrarioUscitaIniziale != null &&
+                            Model.OrarioPrevisto.OrarioUscitaIniziale.Trim() == "00:00")
+                    {
+                    @: @Model.codOrarioPrevisto @Model.descOrarioPrevisto
+                    }
+                    else
+                    {
+                        if (Model.OrarioPrevisto != null)
+                        {
+                        @: @Model.codOrarioPrevisto : @Model.OrarioPrevisto.OrarioEntrataIniziale / @Model.OrarioPrevisto.OrarioUscitaIniziale
+                            if (Model.OrarioPrevisto.OrarioEntrataIniziale != Model.OrarioPrevisto.OrarioEntrataFinale)
+                            {
+                                <span>- </span>
+                                @: @Model.OrarioPrevisto.OrarioEntrataFinale / @Model.OrarioPrevisto.OrarioUscitaFinale
+                            }
+                        }
+
+                    }
+            </b>
+            </div>
+        </div>
+}
+
+@if (showOrario)
+{
+        <div class="row">
+        <div id="ora-rea" class="col-xs-5" data-cod="@Model.codOrarioReale" data-min="@Model.OrarioReale.OrarioEntrataInizialeMin" data-max="@Model.OrarioReale.OrarioUscitaInizialeMin"><span>Orario Reale: </span></div>
+
+            <div class="col-xs-7">
+
+            <b>
+                    @* @Model.codOrarioReale  @Model.descOrarioReale*@
+                    @if (Model.OrarioReale != null && Model.OrarioReale.OrarioEntrataIniziale != null &&
+                             Model.OrarioReale.OrarioEntrataIniziale.Trim() == "00:00"
+                            && Model.OrarioReale.OrarioUscitaIniziale != null &&
+                            Model.OrarioReale.OrarioUscitaIniziale.Trim() == "00:00")
+                    {
+                    @: @Model.codOrarioReale @Model.descOrarioReale
+                    }
+                    else
+                    {
+                        if (Model.OrarioReale != null)
+                        {
+                        @: @Model.codOrarioReale : @Model.OrarioReale.OrarioEntrataIniziale / @Model.OrarioReale.OrarioUscitaIniziale
+                            if (Model.OrarioReale.OrarioEntrataIniziale != Model.OrarioReale.OrarioEntrataFinale)
+                            {
+                                <span>- </span>
+                                @: @Model.OrarioReale.OrarioEntrataFinale / @Model.OrarioReale.OrarioUscitaFinale
+                            }
+                        }
+
+                    }
+            </b>
+            </div>
+        </div>
+    }
+
+    <div class="row">
+    <div class="col-xs-5"><span>Intervallo: </span></div>
+        <div class="col-xs-7">
+
+        <b>
+
+            @Model.minutiMensa
+        </b>
+        </div>
+    </div>
+
+@if (myRai.Models.Utente.TipoDipendente() != "D" && myRai.Models.Utente.TipoDipendente() != "G")
+    {
+        <div class="row"
+         @if ((myRai.Models.Utente.GetQuadratura() == Quadratura.Giornaliera && !String.IsNullOrWhiteSpace(Model.Carenza) && Model.CarenzaMinuti > Model.BonusCarenza) || (myRai.Models.Utente.GetQuadratura() == myRai.Models.Quadratura.Settimanale && !Model.BilancioPositivoPerQuadraturaSettimanale && !String.IsNullOrWhiteSpace(Model.Carenza) && Model.CarenzaMinuti > Model.BonusCarenza)) { @: style="color:#f00"
+             }>
+            <div class="col-xs-5">
+            <span>
+                    Carenza:
+                    @{
+                        string tx = null;
+                    if (myRai.Models.Utente.GetQuadratura() == Quadratura.Settimanale)
+                        {
+                            using (var db = new digiGappEntities())
+                            {
+                                var item = db.MyRai_ParametriSistema.Where(p => p.Chiave.Equals("TestoIconaCarenza")).FirstOrDefault();
+
+                                if (item != null)
+                                {
+                                    tx = item.Valore1;
+                                }
+                            }
+                        }
+
+                        if (!String.IsNullOrEmpty(tx))
+                        {
+                            if (Model.DataGiornata > DateTime.Now.Date)
+                            {
+                            }
+                            else
+                            {
+                                if (!string.IsNullOrWhiteSpace(Model.Carenza))
+                                {
+                                    <i id="" class="fa fa-info-circle" title="@(tx)"></i>
+                                }
+                            }
+                        }
+                    }
+            </span>
+            </div>
+
+            <div class="col-xs-7">
+            <b>
+                    @if (Model.DataGiornata > DateTime.Now.Date)
+                    {
+                        @Html.Raw("-");
+                    }
+                    else
+                    {
+                        @(string.IsNullOrWhiteSpace(Model.Carenza) ? "-" : Model.Carenza)
+                    }
+            </b>
+            </div>
+        </div>
+    }
+
+
+    <div class="row">
+    <div class="col-xs-5"><span>Maggior presenza: </span></div>
+        <div class="col-xs-7">
+        <b>
+
+                @if (Model.DataGiornata > DateTime.Now.Date)
+                {
+                    @Html.Raw("-");
+                }
+                else
+                {
+                    @(string.IsNullOrWhiteSpace(Model.MaggiorPresenza) ? "-" : Model.MaggiorPresenza)
+                }
+
+            @if (
+            !Model.ApertaDaResp &&
+            "YKNL".Contains(myRai.Models.Utente.TipoDipendente()) &&
+            !Model.GiornataChiusa &&
+            !Model.HaSmap1min &&
+            Model.MaggiorPresenza != null &&
+            Model.MaggiorPresenza.Trim() != "-" &&
+            Model.MaggiorPresenza.Trim() != "00:00" &&
+            Model.MaggiorPresenza.Trim() != "0"
+            )
+            {
+                <button type="button" onclick="AzzeraMP($('#timbraturetoday').attr('data-uscita-tot-min'),$('#data_da').val())" class="btn btn-default btn-link"
+                        style="padding-top:0px;padding-bottom:0px;margin-left:20px;height:20px;font-size:96%">
+                    Elimina
+                </button>
+            }
+
+        </b>
+        </div>
+    </div>
+    @{
+        if (Model.TipoDip != null && !Model.TipoDip.Equals("G", StringComparison.CurrentCultureIgnoreCase))
+        {
+            <div class="row">
+            <div class="col-xs-5"><span>Mensa fruita: </span></div>
+                <div class="col-xs-7">
+                <b>
+                    @if (Model.MensaDataOra != null)
+                    {
+                        @:Alle @(((DateTime)Model.MensaDataOra).ToString("HH:mm"))
+                    }
+                    else if (Model.RICO)
+                    {
+                        <span>Si (RICO) </span>
+                    }
+                    else
+                    {
+                        <span>No</span>
+                    }
+                </b>
+                </div>
+            </div>
+        }
+    }
+
+    @{
+        if (Model.RICO)
+        {
+            <div class="row">
+            <div class="col-xs-5"><span>Ristorante: </span></div>
+                <div class="col-xs-7">
+                <b>
+                    <span>@(Model.RistoranteConvensionato) </span>
+                </b>
+                </div>
+            </div>
+        }
+    }
+
+    @if (Model.MensaDataOra != null)
+    {
+        <div class="row">
+        <div class="col-xs-5"><span>Sede mensa: </span></div>
+            <div class="col-xs-7">
+            <b>
+                <span>@(Model.MensaSede != null ? Model.MensaSede.Trim() : "")</span>
+            </b>
+            </div>
+        </div>
+    }
+
+    <!-- TRANSITI SFASATI -->
+    @*<div class="row">
+            <div class="col-xs-5"><span>Transiti sfasati: </span></div>
+            <div class="col-xs-7">
+                <b>
+                    <span><a href="#" onclick="getTransitiSfasati()" title="Clicca per visualizzare le timbrature">Si</a></span>
+                </b>
+            </div>
+        </div>*@
+
+
+@if (tipoEvidenza != null && Utente.TipoDipendente() != "G" && Utente.TipoDipendente() != "D")
+{
+    <div class="row">
+        <div class="col-xs-5"><span>Evidenza: </span></div>
+        <div class="col-xs-7">
+            <b>
+                @if (tipoEvidenza == "A")
+                {
+                    <span>Assenza ingiustificata</span>
+                }
+                @if (tipoEvidenza == "T")
+                {
+                    <span>Transiti sfasati</span>
+                }
+            </b>
+        </div>
+    </div>
+}
+@if (tipoEvidenza != null && tipoEvidenza == "A" && Utente.TipoDipendente() == "G")
+{
+    <div class="row">
+        <div class="col-xs-5"><span>Evidenza: </span></div>
+        <div class="col-xs-7">
+            <b>
+                
+                @if (tipoEvidenza == "A")
+                {
+                    <span>Assenza ingiustificata</span>
+                }
+                
+            </b>
+        </div>
+    </div>
+}
+
+
+    @{
+        if (Model.DataGiornata != DateTime.MinValue)
+        {
+            <input type="hidden" id="datagiornata" value="@(Model.DataGiornata.ToString(" dd/MM/yyyy"))" />
+        }
+    }
+
+<div id="noteGiornataContainer" style="overflow-y: auto; overflow-x: hidden; max-height: 185px;">
+    @Html.Partial("~/Views/Home/subpartial/_noteGiornata.cshtml", Model)
+</div>
+
+@{
+    if (Model.MatricolaUtente == Utente.Matricola() && Model.NascondiMessaggio == false)
+    {
+        <div class="col-xs-12 text-center ">
+            <a class="text-center" style="font-size: 0.9em;" href="#" onclick="AggiungiNotaEccezione();">Invia un messaggio alla segreteria</a>
+        </div>
+    }
+}
+
+
+<!--
+    <!-- div class="col-sm-2 setright"><i class="icons icon-login icon-orario"></i></!-->
+<!--div class="col-sm-4 setleft ">
+    @Model.orarioIngressoTurno
+    </!--div>
+
+    <div class="col-sm-4 setright  ">
+    @Model.orarioUscitaTurno
+    </div>
+    <div class="col-sm-2 setleft"><i class="icons icon-logout icon-orario"></i></div>
+    </div-->
+
+
+
+<script type="text/javascript">
+    function getTransitiSfasati()
+    {
+        var giorno = '@(Model.DataGiornata.ToString("ddMMyyyy"))';
+
+        $.ajax({
+            url: '@Url.Action("GetTransitiSfasatiView", "Ajax")',
+            type: "GET",
+            dataType: "html",
+            data: {
+                giorno: giorno
+            },
+            success: function (data) {
+                swal({
+                    title: 'Transiti sfasati',
+                    html: data,
+                    showCloseButton: true,
+                    showCancelButton: false,
+                    confirmButtonText: '<i class="fa fa-exit"></i> Chiudi'
+                });
+            }
+        });
+    }
+
+    $(function () {
+        $( '#btn_AggiungiNotaEccezione' ).removeClass( 'hide' );
+    });
+</script>

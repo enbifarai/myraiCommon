@@ -1,0 +1,167 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout3.cshtml";
+}
+
+<style>
+    html, body {
+        background-color: #ffffff;
+    }
+
+    .job-posting {
+        width: 100%;
+        padding-top: 100px;
+        text-align: center;
+    }
+
+    .msg {
+        color: #999;
+        font-family: Open Sans, Arial, sans-serif;
+        font-size: 30px;
+        font-weight: 100;
+    }
+
+    .msg2 {
+        color: #999;
+        font-family: Open Sans, Arial, sans-serif;
+        font-size: 24px;
+        font-weight: 100;
+    }
+
+    .msg3 {
+        color: #999;
+        font-family: Open Sans, Arial, sans-serif;
+        font-size: 20px;
+        font-weight: 100;
+    }
+
+    .A_1 {
+        box-sizing: border-box;
+        color: rgb(51, 51, 51);
+        display: inline-block;
+        height: 30px;
+        text-align: center;
+        text-decoration: none solid rgb(51, 51, 51);
+        text-size-adjust: 100%;
+        text-transform: uppercase;
+        touch-action: manipulation;
+        vertical-align: middle;
+        column-rule-color: rgb(51, 51, 51);
+        perspective-origin: 34.1719px 15px;
+        transform-origin: 34.1719px 15px;
+        user-select: none;
+        caret-color: rgb(51, 51, 51);
+        background: rgb(243, 243, 243) none repeat scroll 0% 0% / auto padding-box border-box;
+        border: 0px none rgb(51, 51, 51);
+        border-radius: 3px 3px 3px 3px;
+        font: normal normal 700 normal 10.4px / 14.8571px "Open Sans", Arial, sans-serif;
+        outline: rgb(51, 51, 51) none 0px;
+        padding: 6px 12px;
+    }
+
+    .job-posting-upload {
+        margin-left: 20%;
+        margin-right:20%;
+    }
+</style>
+
+<div id="UploadCVContainer">
+    <section role="main" class="content-body" style="margin-left:0px;">
+        <div class="job-posting">
+            <h2 class="msg"> Gestione candidature</h2>
+            <br />
+            <h4 class="msg2"> Sono interessato a: Job di prova</h4>
+            <br />
+            <h5 class="msg3"> E' necessario allegare il proprio curriculum Vitae cliccando sul pulsante <b>"Sfoglia"</b> sul proprio PC.</h5>
+            <br />
+            <div class="job-posting-upload">
+                <section class="panel">
+                    <div class="panel-body" style="background:none;">
+                        <form id="frmInsertAllegati" name="form1" method="post" action="@(Url.Action("UploadAttached", "JobPosting"))" enctype="multipart/form-data">
+                            <input type="hidden" name="idJob" id="idJob" value="7" />
+                            <input type="hidden" name="numerojp" id="numerojp" value="2" />
+                            <div>
+                                <label>Seleziona file</label>
+                                <input class="form-control image-preview-filename" id="myFile" name="myFile" type="file" />
+                            </div>
+                            <div>
+                                <br />
+                                <input id="submit" type="button" value="Invia candidatura" disabled="disabled" />
+                            </div>
+                        </form>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section afterjs { 
+<script type="text/javascript">
+    $( function ()
+    {
+        $( '#myFile' ).on( 'change', function ()
+        {
+            var tx = $( this ).val();
+            if ( $.trim( tx ).length > 0 )
+            {
+                $( '#submit' ).prop( 'disabled', false );
+            }
+            else
+            {
+                $( '#submit' ).prop( 'disabled', true );
+            }
+        } );
+
+        $( '#submit' ).on( 'click', function ()
+        {
+            var obj = $( "#frmInsertAllegati" ).serialize();
+            var idJob = $( "#frmInsertAllegati #idJob" ).val();
+            var numerojp = $( "#frmInsertAllegati #numerojp" ).val();
+            var formData = new FormData();
+            var file = $( "#myFile" )[0].files[0];
+            formData.append( '_name', name );
+            formData.append( 'idJob', idJob );
+            formData.append( 'numerojp', numerojp );
+            formData.append( 'myFile', file );
+            $.ajax( {
+                url: "/JobPosting/TestUploadAttached",
+                type: "POST",
+                cache: false,
+                dataType: 'json',
+                contentType: false,
+                processData: false,
+                data: formData,
+                success: function ( data )
+                {
+                    if ( !data.success )
+                    {
+                        var errorMessage = 'Si è verificato un errore!';
+                        if ( $.trim( data.errorMessage ).length > 0 )
+                        {
+                            errorMessage = data.errorMessage;
+                        }
+
+                        swal( 'Oops...',
+                            errorMessage,
+                            'error'
+                        );
+                        return false;
+                    }
+
+                    swal(
+                        'Candidatura inviata correttamente!',
+                        '',
+                        'success'
+                    ).then( function ( result )
+                    {
+                        if ( result )
+                        {
+                            window.close();
+                        }
+                    } );
+                }
+            } );
+        } );
+    } );
+</script>
+}

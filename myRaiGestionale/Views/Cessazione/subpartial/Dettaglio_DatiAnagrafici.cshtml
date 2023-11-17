@@ -1,0 +1,420 @@
+﻿@using myRaiHelper
+@model myRaiCommonModel.Gestionale.CessazioneModel
+
+@{
+    string nominativo = Model.Pratica.SINTESI1.DES_COGNOMEPERS.TitleCase() + " " + Model.Pratica.SINTESI1.DES_NOMEPERS.TitleCase();
+    string subtitle = "Matricola: " + Model.Pratica.MATRICOLA;
+
+    string matricola = CommonHelper.GetCurrentUserMatricola();
+    string func = CessazioneHelper.EnabledTo(matricola) ? CessazioneHelper.INCENTIVI_HRGA_FUNC : CessazioneHelper.INCENTIVI_INC_EXTRA;
+    bool canModifyMail = !Model.IsPreview && !Model.IsAnpal && CessazioneHelper.EnabledToAnySubFunc(matricola, "ADM", "GEST") && Model.Stato.ID_STATO != (int)IncStato.RichiestaAccettata;
+    bool isNorm = CessazioneHelper.EnabledToAnySubFunc(matricola, "ADM", "NORM");
+
+    var sezioniAnag = "\"Anagrafici\", \"TipoContratti\", \"Sedi\", \"Servizi\", \"Qualifiche\", \"Ruoli\", \"Struttura\"";
+    if (isNorm)
+    {
+        sezioniAnag += ",\"Contenzioso\"";
+    }
+
+    var parLimiti = HrisHelper.GetParametriJson<myRaiData.Incentivi.XR_HRIS_PARAM>(HrisParam.IncentiviParametri);
+    var parTipiVert = parLimiti.FirstOrDefault(x => x.COD_PARAM == "TipologieVertenze");
+    List<SelectListItem> tipiVert = new List<SelectListItem>();
+    tipiVert.Add(new SelectListItem() { Value = "", Text = "Seleziona tipologia" });
+    var dictTipiVer = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, string>>(parTipiVert.COD_VALUE1);
+    tipiVert.AddRange(dictTipiVer.Select(x => new SelectListItem() { Value = x.Key, Text = x.Value, Selected = Model.TipiVertenze.Contains(x.Key) }));
+
+    bool collapsable = false;// CommonHelper.GetCurrentUserMatricola() == "103650";
+}
+
+<div class="row">
+    <div class="col-sm-6">
+        @Html.ProfileWidget(Model.Pratica.MATRICOLA, nominativo, null, subtitle)
+    </div>
+    <div class="col-sm-6">
+        @if (!String.IsNullOrWhiteSpace(Model.Pratica.CAUSE_VERTENZE))
+        {
+            <label class="rai-label rai-label-interactive" data-toggle="tooltip" data-placement="right" title="@Model.Pratica.CAUSE_VERTENZE">Gestione manuale</label>
+        }
+
+        @if (!Model.IsAnpal)
+        {
+            var cc = Model.Pratica.ANAGPERS.XR_DATIBANCARI.OrderByDescending(y => y.DTA_FINE).FirstOrDefault(x => x.XR_UTILCONTO.Count() == 1 && x.XR_UTILCONTO.First().COD_UTILCONTO == "01");
+            if (cc != null)
+            {
+                if (cc.IND_CONGELATO == "Y")
+                {
+                    <label class="rai-label rai-label-error">Conto congelato</label>
+                }
+                if (cc.IND_VINCOLATO == "Y")
+                {
+                    <label class="rai-label rai-label-error">Conto vincolato</label>
+                }
+            }
+        }
+
+        @if (!String.IsNullOrWhiteSpace(Model.Pratica.IND_PROPRIO_IBAN) && Model.Pratica.IND_PROPRIO_IBAN == "B")
+        {
+            <label class="rai-label rai-label-error">Vincolo BCCR</label>
+        }
+
+        @if (Model.Pratica.IND_PIGNORAMENTO.GetValueOrDefault())
+        {
+            <label class="rai-label rai-label-error">Pignoramento</label>
+        }
+        @if (Model.Pratica.IND_ESTIN_ANT_PRESTITO.GetValueOrDefault())
+        {
+            <label class="rai-label rai-label-error">Estinzione ant. prestito</label>
+        }
+        @if (Model.Pratica.IND_CESSIONE_QUINTO_TFR.GetValueOrDefault())
+        {
+            <label class="rai-label rai-label-error">Cessione quinto TFR</label>
+        }
+
+        @if (Model.IsAnpal && Model.Pratica.DATA_RECESSO_ANPAL.HasValue && Model.AllegatiAnpal.Any(x => x.ID_ALLEGATO > 0))
+        {
+            <label class="rai-label rai-label-success">Documento caricato</label>
+        }
+    </div>
+</div>
+
+<style>
+    .swal2-content .rai-select-popover {
+        position: fixed !important;
+        width: 350px;
+    }
+</style>
+
+@using (Html.BeginBlock(BlockType.ContentTable, "Dati anagrafici", new List<ActionTemplate>() { new ActionTemplate() { Text = "Consulta anagrafica", OnClick = "IncOpenModalAnag('" + Model.Pratica.MATRICOLA + "')", Icon = "fa fa-user" } }, collapsable: collapsable))
+{
+    <div class="rai-table-info">
+        <div class="row">
+            <div class="col-sm-3 col-xs-6 ">
+                <label class="text-bold">Matricola</label>
+            </div>
+            <div class="col-sm-3 col-xs-6 no-padding-left">
+                <label>@Model.Pratica.MATRICOLA</label>
+            </div>
+
+            <div class="col-sm-3 col-xs-6 border-left">
+                <label class="text-bold">Nascita</label>
+            </div>
+            <div class="col-sm-3 col-xs-6 no-padding-left">
+                <label>@Model.Pratica.SINTESI1.DTA_NASCITAPERS.Value.ToString("dd/MM/yyyy")</label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-3 col-xs-6">
+                <label class="text-bold">Assunzione</label>
+            </div>
+            <div class="col-sm-3 col-xs-6 no-padding-left">
+                @if (Model.Pratica.ID_DIPENDENTE > 0)
+                {
+                    <label>@Model.Pratica.DATA_ASSUNZIONE.ToString("dd/MM/yyyy")</label>
+                }
+                else
+                {
+                    <label>@Model.Pratica.SINTESI1.DTA_INIZIO_CR.GetValueOrDefault().ToString("dd/MM/yyyy")</label>
+                }
+            </div>
+            <div class="col-sm-3 col-xs-6 border-left">
+                <label class="text-bold">Anzianità</label>
+            </div>
+            <div class="col-sm-3 col-xs-6 no-padding-left @(Model.Pratica.DATA_ASSUNZIONE != Model.Pratica.DATA_ANZIANITA ? "text-danger" : "")">
+                @if (Model.Pratica.ID_DIPENDENTE > 0)
+                {
+                    <label>@Model.Pratica.DATA_ANZIANITA.ToString("dd/MM/yyyy")</label>
+                }
+                else
+                {
+                    <label>@Model.Pratica.SINTESI1.DTA_ANZCONV.GetValueOrDefault().ToString("dd/MM/yyyy")</label>
+                }
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-3 col-xs-6 ">
+                <label class="text-bold">Cessazione</label>
+            </div>
+            <div class="col-sm-3 col-xs-6 no-padding-left">
+                @if (Model.Pratica.ID_DIPENDENTE > 0)
+                {
+                    <label>@Model.Pratica.DATA_CESSAZIONE.Value.ToString("dd/MM/yyyy")</label>
+                }
+                else if (Model.Pratica.SINTESI1.DTA_FINE_CR.GetValueOrDefault() <= DateTime.Today)
+                {
+                    <label>@Model.Pratica.SINTESI1.DTA_FINE_CR.Value.ToString("dd/MM/yyyy")</label>
+                }
+                else
+                {
+                    <label>-</label>
+                }
+            </div>
+            @if (Model.Pratica.ID_DIPENDENTE > 0)
+            {
+                <div class="col-sm-3 border-left">
+                    <label class="text-bold">Sede</label>
+                </div>
+                <div class="col-sm-3 col-xs-6 no-padding-left">
+                    <label title="@Model.Pratica.SEDE">@Model.Pratica.SEDE</label>
+                </div>
+            }
+        </div>
+        @if (Model.Pratica.ID_DIPENDENTE > 0)
+        {
+            <div class="row">
+                <div class="col-sm-3 col-xs-6 ">
+                    <label class="text-bold">Categoria</label>
+                </div>
+                <div class="col-sm-9 col-xs-6 no-padding-left">
+                    <label>@Model.Pratica.SINTESI1.DES_QUALIFICA</label>
+                </div>
+
+
+
+            </div>
+        }
+        @if (Model.Pratica.ID_DIPENDENTE > 0)
+        {
+            <div class="row">
+                <div class="col-sm-3 col-xs-6">
+                    <label class="text-bold">Cellulare</label>
+                </div>
+                <div class="col-sm-9 col-xs-6 no-padding-left">
+                    @if (!String.IsNullOrWhiteSpace(Model.Pratica.CELLULARE))
+                    {
+                        <label id="lblCellulare">@Model.Pratica.CELLULARE</label>
+                    }
+                    else if (!canModifyMail)
+                    {
+                        <label id="lblCellulare">-</label>
+                    }
+                    @if (canModifyMail)
+                    {
+                        <span>-&nbsp;</span><a onclick="IncModificaCellulare(@Model.Pratica.ID_DIPENDENTE)">Modifica</a>
+                    }
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-3 col-xs-6">
+                    <label class="text-bold">Mail</label>
+                </div>
+                <div class="col-sm-9 col-xs-6 no-padding-left">
+                    @if (!String.IsNullOrWhiteSpace(Model.Pratica.MAIL))
+                    {
+                        <label id="lblMail">@Model.Pratica.MAIL</label>
+                    }
+                    else if (!canModifyMail)
+                    {
+                        <label id="lblMail">-</label>
+                    }
+                    @if (canModifyMail)
+                    {
+                        <span>-&nbsp;</span><a onclick="IncModificaMail(@Model.Pratica.ID_DIPENDENTE)">Modifica</a>
+                    }
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-3 col-xs-6">
+                    <label class="rai-caption">Tipo vertenza</label>
+                </div>
+                <div class="col-sm-9 col-xs-6 no-padding-left">
+                    @if (!String.IsNullOrWhiteSpace(Model.Pratica.IND_TIPO_VERTENZE))
+                    {
+                        string val = "";
+                        <label id="lblCont">
+                            @foreach (var item in Model.Pratica.IND_TIPO_VERTENZE.Split(';'))
+                            {
+                                if (dictTipiVer.TryGetValue(item, out val))
+                                {
+                                    <span>@val<br /></span>
+                                }
+                                else
+                                {
+                                    <i>Errore imprevisto</i>
+                                }
+                            }
+                        </label>
+
+                    }
+                    else if (!canModifyMail)
+                    {
+                        <label id="lblCont">-</label>
+                    }
+                    @if (canModifyMail)
+                    {
+
+                        <span>-&nbsp;</span><a href="#" onclick="IncModificaCont(@Model.Pratica.ID_DIPENDENTE)">Modifica</a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+
+}
+
+@if (func == CessazioneHelper.INCENTIVI_HRGA_FUNC || Model.OpenFunction == "TESSCONTR")
+{
+    @Html.Partial("subpartial/Dettaglio_Note", Model)
+
+    if (Model.Pratica.ID_DIPENDENTE > 0)
+    {
+        bool canNotificaDip = isNorm;
+
+        <div class="row">
+            <div class="col-sm-12 push-20">
+                <button class="btn rai-btn-small full-width" onclick="AggiungiNotaPratica(@Model.Pratica.ID_DIPENDENTE, @(canNotificaDip?"true":"false"))"><i class="icons icon-note"></i> Aggiungi nota</button>
+            </div>
+        </div>
+    }
+}
+
+
+<script>
+    function IncModificaMail(idDip) {
+        swal({
+            text: "Inserisci l'indirizzo e-mail",
+            input: 'text',
+            showCancelButton: true,
+            confirmButtonText: 'Conferma',
+            cancelButtonText: 'Annulla',
+            reverseButtons: 'true',
+            customClass: 'rai',
+            preConfirm: function (value) {
+                return new Promise(function (resolve, reject) {
+                    if (value != "" && !validateEmail(value)) {
+                        reject("Indirizzo non corretto")
+                    }
+                    else {
+                        resolve()
+                    }
+                });
+            }
+        }).then(function (result) {
+            var mail = result;
+            $.ajax({
+                url: "/Cessazione/Modifica_Email",
+                type: "POST",
+                cache: false,
+                dataType: 'html',
+                data: { idDip: idDip, mail: mail },
+                success: function (data) {
+                    switch (data) {
+                        case "OK":
+                            $('#lblMail').text(mail);
+                            swal({ title: "OK", text: 'Mail modificata con successo', type: 'success', customClass: 'rai' });
+                            break;
+                        default:
+                            swal({ title: "Oops...", text: data, type: 'error', customClass: 'rai' });
+                    }
+                },
+                error: function (a, b, c) {
+                    swal({ title: "Oops...", text: c, type: 'error', customClass: 'rai' });
+                }
+            });
+        });
+    }
+
+
+
+    function IncModificaCellulare(idDip) {
+        swal({
+            text: "Inserisci il numero di cellulare",
+            input: 'text',
+            showCancelButton: true,
+            confirmButtonText: 'Conferma',
+            cancelButtonText: 'Annulla',
+            reverseButtons: 'true',
+            customClass: 'rai'
+        }).then(function (result) {
+            var cellulare = result;
+            $.ajax({
+                url: "/Cessazione/Modifica_Cellulare",
+                type: "POST",
+                cache: false,
+                dataType: 'html',
+                data: { idDip: idDip, cellulare: cellulare },
+                success: function (data) {
+                    switch (data) {
+                        case "OK":
+                            $('#lblCellulare').text(cellulare);
+                            swal({ title: "OK", text: 'Cellulare modificato con successo', type: 'success', customClass: 'rai' });
+                            break;
+                        default:
+                            swal({ title: "Oops...", text: data, type: 'error', customClass: 'rai' });
+                    }
+                },
+                error: function (a, b, c) {
+                    swal({ title: "Oops...", text: c, type: 'error', customClass: 'rai' });
+                }
+            });
+        });
+    }
+
+    function IncOpenModalAnag(matricola) {
+        let parm = {
+            m: matricola,
+            sezList: [@(Html.Raw(sezioniAnag))],
+            customFunc: "@(func)"
+        };
+        HrisModalAnagDipParams(parm);
+    }
+</script>
+
+@if (canModifyMail)
+{
+
+    <div id="tmpVert" hidden>
+        <label class="rai-caption text-uppercase">Tipologia vertenza/stragiudiziale/contenzioso</label>
+        @Html.RaiSelectFor(m => m.TipiVertenze, tipiVert, multiple: true, hideSearch: true)
+    </div>
+
+
+    <script>
+        function IncModificaCont(idDip) {
+            let tempHtml = $('#tmpVert').html();
+            let htmlText = '<div style="text-align:left !important;" id="intCont">';
+            htmlText += tempHtml;
+            htmlText += "</div>";
+            $('#tmpVert').html('');
+
+            swal({
+                html: htmlText,
+                showCancelButton: true,
+                confirmButtonText: 'Conferma',
+                cancelButtonText: 'Annulla',
+                reverseButtons: 'true',
+                customClass: 'rai'
+            }).then(function (result) {
+                debugger
+                var valSel = $('#TipiVertenze').val();
+                var cont = valSel ? valSel.join(";") : "";
+                var textSel = $('#TipiVertenze option:selected').map(function () { return $(this).text(); }).get().join("<br/>");
+                $.ajax({
+                    url: "/Cessazione/Modifica_Contenzioso",
+                    type: "POST",
+                    cache: false,
+                    dataType: 'html',
+                    data: { idDip: idDip, cont: cont },
+                    success: function (data) {
+                        $('#tmpVert').html($('#intCont').html());
+                        switch (data) {
+                            case "OK":
+                                swal({ title: "OK", text: 'Tipologia contenzioso modificata con successo', type: 'success', customClass: 'rai' });
+                                $('#lblCont').html(textSel);
+                                break;
+                            default:
+                                swal({ title: "Oops...", text: data, type: 'error', customClass: 'rai' });
+                        }
+                    },
+                    error: function (a, b, c) {
+                        $('#tmpVert').html($('#intCont').html());
+                        swal({ title: "Oops...", text: c, type: 'error', customClass: 'rai' });
+                    }
+                });
+            }, function () {
+                $('#tmpVert').html($('#intCont').html());
+            });
+        }
+    </script>
+}
+

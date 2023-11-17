@@ -1,0 +1,347 @@
+﻿@using myRaiHelper;
+@using myRaiData.Incentivi;
+@using myRaiCommonModel.Gestionale
+@using myRaiCommonManager
+@model myRaiCommonModel.Gestionale.Valutazione
+
+@{
+    string matricola = Model.Persona.COD_MATLIBROMAT;
+    string nominativo = Model.Persona.DES_COGNOMEPERS + " " + Model.Persona.DES_NOMEPERS;
+    string details1 = Model.Persona.DES_DENOMUNITAORG;
+
+    bool isSuperior = Model.VistaResponsabile;
+
+    string delega = "";
+    if (Model.Delegante != null)
+    {
+        delega = "Delegato a " + Model.Delegante.DELEGATO.SINTESI1.Nominativo();
+    }
+    else if (Model.Delegato != null)
+    {
+        delega = "Delegato da " + Model.Delegato.DELEGANTE.SINTESI1.Nominativo();
+    }
+
+
+    bool isVisionata = Model.Stato >= (int)myRaiCommonModel.Gestionale.ValutazioniState.PresaVisione && Model.NotaResponsabile != null;
+
+    int minwidth = Model.Preview ? 85 : 100;
+
+    bool requiredEvals = Model.Stato >= (int)myRaiCommonModel.Gestionale.ValutazioniState.Convalidata;
+    string noteRequiredEvals = "";
+    if (requiredEvals && Model.CampagnaScheda.AUTOEVAL.GetValueOrDefault() > 0)
+    {
+        requiredEvals = requiredEvals && Model.DbEval.IND_AUTOEVAL.GetValueOrDefault();
+        if (!requiredEvals)
+        {
+            noteRequiredEvals = "Per poter analizzare la valutazione, è necessaria la compilazione dell'autovalutazione.";
+        }
+    }
+
+    List<XR_VAL_EVAL_RATING_OWNER> elencoOwner = new List<XR_VAL_EVAL_RATING_OWNER>();
+    if (Model.Rating != null && Model.Rating.Any())
+    {
+        elencoOwner.AddRange(Model.Rating.Select(x => x.XR_VAL_EVAL_RATING_OWNER).Distinct());
+    }
+    else
+    {
+        elencoOwner.Add(new XR_VAL_EVAL_RATING_OWNER() { NAME = Model.Owner, DESCRIPTION = Model.Owner });
+    }
+}
+
+<style>
+    .answers-container {
+        display: flex;
+        align-items: center;
+    }
+
+        .answers-container > .answer-item {
+            min-width: @(minwidth)px;
+            flex-grow: 1;
+            flex-shrink: 1;
+            flex-basis: 0;
+            text-align: center;
+        }
+
+            .answers-container > .answer-item > .rai-radio {
+                margin-left: 7px;
+            }
+
+    .tooltip {
+        margin-left: -4px;
+    }
+</style>
+
+@if (!Model.Preview && !Model.Rating.Any())
+{
+    <div class="row">
+        <div class="col-sm-12">
+            @using (Html.BeginPanel(PanelType.NoHeader, ""))
+            {
+                <div class="row push-20">
+                    <div class="col-sm-12">
+                        @Html.ProfileWidget(matricola, nominativo, null, details1)
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="row push-10">
+                        <div class="col-sm-4">
+                            <label class="rai-caption">Attuale valutatore</label>
+                        </div>
+                        <div class="col-sm-8">
+                            @if (Model.Valutatore != null && Model.Valutatore.ID_PERSONA != 0)
+                            {
+                                <label class="rai-caption rai-font-md-bold">@Model.Valutatore.SINTESI1.Nominativo()</label>
+                            }
+                            else
+                            {
+                                <label class="rai-caption rai-font-md-bold">Da definire</label>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="row push-10">
+                        <div class="col-sm-4">
+                            <label class="rai-caption">Nuovo valutatore</label>
+                        </div>
+                        <div class="col-sm-8">
+                            @Html.RaiSelect("newEval", myRaiGestionale.Controllers.ValutazioniController.GetAvailableEvaluator(Model.CampagnaScheda.ID_CAMPAIGN_SHEET, Model.Valutatore.ID_EVALUATOR), "Seleziona un valutatore", onSelectchange: "ValCheckSelValue()")
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="rai-btn-fill">
+                            <button class="btn rai-btn-primary" id="btnCambioVal" onclick="SaveCambioValutatore(@Model.IdValutazione,@Model.Valutatore.ID_EVALUATOR)" disabled>Conferma</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<div class="row">
+    <div class="col-sm-12">
+        <section class="rai panel">
+            <header class="panel-heading">
+                <h2 class="panel-title">Valutazione</h2>
+            </header>
+            <div class="panel-body">
+                <div class="row push-10-t push-10">
+                    <div class="col-sm-5">
+                        @Html.ProfileWidget(matricola, nominativo, null, details1, delega, "")
+                    </div>
+                    <div class="col-sm-5 text-right">
+                        <span class="rai-font-lg-bold">Valutazione: </span>
+                        @if (elencoOwner.Count() == 1)
+                        {
+                            <label class="rai-font-md" data-val-total="" data-val-total-weight="100" data-val-total-type="@((elencoOwner[0].NAME??"superiore").ToLower())">-</label>
+                        }
+                        else
+                        {
+                            foreach (var item in elencoOwner.OrderBy(x=>x.ORDER))
+                            {
+                                <div>
+                                    <span class="rai-font-md">@item.DESCRIPTION:</span>
+                                    <label class="rai-font-md-bold" data-val-total="" data-val-total-weight="100" data-val-total-type="@item.NAME.ToLower()">-</label>
+                                </div>
+                            }
+                        }
+                    </div>
+                    <div class="col-sm-2 text-right">
+                        @if (!Model.Preview)
+                        {
+                            <a href="#" class="btn btn-action-icon" title="Vai alla scheda precedente" onclick="ValGoToPreviousEval(@(isSuperior ? "true" : "false"), @Model.CampagnaScheda.ID_CAMPAIGN_SHEET, @Model.IdValutazione)"><i class="fa fa-backward"></i></a>
+                            <a href="#" class="btn btn-action-icon" title="Vai alla scheda successiva" onclick="ValGoToNextEval(@(isSuperior ? "true" : "false"), @Model.CampagnaScheda.ID_CAMPAIGN_SHEET, @Model.IdValutazione)"><i class="fa fa-forward"></i></a>
+                        }
+                    </div>
+                </div>
+
+                @using (Html.BeginForm("Save_Valutazione", "Valutazioni", FormMethod.Post, new { @id = "form-valutazione" }))
+                {
+                    @Html.Partial("subpartial/Modal_Valutazione_Scheda", Model)
+                }
+
+                @*@if (Model.Preview || Model.Valutatore.XR_VAL_CAMPAIGN_SHEET.AUTOEVAL.GetValueOrDefault() == (int)ValutazioniAuto.No)
+                    {
+                        using (Html.BeginForm("Save_Valutazione", "Valutazioni", FormMethod.Post, new { @id = "form-valutazione" }))
+                        {
+                            @Html.Partial("subpartial/Modal_Valutazione_Scheda", Model)
+                        }
+                    }
+                    else
+                    {
+                        loadAutoEval = true;
+
+                        <div class="block" style="margin:0px -15px -15px -15px;">
+                            <ul class="nav nav-tabs nav-tabs-alt nav-justified" data-toggle="tabs" role="tablist">
+                                <li class="active" role="presentation">
+                                    <a href="#tab1" class="rai-badge-anchor" id="hrefTab1" tabindex="0" role="tab" aria-selected="true" aria-controls="tab1">
+                                        Responsabile
+                                    </a>
+                                </li>
+                                <li class="" role="presentation">
+                                    <a href="#tab2" class="rai-badge-anchor" id="hrefTab2" tabindex="0" role="tab" aria-selected="false" aria-controls="tab2">
+                                        Autovalutazione
+                                    </a>
+                                </li>
+                            </ul>
+                            <div class="block-content tab-content  no-shadow" style="padding:20px 0px; border-radius:0px;">
+                                <div class="tab-pane active" id="tab1" role="tabpanel" style="margin-left:15px; margin-right:15px;">
+                                    @using (Html.BeginForm("Save_Valutazione", "Valutazioni", FormMethod.Post, new { @id = "form-valutazione" }))
+                                    {
+                                        @Html.Partial("subpartial/Modal_Valutazione_Scheda", Model.GetValByOwner("Superiore"))
+                                    }
+                                </div>
+                                <div class="tab-pane" id="tab2" role="tabpanel" style="margin-left:15px; margin-right:15px;">
+                                    @Html.Partial("subpartial/Modal_Valutazione_Scheda", Model.GetValByOwner("Autovalutazione"))
+                                </div>
+                            </div>
+                        </div>
+                    }*@
+
+                @if (Model.Stato == (int)ValutazioniState.Convalidata)
+                {
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="rai block block-content-table block-transparent push-20-t" id="block-ruo">
+                                <div class="block-header block-content-mini">
+                                    <label class="rai-font-table-heading">Analisi RUO</label>&nbsp;
+                                    @if (Model.NotaAnalisiRuo != null)
+                                    {
+                                        <i class="rai-font-sm-neutral">Ultimo inserimento il @Model.NotaAnalisiRuo.TMS_TIMESTAMP.ToString("dd/MM/yyyy HH:mm")</i>
+                                    }
+                                </div>
+                                <div class="block-content block-content-mini">
+                                    @if (requiredEvals)
+                                    {
+                                        using (Html.BeginForm("Save_Valutazione_AnalisiRuo", "Valutazioni", FormMethod.Post, new { @id = "form-valutazione-notaruo" }))
+                                        {
+                                            <div class="rai-table-info">
+                                                @if (Model.AnalizzataDaRuo != null)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-sm-4">
+                                                            <span>Attuale riscontro</span>
+                                                        </div>
+                                                        <div class="col-sm-8">
+                                                            @if (!Model.NotaAnalisiRuo.IND_APPROVED.GetValueOrDefault())
+                                                            {
+                                                                <span><i class="fa fa-circle feedback-error-color"></i> Da rivalutare</span>
+                                                            }
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="row push-20">
+                                                        <div class="col-sm-4">
+                                                            <label>Nota</label>
+                                                        </div>
+                                                        <div class="col-sm-8">
+                                                            <label>@Model.NotaAnalisiRuo.NOT_TEXT</label>
+                                                        </div>
+                                                    </div>
+                                                }
+                                                <div class="row push-10">
+                                                    <div class="col-sm-4">
+                                                        <label>Nota</label>
+                                                    </div>
+                                                    <div class="col-sm-8">
+                                                        <textarea rows="4" id="valNotaRuo" class="form-control"></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-sm-12">
+                                                        <div class="rai-btn-fill">
+                                                            <button class="btn btn-md btn-action-icon text-danger" onclick="ValSalvaValutazioneRUO(this,'form-valutazione-notaruo', @Model.IdValutazione, @Model.CampagnaScheda.ID_CAMPAIGN_SHEET, false)">
+                                                                <i class="glyphicon glyphicon-remove"></i>
+                                                                Da rivalutare
+                                                            </button>
+                                                            <button class="btn btn-md btn-action-icon text-success" onclick="ValSalvaValutazioneRUO(this,'form-valutazione-notaruo', @Model.IdValutazione, @Model.CampagnaScheda.ID_CAMPAIGN_SHEET, true)">
+                                                                <i class="fa fa-fw fa-check"></i>
+                                                                Rilascia
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="row">
+                                            <div class="col-sm-12">
+                                                <span class="rai-font-md">@noteRequiredEvals</span>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @if (isVisionata)
+                {
+                    using (Html.BeginBlock(BlockType.ContentTable, "Valutazione responsabile"))
+                    {
+                        <div class="rai-table-info">
+                            <div class="row push-10">
+                                <div class="col-sm-4 col-lg-2">
+                                    <span>Riscontro</span>
+                                </div>
+                                <div class="col-sm-8 col-lg-10">
+                                    @if (Model.NotaResponsabile.IND_APPROVED.GetValueOrDefault())
+                                    {
+                                        <span><i class="fa fa-circle feedback-success-color"></i> In accordo</span>
+                                    }
+                                    else
+                                    {
+                                        <span><i class="fa fa-circle feedback-error-color"></i> In disaccordo</span>
+                                    }
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-4 col-lg-2">
+                                    <label>Nota <span class="rai-font-sm-neutral">(facoltativa)</span></label>
+                                </div>
+                                <div class="col-sm-8 col-lg-10">
+                                    <span>@Model.NotaResponsabile.NOT_TEXT</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                }
+            </div>
+        </section>
+    </div>
+</div>
+
+
+<script language="javascript">
+    function CalcMedia() {
+        var list = $('label[data-val-total-type]');
+        for (var i = 0; i < list.length; i++) {
+            var owner = $(list[i]).attr('data-val-total-type');
+            debugger
+            ValCalcMediaPond(owner);
+        }
+    }
+    
+    function initScheda() {
+        InitDatePicker();
+        CalcMedia();
+        ValModalValutazioneUpdateStatus();
+    }
+    initScheda();
+
+    function ValCheckSelValue() {
+        if ($('#newEval').val() != '') {
+            $('#btnCambioVal').enable(true);
+        } else {
+            $('#btnCambioVal').enable(false);
+        }
+    }
+</script>

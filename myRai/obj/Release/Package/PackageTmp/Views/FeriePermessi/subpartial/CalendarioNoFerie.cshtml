@@ -1,0 +1,156 @@
+﻿@using myRaiHelper
+@model myRaiCommonModel.CalendarioFerie
+
+<div id="div-cal" style="width: 100%" data-async="/feriepermessi/getcalendario">
+    <section class="panel">
+        <header class="panel-heading">
+            <div class="panel-actions">
+                <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-label="Calendario" aria-expanded="true"></a>
+            </div>
+            <h2 class="panel-title">Calendario</h2>
+        </header>
+
+        <div class="panel-body" data-currentmonth="@Model.Mese" data-currentyear="@Model.Anno">
+            <div class="rai-nav-fill">
+                <div class="rai-nav-fill-item">
+                    @if ( Model.ShowPreviousButton )
+                    {
+                        <a href="javascript:ShowCalNoFerie(@Model.MesePrev, @Model.AnnoPrev)" aria-label="Vai alla data precedente">
+                            <span class="icons icon-arrow-left-circle"></span>
+                        </a>
+                    }
+                </div>
+
+                <div class="rai-nav-fill-item-label">
+                    @Model.MeseCorrente
+                    <span style="display:none" id="cal-wait"><i class="fa fa-spinner fa-spin"></i> Attendi</span>
+                </div>
+                <div class="rai-nav-fill-item">
+                    @if ( Model.ShowNextButton )
+                    {
+                        <a href="javascript:ShowCalNoFerie(@Model.MeseNext, @Model.AnnoNext)" aria-label="Vai alla data successiva">
+                            <span class="icons icon-arrow-right-circle"></span>
+                        </a>
+                    }
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-xs-12">
+                    <table class="rai-table-calendar">
+                        <thead>
+                            <tr>
+                                <td>LUN</td>
+                                <td>MAR</td>
+                                <td>MER</td>
+                                <td>GIO</td>
+                                <td>VEN</td>
+                                <td>SAB</td>
+                                <td>DOM</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                var msg = CommonHelper.GetParametro<string>( EnumParametriSistema.MessaggioAssenteIngiustificato );
+
+                                int rowLimits = Model.DaysShowed.Count( ) / 7;
+
+                                for ( int row = 1 ; row <= rowLimits ; row++ )
+                                {
+                                    <tr>
+                                        @{
+                                            var items = Model.DaysShowed.Skip( ( row - 1 ) * 7 ).Take( 7 ).ToList( );
+                                            foreach ( var d in items )
+                                            {
+                                                bool daEvidenziare = false;
+                                                string classi = "";
+
+                                                if ( Model.GiornateDaEvidenziare != null && Model.GiornateDaEvidenziare.Any( ) )
+                                                {
+                                                    daEvidenziare = Model.GiornateDaEvidenziare.Exists( w => w.Date == d.giorno.Date );
+                                                }
+
+                                                classi = "";
+                                                if ( daEvidenziare )
+                                                {
+                                                    classi = "inevidenza ";
+                                                }
+
+                                                var elemento = Model.Giornate.Where( w => w.DataEccezione.Date == d.giorno.Date ).FirstOrDefault( );
+
+                                                if ( elemento != null )
+                                                {
+                                                    if (elemento.ApprovateTipo1)
+                                                    {
+                                                        classi = "approvatoT1 ";
+                                                    }
+                                                    else if (elemento.InApprovazione)
+                                                    {
+                                                        classi = "inapprovazione ";
+                                                    }
+                                                    else if ( elemento.Approvate )
+                                                    {
+                                                        classi = "approvato ";
+                                                    }
+                                                    else if ( elemento.CodiceOrario == "95" ||
+                                                    elemento.CodiceOrario == "96" )
+                                                    {
+                                                        classi = "riposo ";
+                                                    }
+                                                }
+
+                                                if ( !d.isCurrentMonth )
+                                                {
+                                                    classi = "grigio ";
+                                                }
+
+                                                <td onclick="ShowPopupInizialeGoDate('@msg',false, '@d.giorno.ToString( "dd/MM/yyyy" )')">
+                                                    @if ( DateTime.Now.Date == d.giorno.Date )
+                                                    {
+                                                        <span class="oggi">@d.giorno.Day.ToString( ) </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="@classi">@d.giorno.Day.ToString( ) </span>
+                                                    }
+                                                </td>
+                                            }
+                                        }
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+
+                    <div class=" no-margin-left-right">
+                        <div class=" col-12 col-xs-12 col-md-6 col-lg-6 col-xl-6">
+                            <span class="rai-font-sm">
+                                <i class="fa fa-circle-thin inevidenza" style="font-weight: 900;font-size: 80%;border:none" aria-hidden="true"></i>
+                                In Evidenza
+                            </span>
+                        </div>
+                        <div class=" col-12 col-xs-12 col-md-6 col-lg-6 col-xl-6">
+                            <span class="rai-font-sm">
+                                <i class="fa fa-circle-thin inapprovazione" style="font-weight: 900;font-size: 80%;" aria-hidden="true"></i>
+                                In Approvazione
+                            </span>
+                        </div>
+                        <div class=" col-12 col-xs-12 col-md-6 col-lg-6 col-xl-6">
+                            <span class="rai-font-sm">
+                                <i class="fa fa-circle-thin approvato" style="font-weight: 900;font-size: 80%;" aria-hidden="true"></i>
+                                Approvate
+                            </span>
+                        </div>
+                        <div class=" col-12 col-xs-12 col-md-6 col-lg-6 col-xl-6">
+                            <span class="rai-font-sm">
+                                <i class="fa fa-circle-thin approvatoT1" style="font-weight: 900;font-size: 80%;border:none" aria-hidden="true"></i>
+                                Approvate (FE/perm)
+                            </span>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>

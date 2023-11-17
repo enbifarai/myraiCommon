@@ -1,0 +1,144 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+@model AnagraficaModel
+
+@{
+    var lastContract = Model.DatiContratti.Eventi.OrderByDescending(x => x.DataInizio).First();
+    var lastSede = Model.DatiSedi.Eventi.OrderByDescending(x => x.DataInizio).First();
+    var lastServizio = Model.DatiServizi.Eventi.OrderByDescending(x => x.DataInizio).First();
+    var lastQual = Model.DatiQualifiche.Eventi.OrderByDescending(x => x.DataInizio).First();
+    var lastRole = Model.DatiRuoli.Eventi.Where(x => x.Principale).OrderByDescending(x => x.DataInizio).First();
+    var lastSez = Model.DatiSezioni.Eventi.OrderByDescending(x => x.DataInizio).First();
+
+    int countVarSede = Model.DatiSedi.Eventi.Count(x => x.DataFine >= lastContract.DataInizio) - 1;
+    int countVarServizio = Model.DatiServizi.Eventi.Count(x => x.DataFine >= lastContract.DataInizio) - 1;
+    int countVarQual = Model.DatiQualifiche.Eventi.Count(x => x.DataFine >= lastContract.DataInizio) - 1;
+    int countVarRole = Model.DatiRuoli.Eventi.Where(x => x.Principale).Count(x => x.DataFine >= lastContract.DataInizio) - 1;
+    int countVarSez = Model.DatiSezioni.Eventi.Count(x => x.DataFine >= lastContract.DataInizio) - 1;
+
+    var lastMod = lastContract.DataInizio;
+    if (lastSede.DataInizio > lastMod) { lastMod = lastSede.DataInizio; }
+    if (lastServizio.DataInizio > lastMod) { lastMod = lastServizio.DataInizio; }
+    if (lastQual.DataInizio > lastMod) { lastMod = lastQual.DataInizio; }
+    if (lastRole.DataInizio > lastMod) { lastMod = lastRole.DataInizio; }
+    if (lastSez.DataInizio > lastMod) { lastMod = lastSez.DataInizio; }
+}
+
+<div class="row push-10">
+    <div class="col-sm-12 bg-neutrals-xl-10" style="padding-top:15px;padding-bottom:15px;">
+        <span class="rai-font-sm-neutral">Ultima variazione effettuate il @lastMod.ToString("dd/MM/yyyy") <a href="#" onclick="OpenModalStoricoCarriera('@Model.Matricola')">Visualizza storico carriera</a></span>
+    </div>
+</div>
+
+
+<div class="block block-transparent block-content-table no-margin-bottom">
+    <div class="block-header block-content-mini">
+        <span class="block-title">@lastContract.Descrizione</span>
+        <span class="rai-font-md-neutral"> Dal @lastContract.DataInizio.ToString("dd/MM/yyyy")</span>
+    </div>
+    <div class="block-content block-content-mini">
+        <div class="row">
+            @if (Model.DatiSedi.IsEnabled)
+            {
+                <div class="col-sm-6 push-10 push-10-t">
+                    <span class="rai-font-md-bold">Sede</span><br />
+                    <span>@lastSede.Descrizione</span><br />
+                    <span class="rai-font-sm-neutral">
+                        Dal @lastSede.DataInizio.ToString("dd/MM/yyyy")
+                        @if (countVarSede > 0)
+                        {
+                            <span> (@countVarSede variazioni)</span>
+                        }
+                    </span>
+                    @if (Model.DatiSedi.CanModify)
+                    {
+                        <br />
+                        <span class="rai-font-sm"><a href="#" onclick="OpenModalDatiContr(@Model.IdPersona, '@(TipoEvento.Sede)')">Modifica</a></span>
+                    }
+                    else if (Model.DatiSedi.IdRichiesta>0)
+                    {
+                        <br />
+                        <span class="rai-font-sm "><i class="fa fa-circle feedback-warning-color">&nbsp;</i><a href="#" class="feedback-warning-color" onclick="OpenModalRichiesta('@Model.Matricola', '@TipoRichiestaAnag.VariazioneContrattuale', @Model.DatiSedi.IdRichiesta)">Richiesta in corso</a></span>
+                    }
+                </div>
+            }
+            @if (Model.DatiServizi.IsEnabled)
+            {
+                <div class="col-sm-6 push-10 push-10-t">
+                    <span class="rai-font-md-bold">Servizio</span><br />
+                    <span>@lastServizio.Descrizione</span><br />
+                    <span class="rai-font-sm-neutral">
+                        Dal @lastServizio.DataInizio.ToString("dd/MM/yyyy")
+                        @if (countVarServizio > 0)
+                        {
+                            <span> (@countVarServizio variazioni)</span>
+                        }
+                    </span>
+                    @if (Model.DatiServizi.CanModify)
+                    {
+                        <br />
+                        <span class="rai-font-sm"><a href="#" onclick="OpenModalDatiContr(@Model.IdPersona, '@(TipoEvento.Servizio)')">Modifica</a></span>
+                    }
+                    else if (Model.DatiServizi.IdRichiesta > 0)
+                    {
+                        <br />
+                        <span class="rai-font-sm"><i class="fa fa-circle feedback-warning-color">&nbsp;</i><a href="#" class="feedback-warning-color" onclick="OpenModalRichiesta('@Model.Matricola', '@TipoRichiestaAnag.VariazioneContrattuale', @Model.DatiServizi.IdRichiesta)">Richiesta in corso</a></span>
+                    }
+                </div>
+            }
+            @if (Model.DatiRuoli.IsEnabled)
+            {
+                <div class="col-sm-6 push-10 push-10-t">
+                    <span class="rai-font-md-bold">Mansione</span><br />
+                    <span>@lastRole.Descrizione</span><br />
+                    <span class="rai-font-sm-neutral">
+                        Dal @lastRole.DataInizio.ToString("dd/MM/yyyy")
+                        @if (countVarRole > 0)
+                        {
+                            <span> (@countVarRole variazioni)</span>
+                        }
+                    </span>
+                </div>
+            }
+            @if (Model.DatiQualifiche.IsEnabled)
+            {
+                <div class="col-sm-6 push-10 push-10-t">
+                    <span class="rai-font-md-bold">Qualifica</span><br />
+                    <span>@lastQual.Descrizione</span><br />
+                    <span class="rai-font-sm-neutral">
+                        Dal @lastQual.DataInizio.ToString("dd/MM/yyyy")
+                        @if (countVarQual > 0)
+                        {
+                            <span> (@countVarQual variazioni)</span>
+                        }
+                    </span>
+                </div>
+            }
+            @if (Model.DatiSezioni.IsEnabled)
+            {
+                <div class="col-sm-6 push-10 push-10-t">
+                    <span class="rai-font-md-bold">Sezione</span><br />
+                    <span>@lastSez.Descrizione</span><br />
+                    <span class="rai-font-sm-neutral">
+                        Dal @lastSez.DataInizio.ToString("dd/MM/yyyy")
+                        @if (countVarSez > 0)
+                        {
+                            <span> (@countVarSez variazioni)</span>
+                        }
+
+                    </span>
+                    @if (Model.DatiSezioni.CanModify)
+                    {
+                        <br />
+                        <span class="rai-font-sm"><a href="#" onclick="OpenModalDatiContr(@Model.IdPersona, '@(TipoEvento.Sezione)')">Modifica</a></span>
+                    }
+                    else if (Model.DatiSezioni.IdRichiesta > 0)
+                    {
+                        <br />
+                        <span class="rai-font-sm"><i class="fa fa-circle feedback-warning-color">&nbsp;</i><a href="#" class="feedback-warning-color" onclick="OpenModalRichiesta('@Model.Matricola', '@TipoRichiestaAnag.VariazioneContrattuale', @Model.DatiSezioni.IdRichiesta)">Richiesta in corso</a></span>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,786 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiCommonModel
+@using myRaiHelper
+@model DettaglioDematerializzazioneVM
+
+@{
+    string title = "DETTAGLIO RICHIESTA";
+    string classeTab2 = "";
+    string classeTab3 = "";
+    string classeTab4 = "";
+    string sottoTesto2 = "";
+    string sottoTesto3 = "";
+}
+
+@using (Html.BeginModal(title))
+{
+    string stile = "display:none;";
+    if (Model.MessaggioPraticaBloccata)
+    {
+        stile = "";
+    }
+
+    <div class="row push-10" id="messaggio-richiesta-in-modifica" style="@(stile)">
+        <div class="col-sm-12">
+            <div class="alert alert-info custom">
+                <label class="rai-font-md-neutral-bold-80">@(Model.Msg1)</label>
+                <br />
+                <label class="rai-font-md-neutral">@(Model.Msg2)</label>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-8">
+            @{
+                RaiAttributes attrs = new RaiAttributes();
+                attrs.Add(new RaiAttribute("bodystyle", "background:#f6f8f8"));
+            }
+
+            @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Stato", false, null, null, "", "", attrs))
+            {
+                <div class="row" style="background: #fff; margin-top: -15px; padding-top: 15px; margin-left: -15px; margin-right: -15px;">
+                    <div class="col-sm-12">
+                        <div id="newwizard" style="margin-top:0px" class="rai wizard-progress wizard-progress-llg wiznew remove-margin-t" role="tablist">
+                            <ul class="wizard-steps">
+                                <li class="disable completed" id="tab-dem-1" role="presentation" style="max-width:none">
+                                    <a role="tab" aria-label="Richiesta avviata" aria-controls="validation-classic-step1" id="hTab1" onclick="" href="#" data-toggle="tab" aria-selected="true" tabindex="0">
+                                        <span>1</span>
+                                        <p class="rai-font-sm-bold">
+                                            Richiesta avviata
+                                        </p>
+                                        <p class="rai-font-sm-neutral" style="margin-top:-20px;">
+                                            @(Model.Richiesta.Documento.DataCreazione.ToString("dd/MM/yyyy"))
+                                        </p>
+                                    </a>
+                                </li>
+                                @{
+                                    if (Model.Richiesta.Documento.DataApprovazione.HasValue)
+                                    {
+                                        sottoTesto2 = Model.Richiesta.Documento.DataApprovazione.GetValueOrDefault().ToString("dd/MM/yyyy");
+                                    }
+
+                                    if (Model.Richiesta.Documento.DataFirma.HasValue)
+                                    {
+                                        sottoTesto3 = Model.Richiesta.Documento.DataFirma.GetValueOrDefault().ToString("dd/MM/yyyy");
+                                    }
+
+                                    if (Model.Richiesta.Documento.Id_Stato <= (int)StatiDematerializzazioneDocumenti.Accettato)
+                                    {
+                                        classeTab2 = "active";
+                                        classeTab3 = "disable";
+                                        classeTab4 = "disable";
+                                    }
+
+                                    if (Model.Richiesta.Documento.Id_Stato == (int)StatiDematerializzazioneDocumenti.Accettato)
+                                    {
+                                        classeTab2 = "disable completed";
+                                        classeTab3 = "active";
+                                        classeTab4 = "disable";
+                                    }
+                                    if (Model.Richiesta.Documento.Id_Stato == (int)StatiDematerializzazioneDocumenti.RifiutoApprovatore)
+                                    {
+                                        classeTab2 = "disable failed";
+                                        classeTab3 = "disable";
+                                        classeTab4 = "disable";
+                                        sottoTesto2 = Model.Richiesta.Documento.DataRifiuto.GetValueOrDefault().ToString("dd/MM/yyyy");
+                                    }
+                                    if (Model.Richiesta.Documento.Id_Stato == (int)StatiDematerializzazioneDocumenti.FirmatoDigitalmente)
+                                    {
+                                        classeTab2 = "disable completed";
+                                        classeTab3 = "disable completed";
+                                        classeTab4 = "active";
+                                    }
+                                    if (Model.Richiesta.Documento.Id_Stato == (int)StatiDematerializzazioneDocumenti.RifiutatoFirma)
+                                    {
+                                        classeTab2 = "disable completed";
+                                        classeTab3 = "disable failed";
+                                        classeTab4 = "disable";
+                                        sottoTesto3 = Model.Richiesta.Documento.DataRifiuto.GetValueOrDefault().ToString("dd/MM/yyyy");
+                                    }
+                                    if (Model.Richiesta.Documento.Id_Stato == (int)StatiDematerializzazioneDocumenti.InviatoAlDipendente)
+                                    {
+                                        classeTab2 = "disable completed";
+                                        classeTab3 = "disable completed";
+                                        classeTab4 = "disable completed";
+                                    }
+
+
+                                    if (Model.Richiesta.Documento.Id_Stato == (int)StatiDematerializzazioneDocumenti.PresaInCarico)
+                                    {
+                                        classeTab2 = "disable completed";
+                                        classeTab3 = "disable";
+                                        classeTab4 = "active";
+                                    }
+
+                                }
+
+                                <li class="@classeTab2" id="tab-dem-2" role="presentation">
+                                    <a role="tab" tabindex="-1" aria-label="Approvazione" aria-controls="validation-classic-step2" id="hTab2" onclick="" href="#" data-toggle="tab" aria-selected="true">
+                                        <span>2</span>
+                                        <p class="rai-font-sm-bold">
+                                            Approvazione
+                                        </p>
+                                        @{
+                                            if (!String.IsNullOrEmpty(sottoTesto2))
+                                            {
+                                                <p class="rai-font-sm-neutral" style="margin-top:-20px;">
+                                                    @sottoTesto2
+                                                </p>
+                                            }
+                                        }
+                                    </a>
+                                </li>
+
+                                @{
+                                    if (!Model.PresaInCaricoEnabled)
+                                    {
+                                        <li class="@classeTab3" id="tab-dem-3" role="presentation">
+                                            <a role="tab" tabindex="-1" aria-label="Firma" aria-controls="validation-classic-step2" id="hTab2" onclick="" href="#" data-toggle="tab" aria-selected="true">
+                                                <span>3</span>
+                                                <p class="rai-font-sm-bold">
+                                                    Firma
+                                                </p>
+                                                @{
+                                                    if (!String.IsNullOrEmpty(sottoTesto3))
+                                                    {
+                                                        <p class="rai-font-sm-neutral" style="margin-top:-20px;">
+                                                            @sottoTesto3
+                                                        </p>
+                                                    }
+                                                }
+                                            </a>
+                                        </li>
+                                        <li class="@classeTab4" id="tab-dem-4" role="presentation">
+                                            <a role="tab" tabindex="-1" aria-label="Chiusura pratica" aria-controls="validation-classic-step3" id="hTab3" onclick="" href="#" data-toggle="tab" aria-selected="true">
+                                                <span>4</span>
+                                                <p class="rai-font-sm-bold">
+                                                    Chiusura pratica
+                                                </p>
+                                            </a>
+                                        </li>
+                                    }
+                                    else
+                                    {
+                                        <li class="@classeTab4" id="tab-dem-4" role="presentation">
+                                            <a role="tab" tabindex="-1" aria-label="Chiusura pratica" aria-controls="validation-classic-step3" id="hTab3" onclick="" href="#" data-toggle="tab" aria-selected="true">
+                                                <span>3</span>
+                                                <p class="rai-font-sm-bold">
+                                                    Chiusura pratica
+                                                </p>
+                                            </a>
+                                        </li>
+                                    }
+                                }
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <br />
+                if (!String.IsNullOrEmpty(Model.Richiesta.Documento.Note))
+                {
+                    <div class="bg-neutrals-xl-10" style="margin-left:-15px; margin-right:-15px; padding:10px 25px;">
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <label class="rai-font-sm-neutral-bold margine-10-sx">@Model.Richiesta.Documento.DataCreazione.ToString("dd MMMM yyyy")</label>
+                            </div>
+                        </div>
+                        <div class="row" style="margin-right: -15px; margin-left: -15px;">
+                            <div class="col-sm-12">
+                                <div class="panel remove-margin-bottom">
+                                    <div class="panel-body" style="background-color:#fff;">
+                                        <div class="">
+                                            <div class="row push-30">
+                                                <div class="col-sm-8">
+                                                    @Html.Partial( "~/Views/Dematerializzazione/subpartial/_profiloimage.cshtml" , new myRaiCommonModel.ProfiloImageModel() {
+                                                   Matricola= Model.Richiesta.Documento.MatricolaCreatore,
+                                                   Row1 = Model.NominativoUtenteCreatore,
+                                                   Row2 = "Matricola "+ Model.Richiesta.Documento.MatricolaCreatore ,
+                                                   InServizio =myRaiCommonManager.HomeManager.IsInServizio( Model.Richiesta.Documento.MatricolaCreatore )
+                                                })
+                                                </div>
+                                                <div class="col-sm-4 text-right">
+                                                    <span class="rai-font-sm-neutral-bold">Ha creato il documento</span>
+                                                </div>
+                                            </div>
+                                            <div class="row push-20">
+                                                <div class="col-sm-12">
+                                                    <span class="rai-font-sm-neutral-bold">Nota</span>
+                                                </div>
+                                                <div class="col-sm-12">
+                                                    <label>@Model.Richiesta.Documento.Note</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                if (!String.IsNullOrEmpty(Model.Richiesta.Documento.NotaApprovatore))
+                {
+
+                    <div class="bg-neutrals-xl-10" style="margin-left:-15px; margin-right:-15px; padding:10px 25px;">
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <label class="rai-font-sm-neutral-bold margine-10-sx">@Model.Richiesta.Documento.DataApprovazione.GetValueOrDefault().ToString("dd MMMM yyyy")</label>
+                            </div>
+                        </div>
+                        <div class="row" style="margin-right: -15px; margin-left: -15px;">
+                            <div class="col-sm-12">
+                                <div class="panel remove-margin-bottom">
+                                    <div class="panel-body" style="background-color:#fff;">
+                                        <div class="">
+                                            <div class="row push-30">
+                                                <div class="col-sm-8">
+                                                    @Html.Partial( "~/Views/Dematerializzazione/subpartial/_profiloimage.cshtml" , new myRaiCommonModel.ProfiloImageModel() {
+                                                   Matricola= Model.Richiesta.Documento.MatricolaApprovatore,
+                                                   Row1 = Model.NominativoUtenteApprovatore,
+                                                   Row2 = "Matricola "+ Model.Richiesta.Documento.MatricolaApprovatore ,
+                                                   InServizio =myRaiCommonManager.HomeManager.IsInServizio( Model.Richiesta.Documento.MatricolaApprovatore )
+                                               })
+                                                </div>
+                                                <div class="col-sm-4 text-right">
+                                                    @{
+                                                        if (Model.Richiesta.Documento.DataApprovazione.HasValue)
+                                                        {
+                                                            <span class="rai-font-sm-neutral-bold">Ha approvato il documento</span>
+                                                        }
+                                                        else if (Model.Richiesta.Documento.DataRifiuto.HasValue)
+                                                        {
+                                                            <span class="rai-font-sm-neutral-bold">Ha rifiutato il documento</span>
+                                                        }
+                                                    }
+                                                </div>
+                                            </div>
+                                            <div class="row push-20">
+                                                <div class="col-sm-12">
+                                                    <span class="rai-font-sm-neutral-bold">Nota</span>
+                                                </div>
+                                                <div class="col-sm-12">
+                                                    <label>@Model.Richiesta.Documento.NotaApprovatore</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                }
+
+                if (!String.IsNullOrEmpty(Model.Richiesta.Documento.NotaFirma))
+                {
+                    <div class="bg-neutrals-xl-10" style="margin-left:-15px; margin-right:-15px; padding:10px 25px;">
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <label class="rai-font-sm-neutral-bold margine-10-sx">@Model.Richiesta.Documento.DataFirma.GetValueOrDefault().ToString("dd MMMM yyyy")</label>
+                            </div>
+                        </div>
+                        <div class="row" style="margin-right: -15px; margin-left: -15px;">
+                            <div class="col-sm-12">
+                                <div class="panel remove-margin-bottom">
+                                    <div class="panel-body" style="background-color:#fff;">
+                                        <div class="">
+                                            <div class="row push-30">
+                                                <div class="col-sm-8">
+                                                    @Html.Partial( "~/Views/Dematerializzazione/subpartial/_profiloimage.cshtml" , new myRaiCommonModel.ProfiloImageModel() {
+                                                   Matricola= Model.Richiesta.Documento.MatricolaFirma,
+                                                   Row1 = Model.NominativoUtenteApprovatore,
+                                                   Row2 = "Matricola "+ Model.Richiesta.Documento.MatricolaApprovatore ,
+                                                   InServizio =myRaiCommonManager.HomeManager.IsInServizio( Model.Richiesta.Documento.MatricolaApprovatore )
+                                               })
+                                                </div>
+                                                <div class="col-sm-4 text-right">
+                                                    @{
+                                                        if (Model.Richiesta.Documento.DataFirma.HasValue)
+                                                        {
+                                                            <span class="rai-font-sm-neutral-bold">Ha firmato il documento</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="rai-font-sm-neutral-bold">Ha rifiutato il documento</span>
+                                                        }
+                                                    }
+                                                </div>
+                                            </div>
+                                            @{
+                                                if (!String.IsNullOrEmpty(Model.Richiesta.Documento.NotaFirma))
+                                                {
+                                                    <div class="row push-20">
+                                                        <div class="col-sm-12">
+                                                            <span class="rai-font-sm-neutral-bold">Nota</span>
+                                                        </div>
+                                                        <div class="col-sm-12">
+                                                            <label>@Model.Richiesta.Documento.NotaFirma</label>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                }
+
+            }
+
+            @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Lavorazione richiesta", false))
+            {
+                string stileVisualizza = "disable";
+                if (!Model.MessaggioPraticaBloccata)
+                {
+                    stileVisualizza = "";
+                }
+                if (Model.Richiesta.Allegati != null && Model.Richiesta.Allegati.Any() && Model.Richiesta.Allegati.Count(w => w.IsPrincipal) > 0)
+                {
+                    <div class="row push-30">
+                        <div class="tab-pane active" id="" role="tabpanel">
+                            <div class="block block-transparent block-content-table">
+                                <div class="block-header block-content-mini">
+                                    @{
+                                        <label class="block-title">DOCUMENTO PRINCIPALE</label>
+                                    }
+                                    <div class="block-options"></div>
+                                </div>
+                                <div class="col-xs-12">
+                                    <div class="widget-summary">
+                                        <div class="widget-summary-col widget-summary-col-icon">
+                                            <div class="summary-icon bg-cda" style="width:42px; height:42px;line-height:32px;background-color:#eee">
+                                                <i class="icons icon-doc" style="font-size: 65%;"></i>
+                                            </div>
+                                        </div>
+                                        <div class="widget-summary-col">
+                                            <div class="summary">
+                                                @{
+                                                    var allegato = Model.Richiesta.Allegati.Where(w => w.IsPrincipal).FirstOrDefault();
+
+
+                                                }
+                                                <span id="nome-file-VSDIP" class="rai-font-md-bold" style="word-break:break-word;">@(allegato.NomeFile)</span>
+                                                <button class="btn rai-btn-small @(stileVisualizza)" aria-label="Visualizza" title="Visualizza" style="min-width:80px; float:right;" onclick="Dematerializzazione_VisualizzaDocumentoTemporaneo('@allegato.Id')">Visualizza</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                if (Model.Richiesta.Allegati != null && Model.Richiesta.Allegati.Any() && Model.Richiesta.Allegati.Count(w => !w.IsPrincipal) > 0)
+                {
+                    <div class="row push-30">
+                        <div class="tab-pane active" id="" role="tabpanel">
+                            <div class="block block-transparent block-content-table">
+                                <div class="block-header block-content-mini">
+                                    <label class="block-title">DOCUMENTI A SUPPORTO</label>
+                                    <div class="block-options"></div>
+                                </div>
+                                @{
+                                    foreach (var a in Model.Richiesta.Allegati.Where(w => !w.IsPrincipal))
+                                    {
+                                        <div class="col-xs-12">
+                                            <div class="widget-summary">
+                                                <div class="widget-summary-col widget-summary-col-icon">
+                                                    <div class="summary-icon bg-cda" style="width:42px; height:42px;line-height:32px;background-color:#eee">
+                                                        <i class="icons icon-doc" style="font-size: 65%;"></i>
+                                                    </div>
+                                                </div>
+                                                <div class="widget-summary-col">
+                                                    <div class="summary">
+                                                        <span id="nome-file-allegato-@(a.Id)" class="rai-font-md-bold" style="word-break:break-word;">@(a.NomeFile)</span>
+                                                        <button class="btn rai-btn-small @(stileVisualizza)" aria-label="Visualizza" title="Visualizza" style="min-width:80px; float:right;" onclick="Dematerializzazione_VisualizzaDocumentoTemporaneo('@a.Id')">Visualizza</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                if (Model.Attributi != null && Model.Attributi.Any())
+                {
+                    <div class="row push-30">
+                        <div class="tab-pane active" id="" role="tabpanel">
+                            <div class="block block-transparent block-content-table">
+                                <div class="block-header block-content-mini">
+                                    @{
+                                        <label class="block-title">DATI AGGIUNTIVI</label>
+                                    }
+                                    <div class="block-options"></div>
+                                </div>
+                                <div class="col-xs-12">
+                                    <div class="widget-summary">                                                                                  
+                                            @Html.Partial("~/Views/Dematerializzazione/subpartial/_viewCustomData.cshtml", Model.Attributi)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                if (!Model.ApprovazioneEnabled && !Model.PresaInCaricoEnabled && !Model.PresaInVisioneEnabled)
+                {
+                    <div class="row">
+                        <div class="col-sm-12 push-10">
+                            <div class="rai-btn-fill">
+                                <input type="button" id="" class="btn btn-primary @(Model.Richiesta.Documento.Id_Stato == (int)StatiDematerializzazioneDocumenti.FirmatoDigitalmente ? "" : "disable")" title="Concludi pratica" value="Concludi pratica">
+                            </div>
+                        </div>
+                        <div class="col-md-12 text-center push-10">
+                            <a href="#" class="" onclick="Dematerializzazione_EliminaPratica('@(Model.Matricola)', '@Model.IdPersona', '@(Model.Richiesta.Documento.Id)')">Elimina pratica</a>
+                        </div>
+                    </div>
+                }
+
+                if (Model.ApprovazioneEnabled)
+                {
+                    <table class="table rai-table rai-table-vcenter rai-table-panel push-10">
+                        <thead>
+                            <tr>
+                                <th class="col-xs-8 text-left rai-font-md-bold" style="padding-left:5px; font-size: 14px;font-weight: 700; line-height: normal; color: #0a3247;">INSERISCI UNA NOTA</th>
+                                <th class="col-xs-4 text-right">Obbligatoria in caso di rifiuto</th>
+                            </tr>
+                        </thead>
+                    </table>
+                    <div class="row push-10">
+                        <div class="col-sm-12">
+                            @*@Html.LabelFor(m => m.Richiesta.Documento.NotaApprovatore, "Nota", new { @class = "rai-font-md-bold " })*@
+                            @Html.TextAreaFor(m => m.Richiesta.Documento.NotaApprovatore, new { @class = "form-control " + stileVisualizza, @rows = 5, @cols = 200, @title = "Inserisci una nota per l'operatore che dovrà firmare", @placeholder = "Inserisci una nota per l'operatore che dovrà firmare", @onkeyup = "Dematerializzzazione_AbilitaDisabilita_BtnRifiutaApprovatore()" })
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="rai-btn-fill">
+                                <button id="Dem_Btn_RifiutaApprovatore" class="btn btn-md btn-action-icon text-danger btn-action-icon-text disable" onclick="Dematerializzazione_RifiutaDocumentoInModale('@(Model.Matricola)', '@Model.IdPersona', '@(Model.Richiesta.Documento.Id)')" style="min-height:48px;">
+                                    <i class="glyphicon glyphicon-remove"></i>
+                                    Rifiuta
+                                </button>
+                                <button class="btn btn-md btn-action-icon text-success btn-action-icon-text @(stileVisualizza)" onclick="Dematerializzazione_ApprovaDocumento('@(Model.Matricola)', '@Model.IdPersona', '@(Model.Richiesta.Documento.Id)')" style="min-height:48px;">
+                                    <i class="fa fa-fw fa-check"></i>
+                                    Approva
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                if (Model.PresaInVisioneEnabled)
+                {
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="rai-btn-fill">
+                                <button class="btn btn-md btn-action-icon btn-primary btn-action-icon-text" onclick="Dematerializzazione_MarkVisualizzatoDocumento('@(Model.Matricola)', '@Model.IdPersona', '@(Model.Richiesta.Documento.Id)')" style="min-height:48px;">
+                                    <i class="fa fa-fw fa-check"></i>
+                                    Visualizzato
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                if (Model.PresaInCaricoEnabled && Model.Richiesta.Documento.MatricolaIncaricato == UtenteHelper.Matricola())
+                {
+                    <table class="table rai-table rai-table-vcenter rai-table-panel">
+                        <thead>
+                            <tr>
+                                <th class="col-xs-8 text-left rai-font-md-bold" style="padding-left:5px; font-size: 14px;font-weight: 700; line-height: normal; color: #0a3247; border-bottom: none !important;">NOTA </th>
+                                <th class="col-xs-4 text-right" style="border-bottom: none !important;"></th>
+                            </tr>
+                        </thead>
+                    </table>
+                    <div class="row push-10">
+                        <div class="col-sm-12">
+                            @Html.TextAreaFor(m => m.Richiesta.Documento.NotaConclusionePratica, new { @class = "form-control " + stileVisualizza, @rows = 5, @cols = 200, @title = "Inserisci una nota", @placeholder = "Inserisci una nota", @onkeyup = "" })
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="rai-btn-fill">
+                                <button type="button" id="btns-dem-concludi-pratica" onclick="Dematerializzazione_ConcludiPratica_Click('@(Model.Matricola)', '@Model.IdPersona', '@(Model.Richiesta.Documento.Id)')" class="btn rai-btn-primary">Concludi la pratica</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+            }
+        </div>
+
+        <div class="col-sm-4">
+
+            @{
+                if (Model.PresaInCaricoEnabled && String.IsNullOrEmpty(Model.Richiesta.Documento.MatricolaIncaricato))
+                {
+                    <div class="row">
+                        <div class="block block-content-table block-transparent">
+                            <div class="block-header">
+                                <label class="block-title">Assegnazione</label>
+                            </div>
+                            <div class="block-content">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="panel remove-margin-bottom">
+                                            <div class="panel-body">
+                                                <div class="">
+                                                    <div class="row push-20">
+                                                        <div class="col-sm-12 push-20">
+                                                            <label class="rai-font-sm-bold">Questa pratica non è ancora assegnata a un operatore. Clicca qui sotto per prenderla in carico.</label>
+                                                        </div>
+                                                        <div class="col-sm-12">
+                                                            <div class="rai-btn-fill">
+                                                                <button class="btn rai-btn-primary" onclick="Dematerializzazione_PrendiInCarico('@Model.Matricola', '@Model.IdPersona', '@Model.Richiesta.Documento.Id')" style="min-height:48px;">
+                                                                    Prendi in carico
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+
+            <div class="row">
+                <div class="block block-content-table block-transparent">
+                    <div class="block-header">
+                        <label class="block-title">Dettagli</label>
+                    </div>
+                    <div class="block-content">
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <div class="panel remove-margin-bottom">
+                                    <div class="panel-body">
+                                        <div class="">
+                                            <div class="row push-30">
+                                                <div class="col-sm-12">
+                                                    @Html.Partial( "~/Views/Dematerializzazione/subpartial/_profiloimage.cshtml" , new myRaiCommonModel.ProfiloImageModel() {
+                                                    Matricola= Model.Richiesta.Documento.MatricolaDestinatario,
+                                                    Row1 = Model.NominativoUtenteDestinatario,
+                                                    Row2 = "Matricola "+ Model.Richiesta.Documento.MatricolaDestinatario ,
+                                                    InServizio =myRaiCommonManager.HomeManager.IsInServizio( Model.Richiesta.Documento.MatricolaDestinatario)
+                                                })
+                                                </div>
+                                            </div>
+
+                                            <div class="row push-20">
+                                                <div class="col-sm-12">
+                                                    <label class="rai-font-sm-neutral-bold">Data richiesta</label>
+                                                </div>
+                                                <div class="col-sm-12">
+                                                    <label class="rai-font-md">@Model.Richiesta.Documento.DataCreazione.ToString("dd/MM/yyyy")</label>
+                                                </div>
+                                            </div>
+
+                                            <div class="row push-20">
+                                                <div class="col-sm-12">
+                                                    <label class="rai-font-sm-neutral-bold">Creato da</label>
+                                                </div>
+                                                <div class="col-sm-12">
+                                                    <label class="rai-font-md">@Model.NominativoUtenteCreatore</label>
+                                                </div>
+                                            </div>
+
+                                            <div class="row push-20">
+                                                <div class="col-sm-12">
+                                                    <label class="rai-font-sm-neutral-bold">Approvatore</label>
+                                                </div>
+                                                <div class="col-sm-12">
+                                                    <label class="rai-font-md">@Model.NominativoUtenteApprovatore</label>
+                                                </div>
+                                            </div>
+
+                                            @{
+                                                if (Model.Richiesta.Documento.DataFirma.HasValue ||
+                                                    Model.Richiesta.Documento.DataRifiuto.HasValue)
+                                                {
+                                                    <div class="row push-20">
+                                                        <div class="col-sm-12">
+                                                            @{
+                                                                if (Model.Richiesta.Documento.DataFirma.HasValue)
+                                                                {
+                                                                    <label class="rai-font-sm-neutral-bold">Firmato da</label>
+                                                                }
+                                                                else if (Model.Richiesta.Documento.DataRifiuto.HasValue)
+                                                                {
+                                                                    <label class="rai-font-sm-neutral-bold">Rifiutato da</label>
+                                                                }
+                                                            }
+                                                        </div>
+                                                        <div class="col-sm-12">
+                                                            <label class="rai-font-md">@Model.NominativoUtenteFirma</label>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            }
+
+                                            <div class="row push-20">
+                                                <div class="col-sm-12">
+                                                    <label class="rai-font-sm-neutral-bold">Documento</label>
+                                                </div>
+                                                <div class="col-sm-12">
+                                                    <label class="rai-font-md">@(Model.Richiesta.Documento.XR_DEM_TIPI_DOCUMENTO.Descrizione)</label>
+                                                </div>
+                                            </div>
+
+                                            @{
+                                                if (!String.IsNullOrEmpty(Model.NominativoUtenteVisionatore))
+                                                {
+                                                    <div class="row push-20">
+                                                        <div class="col-sm-12">
+                                                            <label class="rai-font-sm-neutral-bold">Visionato da</label>
+                                                        </div>
+                                                        <div class="col-sm-12">
+                                                            <label class="rai-font-md">@(Model.NominativoUtenteVisionatore)</label>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            }
+
+                                            @*@{
+                                                    if (Model.Richiesta.Allegati.Count(w => !w.IsPrincipal) > 0)
+                                                    {
+                                                        var allegati = Model.Richiesta.Allegati.Where(w => !w.IsPrincipal).ToList();
+                                                        <div class="row push-20">
+                                                            <div class="col-sm-12">
+                                                                <label class="rai-font-sm-neutral-bold">Documenti a supporto</label>
+                                                            </div>
+                                                            @{
+                                                                foreach (var a in allegati)
+                                                                {
+                                                                    <div class="col-sm-12">
+                                                                        <span class="rai-font-md">
+                                                                            <a href="@Url.Action("ScaricaPDFASupporto","Dematerializzazione")?idAllegato=@a.Id" class="rai-font-md text-primary"><i class="fa fa-download"> </i> @a.NomeFile</a>
+                                                                        </span>
+                                                                    </div>
+                                                                }
+                                                            }
+                                                        </div>
+                                                    }
+                                                }*@
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @{
+                    if (Model.AbilitaModifica && Model.IsOperatore)
+                    {
+                        <div class="block block-content-table block-transparent">
+                            <div class="block-header">
+                                <label class="block-title">MODIFICA PRATICA</label>
+                            </div>
+                            <div class="block-content">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="panel remove-margin-bottom">
+                                            <div class="panel-body remove-margin">
+                                                <div class="row row-no-margin-left-right">
+                                                    <div class="col-sm-12 push-20">
+                                                        <label class="rai-font-sm-neutral-bold">Puoi modificare questa pratica finchè non è stata approvata dall'operatore incaricato.</label>
+                                                    </div>
+                                                    <div class="col-sm-12">
+                                                        <div class="rai-btn-fill">
+                                                            <button class="btn rai-btn-small" aria-label="Modifica pratica" title="Modifica pratica" style="min-width:80px; float:right;" onclick="Dematerializzazione_ModificaPratica('@(Model.Richiesta.Documento.Id)')">Modifica pratica</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+
+
+
+            @{
+                if (Model.PresaInCaricoEnabled && Model.Richiesta.Documento.MatricolaIncaricato == UtenteHelper.Matricola())
+                {
+                    <div class="row">
+                        <div class="block block-content-table block-transparent">
+                            <div class="block-header">
+                                <label class="block-title">Assegnazione</label>
+                            </div>
+                            <div class="block-content">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="panel remove-margin-bottom">
+                                            <div class="panel-body">
+                                                <div class="">
+                                                    <div class="row push-20">
+                                                        <div class="col-sm-12 push-20">
+                                                            <label class="rai-font-sm-bold">Questa pratica è assegnata a te. Se non riesci a gestire una pratica, puoi rilasciarla o assegnarla a un/una collega selezionandone il nome dall'elenco.</label>
+                                                        </div>
+                                                        <div class="col-sm-12">
+                                                            <div class="rai-btn-fill">
+                                                                <button class="btn rai-btn-small" aria-label="Rilascia la pratica" title="Rilascia la pratica" style="min-width:80px;" onclick="Dematerializzazione_AnnullaPrendiInCarico('@Model.Matricola', '@Model.IdPersona', '@Model.Richiesta.Documento.Id')">Rilascia la pratica</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else if (Model.PresaInCaricoEnabled &&
+                    !String.IsNullOrEmpty(Model.Richiesta.Documento.MatricolaIncaricato) &&
+                    Model.Richiesta.Documento.MatricolaIncaricato != UtenteHelper.Matricola())
+                {
+                    <div class="row">
+                        <div class="block block-content-table block-transparent">
+                            <div class="block-header">
+                                <label class="block-title">Assegnazione</label>
+                            </div>
+                            <div class="block-content">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="panel remove-margin-bottom">
+                                            <div class="panel-body">
+                                                <div class="">
+                                                    <div class="row push-20">
+                                                        <div class="col-sm-12">
+                                                            <label class="rai-font-sm-neutral-bold">In carico a</label>
+                                                        </div>
+                                                        <div class="col-sm-12">
+                                                            <label class="rai-font-md">@Model.NominativoUtenteIncaricato</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+
+
+        </div>
+    </div>
+}

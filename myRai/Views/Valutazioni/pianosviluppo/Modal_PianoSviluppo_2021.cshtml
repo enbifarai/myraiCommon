@@ -1,0 +1,282 @@
+﻿@using myRaiCommonModel.Gestionale
+@model PianoSviluppo_2021
+
+<style>
+    #tbl-pds {
+        height: 60vh;
+    }
+
+        #tbl-pds > tbody > tr > td {
+            padding-top: 2px;
+            padding-bottom: 2px;
+        }
+
+            #tbl-pds > tbody > tr > td > label {
+                padding: 8px;
+                border-radius: 4px;
+                width: 100%;
+                margin: 0px;
+            }
+
+            #tbl-pds > tbody > tr > td > div {
+                padding: 8px;
+                border-radius: 4px;
+                min-height: 100px;
+                height: 100%;
+                border-width: 1px;
+                border-style: solid;
+            }
+
+            #tbl-pds > tbody > tr > td > select {
+                max-width: 200px;
+            }
+
+            #tbl-pds > tbody > tr > td.empty-row {
+                padding: 8px 4px;
+            }
+
+            #tbl-pds > tbody > tr > td > textarea {
+                min-height: 100px;
+                height: 100%;
+            }
+
+                #tbl-pds > tbody > tr > td > textarea.error {
+                    height: 85%;
+                }
+
+
+        #tbl-pds .tooltip {
+            margin-left: 0px;
+            max-width: 250px;
+        }
+
+    [data-punto="Forza"][data-punto-checked="true"] {
+        background-color: #008A09 !important;
+        color: white !important;
+    }
+
+    [data-punto="Miglioramento"][data-punto-checked="true"] {
+        background-color: #E50012 !important;
+        color: white !important;
+    }
+
+</style>
+
+@{
+
+    List<SelectListItem> puntiForza = new List<SelectListItem>();
+    List<SelectListItem> puntiMiglioramento = new List<SelectListItem>();
+
+    if (Model.PuntiForza != null)
+    {
+        puntiForza.AddRange(Model.PuntiForza.Select(x => new SelectListItem() { Value = x, Text = x }));
+    }
+
+    if (Model.PuntiMiglioramento != null)
+    {
+        puntiMiglioramento.AddRange(Model.PuntiMiglioramento.Select(x => new SelectListItem() { Value = x, Text = x }));
+    }
+}
+
+<div class="block block-content-table block-transparent no-margin-bottom">
+    @using (Html.BeginForm("Save_Piano", "Valutazioni", FormMethod.Post, new { id = "form-piano" }))
+    {
+        @Html.HiddenFor(m => m.IdValutazione)
+        @Html.HiddenFor(m => m.NomePiano)
+
+        <table class="table rai-table rai-table-vcenter rai-table-borderless" id="tbl-pds">
+            <tr>
+                <td>
+                    <label class="bg-neutrals-xl-40 text-center rai-font-md-bold">
+                        I miei punti di forza
+                        @if (Model.CanModify)
+                        {
+                            <font color="#d2322d"> &nbsp; *</font>
+                        }
+                    </label>
+                </td>
+                <td colspan="3">
+                    <label class="bg-neutrals-xl-40 text-center  rai-font-md-bold">
+                        Cosa voglio allenare
+                        @if (Model.CanModify)
+                        {
+                            <font color="#d2322d"> &nbsp; *</font>
+                        }
+                    </label>
+                </td>
+            </tr>
+            <tr>
+                <td rowspan="3">
+                    <div class="border-neutrals-xl-40" style="padding:0px;">
+                        <table class="table rai-table rai-table-vcenter @(!Model.CanModify?"rai-table-high-row":"")" id="tblPuntiForza">
+                            @if (Model.PuntiForza != null)
+                            {
+                                foreach (var item in Model.PuntiForza)
+                                {
+                                    string des = item.Contains('|') ? item.Split('|')[1] : item;
+
+                                    <tr data-toggle="tooltip" data-html="true" title="@(des)" data-container="body">
+                                        <td style="max-width:200px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;">
+                                            <span class="rai-font-md">@(des)</span>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </table>
+                    </div>
+                    @Html.ListBoxFor(m => m.PuntiForza, puntiForza, new { @class = "form-control rai", required = "required", style = "visibility:collapse;height:0px;padding:0px;" })
+                </td>
+                <td>
+                    <label class="bg-neutrals-xl-20 text-center rai-font-sm-bold">
+                        Cosa inizio a fare
+                        @if (Model.CanModify)
+                        {
+                            <font color="#d2322d"> &nbsp; *</font>
+                        }
+                    </label>
+                </td>
+                <td>
+                    <label class="bg-neutrals-xl-20 text-center rai-font-sm-bold">
+                        Cosa smetto di fare
+                        @if (Model.CanModify)
+                        {
+                            <font color="#d2322d"> &nbsp; *</font>
+                        }
+                    </label>
+                </td>
+                <td>
+                    <label class="bg-neutrals-xl-20 text-center rai-font-sm-bold">
+                        Cosa continuo a fare
+                        @if (Model.CanModify)
+                        {
+                            <font color="#d2322d"> &nbsp; *</font>
+                        }
+                    </label>
+                </td>
+            </tr>
+            <tr>
+                <td rowspan="7">@Html.TextAreaFor(m => m.CosaInizio, new { @class = "form-control rai", required = "required" })</td>
+                <td rowspan="7">@Html.TextAreaFor(m => m.CosaSmetto, new { @class = "form-control rai", required = "required" })</td>
+                <td rowspan="7">@Html.TextAreaFor(m => m.CosaContinuo, new { @class = "form-control rai", required = "required" })</td>
+            </tr>
+            <tr></tr>
+            <tr><td class="empty-row"></td></tr>
+            <tr>
+                <td>
+                    <label class="bg-neutrals-xl-40 text-center rai-font-md-bold">
+                        I miei punti di miglioramento
+                        @if (Model.CanModify)
+                        {
+                            <font color="#d2322d"> &nbsp; *</font>
+                        }
+                    </label>
+                </td>
+            </tr>
+            <tr>
+                <td rowspan="3">
+                    <div class="border-neutrals-xl-40" style="padding:0px;">
+                        <table class="table rai-table rai-table-vcenter  @(!Model.CanModify?"rai-table-high-row":"")" id="tblPuntiMiglioramento">
+                            @if (Model.PuntiMiglioramento != null)
+                            {
+                                foreach (var item in Model.PuntiMiglioramento)
+                                {
+                                    string des = item.Contains('|') ? item.Split('|')[1] : item;
+                                    <tr data-toggle="tooltip" data-html="true" title="@(des)" data-container="body">
+                                        <td style="max-width:200px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;">
+                                            <span class="rai-font-md">@(des)</span>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </table>
+                    </div>@Html.ListBoxFor(m => m.PuntiMiglioramento, puntiMiglioramento, new { @class = "form-control rai", required = "required", style = "visibility:collapse;height:0px;padding:0px;" })
+                </td>
+            </tr>
+            <tr></tr>
+            <tr></tr>
+            <tr><td colspan="4" class="empty-row"></td></tr>
+            <tr>
+                <td>
+                    <label class="bg-neutrals-xl-40 text-center rai-font-md-bold">
+                        La mia aspirazione
+                        @if (Model.CanModify)
+                        {
+                            <font color="#d2322d"> &nbsp; *</font>
+                        }
+                    </label>
+                </td>
+                <td colspan="3">
+                    <label class="bg-neutrals-xl-40 text-center rai-font-md-bold">
+                        Di cosa ho bisogno per allenarmi: cosa/chi mi può aiutare @if (Model.CanModify)
+                        {<font color="#d2322d"> &nbsp; *</font>}
+                    </label>
+                </td>
+            </tr>
+            <tr>
+                <td rowspan="10">@Html.TextAreaFor(m => m.Aspirazione, new { @class = "form-control rai", required = "required" })</td>
+                <td>
+                    <label class="bg-neutrals-xl-20 text-center rai-font-sm-bold">
+                        Cosa
+                        @if (Model.CanModify)
+                        {
+                            <font color="#d2322d"> &nbsp; *</font>
+                        }
+                    </label>
+                </td>
+                <td>
+                    <label class="bg-neutrals-xl-20 text-center rai-font-sm-bold">
+                        Chi
+                        @if (Model.CanModify)
+                        {
+                            <font color="#d2322d"> &nbsp; *</font>
+                        }
+                    </label>
+                </td>
+                <td>
+                    <label class="bg-neutrals-xl-20 text-center rai-font-sm-bold">
+                        Pillole
+                    </label>
+                </td>
+            </tr>
+            <tr>
+                <td rowspan="3">@Html.TextAreaFor(m => m.Bisogno, new { @class = "form-control rai", required = "required" })</td>
+                <td rowspan="3">@Html.TextAreaFor(m => m.DiChiHoBisogno, new { @class = "form-control rai", required = "required" })</td>
+                <td rowspan="3">
+                    @{
+                        var elencoCorsi = myRaiCommonManager.ValutazioniManager.GetCorsi(Model.PuntiMiglioramento);
+                    }
+                    <div class="border-neutrals-xl-40" style="padding:0px;">
+                        <table class="table rai-table rai-table-vcenter rai-table-collapsable rai-font-md" id="tableCorsi">
+                            @Html.Partial("pianosviluppo/PianoSviluppo_Corsi", elencoCorsi)
+                        </table>
+                    </div>
+                </td>
+            </tr>
+            <tr></tr>
+            <tr></tr>
+            <tr><td colspan="3" class="empty-row"></td></tr>
+            <tr>
+                <td colspan="3">
+                    <label class="bg-neutrals-xl-40 text-center rai-font-md-bold">
+                        Da cosa mi accorgerò che l'allenamento è efficace
+                        @if (Model.CanModify)
+                        {
+                            <font color="#d2322d"> &nbsp; *</font>
+                        }
+                    </label>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="3" rowspan="3">@Html.TextAreaFor(m => m.Traguardi, new { @class = "form-control rai", required = "required" })</td>
+            </tr>
+        </table>
+    }
+</div>
+
+@if (!Model.CanModify)
+{
+    <script>
+        $('#tbl-pds textarea').attr('readonly', 'readonly');
+    </script>
+}
+

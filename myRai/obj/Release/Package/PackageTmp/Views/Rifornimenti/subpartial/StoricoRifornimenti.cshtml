@@ -1,0 +1,196 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+@using myRai.Controllers;
+
+@model List<Rifornimento>
+@{
+    Layout = null;
+}
+
+<section class="panel" style="margin-bottom: 50px;">
+    <header class="panel-heading">
+        <h2 class="panel-title">Storico Rifornimenti</h2>
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblNotifiche" aria-expanded="true"></a>
+        </div>
+    </header>
+    <div class="panel-body" style="padding: 0px; padding-top: 15px;">
+
+        <div id="scegliPeriodo" class="h4">
+            <table style="width: 100%">
+                <tr>
+                    <td class="text-right" style="width: 33%">
+                        @if ( DateTime.Now.Year > 2018 )
+                        {
+                            <span id="scegliPeriodo_Sx" onclick="CambiaAnno(-1)" class="glyphicon glyphicon-triangle-left text-muted"></span>
+                        }
+                    </td>
+                    <td class="text-center text-primary text-bold" style="width: 33%">
+                        <span id="AnnoSelezionato">
+                            @DateTime.Now.Year.ToString( )
+                        </span>
+                    </td>
+                    <td class="text-left" style="width: 33%">
+                        <span id="scegliPeriodo_Dx" onclick="CambiaAnno(+1)" class="glyphicon glyphicon-triangle-right text-muted" style="display: none;"></span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div id="tableContainer" class="table-responsive col-lg-12 mb-0 no-padding">
+            <table class="table table-responsive-sm table-hover">
+                <thead class="text-bold text-left">
+                    <tr>
+                        <td class="col-lg-4" style="padding-left: 40px">Data</td>
+                        <td class="col-lg-4 text-center">Tipologia</td>
+                        <td class="col-lg-2 text-center text-primary" style="vertical-align: middle;">@*ICONA TIPOLOGIA*@</td>
+                        <td class="col-lg-1 text-right text-primary">Quantità</td>
+                        <td class="col-lg-1 text-center" style="min-width: 70px; vertical-align: middle;">@*ICONA ACCORDION*@</td>
+                    </tr>
+                    <tr>
+                        <td class="col-lg-12" colspan="12"></td>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if ( Model != null && Model.Any( ) )
+                    {
+                        foreach ( var rifornimento in Model )
+                        {
+                            <tr class="accordion-sintesi" style="cursor: pointer;">
+                                <td style="margin: 0; padding: 0; vertical-align: middle;">
+                                    <blockquote class="b-thin" style="margin: 0; padding: 8px 8px 8px 37px;">
+                                        <span class="text-bold">@(rifornimento.Data.HasValue ? rifornimento.Data.Value.ToString( "dd/MM/yyyy" ) : "")</span><br />
+                                        <em class="h6 text-normal">ore @(rifornimento.Orario.HasValue ? rifornimento.Orario.Value.ToString( "hh\\:mm" ) : "")</em>
+                                    </blockquote>
+                                </td>
+                                <td class="text-bold text-center" style="vertical-align: middle;">
+                                    @if ( string.IsNullOrWhiteSpace( rifornimento.NumRicevuta ) )
+                                    {
+                                        <span>Fuel Card</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Scheda Carburante</span>
+                                    }
+                                </td>
+                                <td class="text-bold text-center text-primary" style="vertical-align: middle;">
+                                    @if ( !string.IsNullOrWhiteSpace( rifornimento.NumRicevuta ) )
+                                    {
+                                        if ( rifornimento.Nazione == RifornimentiConfig.TipiNazione[0] )
+                                        {
+                                            <i class="fa fa-file-o"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="fa fa-globe"></i>
+                                        }
+                                    }
+                                </td>
+                                <td class="h5 text-bold text-right text-primary" style="vertical-align: middle;">
+                                    <span>@convertDecimalFormat( rifornimento.Quantita ) lt</span>
+                                </td>
+                                <td class="text-center" style="vertical-align: middle;">
+                                    <i class="accordion-showdetail icons small icon-arrow-down"></i>
+                                </td>
+                            </tr>
+
+                            <tr class="accordion-dettagli" style="display: none;">
+                                @if ( string.IsNullOrWhiteSpace( rifornimento.NumRicevuta ) )
+                                {
+                                    <td style="padding-left: 40px">
+                                        <em>Carburante:</em><br />@rifornimento.Carburante
+                                    </td>
+                                    <td>
+                                        <table>
+                                            <tr>
+                                                <td class="col-lg-6 text-left text-primary" style="padding-left: 0;">
+                                                    <em>Importo:</em><br />
+                                                    <strong>@(convertDecimalFormat( rifornimento.Importo ) != "" ? convertDecimalFormat( rifornimento.Importo ) + " €" : "")</strong><br />
+                                                </td>
+                                                <td class="col-lg-6 text-left text-nowrap">
+                                                    <em>Targa Auto:</em><br />@rifornimento.Targa
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    <td colspan="3" style="padding-right: 40px">
+                                        <em>Dove:</em><br />
+                                        <strong>@rifornimento.Dove</strong>
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td style="padding-left: 40px">
+                                        <em>Carburante:</em><br />@rifornimento.Carburante
+                                    </td>
+                                    <td>
+                                        <table>
+                                            <tr>
+                                                <td class="col-lg-6 text-left text-primary" style="padding-left: 0px;">
+                                                    <em>Importo:</em><br />
+                                                    <strong>@convertDecimalFormat( rifornimento.Importo ) €</strong>
+                                                </td>
+                                                <td class="col-lg-6 text-left text-nowrap">
+                                                    <em>ContaKm:</em><br />@convertDecimalFormat( rifornimento.ContaKm , 0 ) Km
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    <td>
+                                        @*#########RIGA DA SCOMMENTARE PER FAR VEDERE LA DATA DI CONTABILIZZAZIONE#######################à
+                                            <em>Data cont.:</em><br />@(string.IsNullOrWhiteSpace(rifornimento.DataContabilizzazione) ? "" : string.Format("{0}/{1}", rifornimento.DataContabilizzazione.Substring(4, 2), rifornimento.DataContabilizzazione.Substring(0, 4)))
+                                        *@
+                                    </td>
+                                    <td colspan="2" class="text-center" style="vertical-align: middle;">
+                                        @Html.ActionLink( "VEDI ALLEGATO" , "getFile_Ricevuta" , "Rifornimenti" , new { @idDoc = rifornimento.NumRicevuta } , new { target = "_blank" , @class = "btn btn-default bg-puls_dash btn-scriv" } )
+                                    </td>
+                                    <td style="vertical-align: middle;">
+                                        @if ( rifornimento.AuthInsEditSkCarb && rifornimento.StatoLavorazione == "Inserito" && RifornimentiController.checkAuth_FuelCard( CommonHelper.GetCurrentUserMatricola( ) ) )
+                                        {
+                                            <i class="fa fa-pencil" onclick="editSkCarb('@rifornimento.Id_Anno', '@rifornimento.Id_DataTransaz');" style="cursor: pointer; padding-bottom: 7px;"></i>
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="12" class="col-lg-12" style="border-top: none;">
+                                <span class="text-bold">Nessun dato presente in questa annualità.</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+@functions {
+    //Converte la stringa in ingresso contenente un numero decimale nella cultura Invariant (1000.XX) alla cultura It-IT (1.000,XX)
+    public string convertDecimalFormat ( string DecimalAsStringInvariantCulture , int decimalDigits = 2 , string decimalSeparator = "," , string thousandsSeparator = "." )
+    {
+        if ( String.IsNullOrWhiteSpace( DecimalAsStringInvariantCulture ) )
+        {
+            return "";
+        }
+
+        try
+        {
+            decimal num = decimal.Parse( DecimalAsStringInvariantCulture , System.Globalization.CultureInfo.InvariantCulture );
+            System.Globalization.CultureInfo culture = new System.Globalization.CultureInfo( "it-IT" );
+            culture.NumberFormat.NumberDecimalDigits = decimalDigits;
+            culture.NumberFormat.NumberDecimalSeparator = decimalSeparator;
+            culture.NumberFormat.NumberGroupSeparator = thousandsSeparator;
+            string DecimalAsStringCustomCulture = num.ToString( "N" , culture );
+            return DecimalAsStringCustomCulture;
+        }
+        catch ( Exception )
+        {
+            return "";
+        }
+    }
+}

@@ -1,0 +1,412 @@
+﻿@model myRaiCommonModel.MatPianificazioneModel
+<style>
+    .popover {
+        width: 300px;
+    }
+
+    pie {
+        margin: 6px;
+    }
+</style>
+
+<input type="hidden" id="id-richiesta" value="@Model.Richiesta.ID" />
+<input type="hidden" id="control-string" />
+
+
+
+@*<div class="row">
+    <div class="col-sm-8">
+        <span class="rai-font-md-neutral-bold">Seleziona uno o più giorni, consecutivi o separati. Nel caso di giorni con permessi potrai ripianificarli successivamente nelle tue presenze.</span>
+    </div>
+    <div class="col-sm-4">
+        <span class="rai-font-md-bold">Giorni pianificati</span>
+        <div style="float:right">
+            <span id="giorni-pianificati">0</span>
+            /<span id="numero-giorni-totali">@(Model.Richiesta.NUMERO_GIORNI_GIUSTIFICATIVO)</span>
+        </div>
+
+        <div class="rai progress progress-xs m-2 light" style="margin-bottom:0px">
+            <div id="pbar" class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="6" aria- valuemin="0" aria-valuemax="100" style="width:
+    0%;">
+
+            </div>
+
+        </div>
+    </div>
+
+</div>*@
+<div class="row">
+    
+    <div class="col-sm-12">
+        @{
+            var pian = Model.Richiesta.XR_MAT_PIANIFICAZIONI.OrderByDescending(x => x.DATA_INSERIMENTO).FirstOrDefault();
+            bool breaker= false;
+        }
+        <table id="table-pianificazione" style="width:100%;table-layout:fixed;margin-top:5px">
+            <tr>
+                <td style="width:120px;height: 32px;background-color: #eee;"></td>
+                <td class="rai-font-md-bold" style="height: 32px;background-color: #eee;text-align: center;padding-right: 120px;" colspan="31">@Model.DataInizialeCalendario.Year</td>
+            </tr>
+            <tr>
+                <td style="width:120px"></td>
+                @for (int i = 1; i <= 31; i++)
+                {
+                    <td style="padding-top:10px" class="rai-font-sm-neutral cell-num-pianificazione">@i</td>
+                }
+            </tr>
+
+
+            @for (int indice = 0; indice <= 10; indice++)
+            {
+                var currentDate = Model.DataInizialeCalendario.AddMonths(indice);
+                int i = currentDate.Month;
+                int y = currentDate.Year;
+
+                if (currentDate > Model.DataFinaleCalendario)
+                {
+                    break;
+                }
+                if (currentDate.Year > Model.DataInizialeCalendario.Year && breaker == false)
+                {
+                    breaker = true;
+                    <tr style="height:20px"></tr>
+                    <tr>
+                        <td style="width:120px;height: 32px;background-color: #eee;"></td>
+                        <td class="rai-font-md-bold" style="height: 32px;background-color: #eee;text-align: center;padding-right: 120px;" colspan="31">@currentDate.Year</td>
+                    </tr>
+                    <tr style="height:20px"></tr>
+                }
+                int MaxDays = DateTime.DaysInMonth(y, i);
+                <tr>
+                    <td class="rai-font-md-bold" style="padding-top:8px;padding-bottom:8px">
+
+                        @(new DateTime(y, i, 1).ToString("MMMM").Substring(0, 1).ToUpper() +
+                                                                                              new DateTime(y, i, 1).ToString("MMMM").Substring(1))
+
+
+                    </td>
+                    @for (int g = 1; g <= 31; g++)
+                    {
+                        bool passato = false;
+                        if (g <= MaxDays)
+                        {
+                            DateTime D = new DateTime(y, i, g);
+                            passato = D < DateTime.Now;
+
+                            String DataTeoricaPF = D.ToString("dd-MM");
+                            string InizDay = D.ToString("dddd").Substring(0, 1).ToUpper();
+                            myRaiData.Incentivi.XR_MAT_GIORNI_CONGEDO daySaved = null;
+
+                            if (pian != null)
+                            {
+                                daySaved = pian.XR_MAT_GIORNI_CONGEDO.Where(z => z.DATA == D).FirstOrDefault();
+                            }
+
+                            if (daySaved != null)
+                            {
+                                string p = (daySaved.FRUIZIONE == "M" ? "fifty" : daySaved.FRUIZIONE == "Q" ? "twentyfive" : "");
+
+                                string pie = "<pie class='pie-cal-anno pie-fe " + p + "'></pie>";
+
+                                <td id="td-@(D.ToString("ddMMyyyy"))" data-dayofweek="@InizDay" data-date="@D.ToString("dd/MM/yyyy")"
+                                    data-pianificato="1" data-fruizione-scelta="@daySaved.FRUIZIONE"
+                                    style="height:20px" class="@(passato?"no-pian":"") no-select rai-font-sm-neutral cell-pianificazionelight">
+                                    @Html.Raw(pie)
+                                </td>
+
+                                continue;
+                            }
+                            if (D >= Model.Richiesta.INIZIO_GIUSTIFICATIVO && D <= Model.Richiesta.FINE_GIUSTIFICATIVO)
+                            {
+                                var dayPF = Model.pf.dipendente.ferie.giornate.Where(x => x.dataTeorica == DataTeoricaPF).FirstOrDefault();
+                                if (dayPF != null && !String.IsNullOrWhiteSpace(dayPF.codiceVisualizzazione) &&
+                                                    "PF,PR,PX,PG,FE".Split(',').Contains(dayPF.codiceVisualizzazione.Trim()))
+                                {
+
+                                    <td id="td-@(D.ToString("ddMMyyyy"))" data-trigger="hover" data-container="body" data-toggle="popover" data-html="true" data-placement="top"
+                                        data-ecc="@(dayPF.codiceVisualizzazione.Trim()+dayPF.quotaGiornata.Trim())"
+                                        data-desc="@( myRai.Business.CommonManager.GetDescrizioneEccezione(dayPF.codiceVisualizzazione.Trim()+dayPF.quotaGiornata.Trim()))"
+                                        data-giorno="@(D.ToString("dddd dd/MM/yyyy").Substring (0,1).ToUpper()+D.ToString("dddd dd/MM/yyyy").Substring (1))"
+                                        data-fruizione="@((dayPF.quotaGiornata.Trim()=="Q"?"Un quarto di giornata": dayPF.quotaGiornata.Trim()=="M"?"Mezza giornata" : "Intera giornata"))"
+                                        data-eccezione="@(dayPF.codiceVisualizzazione.Trim()+dayPF.quotaGiornata.Trim())" data-date="@D.ToString("dd/MM/yyyy")" style="height:20px" class="no-select ecc-exist rai-font-sm-neutral cell-pianificazione @(passato?"no-pian":"")">
+                                        <pie class="pie-cal-anno @(dayPF.quotaGiornata=="M"?"fifty":dayPF.quotaGiornata=="Q"?"twentyfive":"") pie-pf"></pie>
+                                    </td>
+
+                                }
+                                else if (dayPF.tipoGiornata == "A" || dayPF.tipoGiornata == "B")
+                                {
+                                    <td id="td-@(D.ToString("ddMMyyyy"))" data-dayofweek="@InizDay" data-date="@D.ToString("dd/MM/yyyy")" style="height:20px" class="@(passato?"no-pian":"") no-select rai-font-sm-neutral cell-pianificazionelight">
+                                        @InizDay
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td id="td-@(D.ToString("ddMMyyyy"))" data-date="@D.ToString("dd/MM/yyyy")" data-dayofweek="@InizDay" style="height:20px" class="@(passato?"no-pian":"") no-select rai-font-sm-neutral cell-pianificazione">
+                                        @InizDay
+                                    </td>
+                                }
+
+                            }
+                            else
+                            {
+                                <td data-date="@D.ToString("dd/MM/yyyy")" style="height:20px" class="no-pian rai-font-sm-neutral cell-pianificazione"></td>
+                            }
+                        }
+
+
+                    }
+                </tr>
+
+            }
+
+
+
+
+
+
+
+
+        </table>
+
+        @*@if (Model.isFromApprovazione)
+        {
+            <div class="rai-btn-fill" style="margin-top : 26px">
+                <button data-dismiss="modal" class="btn rai-btn-secondary" type="button" onclick="">Chiudi visualizzazione</button>
+                <button id="button-pian" type="button" class="btn rai-btn-primary" onclick="PresaVisionePianificazione(@pian.ID)">Prendi visione</button>
+            </div>
+        }
+        else
+
+        {
+            <div class="rai-btn-fill" style="margin-top : 26px">
+                <button data-dismiss="modal" class="btn rai-btn-secondary" type="button" onclick="">Annulla pianificazione</button>
+                <button id="button-pian" type="button" class="btn rai-btn-primary disable" onclick="ConfermaPianificazione()">Conferma pianificazione</button>
+            </div>
+        }*@
+
+
+    </div>
+</div>
+
+<div id="scelta-fruizione" style="display:none;position:absolute;top: 0;width: 400px;border: solid 1px #ddd;border-radius: 2px;background-color: #fff;box-shadow: 2 2 black;box-shadow: 0 0 6px 6px #eee;padding-left: 10px;padding-right: 10px;padding-bottom: 10px;">
+    <label class="rai-font-md-bold" style="margin-top: 10px;opacity: 0.6;">SCEGLI LA FRUIZIONE</label>
+    <label onclick="AnnullaPianificazione()" class="rai-font-md-bold" style="cursor:pointer;margin-top: 10px;margin-right: 9px;float:right;">X</label>
+    <div style="width:100%;height: 1px;background-color:#ddd;margin-top: 8px;margin-bottom:8px;"></div>
+    <p id="perm-sel" class="rai-font-sm-neutral" style="color: #EE9600;margin-top: 16px;margin-bottom: 10px;">Hai selezionato dei giorni con permessi. Potrai ripianificarli successivamente.</p>
+    <select id="tipogiornata" class="form-control" style="height: 50px;">
+        <option value="I">Intera giornata</option>
+        <option value="M">Mezza giornata</option>
+        <option value="Q">Un quarto di giornata</option>
+    </select>
+    <a class="btn btn-sm rai-btn-small full-width" onclick="SalvaPianificazione()" style="margin-top: 19px;padding-top: 12px;padding-bottom: 12px;">
+        Salva
+    </a>
+
+</div>
+
+<script>
+    function PresaVisionePianificazione(id) {
+        // VisionaPian(int idPian)
+        debugger
+        $.ajax({
+            type: 'POST',
+            url: "/maternitacongedi/VisionaPian",
+            dataType: "json",
+            data: { idPian: id },
+            cache: false,
+            success: function (data) {
+                if (data.esito = true) {
+                    swal({
+                        title: 'Dati salvati correttamente',
+                        type: "success",
+                        confirmButtonText: 'OK',
+                        customClass: 'rai'
+                    });
+                    $("#popup-view-pianificazione").modal("hide");
+                    getMaternitaCongediContent();
+                }
+                else {
+                    swal({
+                        title: data.errore,
+                        type: "error",
+                        confirmButtonText: 'OK',
+                        customClass: 'rai'
+                    });
+                }
+            }
+        });
+    }
+
+
+    function ConfermaPianificazione() {
+        var dati = [];
+        $("td[data-fruizione-scelta]").each(function () {
+            dati.push({
+                data: $(this).attr("data-date"),
+                fruizione: $(this).attr("data-fruizione-scelta"),
+                eccezioni: $(this).attr("data-eccezione"),
+                id: $("#id-richiesta").val()
+            });
+        });
+
+        $.ajax({
+            type: 'POST',
+            url: "/maternitacongedi/ConfermaPianificazione",
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            data: JSON.stringify({ DatiPianificazione: dati }),
+            cache: false,
+            success: function (data) {
+                if (data.esito = true) {
+                    $("#popup-view-pianificazione").modal("hide");
+                    swal({
+                        title: 'Dati salvati correttamente',
+                        type: "success",
+                        confirmButtonText: 'OK',
+                        customClass: 'rai'
+                    });
+                    AjaxFillContentCenter();
+                    GetGiorniBox($("#id-richiesta").val());
+                }
+                else {
+                    swal({
+                        title: data.errore,
+                        type: "error",
+                        confirmButtonText: 'OK',
+                        customClass: 'rai'
+                    });
+                }
+            }
+        });
+
+    }
+    function SalvaPianificazione() {
+        var fruizione = $("#tipogiornata").val();
+        var p = (fruizione == "M" ? "fifty" : fruizione == "Q" ? "twentyfive" : "");
+
+        var pie = '<pie class="pie-cal-anno pie-fe ' + p + ' "></pie>';
+
+        var totaleAdOra = ContaGiornate();
+        var scelta = 1;
+        if (fruizione == "M") scelta = 0.5;
+        if (fruizione == "Q") scelta = 0.25;
+        var totaleDaPianificare = Number($("#numero-giorni-totali").text());
+
+        if ((totaleAdOra + scelta * $("td.cell-sel-pianificazione").length) > totaleDaPianificare) {
+            swal({
+                title: "Il totale eccede il numero di giorni da pianificare.",
+                type: "error",
+                confirmButtonText: 'OK',
+                customClass: 'rai'
+            });
+            return;
+        }
+
+        $("#scelta-fruizione").hide();
+        $("td.cell-sel-pianificazione").each(function () {
+            debugger
+            $(this).removeClass("cell-sel-pianificazione");
+            $(this).html(pie);
+            $(this).attr("data-fruizione-scelta", fruizione);
+        });
+        AggiornaPianificati();
+        CheckButtonPianificazione();
+    }
+
+    $(".ecc-exist").popover({
+        content: function () {
+            return CreaPopover($(this).attr("data-ecc"), $(this).attr("data-desc"), $(this).attr("data-giorno"), $(this).attr("data-fruizione"));
+        }
+    });
+
+    $("#table-pianificazione td").mousedown(function () {
+        PianificaMouseDown(this);
+    });
+    $("#table-pianificazione td").mouseup(function () {
+        PianificaMouseUp(this);
+    });
+    $("#popup-view-pianificazione").mouseup(function () {
+        PianificaMouseUpNoCell();
+    });
+    $("#table-pianificazione td").mouseover(function () {
+        PianificaMouseOver(this);
+    });
+    function AnnullaPianificazione() {
+        $("#scelta-fruizione").hide();
+        $("td.cell-sel-pianificazione").each(function () {
+            $(this).removeClass("cell-sel-pianificazione");
+            $(this).removeAttr("data-pianificato");
+        });
+        AggiornaPianificati();
+    }
+
+
+    function CreaPopover(ecc, desc, giorno, fruizione) {
+        var r = "<span class='rai-font-md-bold'>" + desc + " (" + ecc + ")</span><div style='width:100%;height:2px;background-color:#ddd;margin-top:12px;margin-bottom:8px'></div><div class='row' style='margin-bottom:20px;margin-top:20px'><div class='col-sm-4 rai-font-sm-neutral no-padding'><span>Giorno</span></div><div class='col-sm-8 rai-font-sm-neutral-bold  no-padding'><span>" + giorno + "</span></div></div><div class='row' style='margin-bottom:20px'><div class='col-sm-4 rai-font-sm-neutral no-padding'><span>Fruizione</span></div><div class='col-sm-8 rai-font-sm-neutral-bold no-padding'><span>" + fruizione + "</span></div></div>";
+        return r;
+    }
+
+    /*
+      <span id="giorni-pianificati">0</span>
+            <span id="numero-giorni-totali">
+     */
+    function PuoPianificare() {
+        var a = Number($("#giorni-pianificati").text());
+        var b = Number($("#numero-giorni-totali").text());
+        debugger
+        return a < b;
+    }
+    function ContaGiornate() {
+        var totale = 0;
+
+        $("td[data-pianificato]").each(function () {
+            debugger
+            if ($(this).attr("data-fruizione-scelta") == "I")
+                totale += 1;
+            if ($(this).attr("data-fruizione-scelta") == "M")
+                totale += 0.5;
+            if ($(this).attr("data-fruizione-scelta") == "Q")
+                totale += 0.25;
+        });
+        return totale;
+    }
+    function AggiornaPianificati() {
+
+        var totale = ContaGiornate();
+
+        //$("#giorni-pianificati").text($("td[data-pianificato]").length);
+        $("#giorni-pianificati").text(totale);
+
+        var a = totale;// Number($("#giorni-pianificati").text());
+        var b = Number($("#numero-giorni-totali").text());
+        var perc = (a / b) * 100;
+        $("#pbar").css("width", perc + "%");
+        // if (a < b)
+        //   CheckButtonPianificazione();
+    }
+    function CheckButtonPianificazione() {
+        var controlString = getControlString();
+        // $("td[data-pianificato='1']").each(function () {
+        //     controlString += $(this).attr("data-date") + $(this).attr("data-fruizione-scelta");
+        // });
+
+        if (controlString != $("#control-string").val()) {
+            // var a = Number($("#giorni-pianificati").text());
+            // var b = Number($("#numero-giorni-totali").text());
+            // if (a >= b) {
+            $("#button-pian").removeClass("disable");
+        }
+        else {
+            $("#button-pian").addClass("disable");
+        }
+    }
+    function getControlString() {
+        var controlString = "";
+        $("td[data-pianificato='1']").each(function () {
+            controlString += $(this).attr("data-date") + $(this).attr("data-fruizione-scelta");
+        });
+        return controlString;
+    }
+
+    AggiornaPianificati();
+</script>

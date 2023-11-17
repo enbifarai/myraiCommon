@@ -1,0 +1,192 @@
+﻿
+@using myRaiGestionale.Controllers
+@model myRaiCommonModel.PopupTeModel
+
+
+<div class="block block-content-table block-transparent remove-margin-bottom">
+    <div class="block-header" href="#collapse-te" data-toggle="collapse" aria-expanded="true" data-block-toggle>
+        <label class="block-title">DETTAGLI RICHIESTA</label>
+        <div class="block-options">
+            <i data-toggle="collapse" class="fa fa-chevron-down"></i>
+        </div>
+    </div>
+    <div class="block-content collapse in" id="collapse-te">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="panel">
+                    <div class="panel-body">
+                        <div id="dettagli-richiesta-te">
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    @Html.Partial("~/views/maternitacongedi/_profiloimage.cshtml", new myRaiCommonModel.ProfiloImageModel() {
+                                InServizio = myRaiCommonManager.HomeManager.IsInServizio(Model.Richiesta.MATRICOLA),
+                                Matricola = Model.Richiesta.MATRICOLA,
+                                Row1 = Model.Richiesta.NOMINATIVO,
+                                Row2 = "Matricola " + Model.Richiesta.MATRICOLA
+
+                                })
+                                </div>
+                            </div>
+                            <div class="row" style="margin-top:20px">
+                                <div class="col-sm-12">
+                                    <span class="rai-font-sm-neutral">
+                                        Tipologia
+                                    </span><br />
+
+                                    <label>@Model.Richiesta.XR_MAT_CATEGORIE.TITOLO</label>
+
+                                </div>
+                            </div>
+
+                            @if (!String.IsNullOrWhiteSpace(Model.Richiesta.PROTOCOLLO_INPS))
+                            {
+                                <div class="row" style="margin-top:20px">
+                                    <div class="col-sm-12">
+                                        <span class="rai-font-sm-neutral">
+                                            Numero protocollo INPS
+                                        </span><br />
+                                        <label>
+                                            @Model.Richiesta.PROTOCOLLO_INPS
+                                        </label>
+
+                                    </div>
+                                </div>
+                            }
+
+
+                            @{
+                                int idstato = 0;
+                                if (Model.Richiesta.XR_WKF_OPERSTATI.Any())
+                                {
+                                    idstato = Model.Richiesta.XR_WKF_OPERSTATI.Max(x => x.ID_STATO);
+                                }
+
+                            }
+                            @if (idstato >= 100 && idstato <= 199)
+                            {
+                                <div class="row" style="margin-top:20px">
+                                    <div class="col-sm-12">
+                                        <span class="rai-font-md-neutral-bold">Stato</span><br />
+                                    </div>
+
+                                    <div class="col-sm-12">
+                                        <i class="fa fa-circle circle-red" aria-hidden="true"></i>
+                                        <label>Annullata</label>
+                                    </div>
+                                </div>
+                            }
+
+
+
+
+
+
+
+
+
+
+
+
+                            <div class="row" style="margin-top:20px" id="mos1">
+                                <div class="col-sm-12">
+                                    <div style="text-align:center">
+                                        <span onclick="$('#det1').show();$('#mos1').hide();" style="cursor:pointer" class="text-primary rai-font-sm">Mostra tutti i dettagli</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="det1" style="display:none">
+                                @{
+                                    var Sintesi = myRaiHelper.UtenteHelper.SintesiInfo(Model.Richiesta.MATRICOLA);
+                                }
+                                <div class="row" style="margin-top:20px">
+                                    <div class="col-sm-12">
+                                        <span class="rai-font-sm-neutral">
+                                            Direzione
+                                        </span><br />
+
+                                        @if (Sintesi != null)
+                                        {
+                                            <label>@Sintesi.DES_SERVIZIO</label>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="row" style="margin-top:20px">
+                                    <div class="col-sm-12">
+                                        <span class="rai-font-sm-neutral">
+                                            Inquadramento
+                                        </span><br />
+
+                                        @if (Sintesi != null)
+                                        {
+                                            <label>@Sintesi.DES_QUALIFICA</label>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="row" style="margin-top:20px">
+                                    <div class="col-sm-12">
+                                        <span class="rai-font-sm-neutral">
+                                            Tipo contratto
+                                        </span><br />
+
+                                        @if (Sintesi != null)
+                                        {
+                                            <label>@Sintesi.DES_TPCNTR</label>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="row" style="margin-top:20px">
+                                    <div class="col-sm-12">
+                                        <span class="rai-font-sm-neutral">
+                                            Sede
+                                        </span><br />
+
+                                        @if (Sintesi != null)
+                                        {
+                                            <label>@Sintesi.DES_SEDE</label>
+                                        }
+                                    </div>
+                                </div>
+
+
+
+
+
+
+
+
+
+
+                                @{
+                                    string par = myRaiHelper.CommonHelper.GetParametro<string>(myRaiHelper.EnumParametriSistema.MatricoleCancellazionePratiche);
+                                    if (par.Split(',').Contains(myRaiHelper.CommonHelper.GetCurrentUserMatricola()))
+                                    {
+                                        <div>
+                                            <div class="col-sm-12" style="padding:0px;margin-top:12px">
+
+                                                <button id="button-cancella" type="button" class="btn rai-btn-primary full-width"
+                                                        onclick="CancellaDaAdmin(@Model.Richiesta.ID)" style="height:44px;margin-bottom:30px">
+                                                    Elimina pratica
+                                                </button>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+
+
+                                <div class="row" style="margin-top:20px">
+                                    <div class="col-sm-12">
+                                        <div style="text-align:center">
+                                            <span onclick="$('#det1').hide();$('#mos1').show();" style="cursor:pointer" class="text-primary rai-font-sm">Nascondi dettagli</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

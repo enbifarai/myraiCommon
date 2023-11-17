@@ -1,0 +1,168 @@
+﻿@using myRaiCommonModel
+@using myRaiHelper
+@model AnagraficaSitDebit
+
+@{
+    //DateTime dataCorrente = Model.CurrentDate;
+
+    int rec = 1;
+
+    List<RedditoModel> redditi = null;
+    var db = new myRaiData.Incentivi.IncentiviEntities();
+    var recAbil = db.XR_HRIS_PARAM.FirstOrDefault(x => x.COD_PARAM == "DatiSensibiliAnagrafica");
+    if (recAbil != null && (recAbil.COD_VALUE1 == "TRUE" || (recAbil.COD_VALUE1 == "LIMITED" && recAbil.COD_VALUE2.Contains(CommonHelper.GetCurrentRealUsername()))))
+    {
+        ;
+    }
+    else
+    {
+        foreach (var item in Model.Dati)
+        {
+            item.Addebito = 123.45 * rec;
+            if (item.NumeroRate > 1)
+            {
+                item.ImportoRata = item.Addebito / item.NumeroRate;
+                item.ImportoRateResidue = item.ImportoRata * item.NumeroRateResidue;
+            }
+            else
+            {
+                item.ImportoRata = item.Addebito;
+                item.ImportoRateResidue = 0.0;
+            }
+            rec++;
+        }
+    }
+}
+
+<div class="table-responsive" id="dipSitDeb" style="max-height:250px">
+    <table class="table table-hover rai-table rai-table-vcenter" id="table-eventi-3">
+        <thead>
+            <tr>
+                <th rowspan="2">Descrittiva</th>
+                <th rowspan="2">Addebito</th>
+                <th rowspan="2">Inizio</th>
+                <th rowspan="2">Fine</th>
+                <th colspan="2" class="text-center">Rate mensili</th>
+                <th colspan="2" class="text-center">Residuo</th>
+            </tr>
+            <tr>
+                <th class="text-right">N°</th>
+                <th class="text-right">Importo</th>
+                <th class="text-right">N°</th>
+                <th class="text-right">Importo</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                if (Model.Dati == null || !Model.Dati.Any())
+                {
+                    <tr>
+                        <td colspan="5">
+                            @Html.Partial("~/Views/Shared/_NoDati.cshtml")
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    int rowCount = 1;
+                    foreach (var itm in Model.Dati)
+                    {
+                        <tr >
+                            <td>
+                                @itm.Descrizione
+                            </td>
+                            <td class="addebito text-right">
+                                @if (itm.Addebito == 0.0)
+                                {
+
+                                }
+                                else
+                                {
+
+                                    @(String.Format("{0:N2} €", itm.Addebito))
+
+                                }
+                            </td>
+                            <td>
+                                @if (!String.IsNullOrWhiteSpace(itm.MeseDa))
+                                {
+                                    <span class="">@itm.MeseDa</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!String.IsNullOrWhiteSpace(itm.MeseA))
+                                {
+                                    <span>@itm.MeseA</span>
+                                }
+                            </td>
+                            <td class="text-right">
+                                @{
+                                    string nRate = "";
+                                    if (itm.NumeroRate > 1)
+                                    {
+                                        nRate = String.Format("{0}", itm.NumeroRate);
+                                    }
+                                    else if (itm.NumeroRate == 0)
+                                    {
+                                        nRate = String.Empty;
+                                    }
+                                    else
+                                    {
+                                        nRate = String.Format("{0}", itm.NumeroRate);
+                                    }
+                                }
+                                @(nRate)
+                            </td>
+                            <td class="text-right">
+                                @{
+                                    if (itm.ImportoRata == 0.0)
+                                    {
+                                    }
+                                    else
+                                    {
+                                        @(String.Format("{0:N2} €", itm.ImportoRata))
+                                    }
+                                }
+                            </td>
+                            <td class="text-right">
+                                @{
+                                    string residue = "";
+                                    if (itm.NumeroRateResidue > 1)
+                                    {
+                                        residue = String.Format("{0}", itm.NumeroRateResidue);
+                                    }
+                                    else if (itm.NumeroRateResidue == 0)
+                                    {
+                                        residue = String.Empty;
+                                    }
+                                    else
+                                    {
+                                        residue = String.Format("{0}", itm.NumeroRateResidue);
+                                    }
+                                }
+                                @(residue)
+                            </td>
+                            <td  class="text-right">
+
+                                @{
+                                    if (itm.ImportoRateResidue == 0.0)
+                                    {
+                                    }
+                                    else
+                                    {
+
+                                        @(String.Format("{0:N2} €", itm.ImportoRateResidue))
+
+                                    }
+                                }
+
+
+                            </td>
+                        </tr>
+                        rowCount++;
+                    }
+                }
+            }
+        </tbody>
+    </table>
+</div>

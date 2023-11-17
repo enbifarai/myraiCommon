@@ -1,0 +1,73 @@
+﻿@using myRaiHelper
+@model myRaiCommonModel.Gestionale.ElencoAnagrafiche
+
+@if (Model == null || Model.anagrafiche == null || Model.anagrafiche.Count() == 0)
+{
+    <div class="row">
+        <div class="col-sm-12 text-center">
+            <h4>Nessun dipendente trovato</h4>
+        </div>
+    </div>
+}
+else
+{
+    int countPeople = Model.anagrafiche.Count();
+
+    <div class="row">
+        <div class="col-xs-12 ">
+            <div style="height:340px;overflow-x:hidden;overflow-y:auto;">
+                <table class="js-table-sections table table-hover rai-table" role="grid">
+                    <thead>
+                        <tr>
+                            <td>
+                                Nominativo
+                            </td>
+                            <td>
+                                Matricola
+                            </td>
+                            <td>
+                                Direzione/Sezione
+                            </td>
+                            <td>
+                                &nbsp;
+                            </td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            foreach (var dip in Model.anagrafiche)
+                            {
+                                bool justAdded = dip.XR_INC_DIPENDENTI.Any();
+                                int currentState = justAdded ? dip.XR_INC_DIPENDENTI.First().XR_INC_OPERSTATI.Where(x => x.DATA_FINE_VALIDITA == null).Max(x => x.ID_STATO) : 0;
+
+                                <tr data-row-persona="@dip.ID_PERSONA" role="row" style="margin:3px; border-top:1px solid lightgray;">
+                                    <td class=" @(justAdded?"disable":"")" data-id-persona="@dip.ID_PERSONA">
+                                        <a href="#" onclick="IncShowAnteprima(@dip.ID_PERSONA)"><h5 class="text-bold" style="width:100%;margin-top:5px;margin-bottom:5px;">@dip.DES_COGNOMEPERS.TitleCase() @dip.DES_NOMEPERS.TitleCase()</h5></a>
+                                    </td>
+                                    <td class=" @(justAdded?"disable":"")" data-id-persona="@dip.ID_PERSONA">
+                                        <label class="text-italic" style="width:100%;margin-bottom:0px;">@dip.COD_MATLIBROMAT</label>
+                                    </td>
+                                    <td class=" @(justAdded?"disable":"")" data-id-persona="@dip.ID_PERSONA">
+                                        <label class="text-muted" style="width:100%;margin-bottom:0px;">@dip.DES_SERVIZIO<br />@dip.DES_DENOMUNITAORG</label>
+                                    </td>
+                                    <td class=" text-right @(justAdded?"":"actions-hover")" style="vertical-align:middle;">
+                                        <a id="link-@dip.ID_PERSONA" data-prov="@dip.ID_PERSONA" href="#" alt="Aggiungi" title="Aggiungi" class="btn btn-action-icon @(justAdded?"disable":"")" onclick="IncAggiungiPratica(@dip.ID_PERSONA)">
+                                            <i class="fa fa-plus"></i>
+                                        </a>
+
+                                        <a id="REMOVE_@dip.ID_PERSONA" href="#" style="@(justAdded && currentState<2?"":"display:none;")opacity:1;text-decoration:none;" alt="Rimuovi pratica" title="Rimuovi pratica" class="btn btn-action-icon" onclick="@(justAdded?"IncRimuoviPersona("+dip.ID_PERSONA+")":"")">
+                                            <i class="icon icon-trash" style="font-size:18px;">&nbsp;</i>
+                                        </a>
+                                        <a id="OPER_@dip.ID_PERSONA" style="display:none;">
+                                            <span class="block block-opt-refresh">&nbsp;</span>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}

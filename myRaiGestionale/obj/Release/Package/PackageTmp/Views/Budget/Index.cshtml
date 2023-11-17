@@ -1,0 +1,732 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel
+
+@{
+    /**/
+
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    ViewBag.Title = "HRIS - Politiche Retributive - Budget";
+}
+
+@*<script src="@(Url.Content("~/assets/js/myRaiIncentivi.js"))"></script>*@
+
+@*<style>
+    .ct-chart .ct-series.ct-series-a .ct-bar, .ct-chart .ct-series.ct-series-a .ct-line, .ct-chart .ct-series.ct-series-a .ct-point, .ct-chart .ct-series.ct-series-a .ct-slice.ct-donut {
+        stroke: #337ab7;
+    }
+</style>*@
+
+@model BudgetVM
+
+
+<section role="main" class="content-body">
+    <main id="main-container">
+        <div class="content">
+            @Html.Partial("~/Views/Budget/_panel.cshtml", Model)
+        </div>
+    </main>
+</section>
+
+
+<!-- Modal -->
+<div class="modal right fade" id="modal-dettaglio-direzione" tabindex="-1" role="dialog" aria-labelledby="myModalLabel2">
+    <div class="modal-dialog modal-dialog-popin" role="document">
+        <div class="modal-content">
+            <div data-modal-wrapper="">
+                <div class="block block-transparent no-margin-bottom">
+                    <div class="block-header">
+                        <label class="modal-title" id="titoloModaleDirezione">Dettaglio direzione</label>
+                        <div class="block-options">
+                            <button data-dismiss="modal" class="btn btn-action-icon"><i class="glyphicon glyphicon-remove"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="block-content" id="modal-dettaglio-direzione-body" style="min-height:93%;" data-isdirty="false">
+
+                    </div>
+                </div>
+            </div>
+        </div><!-- modal-content -->
+    </div><!-- modal-dialog -->
+</div><!-- modal -->
+
+@*<div class="modal right fade" id="modal-pratica" role="dialog" aria-hidden="true" style="display: none;">
+    <div id="modal-pratica-internal"></div>
+</div>*@
+@Html.RenderModal("pratica")
+
+@section afterjs{
+    <script type="text/javascript">
+
+        function consolidaDirezione(item)
+        {
+            var idDirezione = $(item).data('iddirezione');
+            var idCamp = $(item).data('idcampagna');
+
+            swal({
+                title: "I dati verranno salvati e consolidati.\nSicuro di voler continuare?",
+                html: "",
+                type: 'question',
+                showCloseButton: true,
+                showCancelButton: true,
+                confirmButtonText: ' SI',
+                cancelButtonText: ' NO'
+            }).then(function () {
+
+                var tbl = new Array();
+
+                $('div[data-tabella-azioni=""]').each(function () {
+                    var idDip = $(this).data('iddipendente');
+                    $('a[id^="azione_' + idDip + '_"]').each(function () {
+                        if ($(this).hasClass('text-primary')) {
+                            var current = new Object();
+                            current.IdDipendente = idDip;
+                            current.IdTipologia = $(this).data('idprovv');
+                            tbl.push(current);
+                        }
+                    });
+                });
+
+                $.ajax({
+                    url: '@(Url.Action("ConsolidaSimulazione", "Budget"))',
+                    type: "POST",
+                    cache: false,
+                    async: false,
+                    data: JSON.stringify({
+                        idDir: idDirezione,
+                        idCamp: idCamp,
+                        rows: tbl
+                    }),
+                    contentType: "application/json; charset=utf-8",
+                    dataType:'json',
+                    success: function (response) {
+                        if (response.Esito)
+                        {
+                            swal({
+                                title: "Dati salvati con successo",
+                                text: '',
+                                type: 'success',
+                                confirmButtonText: 'Ok',
+                                confirmButtonClass: 'btn btn-lg btn-primary',
+                                buttonsStyling: false
+                            });
+                            $('#modal-dettaglio-direzione-body').data('isdirty', true);
+                            _resetTblUtenti(idDirezione, idCamp);
+                        }
+                        else
+                        {
+                            swal({
+                                title: "Si è verificato un errore\n",
+                                text: response.Errore,
+                                type: 'error',
+                                confirmButtonText: 'Ok',
+                                confirmButtonClass: 'btn btn-lg btn-primary',
+                                buttonsStyling: false
+                            });
+                        }
+                    },
+                    error: function (err) {
+                        swal({
+                            title: "Si è verificato un errore\n",
+                            text: '',
+                            type: 'error',
+                            confirmButtonText: 'Ok',
+                            confirmButtonClass: 'btn btn-lg btn-primary',
+                            buttonsStyling: false
+                        });
+                    }
+                });
+            });
+        }
+
+        $('#selezioneCampagna').on('change', function () {
+            $('#loading').removeClass('hide');
+            var idCamp = $(this).val();
+            var url = '@(Url.Action("Index", "Budget"))?idCamp=' + idCamp;
+            window.location = url;
+        });
+
+        $('#modal-pratica').on('hidden.bs.modal', function () {
+            var idDip = $('#modal-pratica').data('iddip');
+            var idDir = $('#modal-pratica').data('iddir');
+            var idCamp = $('#modal-pratica').data('idcamp');
+
+            $.ajax({
+                url: '@(Url.Action("AggiornaDatiUtente","Budget"))',
+                type: "POST",
+                cache: false,
+                async: false,
+                data: JSON.stringify({
+                    idDirezione: idDir,
+                    idCamp: idCamp,
+                    idDip: idDip
+                }),
+                contentType: "application/json; charset=utf-8",
+                success: function (response) {
+                    $('tr[data-iddipendente="' + idDip + '"]').replaceWith(response);
+                },
+                error: function (err) {
+                    alert("errore");
+                }
+            });
+
+            // ricalcolo budget
+            ricalcolaBudget();
+        });
+
+        $("a#DownloadXLSX").on("click", function (e) {
+            e.preventDefault();
+        });
+
+        function Esporta(idDir, idCamp)
+        {
+            var tbl = new Array();
+
+            $('div[data-tabella-azioni=""]').each(function () {
+                var idDip = $(this).data('iddipendente');
+                $('a[id^="azione_' + idDip + '_"]').each(function () {
+                    if ($(this).hasClass('text-primary')) {
+                        var current = new Object();
+                        current.IdDipendente = idDip;
+                        current.IdTipologia = $(this).data('idprovv');
+                        tbl.push(current);
+                    }
+                });
+            });
+
+            $.ajax({
+                url: '@(Url.Action("PreparaEsportazioneXLSX", "Budget"))',
+                type: "POST",
+                cache: false,
+                async: false,
+                data: JSON.stringify({
+                    idDir: idDir,
+                    idCamp: idCamp,
+                    rows: tbl
+                }),
+                contentType: "application/json; charset=utf-8",
+                success: function (data) {
+                },
+                error: function (err) {
+                }
+            });
+        }
+
+        function setIdDipendente(idDip, idDir, idCamp)
+        {
+            $('#modal-pratica').data('iddip', idDip);
+            $('#modal-pratica').data('iddir', idDir);
+            $('#modal-pratica').data('idcamp', idCamp);
+        }
+
+        function resetTblUtenti(item)
+        {
+            var idDirezione = $(item).data('iddirezione');
+            var idCamp = $(item).data('idcampagna');
+
+            swal({
+                title: "I dati verranno ripristinati alle condizioni iniziali.\nSicuro di voler continuare?",
+                html: "",
+                type: 'question',
+                showCloseButton: true,
+                showCancelButton: true,
+                confirmButtonText: ' SI',
+                cancelButtonText: ' NO'
+            }).then(function () {
+                _resetTblUtenti(idDirezione, idCamp);
+            });
+        }
+
+        function _resetTblUtenti(idDirezione, idCamp)
+        {
+            $.ajax({
+                url: '@(Url.Action("ResetTblUtenti","Budget"))',
+                type: "POST",
+                cache: false,
+                async: false,
+                data: JSON.stringify({
+                    idDirezione: idDirezione,
+                    idCamp: idCamp
+                }),
+                contentType: "application/json; charset=utf-8",
+                success: function (response) {
+                    $('#pn_tblUtenti').html(response);
+
+                    $.ajax({
+                        url: '@(Url.Action("RicalcolaBudget", "Budget"))',
+                        type: "POST",
+                        cache: false,
+                        async: false,
+                        data: JSON.stringify({
+                            idDirezione: idDirezione,
+                            idCamp: idCamp
+                        }),
+                        contentType: "application/json; charset=utf-8",
+                        success: function (response) {
+                            $('#pn_budget').html(response);
+                        },
+                        error: function (err) {
+                            alert("errore");
+                        }
+                    });
+
+                },
+                error: function (err) {
+
+                }
+            });
+        }
+
+        function salvaSimulazine(item)
+        {
+            var idDirezione = $(item).data('iddirezione');
+            var idCamp = $(item).data('idcampagna');
+
+            swal({
+                title: "Sicuro di voler salvare la simulazione attuale?",
+                html: "",
+                type: 'question',
+                showCloseButton: true,
+                showCancelButton: true,
+                confirmButtonText: ' SI',
+                cancelButtonText: ' NO'
+            }).then(function () {
+
+                var tbl = new Array();
+
+                $('div[data-tabella-azioni=""]').each(function () {
+                    var idDip = $(this).data('iddipendente');
+                    $('a[id^="azione_' + idDip + '_"]').each(function () {
+                        if ($(this).hasClass('text-primary')) {
+                            var current = new Object();
+                            current.IdDipendente = idDip;
+                            current.IdTipologia = $(this).data('idprovv');
+                            tbl.push(current);
+                        }
+                    });
+                });
+
+                $.ajax({
+                    url: '@(Url.Action("SalvaSimulazione", "Budget"))',
+                    type: "POST",
+                    cache: false,
+                    async: false,
+                    data: JSON.stringify({
+                        idDir: idDirezione,
+                        idCamp: idCamp,
+                        rows: tbl
+                    }),
+                    contentType: "application/json; charset=utf-8",
+                    dataType:'json',
+                    success: function (response) {
+                        if (response.Esito)
+                        {
+                            swal({
+                                title: "Dati salvati con successo",
+                                text: '',
+                                type: 'success',
+                                confirmButtonText: 'Ok',
+                                confirmButtonClass: 'btn btn-lg btn-primary',
+                                buttonsStyling: false
+                            });
+                            $('#modal-dettaglio-direzione-body').data('isdirty', true);
+                        }
+                        else
+                        {
+                            swal({
+                                title: "Si è verificato un errore\n",
+                                text: response.Errore,
+                                type: 'error',
+                                confirmButtonText: 'Ok',
+                                confirmButtonClass: 'btn btn-lg btn-primary',
+                                buttonsStyling: false
+                            });
+
+                        }
+                    },
+                    error: function (err) {
+                        swal({
+                            title: "Si è verificato un errore\n",
+                            text: '',
+                            type: 'error',
+                            confirmButtonText: 'Ok',
+                            confirmButtonClass: 'btn btn-lg btn-primary',
+                            buttonsStyling: false
+                        });
+                    }
+                });
+            });
+        }
+
+        function setProvvedimento(item)
+        {
+            var idDip = $(item).data('iddipendente');
+            //var idProvv = $(item).data('idprovv');
+
+            //$('a[id^="azione_' + idDip + '_"]').each(function () {
+            //    $(this).removeClass('text-primary');
+            //    $(this).addClass('text-muted');
+            //});
+
+            //$('#azione_' + idDip + '_' + idProvv).removeClass('text-muted');
+            //$('#azione_' + idDip + '_' + idProvv).addClass('text-primary');
+
+            var costo = $('#azione_' + idDip + '_' + idProvv).data('costo');
+            var straordinario = $('#azione_' + idDip + '_' + idProvv).data('costo-straordinario');
+            var periodo = $('#azione_' + idDip + '_' + idProvv).data('costo-periodo');
+
+            var v1 = parseFloat(costo);
+            var v2 = parseFloat(straordinario);
+
+            var diff = v1 - v2;
+
+            if (diff > 0) {
+                $('#costo-straordinario-' + idDip).removeClass('text-danger');
+                $('#costo-straordinario-' + idDip).addClass('text-success');
+            }
+            else if (diff < 0) {
+                $('#costo-straordinario-' + idDip).removeClass('text-success');
+                $('#costo-straordinario-' + idDip).addClass('text-danger');
+            }
+            else {
+                $('#costo-straordinario-' + idDip).removeClass('text-danger');
+                $('#costo-straordinario-' + idDip).removeClass('text-success');
+            }
+
+            costo = parseFloat(costo).toLocaleString("it-IT", { minimumFractionDigits: 2 })
+            straordinario = parseFloat(straordinario).toLocaleString("it-IT", { minimumFractionDigits: 2 })
+            periodo = parseFloat(periodo).toLocaleString("it-IT", { minimumFractionDigits: 2 })
+            diff = parseFloat(diff).toLocaleString("it-IT", { minimumFractionDigits: 2 })
+
+            $('#costo-anno-' + idDip).text('€ ' + costo);
+            $('#costo-straordinario-' + idDip).text('€ ' + diff);
+            $('#costo-periodo-' + idDip).text('€ ' + periodo);
+
+            ricalcolaBudget();
+        }
+
+        function ricalcolaBudget()
+        {
+            var elementi = new Array();
+            var idDirezione = 0;
+            var idCamp = 0;
+            $('div[data-tabella-azioni=""]').each(function () {
+                var idDip = $(this).data('iddipendente');
+                idDirezione = $(this).data('iddirezione');
+                idCamp = $(this).data('idcampagna');
+                var idProvv = $('select[data-iddipendente="'+idDip+'"]').val();
+                var current = new Object();
+                current.IdDipendente = idDip;
+                current.Valore = $('#azione_'+idDip+'_'+idProvv).data('costo');
+                elementi.push(current);
+
+                //$('a[id^="azione_' + idDip + '_"]').each(function () {
+                //    if ($(this).hasClass('text-primary'))
+                //    {
+                //        var current = new Object();
+                //        current.IdDipendente = idDip;
+                //        current.Valore = $(this).data('costo');
+
+                //        elementi.push(current);
+                //    }
+                //});
+            });
+
+            $.ajax({
+                url: '@(Url.Action("RicalcolaBudget", "Budget"))',
+                type: "POST",
+                cache: false,
+                async: false,
+                data: JSON.stringify({
+                    idDirezione: idDirezione,
+                    idCamp: idCamp,
+                    elementi: elementi
+                }),
+                contentType: "application/json; charset=utf-8",
+                success: function (response) {
+                    $('#pn_budget').html(response);
+                },
+                error: function (err) {
+
+                }
+            });
+        }
+
+        var color = "#1d92f5";
+
+        if (document.getElementsByClassName("bg-cdf").length) {
+            var style = window.getComputedStyle(document.getElementsByClassName("bg-cdf")[0], null);
+            if (style.length) {
+                var rgb = style["background-color"];
+                if (rgb.length) {
+                    var color = rgb.replace('rgb(', '').replace(')', '').split(',');
+
+                    var r, g, b;
+                    r = parseInt(color[0].trim());
+                    g = parseInt(color[1].trim());
+                    b = parseInt(color[2].trim());
+
+                    color = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+                }
+            }
+        }
+
+        var redColor = "#e8001d";
+
+    @{
+        var groups = Model.ReportDirezioni.GroupBy(l => l.Area).Select(g => new
+        {
+            Area = g.Key,
+            Count = g.Select(l => l.Area).Distinct().Count()
+        });
+        if (groups != null && groups.Any())
+        {
+            int nGroups = 1;
+            foreach (var g in groups.OrderBy(w => w.Area))
+            {
+                if (g.Count > 0)
+                {
+                    var elements = Model.ReportDirezioni.Where(w => w.Area.Equals(g.Area)).ToList();
+
+                    if (elements != null && elements.Any())
+                    {
+                        decimal min = elements.Min(w => w.DeltaSuCostoAnnoPrecedente);
+                        decimal min2 = elements.Min(w => w.DeltaSuCostoAnnoCorrente);
+
+                        decimal max = elements.Max(w => w.DeltaSuCostoAnnoPrecedente);
+                        decimal max2 = elements.Max(w => w.DeltaSuCostoAnnoCorrente);
+
+                        int minimo = 0;
+                        int massimo = 0;
+
+                        minimo = (int)(min < min2 ? min : min2);
+                        massimo = (int)(max < max2 ? max2 : max);
+
+                        int nPanels = groups.Count();
+
+                        <text>
+                        var etichette = new Array();
+                        var serie1 = new Array();
+                        var serie2 = new Array();
+                        </text>
+
+                        var listaOrdinata = elements.OrderBy(w => w.Ordine.GetValueOrDefault());
+
+                        foreach (var d in listaOrdinata)
+                        {
+                            <text>
+                            etichette.push('@d.Direzione.Truncate(10)');
+                            serie1.push(@((int)d.DeltaSuCostoPeriodo));
+                            serie2.push(@((int)d.DeltaSuCostoAnnoCorrente));
+                            </text>
+                        }
+
+                        for (int idx = 0; idx < nPanels; idx++)
+                        {
+                            <text>
+                            if ($('#chart-delta-1-' + @(nGroups)).get(0))
+                            {
+                                var s = new Array();
+                                var sPositivi = new Array();
+
+                                var i;
+                                var pos = 0;
+
+                                var count = serie2.length;
+                                var max = count;
+
+                                for (i = 0; i < max; i++) {
+                                    s.push(serie2[pos + i]);
+                                    if (parseInt(serie2[pos + i], 10) > 0)
+                                    {
+                                        sPositivi.push(serie2[pos + i]);
+                                    }
+                                }
+                                if (sPositivi.length > 0) {
+                                    var valorePercentuale = (sPositivi.length / max) * 100;
+                                    valorePercentuale = Math.round(valorePercentuale * 100) / 100
+                                    $('#chart-delta-1-@nGroups').attr('data-percent', valorePercentuale);
+                                    $('#chart-delta-1-@nGroups-span').text(valorePercentuale + '%');
+
+                                    $('#chart-delta-1-@nGroups').easyPieChart({
+                                        "barColor": color, "delay": 300, scaleColor: false, lineWidth: 7, size: 125
+                                    });
+                                }
+                            }
+
+                            if ($('#chart-delta-2-' + @(nGroups)).get(0))
+                            {
+                                var s = new Array();
+                                var sPos = new Array();
+
+                                var i;
+                                var pos = 0;
+
+                                var count = serie1.length;
+                                var max = count;
+
+                                for (i = 0; i < max; i++) {
+                                    s.push(serie1[pos + i]);
+                                    if (parseInt(serie1[pos + i], 10) > 0)
+                                    {
+                                        sPos.push(serie1[pos + i]);
+                                    }
+                                }
+                                if (sPos.length > 0) {
+                                    var valorePercentuale = (sPos.length / max) * 100;
+                                    valorePercentuale = Math.round(valorePercentuale * 100) / 100
+                                    $('#chart-delta-2-@nGroups').attr('data-percent', valorePercentuale);
+                                    $('#chart-delta-2-@nGroups-span').text(valorePercentuale + '%');
+
+                                    $('#chart-delta-2-@nGroups').easyPieChart({
+                                        "barColor": color, "delay": 300, scaleColor: false, lineWidth: 7, size: 125
+                                    });
+                                }
+                            }
+                            </text>
+                        }
+                    }
+                }
+                nGroups++;
+            }
+        }
+    }
+
+    $('a[data-target="#modal-dettaglio-direzione"]').on('click', function () {
+        var url = $(this).data('href');
+        var title = $(this).data('titledirezione');
+
+        $('#modal-dettaglio-direzione').modal('show');
+        $('#modal-dettaglio-direzione-body').addClass('rai-loader');
+
+        $.ajax({
+            type: "GET",
+            cache: false,
+            async: false,
+            url: url,
+            success: function (response) {
+                $('#titoloModaleDirezione').text('Dettaglio direzione ' + title);
+                $('#modal-dettaglio-direzione-body').html(response);
+                //$('#modal-dettaglio-direzione').modal('show');
+            },
+            error: function (err) {
+                location.reload();
+            }
+        });
+    });
+
+    function showProvvedimenti(idDip)
+    {
+        $.ajax({
+            type: "GET",
+            cache: false,
+            async: false,
+            url: '@(Url.Action("GetProvvedimenti","Budget"))?idDipendente=' + idDip,
+            success: function (response) {
+                swal({
+                    title: 'Elenco provvedimenti',
+                    text: "",
+                    html: response,
+                    width: 700,
+                    confirmButtonText: 'Ok',
+                    confirmButtonClass: 'btn btn-primary btn-lg',
+                    buttonsStyling: false
+                });
+            },
+            error: function (err) {
+                location.reload();
+            }
+        });
+    }
+
+    function initBudgetChart()
+    {
+        $('#chart-delta-direzione').easyPieChart({
+            "barColor": function (percent) {
+                return (percent > 100 ? '#cb3935' : color);
+            },
+            "delay": 300,
+            scaleColor: false,
+            lineWidth: 7,
+            size: 125
+        });
+    }
+
+
+    $('#modal-dettaglio-direzione').on('hidden.bs.modal', function () {
+        var isDirty = $('#modal-dettaglio-direzione-body').data('isdirty');
+        if (isDirty)
+        {
+            $('#modal-dettaglio-direzione-body').data('isdirty', false);
+            window.location.reload(true);
+        }
+        });
+
+        function sbloccaDirezione(item)
+        {
+            var idDirezione = $(item).data('iddirezione');
+            var idCamp = $(item).data('idcampagna');
+
+            swal({
+                title: "Sicuro di voler sbloccare i dati della direzione corrente?",
+                html: "",
+                type: 'question',
+                showCloseButton: true,
+                showCancelButton: true,
+                confirmButtonText: ' SI',
+                cancelButtonText: ' NO'
+            }).then(function () {
+
+                $.ajax({
+                    url: '@(Url.Action("SbloccaSimulazione", "Budget"))',
+                    type: "POST",
+                    cache: false,
+                    async: false,
+                    data: JSON.stringify({
+                        idDir: idDirezione,
+                        idCamp: idCamp
+                    }),
+                    contentType: "application/json; charset=utf-8",
+                    dataType:'json',
+                    success: function (response) {
+                        if (response.Esito)
+                        {
+                            swal({
+                                title: "Direzione sbloccata con successo",
+                                text: '',
+                                type: 'success',
+                                confirmButtonText: 'Ok',
+                                confirmButtonClass: 'btn btn-lg btn-primary',
+                                buttonsStyling: false
+                            });
+                            $('#modal-dettaglio-direzione-body').data('isdirty', true);
+                            _resetTblUtenti(idDirezione, idCamp);
+                        }
+                        else
+                        {
+                            swal({
+                                title: "Si è verificato un errore\n",
+                                text: response.Errore,
+                                type: 'error',
+                                confirmButtonText: 'Ok',
+                                confirmButtonClass: 'btn btn-lg btn-primary',
+                                buttonsStyling: false
+                            });
+                        }
+                    },
+                    error: function (err) {
+                        swal({
+                            title: "Si è verificato un errore\n",
+                            text: '',
+                            type: 'error',
+                            confirmButtonText: 'Ok',
+                            confirmButtonClass: 'btn btn-lg btn-primary',
+                            buttonsStyling: false
+                        });
+                    }
+                });
+            });
+        }
+
+    </script>
+}

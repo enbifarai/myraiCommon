@@ -1,0 +1,987 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiCommonModel
+@using myRaiHelper
+@using myRaiCommonManager
+@model DettaglioDematerializzazioneVM
+
+@{
+    string title = "DETTAGLIO PRATICA";
+    string classeTab2 = "";
+    string classeTab3 = "";
+    string classeTab4 = "";
+    string sottoTesto2 = "";
+    string sottoTesto3 = "";
+}
+
+@using (Html.BeginModal(title))
+{
+    string stile = "display:none;";
+    if (Model.MessaggioPraticaBloccata)
+    {
+        stile = "";
+    }
+
+    <div class="row push-10" id="messaggio-richiesta-in-modifica" style="@(stile)">
+        <div class="col-sm-12">
+            <div class="alert alert-info custom">
+                <label class="rai-font-md-neutral-bold-80">@(Model.Msg1)</label>
+                <br />
+                <label class="rai-font-md-neutral">@(Model.Msg2)</label>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-8">
+            @{
+                RaiAttributes attrs = new RaiAttributes();
+                attrs.Add(new RaiAttribute("bodystyle", "background:#f6f8f8"));
+            }
+
+            @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Stato", false, null, null, "", "", attrs))
+            {
+                @Html.Partial("~/Views/Dematerializzazione/subpartial/_Tabs_DettaglioRichiesta.cshtml", Model)
+
+                <br />
+                @Html.Partial("~/Views/Dematerializzazione/subpartial/_RenderNote.cshtml", Model)
+            }
+
+            @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Lavorazione richiesta", false))
+            {
+                string stileVisualizza = "disable";
+                if (!Model.MessaggioPraticaBloccata)
+                {
+                    stileVisualizza = "";
+                }
+                <!-- FILE PRINCIPALE -->
+                if (Model.Richiesta.Allegati != null && Model.Richiesta.Allegati.Any() && Model.Richiesta.Allegati.Count(w => w.IsPrincipal) > 0)
+                {
+                    <div class="row push-30">
+                        <div class="tab-pane active" id="" role="tabpanel">
+                            <div class="block block-transparent block-content-table">
+                                <div class="block-header block-content-mini">
+                                    @{
+                                        <label class="block-title">DOCUMENTO PRINCIPALE</label>
+                                    }
+                                    <div class="block-options"></div>
+                                </div>
+                                <div class="col-xs-12">
+                                    <div class="widget-summary">
+                                        <div class="widget-summary-col widget-summary-col-icon">
+                                            <div class="summary-icon bg-cda" style="width:42px; height:42px;line-height:32px;background-color:#eee">
+                                                <i class="icons icon-doc" style="font-size: 65%;"></i>
+                                            </div>
+                                        </div>
+                                        <div class="widget-summary-col">
+                                            <div class="summary">
+                                                @{
+                                                    var allegato = Model.Richiesta.Allegati.Where(w => w.IsPrincipal).FirstOrDefault();
+
+
+                                                }
+                                                <span id="nome-file-VSDIP" class="rai-font-md-bold" style="word-break:break-word;">@(allegato.NomeFile)</span>
+                                                <button class="btn rai-btn-small @(stileVisualizza)" aria-label="Visualizza" title="Visualizza" style="min-width:80px; float:right;" onclick="Dematerializzazione_VisualizzaDocumentoTemporaneo('@allegato.Id')">Visualizza</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- ALLEGATI -->
+                if (Model.Richiesta.Allegati != null && Model.Richiesta.Allegati.Any() && Model.Richiesta.Allegati.Count(w => !w.IsPrincipal && w.TipoFile == 2) > 0)
+                {
+                    <div class="row push-30">
+                        <div class="tab-pane active" id="" role="tabpanel">
+                            <div class="block block-transparent block-content-table">
+                                <div class="block-header block-content-mini">
+                                    <label class="block-title">ALLEGATI</label>
+                                    <div class="block-options"></div>
+                                </div>
+                                @{
+                                    foreach (var a in Model.Richiesta.Allegati.OrderBy(k => k.Id).Where(w => !w.IsPrincipal && w.TipoFile == 2))
+                                    {
+                                        <div class="col-xs-12">
+                                            <div class="widget-summary">
+                                                <div class="widget-summary-col widget-summary-col-icon">
+                                                    <div class="summary-icon bg-cda" style="width:42px; height:42px;line-height:32px;background-color:#eee">
+                                                        <i class="icons icon-doc" style="font-size: 65%;"></i>
+                                                    </div>
+                                                </div>
+                                                <div class="widget-summary-col">
+                                                    <div class="summary">
+                                                        <span id="nome-file-allegato-@(a.Id)" class="rai-font-md-bold" style="word-break:break-word;">@(a.NomeFile)</span>
+                                                        <button class="btn rai-btn-small @(stileVisualizza)" aria-label="Visualizza" title="Visualizza" style="min-width:80px; float:right;" onclick="Dematerializzazione_VisualizzaDocumentoTemporaneo('@a.Id')">Visualizza</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- DOCUMENTI A SUPPORTO -->
+                if (Model.Richiesta.Allegati != null && Model.Richiesta.Allegati.Any() && Model.Richiesta.Allegati.Count(w => !w.IsPrincipal && w.TipoFile == 1) > 0)
+                {
+                    <div class="row push-30">
+                        <div class="tab-pane active" id="" role="tabpanel">
+                            <div class="block block-transparent block-content-table">
+                                <div class="block-header block-content-mini">
+                                    <label class="block-title">DOCUMENTI A SUPPORTO</label>
+                                    <div class="block-options"></div>
+                                </div>
+                                @{
+                                    foreach (var a in Model.Richiesta.Allegati.Where(w => !w.IsPrincipal && w.TipoFile == 1))
+                                    {
+                                        <div class="col-xs-12">
+                                            <div class="widget-summary">
+                                                <div class="widget-summary-col widget-summary-col-icon">
+                                                    <div class="summary-icon bg-cda" style="width:42px; height:42px;line-height:32px;background-color:#eee">
+                                                        <i class="icons icon-doc" style="font-size: 65%;"></i>
+                                                    </div>
+                                                </div>
+                                                <div class="widget-summary-col">
+                                                    <div class="summary">
+                                                        <span id="nome-file-allegato-@(a.Id)" class="rai-font-md-bold" style="word-break:break-word;">@(a.NomeFile)</span>
+                                                        <button class="btn rai-btn-small @(stileVisualizza)" aria-label="Visualizza" title="Visualizza" style="min-width:80px; float:right;" onclick="Dematerializzazione_VisualizzaDocumentoTemporaneo('@a.Id')">Visualizza</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                if (Model.Attributi != null && Model.Attributi.Any())
+                {
+                    <div id="dematerializzazione_div_contenitoreAttributi_Aggiuntivi" class="row push-30">
+                        @Html.Partial("~/Views/Dematerializzazione/subpartial/_ContenitoreAttributiAggiuntivi.cshtml", Model)
+                    </div>
+                }
+
+                if (Model.ProssimoStato == (int)StatiDematerializzazioneDocumenti.VisionatoSegreteria &&
+                    Model.IsSegreteria)
+                {
+                    @*<table class="table rai-table rai-table-vcenter rai-table-panel push-10">
+                    <thead>
+                        <tr>
+                            <th class="col-xs-6 text-left rai-font-md-bold" style="padding-left:5px; font-size: 14px;font-weight: 700; line-height: normal; color: #0a3247;">INSERISCI UNA NOTA PER L'OPERATORE</th>
+                            <th class="col-xs-6 text-right">Obbligatoria nel caso venga mandata indietro</th>
+                        </tr>
+                    </thead>
+                </table>
+                <div class="row push-10">
+                    <div class="col-sm-12">
+                        <textarea class="form-control " cols="200" id="Richiesta_Documento_NotaSegreteria" name="Richiesta.Documento.NotaSegreteria" onkeyup="Dematerializzazione_AbilitaDisabilita_btn_dem_RimandaVsOperatore()" placeholder="Inserisci una nota" rows="5" title="Inserisci una nota"></textarea>
+                    </div>
+                </div>*@
+                    <div class="row push-10">
+                        <div class="col-sm-12">
+                            <div class="rai-btn-fill">
+                                @*<button id="btn_dem_RimandaVsOperatore" class="btn btn-md btn-action-icon text-danger btn-action-icon-text disable" onclick="Dematerializzazione_RimandaVsOperatore('@(Model.Richiesta.Documento.Id)')" style="min-height:48px;">
+                                <i class="glyphicon glyphicon-remove"></i>
+                                Manda indietro
+                            </button>*@
+                                <button class="btn btn-md btn-action-icon text-success btn-action-icon-text @(stileVisualizza)" onclick="Dematerializzazione_ContinuaDaSegreteria('@(Model.Richiesta.Documento.Id)')" style="min-height:48px;">
+                                    <i class="fa fa-fw fa-check"></i>
+                                    Manda in firma
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                if (!Model.ApprovazioneEnabled && !Model.PresaInCaricoEnabled && !Model.PresaInVisioneEnabled &&
+                                        !Model.NascondiConcludiPratica && !Model.NascondiEliminaPratica)
+                {
+                    <div class="row">
+                        <div class="col-sm-12 push-10">
+                            <div class="rai-btn-fill">
+                                @{
+                                    int nextStato = DematerializzazioneManager.GetNextIdStato(Model.Richiesta.Documento.Id_Stato, Model.Richiesta.Documento.Id_WKF_Tipologia, true);
+
+                                    if (nextStato == (int)StatiDematerializzazioneDocumenti.PraticaConclusa ||
+                                        nextStato == (int)StatiDematerializzazioneDocumenti.AzioneAutomaticaInvioDocumentoAlDipendente ||
+                                        nextStato == (int)StatiDematerializzazioneDocumenti.AzioneAutomaticaPostFirma_AutorizzazioneAttivitaExtraRai ||
+                                        nextStato == (int)StatiDematerializzazioneDocumenti.AzioneAutomaticaPostFirma_InvioMailByTemplate)
+                                    {
+                                        <button type="button" id="btns-dem-concludi-pratica" onclick="Dematerializzazione_ConcludiPratica_Click('@(Model.Matricola)', '@Model.IdPersona', '@(Model.Richiesta.Documento.Id)')" class="btn rai-btn-primary">Concludi la pratica</button>
+                                    }
+                                    else
+                                    {
+                                        <input type="button" id="" class="btn btn-primary @(Model.Richiesta.Documento.Id_Stato == (int)StatiDematerializzazioneDocumenti.FirmatoDigitalmente ? "" : "disable")" title="Concludi pratica" value="Concludi pratica">
+                                    }
+                                }
+                            </div>
+                        </div>
+                        <div class="col-md-12 text-center push-10">
+                            <a href="#" class="" onclick="Dematerializzazione_EliminaPratica('@(Model.Matricola)', '@Model.IdPersona', '@(Model.Richiesta.Documento.Id)')">Elimina pratica</a>
+                        </div>
+                    </div>
+                }
+
+                if ((Model.ApprovazioneEnabled &&
+                        !(Model.Richiesta.Documento.Id_Stato == (int)StatiDematerializzazioneDocumenti.RifiutoApprovatore ||
+                        Model.Richiesta.Documento.Id_Stato == (int)StatiDematerializzazioneDocumenti.Accettato)) &&
+                                Model.Richiesta.Documento.Id_Stato < (int)StatiDematerializzazioneDocumenti.Accettato)
+                {
+                    <table class="table rai-table rai-table-vcenter rai-table-panel push-10">
+                        <thead>
+                            <tr>
+                                <th class="col-xs-8 text-left rai-font-md-bold" style="padding-left:5px; font-size: 14px;font-weight: 700; line-height: normal; color: #0a3247;">INSERISCI UNA NOTA</th>
+                                <th class="col-xs-4 text-right">Obbligatoria in caso di rifiuto</th>
+                            </tr>
+                        </thead>
+                    </table>
+                    <div class="row push-10">
+                        <div class="col-sm-12">
+                            @*@Html.LabelFor(m => m.Richiesta.Documento.NotaApprovatore, "Nota", new { @class = "rai-font-md-bold " })*@
+                            @Html.TextAreaFor(m => m.Richiesta.Documento.NotaApprovatore, new { @class = "form-control " + stileVisualizza, @rows = 5, @cols = 200, @title = "Inserisci una nota per l'operatore che dovrà firmare", @placeholder = "Inserisci una nota per l'operatore che dovrà firmare", @onkeyup = "Dematerializzzazione_AbilitaDisabilita_BtnRifiutaApprovatore()" })
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="rai-btn-fill">
+                                <button id="Dem_Btn_RifiutaApprovatore" class="btn btn-md btn-action-icon text-danger btn-action-icon-text disable" onclick="Dematerializzazione_RifiutaDocumentoInModale('@(Model.Matricola)', '@Model.IdPersona', '@(Model.Richiesta.Documento.Id)')" style="min-height:48px;">
+                                    <i class="glyphicon glyphicon-remove"></i>
+                                    Rifiuta
+                                </button>
+                                <button class="btn btn-md btn-action-icon text-success btn-action-icon-text @(stileVisualizza)" onclick="Dematerializzazione_ApprovaDocumento('@(Model.Matricola)', '@Model.IdPersona', '@(Model.Richiesta.Documento.Id)')" style="min-height:48px;">
+                                    <i class="fa fa-fw fa-check"></i>
+                                    Approva
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @*if (Model.PresaInVisioneEnabled && Model.Richiesta.Documento.Id_Stato < (int)StatiDematerializzazioneDocumenti.Visionato)
+            {
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="rai-btn-fill">
+                            <button class="btn btn-md btn-action-icon btn-primary btn-action-icon-text" onclick="Dematerializzazione_MarkVisualizzatoDocumento('@(Model.Matricola)', '@Model.IdPersona', '@(Model.Richiesta.Documento.Id)')" style="min-height:48px;">
+                                <i class="fa fa-fw fa-check"></i>
+                                Vista
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }*@
+
+            <!-- FRANCESCO 17/02/2023 Se presa visione è attivo allora va mostrato il bottone vista -->
+                if (Model.PresaInVisioneEnabled)
+                {
+                    if (Model.BottoneVistaDisabilitato)
+                    {
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <div class="rai-btn-fill">
+                                    <button class="btn btn-md btn-action-icon btn-primary btn-action-icon-text disable" style="min-height:48px;">
+                                        <i class="fa fa-fw fa-check"></i>
+                                        @(Model.InfoBottoneVistaDisabilitato)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <div class="rai-btn-fill">
+                                    <button class="btn btn-md btn-action-icon btn-primary btn-action-icon-text" onclick="Dematerializzazione_MarkVisualizzatoDocumento('@(Model.Matricola)', '@Model.IdPersona', '@(Model.Richiesta.Documento.Id)')" style="min-height:48px;">
+                                        <i class="fa fa-fw fa-check"></i>
+                                        Vista
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+
+                if (Model.PresaInCaricoEnabled && Model.Richiesta.Documento.MatricolaIncaricato == UtenteHelper.Matricola()
+                    && !Model.NascondiConcludiPratica)
+                {
+                    <table class="table rai-table rai-table-vcenter rai-table-panel">
+                        <thead>
+                            <tr>
+                                <th class="col-xs-8 text-left rai-font-md-bold" style="padding-left:5px; font-size: 14px;font-weight: 700; line-height: normal; color: #0a3247; border-bottom: none !important;">NOTA </th>
+                                <th class="col-xs-4 text-right" style="border-bottom: none !important;"></th>
+                            </tr>
+                        </thead>
+                    </table>
+                    <div class="row push-10">
+                        <div class="col-sm-12">
+                            @Html.TextAreaFor(m => m.Richiesta.Documento.NotaConclusionePratica, new { @class = "form-control " + stileVisualizza, @rows = 5, @cols = 200, @title = "Inserisci una nota", @placeholder = "Inserisci una nota", @onkeyup = "" })
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="rai-btn-fill">
+                                <button type="button" id="btns-dem-concludi-pratica" onclick="Dematerializzazione_ConcludiPratica_Click('@(Model.Matricola)', '@Model.IdPersona', '@(Model.Richiesta.Documento.Id)')" class="btn rai-btn-primary">Concludi la pratica</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+            }
+        </div>
+
+        <div class="col-sm-4">
+
+            @{
+                if (Model.PresaInCaricoEnabled && String.IsNullOrEmpty(Model.Richiesta.Documento.MatricolaIncaricato))
+                {
+                    <div class="row">
+                        <div class="block block-content-table block-transparent">
+                            <div class="block-header">
+                                <label class="block-title">Assegnazione</label>
+                            </div>
+                            <div class="block-content">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="panel remove-margin-bottom">
+                                            <div class="panel-body">
+                                                <div class="">
+                                                    <div class="row push-20">
+                                                        <div class="col-sm-12 push-20">
+                                                            <label class="rai-font-sm-bold">Questa pratica non è ancora assegnata a un operatore. Clicca qui sotto per prenderla in carico.</label>
+                                                        </div>
+                                                        <div class="col-sm-12">
+                                                            <div class="rai-btn-fill">
+                                                                <button class="btn rai-btn-primary" onclick="Dematerializzazione_PrendiInCarico('@Model.Matricola', '@Model.IdPersona', '@Model.Richiesta.Documento.Id')" style="min-height:48px;">
+                                                                    Prendi in carico
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+
+            <div class="row">
+                <div class="block block-content-table block-transparent">
+                    <div class="block-header">
+                        <label class="block-title">Dettagli</label>
+                    </div>
+                    <div class="block-content">
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <div class="panel remove-margin-bottom">
+                                    <div class="panel-body">
+                                        <div class="">
+                                            @{
+                                                if (!String.IsNullOrEmpty(Model.Richiesta.Documento.MatricolaDestinatario))
+                                                {
+                                                    <div class="row push-30">
+                                                        <div class="col-sm-12">
+                                                            @Html.Partial( "~/Views/Dematerializzazione/subpartial/_profiloimage.cshtml" , new myRaiCommonModel.ProfiloImageModel() {
+                                                            Matricola= Model.Richiesta.Documento.MatricolaDestinatario,
+                                                            Row1 = Model.NominativoUtenteDestinatario,
+                                                            Row2 = "Matricola "+ Model.Richiesta.Documento.MatricolaDestinatario                                                            
+                                                        })
+                                                        </div>
+                                                    </div>
+                                                }
+                                            }
+
+                                            <div class="row push-20">
+                                                <div class="col-sm-12">
+                                                    <label class="rai-font-sm-neutral-bold">Data richiesta</label>
+                                                </div>
+                                                <div class="col-sm-12">
+                                                    <label class="rai-font-md">@Model.Richiesta.Documento.DataCreazione.ToString("dd/MM/yyyy")</label>
+                                                </div>
+                                            </div>
+
+                                            <div class="row push-20">
+                                                <div class="col-sm-12">
+                                                    <label class="rai-font-sm-neutral-bold">Creato da</label>
+                                                </div>
+                                                <div class="col-sm-12">
+                                                    <label class="rai-font-md">@Model.NominativoUtenteCreatore</label>
+                                                </div>
+                                            </div>
+                                            @{
+                                                if (!String.IsNullOrEmpty(Model.NominativoUtenteApprovatore))
+                                                {
+                                                    <div class="row push-20">
+                                                        <div class="col-sm-12">
+                                                            <label class="rai-font-sm-neutral-bold">Approvatore</label>
+                                                        </div>
+                                                        <div class="col-sm-12">
+                                                            <label class="rai-font-md">@Model.NominativoUtenteApprovatore</label>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            }
+
+                                            @{
+                                                if (Model.Richiesta.Documento.DataFirma.HasValue ||
+                                                    Model.Richiesta.Documento.DataRifiuto.HasValue)
+                                                {
+                                                    <div class="row push-20">
+                                                        <div class="col-sm-12">
+                                                            @{
+                                                                if (Model.Richiesta.Documento.DataFirma.HasValue)
+                                                                {
+                                                                    <label class="rai-font-sm-neutral-bold">Firmato da</label>
+                                                                }
+                                                                else if (Model.Richiesta.Documento.DataRifiuto.HasValue)
+                                                                {
+                                                                    <label class="rai-font-sm-neutral-bold">Rifiutato da</label>
+                                                                }
+                                                            }
+                                                        </div>
+                                                        <div class="col-sm-12">
+                                                            <label class="rai-font-md">@Model.NominativoUtenteFirma</label>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            }
+
+                                            <div class="row push-20">
+                                                <div class="col-sm-12">
+                                                    <label class="rai-font-sm-neutral-bold">Documento</label>
+                                                </div>
+                                                <div class="col-sm-12">
+                                                    <label class="rai-font-md">@(Model.Richiesta.Documento.XR_DEM_TIPI_DOCUMENTO.Descrizione)</label>
+                                                </div>
+                                            </div>
+                                            @{
+                                                if (!String.IsNullOrEmpty(Model.NominativoUtenteVisionatore))
+                                                {
+                                                    <div class="row push-20">
+                                                        <div class="col-sm-12">
+                                                            @{
+                                                                if (Model.Richiesta.Documento.DataVisto.HasValue)
+                                                                {
+                                                                    <label class="rai-font-sm-neutral-bold">Visionato da</label>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <label class="rai-font-sm-neutral-bold">Visionatore</label>
+                                                                }
+                                                            }
+                                                        </div>
+                                                        <div class="col-sm-12">
+                                                            <label class="rai-font-md">@(Model.NominativoUtenteVisionatore)</label>
+                                                        </div>
+                                                    </div>
+                                                }
+                                                else if (Model.NominativoUtenteVistatore != null && Model.NominativoUtenteVistatore.Any())
+                                                {
+                                                    <div class="row push-20">
+                                                        <div class="col-sm-12">
+                                                            <label class="rai-font-sm-neutral-bold">Vistatore</label>
+                                                        </div>
+                                                        @{
+                                                            foreach (var v in Model.NominativoUtenteVistatore)
+                                                            {
+                                                                <div class="col-sm-12">
+                                                                    <label class="rai-font-md">@(v)</label>
+                                                                </div>
+                                                            }
+                                                        }
+                                                    </div>
+                                                }
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @{
+                    if ((Model.AbilitaModifica && Model.IsOperatore)||
+                        Model.AbilitaModifica && Model.IsSegreteria)
+                    {
+                        <div class="block block-content-table block-transparent">
+                            <div class="block-header">
+                                <label class="block-title">AZIONI POSSIBILI</label>
+                            </div>
+                            <div class="block-content">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="panel remove-margin-bottom">
+                                            <div class="panel-body remove-margin">
+                                                <div class="row row-no-margin-left-right">
+                                                    <table class="table rai-table rai-table-vcenter rai-table-high-row">
+                                                        <tbody>
+                                                            <tr>
+                                                                <td>
+                                                                    <div class="col-sm-12 push-20">
+                                                                        <label class="rai-font-sm-neutral-bold">Puoi modificare questa pratica finchè non è stata approvata dall'operatore incaricato.</label>
+                                                                    </div>
+                                                                    <div class="col-sm-12">
+                                                                        <div class="rai-btn-fill">
+                                                                            <button class="btn rai-btn-small" aria-label="Modifica pratica" title="Modifica pratica" style="min-width:80px; float:right;" onclick="Dematerializzazione_ModificaPratica('@(Model.Richiesta.Documento.Id)')">Modifica pratica</button>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td>
+                                                                    <div class="col-sm-12">
+                                                                        <div class="rai-btn-fill">
+                                                                            <button class="btn rai-btn-small" aria-label="Duplica pratica" title="Duplica pratica" style="min-width:80px; float:right;" onclick="Dematerializzazione_DuplicaPratica('@(Model.Richiesta.Documento.MatricolaCreatore)', '@(Model.Richiesta.Documento.IdPersonaCreatore)', '@(Model.Richiesta.Documento.Id)')">Duplica pratica</button>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                            @{
+                                                                if (Model.Richiesta.Documento.Id_Richiesta.HasValue && Model.Richiesta.Documento.Id_Richiesta.GetValueOrDefault() > 0)
+                                                                {
+                                                                    <tr>
+                                                                        <td>
+                                                                            <div class="col-sm-12">
+                                                                                <div class="rai-btn-fill">
+                                                                                    <button class="btn rai-btn-small" aria-label="Vedi dettaglio presenze" title="Vedi dettaglio presenze" style="min-width:80px; float:right;" onclick="ShowCalendarioTracciati('@(Model.Richiesta.Documento.Id_Richiesta.Value)')">Vedi dettaglio presenze</button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                }
+                                                                else if (Model.Attributi != null && Model.Attributi.Any())
+                                                                {
+                                                                    string dataDA = "";
+                                                                    string dataA = "";
+                                                                    string codEccezione = "";
+
+                                                                    var tt = Model.Attributi.Where(w => w.Id == "data_dal").FirstOrDefault();
+                                                                    if (tt != null)
+                                                                    {
+                                                                        dataDA = tt.Valore;
+                                                                    }
+
+                                                                    tt = Model.Attributi.Where(w => w.Id == "data_al").FirstOrDefault();
+                                                                    if (tt != null)
+                                                                    {
+                                                                        dataA = tt.Valore;
+                                                                    }
+
+                                                                    tt = Model.Attributi.Where(w => w.Id == "EccezionePerAutomatismo").FirstOrDefault();
+                                                                    if (tt != null)
+                                                                    {
+                                                                        // esempio codEccezione = MT
+                                                                        codEccezione = tt.Valore;
+                                                                    }
+
+                                                                    if (String.IsNullOrEmpty(codEccezione))
+                                                                    {
+                                                                        tt = Model.Attributi.Where(w => w.Id == "EccezioneSelezionataNascosta").FirstOrDefault();
+                                                                        if (tt != null)
+                                                                        {
+                                                                            codEccezione = tt.Valore;
+                                                                        }
+                                                                    }
+
+                                                                    if (!String.IsNullOrEmpty(dataDA) && !String.IsNullOrEmpty(dataA) && !String.IsNullOrEmpty(codEccezione))
+                                                                    {
+                                                                        <tr>
+                                                                            <td>
+                                                                                <div class="col-sm-12">
+                                                                                    <div class="rai-btn-fill">
+                                                                                        <button class="btn rai-btn-small" aria-label="Vedi dettaglio presenze" title="Vedi dettaglio presenze" style="min-width:80px; float:right;" onclick="ShowCalendarioTracciati('@(Model.Richiesta.Documento.Id)','@(dataDA)', '@(dataA)', '@(codEccezione)' )">Vedi dettaglio presenze</button>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </td>
+                                                                        </tr>
+                                                                    }
+                                                                }
+                                                            }
+                                                        </tbody>
+                                                    </table>
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else if (Model.IsApprovatore &&
+                        !Model.NascondiRiprendi &&
+                        (Model.Richiesta.Documento.Id_Stato == (int)StatiDematerializzazioneDocumenti.RifiutoApprovatore ||
+                        Model.Richiesta.Documento.Id_Stato == (int)StatiDematerializzazioneDocumenti.Accettato))
+                    {
+                        <div class="block block-content-table block-transparent">
+                            <div class="block-header">
+                                <label class="block-title">AZIONI POSSIBILI</label>
+                            </div>
+                            <div class="block-content">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="panel remove-margin-bottom">
+                                            <div class="panel-body remove-margin">
+                                                <div class="row row-no-margin-left-right">
+                                                    <table class="table rai-table rai-table-vcenter rai-table-high-row">
+                                                        <tbody>
+                                                            <tr>
+                                                                <td>
+                                                                    <div class="col-sm-12">
+                                                                        <div class="rai-btn-fill">
+                                                                            <button class="btn rai-btn-small" aria-label="Riprendi" title="Riprendi" style="min-width:80px; float:right;" onclick="Dematerializzazione_PortaAlloStatoPrecedentePratica('@(Model.Richiesta.Documento.Id)')">Riprendi</button>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                            @{
+                                                                if (Model.Richiesta.Documento.Id_Richiesta.HasValue && Model.Richiesta.Documento.Id_Richiesta.GetValueOrDefault() > 0)
+                                                                {
+                                                                    <tr>
+                                                                        <td>
+                                                                            <div class="col-sm-12">
+                                                                                <div class="rai-btn-fill">
+                                                                                    <button class="btn rai-btn-small" aria-label="Vedi dettaglio presenze" title="Vedi dettaglio presenze" style="min-width:80px; float:right;" onclick="ShowCalendarioTracciati('@(Model.Richiesta.Documento.Id_Richiesta.Value)')">Vedi dettaglio presenze</button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                }
+                                                                else if (Model.Attributi != null && Model.Attributi.Any())
+                                                                {
+                                                                    string dataDA = "";
+                                                                    string dataA = "";
+                                                                    string codEccezione = "";
+
+                                                                    var tt = Model.Attributi.Where(w => w.Id == "data_dal").FirstOrDefault();
+                                                                    if (tt != null)
+                                                                    {
+                                                                        dataDA = tt.Valore;
+                                                                    }
+
+                                                                    tt = Model.Attributi.Where(w => w.Id == "data_al").FirstOrDefault();
+                                                                    if (tt != null)
+                                                                    {
+                                                                        dataA = tt.Valore;
+                                                                    }
+
+                                                                    tt = Model.Attributi.Where(w => w.Id == "EccezionePerAutomatismo").FirstOrDefault();
+                                                                    if (tt != null)
+                                                                    {
+                                                                        // esempio codEccezione = MT
+                                                                        codEccezione = tt.Valore;
+                                                                    }
+
+                                                                    if (String.IsNullOrEmpty(codEccezione))
+                                                                    {
+                                                                        tt = Model.Attributi.Where(w => w.Id == "EccezioneSelezionataNascosta").FirstOrDefault();
+                                                                        if (tt != null)
+                                                                        {
+                                                                            codEccezione = tt.Valore;
+                                                                        }
+                                                                    }
+
+                                                                    if (!String.IsNullOrEmpty(dataDA) && !String.IsNullOrEmpty(dataA) && !String.IsNullOrEmpty(codEccezione))
+                                                                    {
+                                                                        <tr>
+                                                                            <td>
+                                                                                <div class="col-sm-12">
+                                                                                    <div class="rai-btn-fill">
+                                                                                        <button class="btn rai-btn-small" aria-label="Vedi dettaglio presenze" title="Vedi dettaglio presenze" style="min-width:80px; float:right;" onclick="ShowCalendarioTracciati('@(Model.Richiesta.Documento.Id)','@(dataDA)', '@(dataA)', '@(codEccezione)' )">Vedi dettaglio presenze</button>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </td>
+                                                                        </tr>
+                                                                    }
+                                                                }
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else if (Model.Richiesta.Documento.Id_Richiesta.HasValue && Model.Richiesta.Documento.Id_Richiesta.GetValueOrDefault() > 0)
+                    {
+                        <div class="block block-content-table block-transparent">
+                            <div class="block-header">
+                                <label class="block-title">AZIONI POSSIBILI</label>
+                            </div>
+                            <div class="block-content">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="panel remove-margin-bottom">
+                                            <div class="panel-body remove-margin">
+                                                <div class="row row-no-margin-left-right">
+                                                    <table class="table rai-table rai-table-vcenter rai-table-high-row">
+                                                        <tbody>
+                                                            <tr>
+                                                                <td>
+                                                                    <div class="col-sm-12">
+                                                                        <div class="rai-btn-fill">
+                                                                            <button class="btn rai-btn-small" aria-label="Vedi dettaglio presenze" title="Vedi dettaglio presenze" style="min-width:80px; float:right;" onclick="ShowCalendarioTracciati('@(Model.Richiesta.Documento.Id_Richiesta.Value)')">Vedi dettaglio presenze</button>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else if (Model.Attributi != null && Model.Attributi.Any())
+                    {
+                        string dataDA = "";
+                        string dataA = "";
+                        string codEccezione = "";
+
+                        var tt = Model.Attributi.Where(w => w.Id == "data_dal").FirstOrDefault();
+                        if (tt != null)
+                        {
+                            dataDA = tt.Valore;
+                        }
+
+                        tt = Model.Attributi.Where(w => w.Id == "data_al").FirstOrDefault();
+                        if (tt != null)
+                        {
+                            dataA = tt.Valore;
+                        }
+
+                        tt = Model.Attributi.Where(w => w.Id == "EccezionePerAutomatismo").FirstOrDefault();
+                        if (tt != null)
+                        {
+                            // esempio codEccezione = MT
+                            codEccezione = tt.Valore;
+                        }
+
+                        if (String.IsNullOrEmpty(codEccezione))
+                        {
+                            tt = Model.Attributi.Where(w => w.Id == "EccezioneSelezionataNascosta").FirstOrDefault();
+                            if (tt != null)
+                            {
+                                codEccezione = tt.Valore;
+                            }
+                        }
+
+                        if (!String.IsNullOrEmpty(dataDA) && !String.IsNullOrEmpty(dataA) && !String.IsNullOrEmpty(codEccezione))
+                        {
+                            <div class="block block-content-table block-transparent">
+                                <div class="block-header">
+                                    <label class="block-title">AZIONI POSSIBILI</label>
+                                </div>
+                                <div class="block-content">
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <div class="panel remove-margin-bottom">
+                                                <div class="panel-body remove-margin">
+                                                    <div class="row row-no-margin-left-right">
+                                                        <table class="table rai-table rai-table-vcenter rai-table-high-row">
+                                                            <tbody>
+                                                                <tr>
+                                                                    <td>
+                                                                        <div class="col-sm-12">
+                                                                            <div class="rai-btn-fill">
+                                                                                <button class="btn rai-btn-small" aria-label="Vedi dettaglio presenze" title="Vedi dettaglio presenze" style="min-width:80px; float:right;" onclick="ShowCalendarioTracciati('@(Model.Richiesta.Documento.Id)','@(dataDA)', '@(dataA)', '@(codEccezione)' )">Vedi dettaglio presenze</button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                }
+            </div>
+
+
+
+            @{
+                if (Model.PresaInCaricoEnabled && Model.Richiesta.Documento.MatricolaIncaricato == UtenteHelper.Matricola())
+                {
+                    <div class="row">
+                        <div class="block block-content-table block-transparent">
+                            <div class="block-header">
+                                <label class="block-title">Assegnazione</label>
+                            </div>
+                            <div class="block-content">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="panel remove-margin-bottom">
+                                            <div class="panel-body">
+                                                <div class="">
+                                                    <div class="row push-20">
+                                                        <div class="col-sm-12 push-20">
+                                                            <label class="rai-font-sm-bold">Questa pratica è assegnata a te. Se non riesci a gestire una pratica, puoi rilasciarla o assegnarla a un/una collega selezionandone il nome dall'elenco.</label>
+                                                        </div>
+                                                        <div class="col-sm-12">
+                                                            <div class="rai-btn-fill">
+                                                                <button class="btn rai-btn-small" aria-label="Rilascia la pratica" title="Rilascia la pratica" style="min-width:80px;" onclick="Dematerializzazione_AnnullaPrendiInCarico('@Model.Matricola', '@Model.IdPersona', '@Model.Richiesta.Documento.Id')">Rilascia la pratica</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else if (Model.PresaInCaricoEnabled &&
+                    !String.IsNullOrEmpty(Model.Richiesta.Documento.MatricolaIncaricato) &&
+                    Model.Richiesta.Documento.MatricolaIncaricato != UtenteHelper.Matricola())
+                {
+                    <div class="row">
+                        <div class="block block-content-table block-transparent">
+                            <div class="block-header">
+                                <label class="block-title">Assegnazione</label>
+                            </div>
+                            <div class="block-content">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="panel remove-margin-bottom">
+                                            <div class="panel-body">
+                                                <div class="">
+                                                    <div class="row push-20">
+                                                        <div class="col-sm-12">
+                                                            <label class="rai-font-sm-neutral-bold">In carico a</label>
+                                                        </div>
+                                                        <div class="col-sm-12">
+                                                            <label class="rai-font-md">@Model.NominativoUtenteIncaricato</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+
+            @{
+                if (Model.Dettaglio_Mat_Richieste != null && Model.Dettaglio_Mat_Richieste.Items != null &&
+                    Model.Dettaglio_Mat_Richieste.Items.Any())
+                {
+                    <div class="row">
+                        <div class="block block-content-table block-transparent">
+                            <div class="block-header">
+                                <label class="block-title">@(Model.Dettaglio_Mat_Richieste.Titolo)</label>
+                            </div>
+                            <div class="block-content">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="panel remove-margin-bottom">
+                                            <div class="panel-body">
+                                                <div class="">
+                                                    @{
+                                                        foreach (var r in Model.Dettaglio_Mat_Richieste.Items)
+                                                        {
+                                                            <div class="row push-20">
+                                                                <div class="col-sm-6">
+                                                                    <label class="rai-font-sm-neutral-bold">@(r.Label)</label>
+                                                                </div>
+                                                                <div class="col-sm-6">
+                                                                    <label class="rai-font-md">@(r.Text)</label>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+
+            @{
+                if (Model.AbilitaPannelloLog)
+                {
+                    <div class="row">
+                        <div class="block block-content-table block-transparent">
+                            <div class="block-header">
+                                <label class="block-title">Eventi</label>
+                            </div>
+                            <div class="block-content">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="panel remove-margin-bottom">
+                                            <div class="panel-body">
+                                                <div class="">
+                                                    <div style="overflow:hidden;overflow-y:auto;overflow-x:auto;max-height:460px;padding-right:2px;">
+                                                        <table class="table rai-table rai-table-vcenter table-striped">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Data</th>
+                                                                     <th>Descrizione</th>
+                                                                    @*<th class="rai-table-td-action"></th>*@
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                @{
+                                                                    foreach (var e in Model.EventiLog)
+                                                                    {
+                                                                        <tr>
+                                                                            <td class="ws-nowrap rai-font-sm" style="width:1%">
+                                                                                @e.DataEvento.ToString("dd/MM/yyyy")
+                                                                                <br>
+                                                                                @e.DataEvento.ToString("HH:mm/ss")
+                                                                            </td>
+                                                                            <td>
+                                                                                <div class="rai-font-sm" style="max-width:25vw;max-height:3rem;text-overflow:ellipsis; overflow:hidden;">
+                                                                                    @e.Descrizione
+                                                                                </div>
+                                                                            </td>
+                                                                            @*<td><button class="btn btn-action-icon" onclick=""><i class="fa fa-search"></i></button></td>*@
+                                                                        </tr>
+                                                                    }
+                                                                }
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+}

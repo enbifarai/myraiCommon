@@ -1,0 +1,149 @@
+﻿@using myRaiData.Incentivi
+@using myRaiHelper
+@model XR_HRIS_ABIL_PROFILO
+
+@{
+    List<XR_HRIS_ABIL_PROFILO_ASSOCIAZIONI> assoc = new List<XR_HRIS_ABIL_PROFILO_ASSOCIAZIONI>();
+    assoc.AddRange(Model.XR_HRIS_ABIL_PROFILO_ASSOCIAZIONI);
+
+    var db = new IncentiviEntities();
+    var listSubFunz = db.XR_HRIS_ABIL_SUBFUNZIONE;
+    var listProfili = db.XR_HRIS_ABIL_PROFILO.Where(x => x.ID_PROFILO != Model.ID_PROFILO);
+}
+
+<div id="div-assoc">
+    @using (Html.BeginPanel(PanelType.Panel, "Associazioni", false))
+    {
+        using (Html.BeginBlock(BlockType.ContentTable, "Funzioni", collapsable: true))
+        {
+            <div class="row">
+                <div class="col-sm-12">
+                    <table class="table rai-table rai-table-vcenter rai-table-bordered" style="max-height:400px;">
+                        @foreach (var funz in listSubFunz.GroupBy(x => x.ID_FUNZIONE))
+                        {
+                            <tr>
+                                <td colspan="2">
+                                    <span class="rai-font-md-bold">@funz.First().XR_HRIS_ABIL_FUNZIONE.COD_FUNZIONE - @funz.First().XR_HRIS_ABIL_FUNZIONE.DES_FUNZIONE</span>
+                                </td>
+                                <td class="text-right ws-nowrap">
+                                    @if (!funz.First().XR_HRIS_ABIL_FUNZIONE.IND_ATTIVO)
+                                    {
+                                        <span class="rai-label">Funzione non attiva</span>
+                                    }
+                                </td>
+                            </tr>
+                            foreach (var sub in funz)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="rai-checkbox">
+                                            <input type="checkbox" id="sub-@sub.ID_SUBFUNZ" data-subfunz="@sub.ID_SUBFUNZ" @(assoc.Any(x => x.ID_SUBFUNZ == sub.ID_SUBFUNZ) ? "checked" : "")>
+                                            <label>&nbsp;</label>
+                                        </div>
+                                    </td>
+                                    <td class="full-width">
+                                        <span class="rai-font-md" for="sub-@sub.ID_SUBFUNZ">@sub.COD_SUBFUNZIONE - @sub.DES_SUBFUNZIONE</span>
+                                    </td>
+                                    <td class="text-right ws-nowrap">
+                                        @if (!sub.IND_ATTIVO)
+                                        {
+                                            <span class="rai-label">Sottofunzione non attiva</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </table>
+                </div>
+            </div>
+        }
+
+        using (Html.BeginBlock(BlockType.ContentTable, "Profili", collapsable: true))
+        {
+            <div class="row">
+                <div class="col-sm-12">
+                    <table class="table rai-table rai-table-vcenter rai-table-bordered" style="max-height:400px;">
+                        @foreach (var profilo in listProfili.OrderBy(x=>x.IND_ATTIVO).ThenBy(x=>x.COD_PROFILO))
+                        {
+                            <tr>
+                                <td>
+                                    <div class="rai-checkbox">
+                                        <input type="checkbox" id="pr-@profilo.ID_PROFILO" data-profilo="@profilo.ID_PROFILO" @(assoc.Any(x => x.ID_PROFILO_SUB == profilo.ID_PROFILO) ? "checked" : "")>
+                                        <label>&nbsp;</label>
+                                    </div>
+                                </td>
+                                <td class="full-width">
+                                    <span class="rai-font-md" for="pr-@profilo.ID_PROFILO">@profilo.COD_PROFILO - @profilo.DES_PROFILO</span>
+                                </td>
+                                <td class="text-right ws-nowrap">
+                                    @if (!profilo.IND_ATTIVO)
+                                    {
+                                        <span class="rai-label">Profilo non attivo</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </table>
+                </div>
+            </div>
+        }
+
+        <div class="row">
+            <div class="col-sm-12">
+                <button class="btn rai-btn-primary full-width" onclick="SaveAssocAbil(this, @Model.ID_PROFILO)">Salva</button>
+            </div>
+        </div>
+    }
+</div>
+
+<script>
+    function SaveAssocAbil(button, idProfilo) {
+        event.preventDefault();
+
+        $(button).addClass("disable");
+        
+        $('#div-assoc').addClass("rai-loader");
+
+        debugger
+
+        var subFuncs = new Array();
+        var profili = new Array();
+        $('[data-subfunz]:checked').each(function (index, element) {
+            subFuncs.push($(element).data('subfunz'));
+        });
+        $('[data-profilo]:checked').each(function (index, element) {
+            profili.push($(element).data('profilo'));
+        });
+
+
+        $.ajax({
+            url: '/Abilitazioni/Save_ProfiloAssoc',
+            type: "POST",
+            data: JSON.stringify({
+                idProfilo: idProfilo,
+                subfunc: subFuncs,
+                profili: profili
+            }),
+            contentType: 'application/json; charset=UTF-8',
+            dataType: 'json',
+            success: function (data) {
+                if (data.esito) {
+                    swal({ title: "Associazioni salvate con successo", type: 'success', customClass: 'rai' });
+
+                    RaiUpdateWidget("box-profili", "/Abilitazioni/ElencoProfili", "html", null);
+                    RaiUpdateWidget("box-funzioni", "/Abilitazioni/ElencoFunzioni", "html", null);
+                } else {
+                    swal({ title: "Ops...", text: data.message, type: 'error', customClass: 'rai' });
+                }
+            },
+            error: function (a, b, c) {
+                swal({ title: "Ops...", text: ' ' + b + ' ' + c, type: 'error', customClass: 'rai' });
+            },
+            complete: function () {
+                $(button).removeClass("disable");
+                $('#div-assoc').removeClass("rai-loader");
+            }
+        })
+    }
+</script>
+

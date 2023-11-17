@@ -1,0 +1,565 @@
+﻿@using myRaiCommonModel;
+@model RicercaPianoFormativo
+@using myRaiHelper;
+@{
+    Layout = "~/Views/Shared/_LayoutContent.cshtml";
+    ViewBag.Title = "HRIS - Piano Formativo";
+    var idp = ViewBag.idPersona;
+}
+
+<style>
+    .section-bottom {
+        
+    }
+</style>
+
+<section role="main" class="content-body">
+    <main id="main-container">
+        <div class="content">
+            @using (Html.BeginOnePageNav("pianificazioneAttivita", "Piano Formativo"))
+            {
+                <div class="row">
+                    <div class="col-sm-8">
+                        @using (Html.BeginPanel(PanelType.PanelNoPadding, "Piani Formativi", false))
+                        {
+                            <div id="elencoPianiFormativi"></div>
+                        }
+                    </div>
+                    <div class="col-sm-4">
+                        <div id="sez_Ricerca">
+                            <section class="rai panel" id="panelFiltraPratiche">
+                                <header class="panel-heading">
+                                    <h2 class="panel-title">Filtra</h2>
+                                </header>
+                                <div class="panel-body">
+                                    <form id="cercaImm" onsubmit="filtraPratichePianiFormativi()">
+                                        <div class="rai form-group">
+                                            <div class="row push-10">
+                                                <div class="col-sm-12">
+                                                    <label class="rai-caption">NOMINATIVO</label>
+
+                                                    <input type="text" class="form-control form-control-value " id="nome" name="nome" placeholder="Nome" />
+
+                                                </div>
+                                            </div>
+                                            <div class="row push-10">
+                                                <div class="col-sm-12">
+                                                    <label class="rai-caption">MATRICOLA</label>
+                                                    <input type="text" class="form-control form-control-value " id="matricola" name="matricola" placeholder="Matricola" />
+
+                                                </div>
+                                            </div>
+                                            @* <div class="row">
+                                                    <div class="col-sm-12">
+                                                        @Html.LabelForRequiredObbl(model => model.SelectedSezione, "Sezione", new { @class = "rai-caption" })
+                                                        @Html.RaiAsyncSelectFor(model => model.SelectedSezione, Url.Action("GetSezioni", "PianoFormativo"), 3, "Seleziona una sezione", "Cerca", true)
+                                                    </div>
+                                                </div>*@
+                                            <div class="row push-10">
+                                                <div class="col-sm-12">
+                                                    @Html.LabelFor(model => model.SelectedTutor, "Tutor", new { @class = "rai-caption" })
+                                                    @Html.RaiAsyncSelectFor(model => model.SelectedTutor, Url.Action("GetTutor", "PianoFormativo"), 3, "Seleziona un tutor", "Cerca", true, tipoFiltro: myRaiHelper.SelectFilterType.StartsWith)
+                                                    @*     @Html.RaiAsyncSelectFor(model => model.SelectedTutor, Url.Action("GetTutor", "PianoFormativo"), tipoFiltro: myRaiHelper.SelectFilterType.StartsWith)*@
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row form-button">
+                                            <div class="col-sm-12">
+                                                <div class="rai-btn-fill">
+                                                    <button class="btn rai-btn-secondary" onclick="RaiClearForm('cercaImm')">Azzera filtri</button>
+                                                    <input type="submit" id="btnCercaMatricola" class="btn rai-btn-primary" title="Cerca" value="Filtra" onclick="filtraPratichePianiFormativi();" />
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    </form>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+
+                </div>
+            }
+        </div>
+    </main>
+
+    <!-- end: page -->
+</section>
+@Html.RenderModal("titoliDiStudio")
+@Html.RenderModal("esperienzeLavorative")
+@Html.RenderModal("tutor")
+
+@section afterjs{
+    <script type="text/javascript">
+
+        var pageIndexPianificati = 1;
+        var pageIndexDaPianificare = 1;
+     const titoliDiStudio = [];
+     const esperienzeLavorative = [];
+     const tutors= [];
+     var id = $("form#nuovoPFI").attr("name");
+     var idEsperienzaLavorativaSelected;
+     var idTitoloStudioSelected;
+        var idTutorSelected;
+
+
+     $(function () {
+            prepareTableListapianiFormativi();
+
+        });
+
+    var idPersona = '@(idp)';
+    if (idPersona!=0) {
+            pianificaAttivitaPianoFormativo(idPersona);
+        }
+
+        function aggiungiTutor(valueMatricola, nominativo, categoria, anzCat, isNew, idTutor, idPersona) {
+            debugger
+                      var tutor_ = {
+                Idpersona: idPersona,
+                IdTutor: idTutor,
+                Nominativo: nominativo,
+                Categoria: categoria,
+                AnzCategoria: anzCat,
+                Dal: $("#Dal").val(),
+                DalStr: $("#Dal").val(),
+                Al: $("#Al").val(),
+                AlStr: $("#Al").val(),
+                MatricolaTutor: valueMatricola,
+                Nota: $("#Nota").val(),
+                Oid: $("#Oid").val()
+            }
+
+            var indexToRemove = tutors.findIndex(function (el) { return el.Oid == tutor_.Oid });
+            if (indexToRemove<0) {
+                tutors.push(tutor_);
+                indexToRemove = tutors.findIndex(function (el) { return el.Oid == tutor_.Oid });
+            }
+            else {
+               tutors.splice(indexToRemove, 1, tutor_);
+            }
+
+          if (indexToRemove > 0) {
+                var indexprec = indexToRemove - 1;
+               var datadal = new Date();
+                var strdal = tutors[indexToRemove].DalStr;
+                var strdalp = tutors[indexprec].DalStr;
+               var datadalp = new Date();
+               datadalp.setFullYear(strdalp.substr(6, 4), (strdalp.substr(3, 2)-1), strdalp.substr(0, 2));
+               datadal.setFullYear(strdal.substr(6, 4), (strdal.substr(3, 2) - 1), strdal.substr(0, 2));
+             //  dataal.setFullYear(datadal.getFullYear(), datadal.getMonth(), datadal.getDay())
+               var dataal = new Date(
+                   datadal.getFullYear(),
+                   datadal.getMonth(),
+                   datadal.getDate()-1);
+
+            //   dataal.setDate(datadal.getDate() - 1);
+              if (datadalp >= datadal) {
+                  tutors.splice(indexToRemove);
+                    return swal({ title: "Errore Validazione", text: "verificare le date del tutor precedente", type: "error" });
+
+                }
+
+               // tutors[indexprec].Al = ('0'+ datadal.getDate()).slice(-2) + "/" + ('0' + (datadal.getMonth()+1)).slice(-2) + "/" + datadal.getFullYear()-1;
+
+               tutors[indexprec].AlStr = ('0' + dataal.getDate()).slice(-2) + "/" + ('0' + (dataal.getMonth() + 1)).slice(-2) + "/" + dataal.getFullYear();
+               tutors[indexprec].Al = tutors[indexprec].AlStr;
+           }
+
+            if (indexToRemove < (tutors.length - 1)) {
+                var indexs = indexToRemove + 1;
+                var stral = tutors[indexToRemove].AlStr;
+                var strdals = tutors[indexs].DalStr;
+                var dataal = new Date();
+                var datadals = new Date();
+                datadals.setFullYear(strdals.substr(6, 4), (strdals.substr(3, 2) - 1), strdals.substr(0, 2));
+                dataal.setFullYear(stral.substr(6, 4), (stral.substr(3, 2) - 1), stral.substr(0, 2));
+                if (dataal >= datadals) {
+                    return swal({ title: "Errore Validazione", text: "verificare le date del tutor successivo", type: "error" });
+
+                }
+            }
+
+
+          reloadTableTutor();
+        $('#modal-tutor').modal('toggle');
+    }
+
+        function reloadTableTutor() {
+        var tableBody = $('#sezioneTutor');
+            var htmlBody = "";
+           tutors.forEach(function (element) {
+                element.Dal = element.DalStr;
+                element.Al = element.AlStr;
+            var newtr = createHtmlBodyTutor(element);
+            htmlBody = htmlBody + newtr;
+        });
+        tableBody.html(htmlBody);
+    }
+        function reloadTableEsperienzeLavorative() {
+       var tableBody = $('#sezioneEsperienzeLavorative');
+        var htmlBody = "";
+            esperienzeLavorative.forEach(function (element) {
+                element.DataInizio = element.DataInizioStrEL;
+                element.DataFine = element.DataFineStrEL;
+            var newtr = createHtmlBodyEsperienzeLavorative(element);
+            htmlBody = htmlBody + newtr;
+        });
+        tableBody.html(htmlBody);
+        }
+        function createHtmlBodyEsperienzeLavorative(element) {
+            var html = '<tr>'
+                + '<td class="rai-font-md-bold">'
+                + ((element.Azienda == null) ? "" : element.Azienda)
+                + '</td>'
+                + '<td>'
+                + ((element.Attivita == null) ? "" : element.Attivita)
+                + '</td>'
+                + '<td>'
+                + ((element.DescrizioneCitta == null) ? "" : element.DescrizioneCitta)
+                + '</td>'
+                + '<td>'
+                + ((element.Apprendistato.toString().toLowerCase() == "true") ? 'Apprendistato' : "")
+                + '</td>'
+                + '<td style="width:100px;" class="text-right"><div class="btn-action-icon-container">'
+                + '<button id="modifica" class="btn btn-action-icon modifica" onclick="modificaEsperienza( \'' + element.idEspLavLocal + '\') "><i class="fa fa-pencil"></i></button>'
+                + '<button id="eliminazione" class="btn btn-action-icon eliminazione" onclick="eliminaEsperienza( \'' + element.idEspLavLocal + '\')"><i class="fa fa-trash-o" ></i></button>'
+                + '</div></td>'
+                + '</tr> '
+            return html;
+        }
+        function reloadTableTitoliDiStudio() {
+        var tableBody = $('#sezioneTitoliDiStudio');
+        var htmlBody = "";
+        titoliDiStudio.forEach(function (element) {
+            ;
+            var newtr = createHtmlBodyTitoliDiStudio(element);
+            htmlBody = htmlBody + newtr;
+        });
+        tableBody.html(htmlBody);
+        }
+        function createHtmlBodyTitoliDiStudio(element) {
+            var html = '<tr>'
+                + '<td class="rai-font-md-bold" id="dataConseguimento">'
+                + element.DataFineStr
+                + '</td>'
+                + '<td class="">'
+                + element.DesTipoTitolo + '<br/>' + element.DesTitolo
+                + '</td>'
+                + '<td class="rai-table-td-toggle">'
+
+                + '</td>'
+                + '<td class="rai-table-td-toggle">'
+
+                + '</td>'
+                + '<td style="width:100px;" class="text-right"><div class="btn-action-icon-container">'
+                + '<button id="modifica" class="btn btn-action-icon modifica" onclick="modificaTitolo(\'' + element.idTitoloStudioLocal + '\')"><i class="fa fa-pencil"></i></button>'
+                + '<button id="eliminazione" class="btn btn-action-icon eliminazione" onclick="eliminaTitoloDiStudio(\'' + element.idTitoloStudioLocal + '\')"><i class="fa fa-trash-o" ></i></button>'
+                + '</div></td>'
+                + '</tr> '
+            return html;
+        }
+        function createHtmlBodyTutor(element) {
+            var dal = element.DalStr;
+            var al = element.AlStr;
+            var html = '<tr>'
+                + '<td class="rai-font-md" id="dataInizio">'
+                + element.MatricolaTutor
+                + '</td>'
+                + '<td class="rai-font-md-bold">'
+                + element.Nominativo
+                + '</td>'
+                + '<td class="rai-font-md">'
+                + element.Categoria
+                + '</td>'
+                + '<td class="rai-font-md">'
+                + dal
+                + '</td>'
+                + '<td class="rai-font-md">'
+                + al
+                + '</td>'
+                + '<td class="rai-table-td-toggle">'
+                + '</td>'
+                + '<td style="width:100px;" class="text-right"><div class="btn-action-icon-container">'
+                + '<button id="modifica" class="btn btn-action-icon modifica" onclick="modificaTutor(' + element.Oid + ') "><i class="fa fa-pencil"></i></button>'
+                + '<button id="eliminazione" class="btn btn-action-icon eliminazione" onclick="eliminaTutor(' + element.Oid + ')"><i class="fa fa-trash-o" ></i></button>'
+                + '</div></td>'
+                + '</tr> ';
+        return html;
+    }
+
+        function modificaTutor(oid) {
+            debugger
+       const tutor = tutors.find(function (obj) {
+            return obj.Oid == oid
+        });
+
+
+       RaiOpenAsyncModal("modal-tutor", "/PianoFormativo/ModalDettaglioTutor", tutor, null, "POST", false)
+    }
+        function eliminaTutor(oid) {
+
+        const indexToRemove = tutors.findIndex(function (el) { return el.Oid == oid });
+            tutors.splice(indexToRemove, 1);
+            reloadTableTutor();
+      //  $('#sezioneTutor').html("");
+
+    }
+
+    function prepareTableListapianiFormativi() {
+        $.ajax({
+            url: '@Url.Action("InizializzazioneTablePianiFormativi", "PianoFormativo")',
+            type: "GET",
+            data: {},
+            success: function (response) {
+                    $('#elencoPianiFormativi').html(response);
+                },
+            error: function (e) {
+                          (e);
+                },
+            complete: function () {
+                loadTab();
+                }
+        });
+    }
+
+    function LoadPianificatiNext() {
+
+        var tabactive = $('.active').children('*[role="tab"]');
+        var tab = tabactive[0].innerText.substring(0, 1);
+        $('#divCaricamentoInCorsoAltrPianiFormativi').show();
+        pageIndexPianificati++;
+        console.log();
+        if (!$('#nome').val() == "" || !$('#matricola').val() == "" || !$('#SelectedTutor').val() == "") {
+            $.ajax({
+                url: '@Url.Action("FiltraPratichePianiFormativi","PianoFormativo")',
+                type: "POST",
+                data: { nome: $('#nome').val(), matricola: $('#matricola').val(), tutor: $('#SelectedTutor').val(), tab:tab, page: pageIndexPianificati},
+                success: function (response) {
+                    $('#listaPF_Pianificati').append(response);
+                },
+                error: function (a, b, c) {
+                    (a, b, c);
+                }
+            });
+        }
+        else {
+            $.ajax({
+                url: '@Url.Action("GetPianiFormativi", "PianoFormativo")',
+                type: "GET",
+                data: { tab: tab, page: pageIndexPianificati },
+                success: function (response) {
+                    console.log();
+                    if (pageIndexPianificati == 1) {
+                        $('tbody').html(" ");
+                        $('#table_Pianificati').removeClass('rai-loader');
+                        $('#listaPF_Pianificati').html(response);
+                    } else {
+
+                        $('#listaPF_Pianificati').append(response);
+                    }
+                },
+                complete: function () {
+                    $('#divCaricamentoInCorsoAltrPianiFormativi').hide();
+                },
+                error: function (e) {
+                    (e);
+                },
+            });
+
+        }
+    }
+
+    function LoadDaPianificareNext() {
+        var tabactive = $('.active').children('*[role="tab"]');
+        var tab = tabactive[0].innerText.substring(0, 1);
+        $('#divCaricamentoInCorsoAltrPianiFormativiDaPian').show();
+        pageIndexDaPianificare++;
+        console.log();
+        if (!$('#nome').val() == "" || !$('#matricola').val() == "" || !$('#SelectedTutor').val() == "") {
+            $.ajax({
+                url: '@Url.Action("FiltraPratichePianiFormativi","PianoFormativo")',
+                type: "POST",
+                data: { nome: $('#nome').val(), matricola: $('#matricola').val(), tutor: $('#SelectedTutor').val(), tab: tab, page: pageIndexDaPianificare},
+                    success: function (response) {
+                    $('#listaPF_DaPianificare').append(response);
+                },
+                error: function (a, b, c) {
+                    (a, b, c);
+                }
+            });
+
+
+        }
+        else {
+            $.ajax({
+                url: '@Url.Action("GetPianiFormativi", "PianoFormativo")',
+                type: "GET",
+                data: { tab: tab, page: pageIndexDaPianificare },
+                success: function (response) {
+                    console.log();
+                    if (pageIndexDaPianificare == 1) {
+                        $('tbody').html(" ");
+                        $('#table_DaPianificare').removeClass('rai-loader');
+                        $('#listaPF_DaPianificare').html(response);
+                    } else {
+                        $('#listaPF_DaPianificare').append(response);
+                    }
+                },
+                complete: function () {
+                    $('#divCaricamentoInCorsoAltrPianiFormativiDaPian').hide();
+                },
+                error: function (e) {
+                    (e);
+                },
+            });
+
+        }
+    }
+
+    function loadTabDaPianificare() {
+        let hasNext = false;
+        $('#tab2').removeClass('active');
+        $('#tab1').addClass('active');
+        hasNext = ($('#hrefTab2').attr("data-target") === 'true');
+        switchTabifIsDaPianificareOrNot('d', hasNext);
+
+        }
+        function loadTab()
+        {
+             $.ajax({
+                    url: '@Url.Action("GetPianiFormativi", "PianoFormativo")',
+                    type: "GET",
+                    data: {tab:'', page: 1 },
+                 success: function (response) {
+                           //$('tbody').html(" ");
+                     $('#table_DaPianificare tbody').removeClass('rai-loader');
+                     $('#table_Pianificati tbody').removeClass('rai-loader');
+
+                     $('#table_DaPianificare').removeClass('rai-loader');
+                     $('#table_Pianificati').removeClass('rai-loader');
+
+                     $('#listaPF_Pianificati').html(response);
+
+                    },
+                    complete: function () {
+                        $('#divCaricamentoInCorsoAltrPianiFormativi').hide();
+                    },
+                    error: function (e) {
+                        (e);
+                    },
+                });
+
+        }
+
+
+
+        function loadTabPianificati(pageIndex) {
+           let hasNext = false;
+            hasNext = ($('#hrefTab2').attr("data-target") === 'true');
+            $('#tab1').removeClass('active');
+            $('#tab2').addClass('active');
+            switchTabifIsDaPianificareOrNot('p', hasNext);
+
+    }
+
+        function filtraPratichePianiFormativi() {
+            event.preventDefault();
+            pageIndexPianificati = 1;
+            $('#table_Pianificati').addClass('rai-loader');
+            $('#table_DaPianificare').addClass('rai-loader');
+            $('#listaPF_DaPianificare').empty();
+            $('#listaPF_Pianificati').empty();
+            if (!$('#nome').val() == "" || !$('#matricola').val() == "" || !($('#SelectedTutor').val()==null ||  $('#SelectedTutor').val() == "" || $('#SelectedTutor').val()==0))
+            {
+                $.ajax({
+                    url: '@Url.Action("FiltraPratichePianiFormativi","PianoFormativo")',
+                    type: "POST",
+                    data: { nome: $('#nome').val(), matricola: $('#matricola').val(), tutor: $('#SelectedTutor').val(), tab:'', page:1 },
+                    success: function (response) {
+                        console.log(response);
+                        $('#table_Pianificati').removeClass('rai-loader');
+                        $('#table_DaPianificare').removeClass('rai-loader');
+                        $('#listaPF_Pianificati').html(response);
+                    },
+                    error: function (a, b, c) {
+                        (a, b, c);
+                    }
+                });
+            }
+            else {
+                loadTab();
+            }
+
+    }
+        function pianificaAttivitaPianoFormativo(idPersona) {
+            if (tutors.length > 0) tutors.splice(0, tutors.length);
+            if (titoliDiStudio.length > 0) titoliDiStudio.splice(0, titoliDiStudio.length);
+            if (esperienzeLavorative.length > 0) esperienzeLavorative.splice(0, esperienzeLavorative.length);
+            $.ajax({
+                url: '@Url.Action("GetIdJobAssign", "PianoFormativo")',
+                data: { idPersona: idPersona },
+                type: "POST",
+                success: function (data) {
+                    if (!data)
+                              RaiOPNavGoToNext( "pianificazioneAttivita", "newPianoFormativo", "Nuovo Piano Formativo", '@Url.Action("PianificaNuovoPianoFormativo","PianoFormativo")', { id: idPersona });
+else             RaiOPNavGoToNext( "pianificazioneAttivita", "modificaPianoFormativo", "Modifica Piano Formativo", '@Url.Action("ModificaPianoFormativo", "PianoFormativo")', { id: idPersona });
+
+                },
+                                   });
+       @*     RaiOPNavGoToNext( "pianificazioneAttivita", "newPianoFormativo", "Nuovo Piano Formativo", '@Url.Action("PianificaNuovoPianoFormativo","PianoFormativo")', { id: idPersona });*@
+        }
+        function dettaglioPianoFormativo(idPersona) {
+            if (tutors.length > 0) tutors.splice(0, tutors.length);
+            if (titoliDiStudio.length > 0) titoliDiStudio.splice(0, titoliDiStudio.length);
+            if (esperienzeLavorative.length > 0) esperienzeLavorative.splice(0, esperienzeLavorative.length);
+           RaiOPNavGoToNext("pianificazioneAttivita", "dettaglioPianoFormativo", "Dettaglio Piano Formativo", '@Url.Action("DettaglioPianoFormativo", "PianoFormativo")', { id: idPersona });
+                  }
+
+        function modificaPianoFormativo(idPersona) {
+            if (tutors.length > 0) tutors.splice(0, tutors.length);
+            if (titoliDiStudio.length > 0) titoliDiStudio.splice(0, titoliDiStudio.length);
+            if (esperienzeLavorative.length > 0) esperienzeLavorative.splice(0, esperienzeLavorative.length);
+            RaiOPNavGoToNext( "pianificazioneAttivita", "modificaPianoFormativo", "Modifica Piano Formativo", '@Url.Action("ModificaPianoFormativo", "PianoFormativo")', { id: idPersona });
+        }
+        function generateGuid() {
+
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+        function eliminaPianoFormativo(idPersona,idJobAssign) {
+        swal({
+                title: 'Sei sicuro?',
+                text: "Il piano formativo verrà cancellato",
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sì, cancella!',
+                cancelButtonText: 'Annulla'
+        }).then(function () {
+                $.ajax({
+                                   url: '@Url.Action("EliminaPiano", "PianoFormativo")',
+                    dataType: 'html',
+                    type: "GET",
+                    data: { idPersona: idPersona, idJobAssign: idJobAssign },
+               success: function (data) {
+                   loadTab();
+                        switch (data) {
+                            case "OK":
+                                swal('Cancellazione Piano Formativo', "Piano Formativo cancellato con successo", "success");
+                                break;
+                            default:
+                                swal("Oops...", data, 'error')
+                        }
+                    }
+                });
+
+        });
+    }
+
+    </script>
+}

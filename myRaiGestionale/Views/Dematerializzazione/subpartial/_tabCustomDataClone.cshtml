@@ -1,0 +1,127 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiCommonModel
+@using myRaiHelper
+@using Newtonsoft.Json
+@using System.Web.Script.Serialization
+
+@model AttributiAggiuntivi
+
+@{
+    Layout = null;
+}
+
+@{
+    var a = Model;
+    string visibile = a.Visible ? "" : "display:none;";
+
+    string divID = "";
+
+    if (a.Tipo == TipologiaAttributoEnum.InLine)
+    {
+        divID = String.Format("id={0}", a.Id);
+    }
+    else if (a.Tipo != TipologiaAttributoEnum.Check && a.Tipo != TipologiaAttributoEnum.Radio)
+    {
+        divID = String.Format("id=row_{0}", a.Id);
+    }
+    else
+    {
+        divID = String.Format("group-id=row_{0}", a.Id);
+    }
+
+
+
+    if (a.Tipo == TipologiaAttributoEnum.InLine)
+    {
+        <div class="row push-10 row-inline-class" @(divID) style="@(!a.Visible ? "display:none" : "")" data-tipo="@((int)a.Tipo)" id="@(a.Id)" data-name="@(a.Nome)" data-label="@(a.Label)" data-title="@(a.Title)" data-posizione="@(a.Ordinamento)">
+            @Html.Partial("~/Views/Dematerializzazione/subpartial/_tabCustomDataInLine.cshtml", a)
+        </div>
+    }
+    else
+    {
+        DematerializzazioneCustomDataView newModel = new DematerializzazioneCustomDataView();
+        newModel.Attributi = new List<AttributiAggiuntivi>();
+        newModel.Attributi.Add(Model);
+        @Html.Partial("~/Views/Dematerializzazione/subpartial/_tabCustomDataInternal.cshtml", newModel)
+    }
+
+
+
+    if (!String.IsNullOrEmpty(a.OnReady))
+    {
+        <text>
+            <script type="text/javascript">
+                var fx = @(Html.Raw(Json.Encode(String.Format("{0}",a.OnReady))));
+                eval(fx);
+            </script>
+        </text>
+    }
+}
+
+
+<script type="text/javascript">
+    InitDatePicker();
+
+    function formatAllCurrency() {
+        var list = $('input[data-type="currency"]');
+        for (var i = 0; i < list.length; i++) {
+            formatCurrency($(list[i]));
+        }
+    }
+
+    $(function () {
+        $("input[data-type='currency']").on({
+            keyup: function () {
+                formatCurrency($(this));
+            },
+            blur: function () {
+                formatCurrency($(this), "blur");
+            }
+        });
+        formatAllCurrency();
+
+        $('.dem-customdata').each(function () {
+            $(this).on('keyup', function () {
+                var tx = $(this).val();
+                tx = $.trim(tx);
+
+                if (tx.length >= 1) {
+                    $(this).data('compilato', 'true');
+                }
+                else {
+                    $(this).data('compilato', 'false');
+                }
+
+                Dematerializzazione_AbilitaSeCompilati();
+            });
+
+            $(this).on('blur', function () {
+                var tx = $(this).val();
+                tx = $.trim(tx);
+
+                if (tx.length >= 1) {
+                    $(this).data('compilato', 'true');
+                }
+                else {
+                    $(this).data('compilato', 'false');
+                }
+
+                Dematerializzazione_AbilitaSeCompilati();
+            });
+
+            $(this).on('change', function () {
+                var tx = $(this).val();
+                tx = $.trim(tx);
+
+                if (tx.length >= 1) {
+                    $(this).data('compilato', 'true');
+                }
+                else {
+                    $(this).data('compilato', 'false');
+                }
+
+                Dematerializzazione_AbilitaSeCompilati();
+            });
+        });
+    });
+</script>

@@ -1,0 +1,193 @@
+﻿
+@model myRaiCommonModel.AnnullamentoAmmModel
+
+
+
+@*<div class="row">
+    <div class="col-sm-12" style="padding-top:22px">
+        <span class="rai-font-md-bold">ANNULLAMENTO</span>
+    </div>
+
+</div>
+<div class="row">
+    <div class="col-sm-12">
+        <div style="background-color: #eee;height: 1px;margin-top: 11px;"></div>
+    </div>
+</div>*@
+
+
+<div class="block block-content-table block-transparent remove-margin-bottom">
+    <div class="block-header" href="#collapse-annulla" data-toggle="collapse" aria-expanded="false" data-block-toggle>
+        <label class="block-title">ANNULLAMENTO</label>
+        <div class="block-options">
+            <i data-toggle="collapse" class="fa fa-chevron-down"></i>
+        </div>
+    </div>
+    <div class="block-content collapse" id="collapse-annulla">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="panel">
+                    <div class="panel-body">
+                        <span class="rai-font-sm">
+                            Puoi annullare questa pratica cliccando il tasto Annulla ed inserendo le info richieste
+                        </span>
+
+
+                        <div class="col-sm-12" style="padding:0px;margin-top:12px">
+                            <button id="button-ann" type="button" class="btn rai-btn-secondary full-width" onclick="ShowBoxAnn()" style="height:44px">Annulla</button>
+                        </div>
+                        @{
+                            DateTime Dmax;
+                            DateTime Dmin;
+                            if (Model.Richiesta.FINE_GIUSTIFICATIVO != null)
+                            {
+                                Dmax = Model.Richiesta.FINE_GIUSTIFICATIVO.Value;
+                                Dmin = Model.Richiesta.INIZIO_GIUSTIFICATIVO.Value;
+                            }
+                            else
+                            {
+                                Dmax = Model.Richiesta.DATA_FINE_MATERNITA.Value;
+                                Dmin = Model.Richiesta.DATA_INIZIO_MATERNITA.Value;
+                            }
+                        }
+                        <div id="box-ann" style="display:none">
+                            <div class="row">
+                                <div class="col-sm-12" style="margin-top:6px;padding-left:6px;padding-right:6px">
+                                    <div class="input-group mb-md">
+                                        <span class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                                        <input onchange="CheckInvioPoss()" class="js-datetimepicker form-control"
+                                               data-format="DD/MM/YYYY" data-locale="it" type="text"
+                                               data-maxdata="@Dmax.ToString("MM/dd/yyyy")"
+                                               data-mindata="@Dmin.ToString("MM/dd/yyyy")"
+                                               id="data-ann" placeholder="Data effettivo annullamento" value="">
+                                    </div>
+
+                                    <textarea id="nota-ann" onkeyup="CheckInvioPoss()" rows="4" style="width:100%" placeholder="Nota per annullamento"></textarea>
+
+                                </div>
+
+                                <div class="col-sm-12">
+                                    <a id="allegato-ann" href="#" onclick="AllegaAllegatoAnn()">Allega documento</a>
+                                    <input style="display:none" type="file" id="file-ann" onchange="FileAnnChanged(this)">
+                                    <div class="text-primary" id="nomefile-container-ann" style="display:none">
+                                        <span class="fa fa-download"></span>
+                                        <span style="margin-left:8px" id="nomefile-ann"></span>
+                                        <span class="fa fa-trash text-danger" title="Elimina documento" style="cursor:pointer;float: right;"
+                                              onclick="CancellaDoc()"></span>
+                                    </div>
+                                </div>
+                                <div class="col-sm-12" style="padding:6px;margin-top:12px">
+                                    <button id="button-ann-invia" type="button" class="btn rai-btn-primary full-width disable"
+                                            onclick="InviaAnnullamento(@Model.Richiesta.ID)" style="height:44px">
+                                        Invia annullamento
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+    function CancellaDoc() {
+        $("#nomefile-container-ann").hide();
+        $("#nomefile-ann").text("");
+        $("#button-ann-invia").addClass("disable");
+        $("#allegato-ann").show();
+        $("#file-ann").val("");
+    }
+
+
+    function InviaAnnullamento(idrich) {
+        debugger
+        var fdata = new FormData();
+        var fileInput = $('#file-ann');
+        if (fileInput[0].files.length > 0) {
+            var file = fileInput[0].files[0];
+            fdata.append("file", file);
+            fdata.append("nomefile", fileInput[0].files[0].name);
+        }
+        fdata.append("testo", $("#nota-ann").val());
+        fdata.append("idrichiesta", idrich);
+        fdata.append("datablocco", $("#data-ann").val());
+
+        swal({
+            title: "Annulla richiesta",
+            type: 'question',
+            html: "Confermi di annullare la richiesta visualizzata?",
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check"></i> Conferma',
+            cancelButtonText: '<i class="fa fa-times"></i> Annulla',
+            reverseButtons: true,
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+
+
+            $.ajax({
+                url: "/maternitacongedi/annullaPratica",
+                type: 'POST',
+                processData: false,
+                contentType: false,
+                dataType: "json",
+                data: fdata,
+                success: function (data) {
+                    if (data.esito == true) {
+                        swal({
+                            title: 'Pratica annullata correttamente',
+                            type: "success",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                        HideBoxAnn();
+                        $("#popupview-amm").modal("hide");
+                        GetContent();
+                    }
+                    else {
+                        swal({
+                            title: 'Operazione non riuscita - ' + data.errore,
+                            type: "error",
+                            confirmButtonText: 'OK',
+                            customClass: 'rai'
+                        });
+                    }
+                }
+            });
+        });
+    }
+    function FileAnnChanged(inp) {
+        $("#nomefile-ann").text($(inp)[0].files[0].name);
+        $("#nomefile-container-ann").show();
+        $("#allegato-ann").hide();
+        CheckInvioPoss();
+    }
+    function AllegaAllegatoAnn() {
+        $("#file-ann").click();
+    }
+    function ShowBoxAnn() {
+        $("#nota-ann").val("");
+        $("#file-ann").val("");
+        $("#data-ann").val("");
+
+        $("#box-ann").show();
+        $("#button-ann").hide();
+    }
+    function HideBoxAnn() {
+        $("#box-ann").hide();
+        $("#button-ann").show();
+    }
+    function CheckInvioPoss() {
+        var text = $("#nota-ann").val();
+        var datablocco = $("#data-ann").val();
+        var f = $("#file-ann").val();
+        if (text.trim().length >= 10 && datablocco.length == 10 && f != "")
+            $("#button-ann-invia").removeClass("disable");
+        else
+            $("#button-ann-invia").addClass("disable");
+    }
+</script>
+

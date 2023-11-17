@@ -1,0 +1,206 @@
+﻿@using myRaiData;
+@using myRaiHelper;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using myRaiCommonManager;
+@using MVCProject.Custom_Helpers;
+@using MyRaiServiceInterface.it.rai.servizi.digigappws;
+
+@model ModelDash
+
+<div id="listaeventi">
+    <header class="panel-heading">
+        <div class="panel-actions rai-panel-actions">
+            <button type="button" class="btn btn-action-icon" data-toggle="block-option" data-action="refresh_toggleeeeeeeeeeeeeeeeee"
+               data-rrrrrrrrrrrrrrrrefreshurl="/eventi/RefreshEventi/" data-parentdiv="listaeventi"
+               data-refreshelements="my-block"
+               data-action-mode="demo">
+                <i class="fa fa-refresh"></i>
+            </button>
+        </div>
+        <h2 class="panel-title">Lista Eventi</h2>
+    </header>
+    <div class="block" id="my-block">
+        <ul class="nav nav-tabs nav-tabs-alt nav-justified" id="tabContent">
+            <li class="active"><a href="#tab-0" data-toggle="tab">APERTI</a></li>
+            <li><a href="#tab-1" data-toggle="tab">CHIUSI</a></li>
+        </ul>
+        <div id="appr" class="block-content tab-content">
+            @if (Model.Events != null)
+            {
+                <div class="tab-pane tab-filtro active" id="tab-0">
+                    <div id="approv" class="table-responsive">
+                        <table id="tabapp" class="js-table-sections table table-hover rai-table rai-table-vcenter" style="margin-top:10px;" border="0">
+                            <thead>
+                                <tr>
+                                    <th>Id</th>
+                                    <th>Data</th>
+                                    <th style="width:auto">Titolo</th>
+                                    <th>Luogo</th>
+                                    <th class="rai-table-td-action"></th>
+                                    <th style="width:100px"></th>
+                                    <th style="width:100px"></th>
+                                </tr>
+                            </thead>
+
+                            @if (Model.Events.elencoEventi.Where(testc => testc.data_inizio > DateTime.Now) != null && Model.Events.elencoEventi.Where(testc => testc.data_inizio > DateTime.Now).ToList().Count > 0)
+                            {
+                                foreach (var item in Model.Events.elencoEventi.Where(testc => testc.data_inizio > DateTime.Now))
+                                {
+                                    <tbody class="@(Model.Events.elencoEventi.Where(testc=> testc.data_inizio > DateTime.Now).ToList().Count == 1 ? "js-table-sections-header open" : "js-table-sections-header")">
+                                        <tr>
+                                            <td>
+                                                @item.id
+                                            </td>
+                                            <td>
+                                                @item.data_inizio.Value.ToShortDateString()
+                                            </td>
+                                            <td>
+                                                @item.titolo.ToUpper()
+                                            </td>
+                                            <td>
+                                                @item.luogo.ToUpper()
+                                            </td>
+                                            <td>
+                                                <a class="btn btn-action-icon" href="#" onclick="CancellaEvento(@item.id)"><i class=" icon-trash "></i></a>
+                                            </td>
+                                            <td>
+                                                <a href="#" class="btn rai-btn-small">Dettaglio</a>
+                                            </td>
+                                            <td>
+                                                <a href="#" class="btn rai-btn-small" onclick="ShowPopUpModEvento(@item.id);">Modifica</a>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+
+                                    <tbody class="tbodydata">
+                                        @foreach (var item1 in Model.Events.elencoEventi.Where(x => x.id == item.id && x.data_inizio > DateTime.Now))
+                                        {
+                                            <tr>
+                                                <td colspan="7">
+                                                    <div class="row">
+                                                        <div class="col-sm-6">
+                                                            <span class="rai-font-md-neutral">Periodo prenotazione:</span>&nbsp;<span>@item1.data_inizio_prenotazione.Value.ToShortDateString() - @item1.data_fine_prenotazione.Value.ToShortDateString()</span>
+                                                        </div>
+                                                        <div class="col-sm-6">
+                                                            <span class="rai-font-md-neutral">Prenotazioni disponibili:</span>&nbsp;<span>@item1.numero_totale - massimo @item1.numero_massimo per persona</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-sm-12">
+                                                            <span class="rai-font-md-neutral">Matricole abilitate:</span>&nbsp;
+                                                            <span>
+                                                                @String.Join(";", item1.B2RaiPlace_Eventi_Utenti_Abilitati.Select(x => x.Matricola))
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-sm-12">
+                                                            <span class="rai-font-md-neutral">Sedi abilitate:</span>&nbsp;
+                                                            <span>
+                                                                @String.Join(";", item1.B2RaiPlace_Eventi_Sede.Select(x => x.sede_gapp))
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                }
+                            }
+                            else
+                            {
+                                <tbody>
+                                    @Html.Partial("_nodati")
+                                </tbody>
+                            }
+                        </table>
+                    </div>
+                </div>
+                <div class="tab-pane tab-filtro " id="tab-1">
+                    <div class="table-responsive">
+                        <table id="tabapp" class="js-table-sections table table-hover rai-table rai-table-vcenter" style="margin-top:10px;" border="0">
+                            <thead>
+                                <tr>
+                                    <th>Id</th>
+                                    <th>Data</th>
+                                    <th>Titolo</th>
+                                    <th>Luogo</th>
+                                    <th class="rai-table-td-action"></th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+
+                            @if (Model.Events.elencoEventi.Where(testc => testc.data_inizio <= DateTime.Now) != null && Model.Events.elencoEventi.Where(testc => testc.data_inizio <= DateTime.Now).ToList().Count > 0)
+                            {
+                                foreach (var item in Model.Events.elencoEventi.Where(testc => testc.data_inizio <= DateTime.Now))
+                                {
+                                    <tbody class="@(Model.Events.elencoEventi.Where(testc=> testc.data_inizio <= DateTime.Now).ToList().Count == 1 ? "js-table-sections-header open" : "js-table-sections-header")">
+                                        <tr>
+                                            <td>
+                                                @item.id
+                                            </td>
+                                            <td>
+                                                @item.data_inizio.Value.ToShortDateString()
+                                            </td>
+                                            <td>
+                                                @item.titolo.ToUpper()
+                                            </td>
+                                            <td>
+                                                @item.luogo.ToUpper()
+                                            </td>
+                                            <td><a class="btn btn-action-icon" href="#" onclick="CancellaEvento(@item.id)"><i class="icons icon-trash"></i></a></td>
+                                            <td>
+                                                <a href="#" class="btn rai-btn-small">Dettaglio</a>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                    <tbody class="tbodydata">
+                                        @foreach (var item1 in Model.Events.elencoEventi.Where(x => x.id == item.id && x.data_inizio <= DateTime.Now))
+                                        {
+                                            <tr>
+                                                <td colspan="6">
+                                                    <div class="row">
+                                                        <div class="col-sm-6">
+                                                            <span class="rai-font-md-neutral">Periodo prenotazione:</span>&nbsp;<span>@item1.data_inizio_prenotazione.Value.ToShortDateString() - @item1.data_fine_prenotazione.Value.ToShortDateString()</span>
+                                                        </div>
+                                                        <div class="col-sm-6">
+                                                            <span class="rai-font-md-neutral">Prenotazioni disponibili:</span>&nbsp;<span>@item1.numero_totale - massimo @item1.numero_massimo per persona</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-sm-12">
+                                                            <span class="rai-font-md-neutral">Matricole abilitate:</span>&nbsp;
+                                                            <span>
+                                                                @String.Join(";", item1.B2RaiPlace_Eventi_Utenti_Abilitati.Select(x => x.Matricola))
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-sm-12">
+                                                            <span class="rai-font-md-neutral">Sedi abilitate:</span>&nbsp;
+                                                            <span>
+                                                                @String.Join(";", item1.B2RaiPlace_Eventi_Sede.Select(x => x.sede_gapp))
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+
+                                        }
+                                    </tbody>
+                                }
+                            }
+                            else
+                            {
+                                <tbody>
+                                    @Html.Partial("_nodati")
+                                </tbody>
+                            }
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,477 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiCommonModel
+@using myRaiHelper
+@model  EventoModel
+
+@{
+    DateTime minDate = DateTime.Today;
+
+    string swalTitle = "";
+    string swalCons = "";
+    string subTitle = "";
+    string title = "";
+    if (Model.Codice == "SW")
+    {
+        swalTitle = Model.IdEvento == 0 ? "Vuoi attivare lo Smartworking per questo utente?" : "Vuoi modificare lo Smartworking per questo utente?";
+        swalCons = Model.IdEvento == 0 ? "Vuoi attivare il modulo per la sottoscrizione dell'accordo di lavoro agile?" : swalTitle;
+        subTitle = "In Smartworking";
+    }
+    else if (Model.Codice == "SW_P")
+    {
+        swalTitle = swalCons = "Vuoi prorogare la scadenza del modulo per la sottoscrizione dell'accordo individuale di lavoro agile?";
+        subTitle = "In Smartworking";
+    }
+    else if (Model.Codice == "SW_N")
+    {
+        swalTitle = swalCons = "Vuoi riproporre il modulo per la sottoscrizione dell'accordo di lavoro agile?";
+        subTitle = "In Smartworking";
+    }
+
+}
+
+@using (Html.BeginOnePageNav("dett-sw", "Smart working dal " + Model.DataInizio.ToString("dd/MM/yyyy") + " al " + Model.DataFine.ToString("dd/MM/yyyy")))
+{
+    using (Html.BeginForm("Save_StatiRapporto", "Anagrafica", FormMethod.Post, new { id = "form-stati-rapporto-" + Model.Codice }))
+    {
+        <div class="form-group">
+            @Html.HiddenFor(m => m.IdEvento)
+            @Html.HiddenFor(m => m.IdPersona)
+            @Html.HiddenFor(m => m.Matricola)
+            @Html.HiddenFor(m => m.Codice)
+            <input type="hidden" id="stato-swal-title" value="@swalTitle" />
+            <input type="hidden" id="stato-swal-subtitle" value="@subTitle" />
+            <input type="hidden" id="stato-swal-title-cons" value="@swalCons" />
+            <input type="hidden" id="stato-swal-title-backup" value="@swalTitle" />
+            <input type="hidden" id="oldDataFine" value="@Model.DataFine" />
+
+            @if (Model.Codice == "SW" || Model.Codice == "SW_P" || Model.Codice == "SW_N")
+            {
+                <div class="row">
+                    <div class="col-xs-12 push-10">
+                        @if (Model.IdEvento == 0)
+                        {
+                            @Html.LabelForRequiredObbl(m => m.TipologiaAccordo, "Tipologia accordo", new { @class = "rai-caption" })
+                            @Html.RaiSelectFor(m => m.TipologiaAccordo, new List<SelectListItem>()
+                            {
+                                new SelectListItem() { Value = "Unilaterale", Text = "Unilaterale" },
+                                new SelectListItem() { Value = "Consensuale", Text = "Consensuale" },
+                                new SelectListItem() { Value = "Deroga", Text = "Consensuale in deroga" }
+                            }, onSelectchange: "checkTipoAccordo()", attributes: new { required = "required" })
+                        }
+                        else
+                        {
+                            @Html.LabelFor(m => m.TipologiaAccordo, "Tipologia accordo", new { @class = "rai-caption" })
+                            <div class="input-group">
+                                @Html.TextBoxFor(m => m.TipologiaAccordo, new { @class = "form-control disable", @readonly = "readonly" })
+                                <span class="input-group-addon">
+                                    <i class="fa fa-lock"></i>
+                                </span>
+                            </div>
+                        }
+                    </div>
+
+
+                    <div class="col-xs-12 push-10" id="div-opzioni-deroga-1" style="display:none;">
+                        @if (Model.IdEvento == 0)
+                        {
+                            @Html.LabelForRequiredObbl(m => m.SWDeroga_Scelta, "Tipologia", new { @class = "rai-caption" })
+                            @Html.RaiSelectFor(m => m.SWDeroga_Scelta, new List<SelectListItem>()
+                            {
+                                new SelectListItem() { Value = "SorveglianzaSanitaria", Text = "essendo Ella stato riconosciuto tale nell’ambito della sorveglianza sanitaria ed avendo il medico competente, previsto nei Suoi confronti l’adibizione al lavoro agile" },
+                                new SelectListItem() { Value = "DisabileGrave", Text = "essendo Ella lavoratore disabile in condizione di gravità ai sensi dell’art. 3, comma 3, della L. n. 104/1992" },
+                                 new SelectListItem() { Value = "CertificazioneDM2022", Text = "avendo Ella attestato di essere un soggetto in condizione di fragilità, in quanto in possesso di una certificazione rilasciata ai sensi del D.M. 4 febbraio 2022" },
+                                new SelectListItem() { Value = "CertificazioneASL", Text = "essendo Ella in possesso di certificazione rilasciata dai competenti servizi medico-legali delle ASL, attestante una condizione di rischio derivante di immunodepressione o da esiti di patologie oncologiche o dallo svolgimento delle relative terapie salvavita" }
+                            }, onSelectchange: "", attributes: new { required = "required" })
+                        }
+                        else
+                        {
+                            @Html.LabelFor(m => m.SWDeroga_Scelta, "Tipologia", new { @class = "rai-caption" })
+                            <div class="input-group">
+                                @{
+                                    if (Model.SWDeroga_Scelta == "SorveglianzaSanitaria")
+                                    {
+                                        title = "essendo Ella stato riconosciuto tale nell’ambito della sorveglianza sanitaria ed avendo il medico competente, previsto nei Suoi confronti l’adibizione al lavoro agile";
+                                    }
+                                    else if (Model.SWDeroga_Scelta == "DisabileGrave")
+                                    {
+                                        title = "essendo Ella lavoratore disabile in condizione di gravità ai sensi dell’art. 3, comma 3, della L. n. 104/1992";
+                                    }
+                                    else if (Model.SWDeroga_Scelta == "CertificazioneDM2022")
+                                    {
+                                        title = "avendo Ella attestato di essere un soggetto in condizione di fragilità, in quanto in possesso di una certificazione rilasciata ai sensi del D.M. 4 febbraio 2022";
+
+                                    }
+                                    else if (Model.SWDeroga_Scelta == "CertificazioneASL")
+                                    {
+                                        title = "essendo Ella in possesso di certificazione rilasciata dai competenti servizi medico-legali delle ASL, attestante una condizione di rischio derivante di immunodepressione o da esiti di patologie oncologiche o dallo svolgimento delle relative terapie salvavita";
+                                    }
+
+                                }
+
+                                @Html.TextBoxFor(m => m.SWDeroga_Scelta, new { @class = "form-control disable", @title = title, @readonly = "readonly" })
+                                <span class="input-group-addon">
+                                    <i class="fa fa-lock"></i>
+                                </span>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="col-xs-12 push-10" id="div-opzioni-deroga-2" style="display:none;">
+                        @if (Model.IdEvento == 0)
+                        {
+                            @Html.LabelForRequiredObbl(m => m.SWDeroga_Opzione, "Opzione", new { @class = "rai-caption" })
+                            @Html.RaiSelectFor(m => m.SWDeroga_Opzione, new List<SelectListItem>()
+                            {
+                                new SelectListItem() { Value = "OpzioneA", Text = "SW con alternanza" },
+                                new SelectListItem() { Value = "OpzioneB", Text = "SW Continuativo" }
+                            }, onSelectchange: "", attributes: new { required = "required" })
+                        }
+                        else
+                        {
+                            @Html.LabelFor(m => m.SWDeroga_Opzione, "Opzione", new { @class = "rai-caption" })
+                            <div class="input-group">
+                                @{
+                                    string opzTitle = "";
+                                    if (Model.SWDeroga_Opzione == "OpzioneA")
+                                    {
+                                        opzTitle = "SW con alternanza";
+                                    }
+                                    else if (Model.SWDeroga_Opzione == "OpzioneB")
+                                    {
+                                        opzTitle = "SW Continuativo";
+                                    }
+                                }
+
+                                @Html.TextBoxFor(m => m.SWDeroga_Opzione, new { @class = "form-control disable", @title = opzTitle, @readonly = "readonly" })
+                                <span class="input-group-addon">
+                                    <i class="fa fa-lock"></i>
+                                </span>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="col-xs-12 push-10" id="div-opzioni-fragili" style="margin-top:10px; @(Model.IdEvento == 0 ? "display:none;":"") ">
+                        @{ 
+                            string _checked = Model.LavoratoreFragile ? "checked=\"checked\"" : "";
+                        }
+                        @if (Model.IdEvento == 0)
+                        {
+                        <div class="rai-checkbox">
+                            @Html.CheckBoxFor(m => m.LavoratoreFragile, new { id = "check-lavoratore-fragile", onClick= "Abilita_SceltaLavoratoreFragile()", _checked })
+                            <label for="check-lavoratore-fragile">Lavoratore fragile</label>
+                        </div>
+                        }
+                        else
+                        {
+                        <div class="rai-checkbox disable">
+                            @Html.CheckBoxFor(m => m.LavoratoreFragile, new { id = "check-lavoratore-fragile", @class="disable", _checked })
+                            <label for="check-lavoratore-fragile">Lavoratore fragile</label>
+                        </div>
+                        }
+                    </div>
+
+                    <div class="col-xs-12 push-10" id="div-opzioni-fragili-2" style="@((Model.LavoratoreFragile)?"":"display:none;")">
+                        @if (Model.IdEvento == 0)
+                        {
+                            @Html.LabelForRequiredObbl(m => m.LavoratoreFragile_Scelta, "Opzione", new { @class = "rai-caption" })
+                            @Html.RaiSelectFor(m => m.LavoratoreFragile_Scelta, new List<SelectListItem>()
+                            {
+                                new SelectListItem() { Value = "PATO", Text = ModuloSmart2020SelectionEnum.Scelta50.GetDescription() },
+                                new SelectListItem() { Value = "DISA", Text = ModuloSmart2020SelectionEnum.Scelta60.GetDescription() },
+                                new SelectListItem() { Value = "IMMU", Text = ModuloSmart2020SelectionEnum.Scelta1000.GetDescription() }
+                            }, onSelectchange: "", attributes: new { required = "required" })
+                        }
+                        else
+                        {
+                            @Html.LabelFor(m => m.LavoratoreFragile_Scelta, "Opzione", new { @class = "rai-caption" })
+                            <div class="input-group">
+                                @{
+                                    if (Model.LavoratoreFragile_Scelta == "PATO")
+                                    {
+                                        title = ModuloSmart2020SelectionEnum.Scelta50.GetDescription();
+                                    }
+                                    else if (Model.LavoratoreFragile_Scelta == "DISA")
+                                    {
+                                        title = ModuloSmart2020SelectionEnum.Scelta60.GetDescription();
+                                    }
+                                    else if (Model.LavoratoreFragile_Scelta == "IMMU")
+                                    {
+                                        title = ModuloSmart2020SelectionEnum.Scelta1000.GetDescription();
+                                    }
+                                }
+
+                                @Html.TextBoxFor(m => m.LavoratoreFragile_Scelta, new { @class = "form-control disable", @title = title, @readonly = "readonly" })
+                                <span class="input-group-addon">
+                                    <i class="fa fa-lock"></i>
+                                </span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Periodo smartworking"))
+            {
+                <div class="row push-10">
+                    <div class="col-xs-12">
+                        @if (Model.IdEvento == 0 || Model.Codice == "SW_N")
+                        {
+                            @Html.LabelForRequiredObbl(m => m.DataInizio, "Data inizio", new { @class = "rai-caption" })
+                            <div class="input-group">
+                                <span class="input-group-addon" style="cursor: pointer" onclick="$('#DataInizio').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                                @Html.TextBoxFor(m => m.DataInizio, new { @class = "js-datetimepicker  form-control", data_format = "DD/MM/YYYY", data_locale = "it", required = "required", data_minData = Model.MinDate.ToString("MM/dd/yyyy"), data_maxData = Model.MaxDate.ToString("MM/dd/yyyy"), placeholder = "Selezionare una data", autocomplete = "off", onchange = "UpdateMinDateEnd('" + Model.Codice + "')" })
+                            </div>
+                        }
+                        else
+                        {
+                            @Html.LabelFor(m => m.DataInizio, "Data inizio", new { @class = "rai-caption" })
+                            <div class="input-group">
+                                @*<span class="input-group-addon" style="cursor: pointer" onclick="$('#DataInizio').datetimepicker('show')"><i class="fa fa-calendar"></i></span>*@
+                                @Html.TextBoxFor(m => m.DataInizio, new { @class = "js-datetimepicker  form-control disable", @readonly = "readonly", data_format = "DD/MM/YYYY", data_locale = "it", data_minData = Model.MinDate.ToString("MM/dd/yyyy"), data_maxData = Model.MaxDate.ToString("MM/dd/yyyy"), placeholder = "Selezionare una data", autocomplete = "off", onchange = "UpdateMinDateEnd('" + Model.Codice + "')" })
+                                <i class="input-group-addon">
+                                    <i class="fa fa-lock"></i>
+                                </i>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-xs-12">
+                        @Html.LabelForRequiredObbl(m => m.DataFine, "Data fine", new { @class = "rai-caption" })
+                        <div class="input-group">
+                            <span class="input-group-addon" style="cursor: pointer" onclick="$('#DataFine').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                            @Html.TextBoxFor(m => m.DataFine, new { @class = "js-datetimepicker  form-control", data_format = "DD/MM/YYYY", data_locale = "it", required = "required", data_minData = Model.MinDate.ToString("MM/dd/yyyy"), data_maxData = Model.MaxDate.ToString("MM/dd/yyyy"), placeholder = "Selezionare una data", autocomplete = "off" })
+                        </div>
+
+                    </div>
+                </div>
+            }
+            @if (Model.IdEvento == 0 || Model.Codice == "SW_P" || Model.Codice == "SW_N")
+            {
+                <div>
+                    @if (Model.IdEvento == 0)
+                    {
+                        using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Fruizione mensile"))
+                        {
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <em class="rai-font-sm">La modifica del numero di giorni per mese per un periodo limitato sarà possibile una volta inserita la posizione</em>
+                                </div>
+                            </div>
+
+                            @*if (Model.IdEvento != 0 && Model.Codice != "SW_N")
+                                {
+                                    var comboMesi = new List<SelectListItem>() { };
+                                    DateTime inizio = Model.DataInizio;
+                                    if (inizio < DateTime.Today)
+                                    {
+                                        inizio = DateTime.Today.AddMonths(1).AddDays(-(DateTime.Today.Day - 1));
+                                    }
+                                    while (inizio < Model.DataFine)
+                                    {
+                                        comboMesi.Add(new SelectListItem() { Value = inizio.ToString("dd/MM/yyy"), Text = inizio.ToString("MMMM yyyy") });
+                                        inizio = inizio.AddMonths(1);
+                                    }
+
+                                    <div class="row">
+                                        <div class="col-xs-12 push-10">
+                                            @Html.LabelFor(m => m.MeseRif, "Mese decorrenza", new { @class = "rai-caption" })
+                                            @Html.RaiSelectFor(m => m.MeseRif, comboMesi)
+                                        </div>
+                                    </div>
+                                }*@
+
+                            <div class="row">
+                                <div class="col-xs-12 push-10">
+                                    @Html.LabelFor(m => m.NumeroGiorniMax, "Giorni per mese", new { @class = "rai-caption" })
+                                    @Html.TextBoxFor(m => m.NumeroGiorniMax, new { @class = "form-control", autocomplete = "off", type = "number", min = "0", max = "31" })
+                                    @Html.ValidationMessageFor(m => m.NumeroGiorniMax)
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-12">
+                                    @Html.LabelFor(m => m.NumeroGiorniExtra, "Giorni extra", new { @class = "rai-caption" })
+                                    @Html.TextBoxFor(m => m.NumeroGiorniExtra, new { @class = "form-control", autocomplete = "off", type = "number", min = "0", max = "31" })
+                                    @Html.ValidationMessageFor(m => m.NumeroGiorniExtra)
+                                </div>
+                            </div>
+                        }
+                    }
+
+                    @if (Model.IdEvento == 0 || (Model.Codice == "SW_P" || Model.Codice == "SW_N"))
+                    {
+                        <div data-sw-type="Consensuale" style="display:none;">
+                            @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Dati proposta"))
+                            {
+                                <div class="row push-20">
+                                    <div class="col-sm-12">
+                                        <div class="rai-checkbox">
+                                            @Html.CheckBoxFor(m => m.MostraProposta, new { onclick = "SwDisableProp()" })
+                                            <label for="MostraProposta">Mostra proposta</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="datiProp">
+                                    <div class="row push-5">
+                                        <div class="col-sm-12">
+                                            <em class="rai-font-sm">
+                                                Nel caso il dipendente accetti la proposta successivamente all'inizio del periodo, la data di inizio sarà il giorno di accettazione della proposta.<br />
+                                                Per forzare la data di inizio indicata, selezionare 'Blocca inizio periodo'.
+                                            </em>
+                                        </div>
+                                    </div>
+                                    <div class="row push-10">
+                                        <div class="col-xs-12 ">
+                                            @*<div class="rai-checkbox">
+                                                    @Html.CheckBoxFor(m => m.BloccaDataInizio, new { onclick = "SWAccordoBlocco()" })
+                                                    <label for="BloccaDataInizio">Blocca inizio periodo <em id="label-blocco"></em></label>
+                                                </div>*@
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <em class="rai-font-sm">Le date indicano il periodo nel quale il dipendente potrà visualizzare la proposta.</em>
+                                        </div>
+                                    </div>
+                                    <div class="row push-10">
+                                        <div class="col-xs-12">
+                                            @Html.LabelFor(m => m.DataPresentazioneProposta, "Inizio", new { @class = "rai-caption" })
+                                            <div class="input-group">
+                                                <span class="input-group-addon" style="cursor: pointer" onclick="$('#DataPresentazioneProposta').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                                                @Html.TextBoxFor(m => m.DataPresentazioneProposta, new { @class = "js-datetimepicker  form-control", data_format = "DD/MM/YYYY HH:mm", data_locale = "it", data_stepping = "1", placeholder = "Selezionare una data", autocomplete = "off" })
+                                            </div>
+                                            <em class="rai-font-sm">In assena di data di inizio, la proposta sarà immediatamente visibile</em>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-xs-12 push-10">
+                                            @Html.LabelForRequiredObbl(m => m.DataScadenza, "Scadenza", new { @class = "rai-caption" })
+                                            <div class="input-group">
+                                                <span class="input-group-addon" style="cursor: pointer" onclick="$('#DataScadenza').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                                                @Html.TextBoxFor(m => m.DataScadenza, new { @class = "js-datetimepicker  form-control", data_format = "DD/MM/YYYY HH:mm", data_locale = "it", data_stepping = "1", placeholder = "Selezionare una data", autocomplete = "off", required = "required" })
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+            <div class="row push-10-t">
+                <div class="col-sm-12">
+                    @if (myRaiCommonTasks.CommonTasks.API_SW_Abilitate(myRaiHelper.CommonHelper.GetCurrentUserMatricola()))
+                    {
+                        <div class="rai-checkbox">
+                            <input type="checkbox" id="invia-api" name="InviaApi" value="1" checked="checked">
+                            <label for="check1">Invia comunicazione telematica</label>
+                        </div>
+                        <input type="hidden" id="scelta-mod-rec" name="SceltaModRec" />
+                    }
+
+                    <button class="btn rai-btn-primary full-width" onclick="Save_DatiStatoRapporto(this, '@Model.Codice')">
+                        @if (Model.IdEvento == 0)
+                        {
+                            <text>Attiva</text>
+                        }
+                        else
+                        {
+                            <text>Modifica</text>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+
+<script>
+    InitDatePicker();
+    function checkTipoAccordo() {
+        debugger
+        let tipoAccordo = $('#TipologiaAccordo').val();
+        $('[data-sw-type]').hide();
+        $('[data-sw-type="' + tipoAccordo + '"]').show();
+
+        if (tipoAccordo === "Deroga") {
+            $('[data-sw-type="Consensuale"]').show();
+            $('#div-opzioni-deroga-1').show();
+            $('#div-opzioni-deroga-2').show();
+            $('#NumeroGiorniMax').val('@(Model.MassimoGiorniSeDeroga)');
+            $('#NumeroGiorniMax').addClass('disable');
+            $('#NumeroGiorniMax').attr('readonly', 'readonly');
+        }
+        else {
+            $('#div-opzioni-deroga-1').hide();
+            $('#div-opzioni-deroga-2').hide();
+            $('#NumeroGiorniMax').val('');
+            $('#NumeroGiorniMax').removeClass('disable');
+            $('#NumeroGiorniMax').removeAttr('readonly');
+        }
+
+        if (tipoAccordo == "Unilaterale") {
+            $('#stato-swal-title').val($('#stato-swal-title-backup').val());
+            $('#div-opzioni-fragili').show();
+        }
+        else {
+            $('#stato-swal-title').val($('#stato-swal-title-cons').val());
+            $('#div-opzioni-fragili').hide();
+        }
+            
+    }
+    checkTipoAccordo();
+
+    function UpdateMinDateEnd(codice) {
+        SWAccordoBlocco();
+        var value = $('#form-stati-rapporto-' + codice + ' #DataInizio').val();
+        var rifDate = value.substr(3, 2) + '/' + value.substr(0, 2) + '/' + value.substr(6, 4);
+        $('#form-stati-rapporto-' + codice + ' #DataFine').data('DateTimePicker').minDate(value);
+
+      //  if ($('#form-stati-rapporto-' + codice + ' #DataScadenza').length > 0) {
+      //      let maxScadenza = moment(value, 'DD/MM/YYYY');
+      //      $('#form-stati-rapporto-' + codice + ' #DataScadenza').data('DateTimePicker').maxDate(maxScadenza.format('DD/MM/YYYY') + ' 23:59');
+      //  }
+
+    }
+    UpdateMinDateEnd('@Model.Codice');
+
+    function SWAccordoBlocco() {
+        if ($('#label-blocco').length > 0) {
+            if ($('#BloccaDataInizio:checked').val() && $('#DataInizio').val()) {
+                let dtaInizio = $('#DataInizio').val();
+                $('#label-blocco').html('&nbsp;- La data di inizio è fissata al ' + dtaInizio);
+            }
+            else
+                $('#label-blocco').html('');
+        }
+    }
+    function SwDisableProp() {
+        if ($('#MostraProposta')[0].checked > 0) {
+            $('#datiProp input').enable(true);
+            $('#stato-swal-title').val($('#stato-swal-title-cons').val());
+        } else {
+            $('#datiProp input').enable(false);
+            $('#stato-swal-title').val($('#stato-swal-title-backup').val());
+        }
+    }
+
+    //$('#check-lavoratore-fragile').on('click', function () {
+    //    if ($(this).is(':checked')) {
+    //        $('#div-opzioni-fragili-2').show();
+    //    }
+    //    else {
+    //        $('#div-opzioni-fragili-2').hide();
+    //    }
+    //});
+
+    function Abilita_SceltaLavoratoreFragile() {
+        if ($('#check-lavoratore-fragile').is(':checked')) {
+            $('#div-opzioni-fragili-2').show();
+        }
+        else {
+            $('#div-opzioni-fragili-2').hide();
+        }
+    }
+</script>

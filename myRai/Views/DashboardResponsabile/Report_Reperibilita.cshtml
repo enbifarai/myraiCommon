@@ -1,0 +1,359 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel.DashboardResponsabile;
+@using MVCProject.Custom_Helpers;
+
+@model DashboardResponsabileVM
+
+<style>
+.@(Model.WidgetId)mytable {
+  position: relative;
+  width: 1200px;
+  overflow: hidden;
+}
+
+/*thead*/
+.@(Model.WidgetId)mythead {
+  position: relative;
+  display: block; /*seperates the header from the body allowing it to be positioned*/
+  width: 1200px;
+  overflow: visible;
+}
+
+.@(Model.WidgetId)mythead th {
+  min-width: 120px;
+  border: 1px solid #222;
+  text-align:center;
+  border-bottom: 1px solid #222;
+  height: 52px;
+}
+
+ .@(Model.WidgetId)cellWidth {
+    min-width: 55px !important;
+ }
+
+.@(Model.WidgetId)mythead th:nth-child(1) {/*first cell in the header*/
+  position: relative;
+  display: block; /*seperates the first cell in the header from the header*/
+  min-width: 150px;
+  background: #fff;
+}
+
+.@(Model.WidgetId)mythead th:nth-child(2) {/*first cell in the header*/
+  position: relative;
+  min-width: 150px;
+  background: #fff;
+}
+
+/*tbody*/
+.@(Model.WidgetId)mytbody {
+  position: relative;
+  display: block; /*seperates the tbody from the header*/
+  width: 1200px;
+  max-height: 455px;
+  overflow: scroll;
+}
+
+.@(Model.WidgetId)mytbody td {
+  min-width: 120px;
+  border: 1px solid #222;
+}
+
+.@(Model.WidgetId)mytbody tr td:nth-child(1) {  /*the first cell in each tr*/
+  position: relative;
+  display: block; /*seperates the first column from the tbody*/
+  min-height: 70px;
+  min-width: 150px;
+  padding-left: 5px;
+  background: #fff;
+}
+
+.@(Model.WidgetId)mytbody tr td:nth-child(2) {  /*the first cell in each tr*/
+  text-align:center;
+position: relative;
+  min-height: 70px;
+  min-width: 150px;
+  padding-left: 5px;
+  background: #fff;
+}
+
+.table-bordered>thead>tr>td, .table-bordered>thead>tr>th {
+    border-bottom-width: 0px;
+}
+
+table tr:first-child td {
+    border-top-width: 1px;
+}
+
+.@(Model.WidgetId)divinterno {
+    border: none;
+}
+
+.@(Model.WidgetId)tdDayGrayCal {
+    background-color: #f0f0f0;
+}
+
+.@(Model.WidgetId)minHeight20 {
+    min-height: 18px;
+}
+</style>
+
+@{
+    DateTime dt = new DateTime( DateTime.Now.Year , Model.MeseRiferimento , 1 , 0 , 0 , 0 );
+    DateTime dt2 = dt.AddMonths( 1 );
+    dt2 = dt2.AddDays( -1 );
+    int limit = dt2.Day;
+    string sHH = "";
+    string sMinuti = "";
+    string tempo = "";
+}
+
+<section class="panel">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+        </div>
+        <h2 class="panel-title">Personale con Reperibilità </h2>
+    </header>
+    <div id="@(Model.WidgetId)reperibilitaPanel" class="panel-body">
+        @{
+            if ( Model.Items == null || !Model.Items.Any( ) )
+            {
+                <div class="col-xs-12 text-center"><span class="rai-font-md-neutral">Non ci sono dati da visualizzare</span></div>
+            }
+            else
+            {
+                <table class="@(Model.WidgetId)mytable table table-striped table-bordered table-sm dataTable no-footer">
+                    <thead class="@(Model.WidgetId)mythead">
+                        <tr>
+                            <th>
+
+                                <div class="@(Model.WidgetId)divinterno row no-margin-left-right no-pad-left no-pad-right" style="margin-left: 0px; margin-right: 0px;">
+                                    <div class="col-sm-3 no-pad-left no-pad-right">
+                                        <div class="widget-profile-info">
+                                            <div class="profile-picture" style="position: relative; width: 40px; height: 40px;">&nbsp;</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-9 no-pad-right">
+                                        <a href="#">
+                                            <span class="font-w200" style="font-weight: bold;">&nbsp;</span>
+                                        </a>
+                                    </div>
+                                </div>
+
+                            </th>
+                            <th class="@(Model.WidgetId)cellWidth"> &nbsp;</th>
+                            @{
+                                for ( int idx = 0 ; idx < limit ; idx++ )
+                                {
+
+                                    DateTime giorno = new DateTime( DateTime.Now.Year , Model.MeseRiferimento , idx + 1 , 0 , 0 , 0 );
+
+                                    if ( giorno.DayOfWeek == DayOfWeek.Saturday ||
+                                        giorno.DayOfWeek == DayOfWeek.Sunday ||
+                                        FestivitaHelper.IsFestivo( giorno , ) ||
+                                        FestivitaHelper.IsSuperFestivo( giorno ) )
+                                    {
+                                        <th class="@(Model.WidgetId)cellWidth @(Model.WidgetId)tdDayGrayCal">@(idx + 1)</th>
+                                    }
+                                    else
+                                    {
+                                        <th class="@(Model.WidgetId)cellWidth">@(idx + 1)</th>
+                                    }
+                                }
+                            }
+                            <th>Totale</th>
+                            <th>Numero di giorni di Rep</th>
+                        </tr>
+                    </thead>
+                    <tbody class="@(Model.WidgetId)mytbody">
+                        @{
+                            if ( Model.Items != null && Model.Items.Any( ) )
+                            {
+                                foreach ( var item in Model.Items )
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="@(Model.WidgetId)divinterno row no-margin-left-right no-pad-left no-pad-right" style="margin-left: 0px; margin-right: 0px;">
+                                                <div class="col-sm-3 no-pad-left no-pad-right">
+                                                    <div class="widget-profile-info">
+                                                        <div class="profile-picture" style="position: relative">
+                                                            <img style="width: 40px; height: 40px" src="@(item.Foto)">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-9 no-pad-right">
+                                                    <a href="#">
+                                                        <span class="font-w200" style="font-weight: bold;">@(item.Nominativo)</span>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="@(Model.WidgetId)cellWidth">
+                                            <div class="@(Model.WidgetId)minHeight20">RE20</div>
+                                            <div class="@(Model.WidgetId)minHeight20">RE22</div>
+                                            <div class="@(Model.WidgetId)minHeight20">RE25</div>
+                                        </td>
+                                        @for ( int idx = 0 ; idx < limit ; idx++ )
+                                        {
+
+                                            DateTime giorno = new DateTime( DateTime.Now.Year , Model.MeseRiferimento , idx + 1 , 0 , 0 , 0 );
+                                            tempo = "";
+
+                                            string myClass = "";
+                                            string myHtml = String.Empty;
+
+                                            if ( giorno.DayOfWeek == DayOfWeek.Saturday ||
+                                                giorno.DayOfWeek == DayOfWeek.Sunday ||
+                                                FestivitaHelper.IsFestivo( giorno , ) ||
+                                                FestivitaHelper.IsSuperFestivo( giorno ) )
+                                            {
+                                                myClass = Model.WidgetId + "tdDayGrayCal";
+                                            }
+                                            else
+                                            {
+                                                myClass = "";
+                                            }
+
+                                            <td class="@(Model.WidgetId)cellWidth @myClass">
+                                                <div class="@(Model.WidgetId)minHeight20" style="text-align:center">
+                                                    @{
+                                                        tempo = "";
+                                                        if ( item.ListaRE20 != null && item.ListaRE20.Any( ) )
+                                                        {
+                                                            var y = item.ListaRE20.Where( e => e.Giorno.Equals( giorno ) ).FirstOrDefault( );
+                                                            if ( y != null )
+                                                            {
+                                                                int hh = 0;
+                                                                if ( y.Minuti > 60 )
+                                                                {
+                                                                    hh = ( y.Minuti / 60 );
+                                                                    y.Minuti = y.Minuti - ( hh * 60 );
+                                                                }
+                                                                if ( y.Minuti == 60 )
+                                                                {
+                                                                    hh = 1;
+                                                                    y.Minuti = 0;
+                                                                }
+
+                                                                int minuti = y.Minuti;
+
+                                                                sHH = ( hh <= 9 ? ( "0" + hh.ToString( ) ) : hh.ToString( ) );
+                                                                sMinuti = ( minuti <= 9 ? ( "0" + minuti.ToString( ) ) : minuti.ToString( ) );
+                                                                tempo = String.Format( "{0}:{1}" , sHH , sMinuti );
+                                                            }
+                                                        }
+                                                        @tempo
+                                                    }
+                                                </div>
+                                                <div class="@(Model.WidgetId)minHeight20" style="text-align:center">
+                                                    @{
+                                                        tempo = "";
+                                                        if ( item.ListaRE22 != null && item.ListaRE22.Any( ) )
+                                                        {
+                                                            var y = item.ListaRE22.Where( e => e.Giorno.Equals( giorno ) ).FirstOrDefault( );
+                                                            if ( y != null )
+                                                            {
+                                                                int hh = 0;
+                                                                if ( y.Minuti > 60 )
+                                                                {
+                                                                    hh = ( y.Minuti / 60 );
+                                                                    y.Minuti = y.Minuti - ( hh * 60 );
+                                                                }
+                                                                if ( y.Minuti == 60 )
+                                                                {
+                                                                    hh = 1;
+                                                                    y.Minuti = 0;
+                                                                }
+
+                                                                int minuti = y.Minuti;
+
+                                                                sHH = ( hh <= 9 ? ( "0" + hh.ToString( ) ) : hh.ToString( ) );
+                                                                sMinuti = ( minuti <= 9 ? ( "0" + minuti.ToString( ) ) : minuti.ToString( ) );
+                                                                tempo = String.Format( "{0}:{1}" , sHH , sMinuti );
+                                                            }
+                                                        }
+                                                        @tempo
+                                                    }
+                                                </div>
+                                                <div class="@(Model.WidgetId)minHeight20" style="text-align:center">
+                                                    @{
+                                                        tempo = "";
+                                                        if ( item.ListaRE25 != null && item.ListaRE25.Any( ) )
+                                                        {
+                                                            var y = item.ListaRE25.Where( e => e.Giorno.Equals( giorno ) ).FirstOrDefault( );
+                                                            if ( y != null )
+                                                            {
+                                                                int hh = 0;
+                                                                if ( y.Minuti > 60 )
+                                                                {
+                                                                    hh = ( y.Minuti / 60 );
+                                                                    y.Minuti = y.Minuti - ( hh * 60 );
+                                                                }
+                                                                if ( y.Minuti == 60 )
+                                                                {
+                                                                    hh = 1;
+                                                                    y.Minuti = 0;
+                                                                }
+
+                                                                int minuti = y.Minuti;
+
+                                                                sHH = ( hh <= 9 ? ( "0" + hh.ToString( ) ) : hh.ToString( ) );
+                                                                sMinuti = ( minuti <= 9 ? ( "0" + minuti.ToString( ) ) : minuti.ToString( ) );
+                                                                tempo = String.Format( "{0}:{1}" , sHH , sMinuti );
+                                                            }
+                                                        }
+                                                        @tempo
+                                                    }
+                                                </div>
+
+                                            </td>
+                                        }
+                                        <td>
+                                            <div class="@(Model.WidgetId)minHeight20" style="text-align:center">@item.TotaleOreLista1</div>
+                                            <div class="@(Model.WidgetId)minHeight20" style="text-align:center">@item.TotaleOreLista2</div>
+                                            <div class="@(Model.WidgetId)minHeight20" style="text-align:center">@item.TotaleOreLista3</div>
+                                        </td>
+                                        <td>
+                                            <div class="@(Model.WidgetId)minHeight20" style="text-align:center">@(item.ListaRE20.Count( ))</div>
+                                            <div class="@(Model.WidgetId)minHeight20" style="text-align:center">@(item.ListaRE22.Count( ))</div>
+                                            <div class="@(Model.WidgetId)minHeight20" style="text-align:center">@(item.ListaRE25.Count( ))</div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        }
+                    </tbody>
+                </table>
+            }
+        }
+    </div>
+</section>
+
+<script type="text/javascript">
+    $( document ).ready( function ()
+    {
+        @(Model.WidgetId)_ricCelle();
+        $( 'tbody' ).scroll( function ( e )
+        {
+            $('.@(Model.WidgetId)mythead').css("left", -$(".@(Model.WidgetId)mytbody").scrollLeft());
+            $('.@(Model.WidgetId)mythead th:nth-child(1)').css("left", $(".@(Model.WidgetId)mytbody").scrollLeft());
+            $('.@(Model.WidgetId)mytbody td:nth-child(1)').css("left", $(".@(Model.WidgetId)mytbody").scrollLeft());
+            $('.@(Model.WidgetId)mythead th:nth-child(2)').css("left", $(".@(Model.WidgetId)mytbody").scrollLeft());
+            $('.@(Model.WidgetId)mytbody td:nth-child(2)').css("left", $(".@(Model.WidgetId)mytbody").scrollLeft());
+
+        } );
+    } );
+
+    $( window ).on( 'resize', function ()
+    {
+        @(Model.WidgetId)_ricCelle();
+    } );
+
+    function @(Model.WidgetId)_ricCelle()
+    {
+        var width = $( '#@(Model.WidgetId)reperibilitaPanel' ).width();
+        $( '.@(Model.WidgetId)mytable' ).width( width );
+        $( '.@(Model.WidgetId)mythead' ).width( width );
+        $( '.@(Model.WidgetId)mytbody' ).width( width );
+    }
+</script>

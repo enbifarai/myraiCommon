@@ -1,0 +1,126 @@
+﻿@using myRaiHelper;
+@model myRaiCommonModel.cvModels.cvModel
+
+@{
+    var lista = Model.competenzeSpecialistiche;
+    //perndo l'elenco dei titoli
+    var listaTitoli = lista.Where(x => x._isTitle).ToList();
+
+}
+
+<section class="rai panel">
+    <header class="panel-heading">
+        <h2 class="panel-title text-white">
+            Autovalutazione Competenze Specialistiche
+            <span tabindex="-1" id="popCompSpec" data-popover-content="#myPopover" class="push-5-l" data-toggle="popover" data-html="true" data-container="body" data-placement="right" title="" data-content="Indica le competenze acquisite in ambito Rai e/o Extra Rai ed il livello di conoscenza.<ul><li>Tra quelle indicate, per ognuno dei 4 ambiti, scegli quella maggiormente presidiata.</li><li>E' possibile selezionare nuove competenze e apportare modifiche a quelle già indicate.</li></ul>" data-original-title="&nbsp;" data-trigger="focus">
+                <i id="" class="fa fa-info-circle"></i>
+            </span>
+        </h2>
+        <div class="panel-actions rai-panel-actions">
+            <button class="btn-action-icon" data-toggle="modal" data-target="#modalCompetenzeSpecialisticheInserimento" onclick="InizializzaTuttoDopoAjax()"><span class="fa fa-plus"></span></button>
+        </div>
+    </header>
+
+    <div class="panel-body">
+        <div class="rai panel-group removebottom" id="accexperiences">
+            @{
+                string not_primo_elemento = ""; // "actions-hover actions-fade";
+                foreach (var elem in listaTitoli)
+                {
+                    string codAggreg;
+                    string hide_collapse;
+                    int countCollapse;
+                    codAggreg = elem._codConProfAggr;
+
+                    var listaDettagli = lista.Where(x => x._codConProfAggr == codAggreg && x._isSelected).ToList();
+                    countCollapse = listaDettagli.Count;
+
+                    hide_collapse = (countCollapse == 0) ? "hide" : "";
+
+                    <div class="rai panel panel-accordion">
+                        <div class="panel-heading">
+
+                            <h4 class="panel-title">
+                                <a class="accordion-toggle collapsed " data-toggle="collapse" data-parent="#accordion" href="#specialistiche-@elem._codConProfAggr" aria-expanded="false">
+                                    <!-- padding-25 -->
+                                    @CommonHelper.ToTitleCase(elem._descConProfLunga.ToUpper())
+                                </a>
+                            </h4>
+
+                            <div class="panel-actions @hide_collapse">
+                                <span style="" class="badge">@countCollapse</span>
+                            </div>
+
+
+                        </div>
+                        <div id="specialistiche-@elem._codConProfAggr" class="accordion-body collapse" aria-expanded="false" style="height: 0px;">
+                            <div class="panel-body panel-body-nopadding-xs">
+                                @if (countCollapse == 0)
+                                {
+                                    @Html.Partial("~/Views/CV_Online/partials/_no_elements.cshtml");
+                                }
+                                <table class="js-table-sections table table-hover rai-table rai-table-vcenter">
+                                    <tbody class="">
+                                        @foreach (var elem_dettaglio in listaDettagli.OrderByDescending(a => a._codConProfLiv))
+                                        {
+                                            string text_livello, text_presidio;
+
+                                            switch (elem_dettaglio._codConProfLiv)
+                                            {
+                                                case "01":
+                                                    text_livello = "Basso";
+                                                    break;
+                                                case "02":
+                                                    text_livello = "Medio";
+                                                    break;
+                                                case "04":
+                                                    text_livello = "Alto";
+                                                    break;
+                                                default:
+                                                    text_livello = " - ";
+                                                    break;
+                                            }
+                                            text_presidio = (elem_dettaglio._flagPrincipale == "1") ? "Maggiormente Presidiata" : "";
+                                            <tr>
+                                                <td class="text-left">
+                                                    <span class="text-bold ">@elem_dettaglio._descConProfLunga</span><br />
+                                                    <span class="">Livello: @text_livello</span><br />
+                                                    @if (elem_dettaglio._flagPrincipale == "1")
+                                                    {
+                                                        <span class="push-5-t rai-label rai-label-interactive">@text_presidio</span>
+                                                    }
+                                                </td>
+                                                <td class="rai-table-td-action" style="vertical-align:top!important">
+                                                    <a class="btn btn-action-icon" href="#" data-toggle="modal" data-target="#modalCompetenzeSpecialisticheInserimento"><i class="fa fa-pencil"></i></a>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</section>
+
+@* FREAK - MODALE PER INSERIMENTO COMPETENZE SPECIALISTICHE *@
+@Html.Partial("CompetenzeSpecialistiche/partials/_modalInserimento", Model.competenzeSpecialistiche)
+@* ******************************************************* *@
+
+@* FREAK - DIV per Modale di Modifica *@
+<div class="modal right fade modalCheck" role="dialog" aria-hidden="true" id="frkModificaCompetenzeSpecialistiche">
+
+</div>
+
+@* ********************************** *@
+
+<script>
+    $('[data-toggle="popover"]').popover({
+        template: '<div class="popover"><div class="arrow"></div><div><span style="float:left; width:100%; display:inline;" class="popover-title"></span><span class="customPopOverCloser" style="float:right; width:5%; margin-top: -30px; margin-left: -3px; dispay:inline; cursor:pointer;">x</span></div><div class="clearfix"></div><div class="popover-content"></div></div>',
+        html: true
+    });
+</script>

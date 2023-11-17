@@ -1,0 +1,72 @@
+﻿@using myRaiHelper
+@using myRaiGestionale.Controllers
+@model myRaiData.Incentivi.XR_INC_DIPENDENTI
+
+@{
+    myRaiData.Incentivi.XR_INC_OPERSTATI oper = Model.XR_INC_OPERSTATI.First(x => x.ID_STATO == (int)IncStato.Conteggio);
+}
+<div class="block block-content-table block-transparent">
+    <div class="block-header block-content-mini">
+        <label class="block-title">@CessazioneController.GetBoxDescription(IncStato.Conteggio)</label>
+    </div>
+    <div class="block-content block-content-mini">
+        <div class="rai-table-info">
+            <div class="row">
+                <div class="col-sm-6 ">
+                    <label class="">Data cessazione</label>
+                </div>
+                <div class="col-sm-6">
+                    <label>@(Model.DATA_CESSAZIONE != null ? Model.DATA_CESSAZIONE.Value.ToString("dd/MM/yyyy") : "-")</label>
+                </div>
+            </div>
+            <div class="row" @(Model.ID_TIPOLOGIA != 1 ? "hidden" : "")>
+                <div class="col-sm-6 ">
+                    <label class="">Incentivo lordo</label>
+                </div>
+                <div class="col-sm-6">
+                    <label>@(Model.INCENTIVO_LORDO != null ? String.Format("€ {0:N}", (Model.INCENTIVO_LORDO.GetValueOrDefault() + Model.EX_FISSA.GetValueOrDefault())) : "-")</label>
+                </div>
+            </div>
+            <div class="row" @(Model.ID_TIPOLOGIA != 1 ? "hidden" : "")>
+                <div class="col-sm-6 ">
+                    <label class="">Una Tantum lordo</label>
+                </div>
+                <div class="col-sm-6">
+                    <label>@(Model.UNA_TANTUM_LORDA != null ? String.Format("€ {0:N}", Model.UNA_TANTUM_LORDA.Value) : "-")</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-6 ">
+                    <label class="">Importo lordo TFR</label>
+                </div>
+                <div class="col-sm-6">
+                    <label>@(Model.IMPORTO_LORDO != null ? String.Format("€ {0:N}", Model.IMPORTO_LORDO.Value) : "-")</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-6 ">
+                    <label class="">Importo netto</label>
+                </div>
+                <div class="col-sm-6">
+                    <label>@(Model.IMPORTO_NETTO != null ? String.Format("€ {0:N}", Model.IMPORTO_NETTO.Value) : "-")</label>
+                </div>
+            </div>
+        </div>
+        <div class="row push-10-t">
+            <div class="col-sm-12">
+                <a class="btn rai-btn-small full-width" href="@Url.Action("CreaProspetto", new {idDip=Model.ID_DIPENDENTE})" title="Vedi il prospetto" target="_blank"><i class="icons icon-doc"></i> Vedi il prospetto</a>
+            </div>
+        </div>
+        @if (AuthHelper.EnabledToSubFunc(CommonHelper.GetCurrentUserMatricola(), CessazioneHelper.INCENTIVI_HRGA_FUNC, "ADM") && Model.ID_TIPOLOGIA == (int)CessazioneTipo.Incentivazione)
+        {
+            <div class="push-20" style="margin-top:-15px;">
+                <div id="dett-all-@((int)IncStato.FileOverride)" class="rai-table-info"></div>
+                <script>
+                    RaiUpdateWidget('dett-all-@((int)IncStato.FileOverride)', '/Cessazione/Dettaglio_OperAllegati', 'html', { idDip: @Model.ID_DIPENDENTE, stato:@((int)IncStato.FileOverride)});
+                </script>
+            </div>
+        }
+        @Html.Partial("subpartial/Dettaglio_OperNote", oper)
+    </div>
+</div>
+<!--fine contenuto-->

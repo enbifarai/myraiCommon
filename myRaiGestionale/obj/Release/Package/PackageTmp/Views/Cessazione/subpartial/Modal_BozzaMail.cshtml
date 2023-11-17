@@ -1,0 +1,402 @@
+﻿@using myRaiCommonModel.Gestionale
+@model CessazioneBozza
+
+@{
+    var titolo = "Bozza mail";
+}
+
+@using (Html.BeginModal(titolo))
+{
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="panel">
+                <div class="panel-body">
+                    <form class="form-group" id="form-bozza">
+                        @Html.HiddenFor(m => m.IdDipendente)
+                        @Html.HiddenFor(m => m.Codice)
+                        @Html.HiddenFor(m => m.TipologiaBozza)
+
+                        @if (Model.IsViewMode)
+                        {
+                            <div class="row push-10">
+                                <div class="col-sm-12">
+                                    <label class="rai-font-lg-bold">@Model.InfoInvio</label>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            if (!Model.HasPDFTemplate)
+                            {
+                                <div class="row push-10">
+                                    <div class="col-sm-12">
+                                        <div class="alert alert-warning">
+                                            <span>Non è possibile effettuare l'invio in assenza di una proposta in formato PDF. <br />La proposta automatica verrà generata a breve.</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                <label class="rai-caption">Indirizzi cc aggiuntivi</label>
+                                <div class="input-group">
+                                    @Html.TextBoxFor(m => m.IndirizziCC, new { @class = "form-control", @readonly = "readonly" })
+                                    <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                <label class="rai-caption">Bozza mail selezionata</label>
+                                <div class="input-group">
+                                    @Html.TextBoxFor(m => m.TemplateBozza, new { @class = "form-control", @readonly = "readonly" })
+                                    <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row push-10">
+                            <div class="col-sm-12">
+                                <label class="rai-caption">Testo</label>
+                                @if (!String.IsNullOrWhiteSpace(Model.HtmlTextLastMod))
+                                {
+                                    <i class="rai-font-sm-neutral">
+                                        @Model.HtmlTextLastMod
+                                        @if (!Model.IsViewMode)
+                                        {
+                                            <span>-Per ripristinare la bozza standard<a onclick="RestoreDefaultTemplate('@Model.TipologiaBozza')"> clicca qui</a>.</span>
+                                        }
+                                    </i>
+                                }
+                                @if (Model.IsViewMode || !Model.AbilitaGestione)
+                                {
+                                    @Html.TextAreaFor(m => m.HtmlText, new { @class = "form-control html-editor", cols = "20", rows = "10", @readonly = "readonly" })
+                                }
+                                else
+                                {
+                                    @Html.TextAreaFor(m => m.HtmlText, new { @class = "form-control html-editor", cols = "20", rows = "20" })
+                                }
+
+                            </div>
+                        </div>
+                        <div id="wdgt-allegati" class="bg-neutrals-xl-10" style="margin-left:-15px; margin-right:-15px; padding:15px 25px; @(Model.IsViewMode?"margin-bottom:-15px;":"")">
+                            <div class="panel panel-no-shadow" style="margin-bottom:0px;">
+                                <div class="panel-body">
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <div class="widget-summary" style="margin-top: 8px;">
+                                                <div class="widget-summary-col widget-summary-col-icon">
+                                                    <div class="summary-icon bg-cda" style="width:42px; height:42px;line-height:32px;background-color:#eee">
+                                                        <i class="icons icon-doc" style="font-size: 65%;"></i>
+                                                    </div>
+                                                </div>
+                                                <div class="widget-summary-col">
+                                                    <div class="row">
+                                                        <div class="col-sm-8">
+                                                            <div class="summary">
+                                                                <span class="rai-font-md" style="word-break:break-word;display: block;">@(Model.TipologiaBozza == "proposta" ? "Modulo proposta" : "Bozza verbale")</span>
+                                                                @if (!String.IsNullOrWhiteSpace(Model.TemplateLastMod))
+                                                                {
+                                                                    <i class="rai-font-sm-neutral">@Model.TemplateLastMod</i>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <i class="rai-font-sm-neutral">Versione base</i>
+                                                                }
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="col-sm-4" style="text-align:right;padding-right:0px;padding-left:0px">
+                                                            @if (Model.HasPDFTemplate)
+                                                            {
+                                                                <a target="_blank" href="@Url.Action("GetPropostaMail","Cessazione", new { idDip=Model.IdDipendente, tipo=Model.TipologiaBozza })" class="btn rai-btn-small" onclick="" aria-label="Scegli file" title="Visualizza" style="min-width:80px;">Visualizza</a>
+                                                            }
+                                                            @if (Model.AbilitaGestione)
+                                                            {
+                                                                <a target="_blank" href="@Url.Action("GetBozzaMail", "Cessazione", new { idDip = Model.IdDipendente, tipo = Model.TipologiaBozza })" class="btn rai-btn-small" onclick="" aria-label="Scegli file" title="Visualizza originale" style="min-width:80px;">Scarica originale</a>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @if (!Model.IsViewMode && Model.HasPDFTemplate && Model.AbilitaGestione)
+                                    {
+                                        string mimeType = "";
+                                        string extension = "";
+                                        if (Model.TipologiaBozza == "verbale")
+                                        {
+                                            mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+                                            extension = "DOCX";
+                                        }
+                                        else
+                                        {
+                                            mimeType = "application/pdf";
+                                            extension = "PDF";
+                                        }
+
+                                        <div class="row push-5-t">
+                                            <div class="col-sm-12">
+                                                <i class="rai-font-md">Se desideri caricare un modulo diverso <a onclick="$('#fileUploadBozza').click()">clicca qui.</a> (Sono accettati solo documenti in formato @extension)</i>
+                                                <input style="display:none" type="file" id="fileUploadBozza" accept="@mimeType" onchange="BozzaChanged('@Model.TipologiaBozza')" />
+                                            </div>
+                                        </div>
+                                        if (Model.HasCronologia)
+                                        {
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <a class="cursor-pointer text-italic" onclick="ShowCronologiaBozze(@Model.IdDipendente)">Visualizza cronologia modifiche</a>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+
+                                </div>
+                            </div>
+                        </div>
+                        @if (!Model.IsViewMode)
+                        {
+                            if (Model.HasPDFTemplate && Model.TipologiaBozza == "proposta")
+                            {
+                                <div class="row push-10 push-10-t">
+                                    <div class="col-sm-12">
+                                        <div class="rai-checkbox">
+                                            <input type="checkbox" id="includiAllegato" checked value="true" />
+                                            <label for="includiAllegato">Includi la proposta nella mail</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            <div class="row form-button" id="btnBozzaMail">
+                                @if (Model.TipologiaBozza == "verbale")
+                                {
+                                    <div class="col-sm-12 push-10">
+                                        <a class="btn rai-btn-small full-width" href="@Url.Action("CreaProspetto", new {idDip=Model.IdDipendente, addSign=false})" title="Vedi il prospetto" target="_blank"><i class="icons icon-doc"></i> Vedi il prospetto</a>
+                                    </div>
+                                }
+                                <div class="col-sm-12 rai-btn-fill">
+                                    <button class="btn rai-btn-secondary" onclick="SubmitBozza(false, 0)">Salva modifiche</button>
+                                    @if (Model.HasPDFTemplate)
+                                    {
+                                        if (Model.AbilitaInvio)
+                                        {
+                                            <button class="btn rai-btn-primary" onclick="SubmitBozza(true, 1)">Invia</button>
+                                        }
+                                        else if (Model.AbilitaGestione)
+                                        {
+                                            <button class="btn rai-btn-primary" onclick="SubmitBozza(false, 1)">Sblocca invio</button>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<script>
+    $(".html-editor").summernote({
+        height: 400,
+        toolbar: [
+            ['style', ['bold', 'italic', 'underline', 'clear']],
+            ['font', ['strikethrough', 'superscript', 'subscript']],
+            ['fontsize', ['fontsize']],
+            ['color', ['color']],
+            ['para', ['ul', 'ol', 'paragraph']],
+            ['height', ['height']],
+            //['view', ['fullscreen', 'codeview', 'help']],
+        ]
+    });
+    @if (Model.IsViewMode)
+    {
+<text>$(".html-editor").summernote('disable');</text>
+    }
+
+    function SubmitBozza(invio, sblocca) {
+        event.preventDefault();
+
+        $('#btnBozzaMail').addClass('rai-loader');
+
+        var idDip = $('#IdDipendente').val();
+
+        var tipologia = $('#TipologiaBozza').val();
+        if (tipologia == 'proposta')
+            InternalSubmitAvviaPratica(false, false, '', false);
+        //else
+        //    SubmitModificaBozzaVerbale(idDip, false);
+
+        var formData = new FormData($('#form-bozza')[0]);
+        formData.append('_invioMail', invio)
+
+        formData.append('_includiProposta', $('#includiAllegato:checked').length > 0);
+        formData.append('_sbloccaPratica', sblocca);
+
+        $.ajax({
+            url: "/Cessazione/Save_BozzaMail",
+            type: "POST",
+            cache: false,
+            dataType: 'html',
+            contentType: false,
+            processData: false,
+            data: formData,
+            success: function (data) {
+                switch (data) {
+                    case "OK":
+                        if (!invio)
+                            swal("OK", "Bozza salvata con successo", 'success');
+                        else {
+                            swal("OK", "Mail inviata con successo", 'success');
+                            RefreshIncentivato(idDip)
+                        }
+
+                        var tipologia = $('#TipologiaBozza').val();
+                        if (tipologia == "proposta")
+                            OpenBozza(idDip);
+                        else
+                            OpenBozzaVerbale(idDip);
+                        break;
+                    default:
+                        swal("Oops...", data, 'error');
+                }
+            },
+            error: function (a, b, c) {
+                swal("Oops...", c, 'error')
+            },
+            complete: function (data) {
+                $('#btnBozzaMail').removeClass('rai-loader');
+            }
+        });
+    }
+
+    function BozzaChanged() {
+        var tipo = $('#TipologiaBozza').val();
+
+        if (tipo == "verbale") {
+            swal({
+                title: 'Inserisci una breve descrizione',
+                html: '<textarea tabindex="0" placeholder="Inserisci una breve descrizione" name="tmp_des" id="tmp_des" class="form-control formElements" style="height:100px !important;"/>',
+                //preConfirm: function () {
+                //    return new Promise(function (resolve, reject) {
+                //        if ($("#tmp_des").val() == "") {
+                //            reject("Inserisci una breve descrizione")
+                //        }
+                //        else {
+                //            resolve()
+                //        }
+                //    })
+                //}
+            }).then(function (result) {
+                var desc = $("#tmp_des").val();
+
+                InternalBozzaChanged(tipo, desc);                
+            })
+        }
+        else {
+            InternalBozzaChanged(tipo, "");
+        } 
+
+    }
+    function InternalBozzaChanged(tipo, descrizione) {
+        var idDip = $('#IdDipendente').val();
+
+        var formdata = new FormData();
+        formdata.append('_file', $('#fileUploadBozza')[0].files[0]);
+        formdata.append('idDip', idDip);
+        formdata.append('tipo', tipo);
+        formdata.append('descrizione', descrizione);
+
+        
+
+        $.ajax({
+            url: "/Cessazione/UploadBozzaMail",
+            type: "POST",
+            cache: false,
+            dataType: 'html',
+            contentType: false,
+            processData: false,
+            data: formdata,
+            success: function (data) {
+                switch (data) {
+                    case "OK":
+                        swal("OK", "Bozza " + tipo + " salvata con successo", 'success');
+                        if (tipo == "proposta")
+                            OpenBozza(idDip);
+                        else
+                            OpenBozzaVerbale(idDip);
+                        break;
+                    default:
+                        swal("Oops...", data, 'error');
+                }
+            },
+            error: function (a, b, c) {
+                swal("Oops...", c, 'error')
+            }
+        });
+    }
+
+    function RestoreDefaultTemplate() {
+        var idDip = $('#IdDipendente').val();
+        var tipo = $('#TipologiaBozza').val();
+
+        $.ajax({
+            url: '/Cessazione/RestoreDefaultTemplate',
+            type: 'POST',
+            cache: false,
+            dataType: 'html',
+            data: { idDip: idDip, tipo:tipo },
+            success: function (data) {
+                switch (data) {
+                    case "OK":
+                        swal("OK", "Bozza ripristinata con successo", 'success');
+                        if (tipo == "proposta")
+                            OpenBozza(idDip);
+                        else
+                            OpenBozzaVerbale(idDip);
+                        break;
+                    default:
+                        swal("Oops...", data, 'error');
+                }
+            },
+            error: function (a, b, c) {
+                swal("Oops...", c, 'error')
+            }
+        })
+    }
+
+    function ShowCronologiaBozze(idDip) {
+        $.ajax({
+            url: "/Cessazione/CronologiaBozzeVerbali",
+            type: "GET",
+            dataType: "json",
+            data: { idDip: idDip },
+            cache: false,
+            success: function (data) {
+                var table = '<div id="CronologiaVerbali">' + TableBozzeCronologia(data, idDip) + '</div>';
+
+                swal({
+                    title: 'Elenco modifiche verbali',
+                    text: "",
+                    html: table,
+                    width: 700
+                })
+            }
+        });
+    }
+    function TableBozzeCronologia(data, idDip) {
+        var table = '<table class="table table-hover table-responsive" style="font-size:14px;text-align:left;"><thead><tr><th>Data</th><th>Nominativo</th><th>Descrizione</th><th></th></thead><tbody>';
+        for (var i = 0; i < data.length; i++) {
+            var rec = data[i];
+            table += '<tr><td>' + rec.dataUpload + '</td><td>' + rec.persona + '</td><td>' + rec.descr + '</td><td class="text-right"><a class="btn rai-btn-small" href="/Cessazione/GetDocTemplate?idTemplate=' + rec.idVerbale + '">Apri</a></td></tr>';
+            //<td><a href="javascript:EliminaDoc(' + idOper + ',' + rec.idVerbale + ',' + idDip + ')">Cancella</a></td>
+        }
+        table += '</tbody></table>';
+        return table;
+    }
+</script>

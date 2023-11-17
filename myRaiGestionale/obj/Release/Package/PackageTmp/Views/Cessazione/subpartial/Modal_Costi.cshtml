@@ -1,0 +1,781 @@
+﻿@using myRaiData.Incentivi
+@using myRaiCommonModel.Gestionale
+@using myRaiHelper
+@model CessazioneCosti
+
+@{
+    var width = Model.Percentage <= 100 ? Model.Percentage.ToString("00.00").Replace(',', '.') : "100";
+
+    var strUltimoAgg = "Basato su calcoli provvisori";
+    var ultimoAgg = myRaiHelper.HrisHelper.GetParametro<string>(myRaiHelper.HrisParam.IncentiviEsecuzioneFNL930);
+    if (!String.IsNullOrWhiteSpace(ultimoAgg))
+    {
+        strUltimoAgg += " aggiornati al " + ultimoAgg;
+    }
+
+    string codGruppo = HrisHelper.GetParametro<string>(HrisParam.IncentiviRifGruppo);
+
+    var db = new IncentiviEntities();
+
+    var fAnn = CessazioneHelper.IsCurrentState((int)IncStato.RichiestaAnnullata);
+    var fDec = CessazioneHelper.IsCurrentState((int)IncStato.RichiestaDecaduta);
+    var fRif = CessazioneHelper.IsCurrentState((int)IncStato.RichiestaRifiutata);
+    var numAnn = db.XR_INC_DIPENDENTI
+                    .Where(x => x.COD_GRUPPO == codGruppo)
+                    .Where(fAnn)
+                    .Count();
+    var numDec = db.XR_INC_DIPENDENTI
+                    .Where(x => x.COD_GRUPPO == codGruppo)
+                    .Where(fDec)
+                    .Count();
+    var numRif = db.XR_INC_DIPENDENTI
+                .Where(x => x.COD_GRUPPO == codGruppo)
+                .Where(fRif)
+                .Count();
+
+    var fIns = CessazioneHelper.IsCurrentState((int)IncStato.RichiestaInserita);
+    var fVer = CessazioneHelper.IsCurrentState((int)IncStato.RichiestaAccettata);
+    var fAvv = CessazioneHelper.IsAnyState((int)IncStato.RecessoEffettuato);
+    var listIns = db.XR_INC_DIPENDENTI
+                    .Where(x => x.COD_GRUPPO == codGruppo)
+                    .Where(fIns)
+                    .Join(db.XR_INC_DIP_IPOTESI.Where(x => x.IS_VALID && x.COD_IPOTESI == "Q100"), dip => dip.ID_DIPENDENTE, ip => ip.ID_DIPENDENTE, (dip, ip) => new { dip, ip })
+                    .Select(x => new
+                    {
+                        x.dip.MATRICOLA,
+                        x.dip.PROGR_RICHIESTA,
+                        x.dip.INCENTIVO_LORDO_IP,
+                        x.dip.UNA_TANTUM_LORDA_IP,
+                        x.dip.DATA_INVIO_PROP,
+                        x.dip.DATA_FIRMA_DIP,
+                        x.dip.DTA_RECESSO,
+                        x.dip.SINTESI1.COD_QUALIFICA,
+                        Stato = (int)IncStato.RichiestaInserita,
+                        Q100_INCENTIVO_LORDO_IP = x.ip.INCENTIVO_LORDO_IP,
+                        Q100_UNA_TANTUM_LORDA_IP = x.ip.UNA_TANTUM_LORDA_IP
+                    }).ToList();
+
+    var listVer = db.XR_INC_DIPENDENTI
+                    .Where(x => x.COD_GRUPPO == codGruppo)
+                    .Where(fVer)
+                    .Join(db.XR_INC_DIP_IPOTESI.Where(x => x.IS_VALID && x.COD_IPOTESI == "Q100"), dip => dip.ID_DIPENDENTE, ip => ip.ID_DIPENDENTE, (dip, ip) => new { dip, ip })
+                    .Select(x => new
+                    {
+                        x.dip.MATRICOLA,
+                        x.dip.PROGR_RICHIESTA,
+                        x.dip.INCENTIVO_LORDO_IP,
+                        x.dip.UNA_TANTUM_LORDA_IP,
+                        x.dip.DATA_INVIO_PROP,
+                        x.dip.DATA_FIRMA_DIP,
+                        x.dip.DTA_RECESSO,
+                        x.dip.SINTESI1.COD_QUALIFICA,
+                        Stato = (int)IncStato.RichiestaAccettata,
+                        Q100_INCENTIVO_LORDO_IP = x.ip.INCENTIVO_LORDO_IP,
+                        Q100_UNA_TANTUM_LORDA_IP = x.ip.UNA_TANTUM_LORDA_IP
+                    }).ToList();
+
+    var listAvv = db.XR_INC_DIPENDENTI
+                    .Where(x => x.COD_GRUPPO == codGruppo)
+                    .Where(fAvv)
+                    .Join(db.XR_INC_DIP_IPOTESI.Where(x => x.IS_VALID && x.COD_IPOTESI == "Q100"), dip => dip.ID_DIPENDENTE, ip => ip.ID_DIPENDENTE, (dip, ip) => new { dip, ip })
+                    .Select(x => new
+                    {
+                        x.dip.MATRICOLA,
+                        x.dip.PROGR_RICHIESTA,
+                        x.dip.INCENTIVO_LORDO_IP,
+                        x.dip.UNA_TANTUM_LORDA_IP,
+                        x.dip.DATA_INVIO_PROP,
+                        x.dip.DATA_FIRMA_DIP,
+                        x.dip.DTA_RECESSO,
+                        x.dip.SINTESI1.COD_QUALIFICA,
+                        Stato = (int)IncStato.RecessoEffettuato,
+                        Q100_INCENTIVO_LORDO_IP = x.ip.INCENTIVO_LORDO_IP,
+                        Q100_UNA_TANTUM_LORDA_IP = x.ip.UNA_TANTUM_LORDA_IP
+                    }).ToList();
+
+
+    var list = listIns;
+    list.AddRange(listVer);
+    list.AddRange(listAvv);
+    var tmp = list.OrderBy(x => x.PROGR_RICHIESTA).ToList();
+
+    decimal impMaxPratiche = 0;
+    int numPratiche = 0;
+
+    int daContrUnder = 0;
+    decimal impDaContrUnder = 0;
+    int contrUnder = 0;
+    decimal impContrUnder = 0;
+    int confUnder = 0;
+    decimal impConfUnder = 0;
+    int avviateUnder = 0;
+    decimal impAvviateUnder = 0;
+
+    int numPraticheOver = 0;
+    decimal impPraticheOver = 0;
+
+    int daContrOver = 0;
+    decimal impDaContrOver = 0;
+    int contrOver = 0;
+    decimal impContrOver = 0;
+    int confOver = 0;
+    decimal impConfOver = 0;
+
+    decimal impMaxPraticheQ100 = 0;
+    int numPraticheQ100 = 0;
+
+    int daContrUnderQ100 = 0;
+    decimal impDaContrUnderQ100 = 0;
+    int contrUnderQ100 = 0;
+    decimal impContrUnderQ100 = 0;
+    int confUnderQ100 = 0;
+    decimal impConfUnderQ100 = 0;
+    int avviateUnderQ100 = 0;
+    decimal impAvviateUnderQ100 = 0;
+
+    decimal impMaxPraticheOverQ100 = 0;
+    int numPraticheOverQ100 = 0;
+
+    int daContrOverQ100 = 0;
+    decimal impDaContrOverQ100 = 0;
+    int contrOverQ100 = 0;
+    decimal impContrOverQ100 = 0;
+    int confOverQ100 = 0;
+    decimal impConfOverQ100 = 0;
+    int avviateOverQ100 = 0;
+    decimal impAvviateOverQ100 = 0;
+
+    List<string> matrUnder = new List<string>();
+    List<string> matrUnderQ100 = new List<string>();
+
+    for (int i = 0; i < tmp.Count; i++)
+    {
+        decimal incentivoLordo = tmp[i].INCENTIVO_LORDO_IP.GetValueOrDefault();
+        decimal unaTantum = tmp[i].UNA_TANTUM_LORDA_IP.GetValueOrDefault();
+        decimal impegnoPers = incentivoLordo + unaTantum + CessazioneHelper.CalcoloOneri(tmp[i].COD_QUALIFICA, unaTantum);
+
+        decimal incentivoLordoQ100 = tmp[i].Q100_INCENTIVO_LORDO_IP.GetValueOrDefault();
+        decimal unaTantumQ100 = tmp[i].Q100_UNA_TANTUM_LORDA_IP.GetValueOrDefault();
+        decimal impegnoPersQ100 = incentivoLordoQ100 + unaTantumQ100 + +CessazioneHelper.CalcoloOneri(tmp[i].COD_QUALIFICA, unaTantumQ100);
+
+        int stato = tmp[i].Stato;
+
+        if (impMaxPratiche + impegnoPers <= Model.MaxValue)
+        {
+            impMaxPratiche = impMaxPratiche + impegnoPers;
+            numPratiche++;
+            matrUnder.Add(tmp[i].MATRICOLA);
+
+            switch (stato)
+            {
+                case (int)IncStato.RichiestaInserita:
+                    daContrUnder++;
+                    impDaContrUnder += (impegnoPers);
+                    break;
+                case (int)IncStato.RichiestaAccettata:
+                    if (!tmp[i].DATA_FIRMA_DIP.HasValue)
+                    {
+                        contrUnder++;
+                        impContrUnder += (impegnoPers);
+                    }
+                    else if (!tmp[i].DTA_RECESSO.HasValue)
+                    {
+                        confUnder++;
+                        impConfUnder += (impegnoPers);
+                    }
+                    else
+                    {
+                        avviateUnder++;
+                        impAvviateUnder += (impegnoPers);
+                    }
+                    break;
+                case (int)IncStato.RecessoEffettuato:
+                    avviateUnder++;
+                    impAvviateUnder += (impegnoPers);
+                    break;
+                default:
+                    break;
+            }
+        }
+        else
+        {
+            impMaxPratiche = impMaxPratiche + impegnoPers;
+
+            impPraticheOver = impPraticheOver + impegnoPers;
+            numPraticheOver++;
+            switch (stato)
+            {
+                case (int)IncStato.RichiestaInserita:
+                    daContrOver++;
+                    impDaContrOver += (impegnoPers);
+                    break;
+                case (int)IncStato.RichiestaAccettata:
+                    if (!tmp[i].DATA_FIRMA_DIP.HasValue)
+                    {
+                        contrOver++;
+                        impContrOver += (impegnoPers);
+                    }
+                    else if (!tmp[i].DTA_RECESSO.HasValue)
+                    {
+                        confOver++;
+                        impConfOver += (impegnoPers);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if (impMaxPraticheQ100 + impegnoPersQ100 <= Model.MaxValue)
+        {
+            impMaxPraticheQ100 += impegnoPersQ100;
+            numPraticheQ100++;
+            matrUnderQ100.Add(tmp[i].MATRICOLA);
+
+            switch (stato)
+            {
+                case (int)IncStato.RichiestaInserita:
+                    daContrUnderQ100++;
+                    impDaContrUnderQ100 += (impegnoPersQ100);
+                    break;
+                case (int)IncStato.RichiestaAccettata:
+                    if (!tmp[i].DATA_FIRMA_DIP.HasValue)
+                    {
+                        contrUnderQ100++;
+                        impContrUnderQ100 += (impegnoPersQ100);
+                    }
+                    else if (!tmp[i].DTA_RECESSO.HasValue)
+                    {
+                        confUnderQ100++;
+                        impConfUnderQ100 += (impegnoPersQ100);
+                    }
+                    else
+                    {
+                        avviateUnderQ100++;
+                        impAvviateUnderQ100 += (impegnoPersQ100);
+                    }
+                    break;
+                case (int)IncStato.RecessoEffettuato:
+                    avviateUnderQ100++;
+                    impAvviateUnderQ100 += (impegnoPersQ100);
+                    break;
+                default:
+                    break;
+            }
+
+        }
+        else
+        {
+            impMaxPraticheQ100 += impegnoPersQ100;
+
+            impMaxPraticheOverQ100 += impegnoPersQ100;
+            numPraticheOverQ100++;
+
+            switch (stato)
+            {
+                case (int)IncStato.RichiestaInserita:
+                    daContrOverQ100++;
+                    impDaContrOverQ100 += (impegnoPersQ100);
+                    break;
+                case (int)IncStato.RichiestaAccettata:
+                    if (!tmp[i].DATA_FIRMA_DIP.HasValue)
+                    {
+                        contrOverQ100++;
+                        impContrOverQ100 += (impegnoPersQ100);
+                    }
+                    else if (!tmp[i].DTA_RECESSO.HasValue)
+                    {
+                        confOverQ100++;
+                        impConfOverQ100 += (impegnoPersQ100);
+                    }
+                    break;
+                case (int)IncStato.RecessoEffettuato:
+                    avviateOverQ100++;
+                    impAvviateOverQ100 += (impegnoPersQ100);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+}
+
+@using (Html.BeginModal("Analisi costi"))
+{
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="panel">
+                <div class="panel-body">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <label class="rai-font-md-bold">Esporta documenti</label>&nbsp;
+                            <a class="btn rai-btn-small" href="@Url.Action("Export_costi","Cessazione")"><i class="fa fa-external-link"></i>&nbsp;Esporta report</a>
+                            @{
+                                string[] abilSaving = HrisHelper.GetParametri<string>(HrisParam.IncentiviFilterAbilSaving);
+                                if (abilSaving[0] == "FALSE" || abilSaving[1].Contains(CommonHelper.GetCurrentUserMatricola()))
+                                {
+                                    <a class="btn rai-btn-small" href="@Url.Action("Export", "Cessazione", new { tipoExport = "riepilogoSaving" })"><i class="fa fa-external-link"></i>&nbsp;Incentivi a oggi</a>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="panel">
+                <div class="panel-body">
+                    <div class="block block-content-table">
+                        <div class="block-header">
+                            <span class="block-title">Impegno attuale</span>
+                        </div>
+                        <div class="block-content">
+                            <div class="row">
+                                <div class="col-sm-12"><span class="rai-font-sm-neutral-bold text-italic">@strUltimoAgg</span></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <div class="progress progress-chart">
+                                        <div class="progress-bar" role="progressbar" aria-valuenow="@width" aria-valuemin="0" aria-valuemax="100" tabindex="0" style="@(Model.Percentage>100?"background-color:red;":"")width:@width%;">
+                                            <span class="progress-bar-tooltip" id="span_before">@(Model.Percentage == 0 ? Html.Raw("&nbsp;") : Html.Raw(""))@String.Format("{0:0.##}", Model.Percentage)%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row push-10">
+                                <div class="col-sm-12 text-right">
+                                    <span class="text-italic">@String.Format("{0:N2} € su {1:N2} €", Model.CurrentValue, Model.MaxValue)</span>
+                                </div>
+                            </div>
+                            <div class="row push-10-t">
+                                <div class="col-sm-6">
+                                    <span class="rai-font-md-neutral">Situazioni contributive verificate</span>
+                                </div>
+                                <div class="col-sm-2 text-right">
+                                    <span>@contrUnder</span>
+                                </div>
+                                <div class="col-sm-4 text-right">
+                                    <span class="rai-font-md-neutral">@(impContrUnder.ToString("N2")) €</span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <span class="rai-font-md-neutral">Proposte accettate</span>
+                                </div>
+                                <div class="col-sm-2 text-right">
+                                    <span>@confUnder</span>
+                                </div>
+                                <div class="col-sm-4 text-right">
+                                    <span class="rai-font-md-neutral">@(impConfUnder.ToString("N2")) €</span>
+                                </div>
+                            </div>
+                            @if (avviateUnder > 0)
+                            {
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <span class="rai-font-md-neutral">Recesso online</span>
+                                    </div>
+                                    <div class="col-sm-2 text-right">
+                                        <span>@avviateUnder</span>
+                                    </div>
+                                    <div class="col-sm-4 text-right">
+                                        <span class="rai-font-md-neutral">@(impAvviateUnder.ToString("N2")) €</span>
+                                    </div>
+                                </div>
+                            }
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <span class="rai-font-md-bold">Totale</span>
+                                </div>
+                                <div class="col-sm-2 text-right">
+                                    <span class="rai-font-md-bold">@(contrUnder + confUnder + avviateUnder)</span>
+                                </div>
+                                <div class="col-sm-4 text-right">
+                                    <span class="rai-font-md-bold">@((impContrUnder + impConfUnder + impAvviateUnder).ToString("N2")) €</span>
+                                </div>
+                            </div>
+
+                            <div class="row push-10-t">
+                                <div class="col-sm-6">
+                                    <span class="rai-font-md-neutral">Annullate</span>
+                                </div>
+                                <div class="col-sm-2 text-right">
+                                    <span>@numAnn</span>
+                                </div>
+                                <div class="col-sm-4 text-right">
+                                    <span class="rai-font-md-neutral"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <span class="rai-font-md-neutral">Rifiutate</span>
+                                </div>
+                                <div class="col-sm-2 text-right">
+                                    <span>@numRif</span>
+                                </div>
+                                <div class="col-sm-4 text-right">
+                                    <span class="rai-font-md-neutral"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <span class="rai-font-md-neutral">Decadute</span>
+                                </div>
+                                <div class="col-sm-2 text-right">
+                                    <span>@numDec</span>
+                                </div>
+                                <div class="col-sm-4 text-right">
+                                    <span class="rai-font-md-neutral"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <span class="rai-font-md-bold">Totale</span>
+                                </div>
+                                <div class="col-sm-2 text-right">
+                                    <span class="rai-font-md-bold">@(numAnn + numRif + numDec)</span>
+                                </div>
+                                <div class="col-sm-4 text-right">
+                                    <span class="rai-font-md-bold"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="panel">
+                <div class="panel-body">
+                    <div class="block block-content-table">
+                        <div class="block-header">
+                            <span class="block-title">Impegno massimo sostenibile</span>
+                        </div>
+                        <div class="block-content-table">
+                            <div class="row">
+                                <div class="col-sm-12 text-right">
+                                    <i class="rai-font-sm-neutral-bold">Budget disponibile: @Model.MaxValue.ToString("N2") €</i>
+                                </div>
+                            </div>
+                            <div class="row push-10-t">
+                                <div class="col-sm-6">
+                                    <span class="rai-font-md-neutral">Da verificare</span>
+                                </div>
+                                <div class="col-sm-2 text-right">
+                                    <span>@(daContrUnder)</span>
+                                </div>
+                                <div class="col-sm-4 text-right">
+                                    <span class="rai-font-md-neutral">@((impDaContrUnder).ToString("N2")) €</span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <span class="rai-font-md-neutral">Situazioni contributive verificate</span>
+                                </div>
+                                <div class="col-sm-2 text-right">
+                                    <span>@(contrUnder)</span>
+                                </div>
+                                <div class="col-sm-4 text-right">
+                                    <span class="rai-font-md-neutral">@((impContrUnder).ToString("N2")) €</span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <span class="rai-font-md-neutral">Proposte accettate</span>
+                                </div>
+                                <div class="col-sm-2 text-right">
+                                    <span>@(confUnder)</span>
+                                </div>
+                                <div class="col-sm-4 text-right">
+                                    <span class="rai-font-md-neutral">@((impConfUnder).ToString("N2")) €</span>
+                                </div>
+                            </div>
+                            @if (avviateUnder > 0)
+                            {
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <span class="rai-font-md-neutral">Recesso online</span>
+                                    </div>
+                                    <div class="col-sm-2 text-right">
+                                        <span>@(avviateUnder)</span>
+                                    </div>
+                                    <div class="col-sm-4 text-right">
+                                        <span class="rai-font-md-neutral">@((impAvviateUnder).ToString("N2")) €</span>
+                                    </div>
+                                </div>
+                            }
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <span class="rai-font-md-bold">Totale</span>
+                                </div>
+                                <div class="col-sm-2 text-right">
+                                    <span class="rai-font-md-bold">@(daContrUnder + contrUnder + confUnder + avviateUnder)</span>
+                                </div>
+                                <div class="col-sm-4 text-right">
+                                    <span class="rai-font-md-bold">@((impDaContrUnder + impContrUnder + impConfUnder + impAvviateUnder).ToString("N2")) €</span>
+                                </div>
+                            </div>
+                            <div class="row push-5-t">
+                                <div class="col-sm-6">
+                                    <i class="rai-font-md-neutral">In attesa </i>
+                                </div>
+                                <div class="col-sm-2 text-right">
+                                    <i class="rai-font-md-neutral">@(daContrOver)</i>
+                                </div>
+                                <div class="col-sm-4 text-right">
+                                    <i class="rai-font-md-neutral">@(impDaContrOver.ToString("N2")) €</i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @if (Model.Saving != null && Model.Saving.Any())
+                    {
+                        var elencoSaving = Model.Saving.Where(x => matrUnder.Contains(x.matricola_dp)).ToList();
+
+                        <div class="block block-content-table">
+                            <div class="block-header">
+                                <span class="block-title">Risparmio conseguibile</span>
+                            </div>
+                            <div class="block-content">
+                                @foreach (var item in elencoSaving.GroupBy(x => x.Anno))
+                                {
+                                    <div class="row">
+                                        <div class="col-sm-6">
+                                            <span class="rai-font-md-neutral">Anno @item.Key</span>
+                                        </div>
+                                        <div class="col-sm-2 text-right">
+                                            <span></span>
+                                        </div>
+                                        <div class="col-sm-4 text-right">
+                                            <span class="rai-font-md-neutral">@(item.Sum(x => x.Risparmio.GetValueOrDefault()).ToString("N2")) €</span>
+                                        </div>
+                                    </div>
+                                }
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <span class="rai-font-md-bold">Totale</span>
+                                    </div>
+                                    <div class="col-sm-2 text-right">
+                                        <span class="rai-font-md-bold"></span>
+                                    </div>
+                                    <div class="col-sm-4 text-right">
+                                        <span class="rai-font-md-bold">@(elencoSaving.Sum(x => x.Risparmio.GetValueOrDefault()).ToString("N2")) €</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="panel">
+                <div class="panel-body">
+                    <div class="block block-content-table">
+                        <div class="block-header">
+                            <span class="block-title">Impegno massimo sostenibile Quota 100 Rai</span>
+                        </div>
+                        <div class="block-content-table">
+                            <div class="row">
+                                <div class="col-sm-12 text-right">
+                                    <i class="rai-font-sm-neutral-bold">Budget disponibile: @Model.MaxValue.ToString("N2") €</i>
+                                </div>
+                            </div>
+                            <div class="row push-10-t">
+                                <div class="col-sm-6">
+                                    <span class="rai-font-md-neutral">Da verificare</span>
+                                </div>
+                                <div class="col-sm-2 text-right">
+                                    <span>@(daContrUnderQ100)</span>
+                                </div>
+                                <div class="col-sm-4 text-right">
+                                    <span class="rai-font-md-neutral">@((impDaContrUnderQ100).ToString("N2")) €</span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <span class="rai-font-md-neutral">Situazioni contributive verificate</span>
+                                </div>
+                                <div class="col-sm-2 text-right">
+                                    <span>@(contrUnderQ100)</span>
+                                </div>
+                                <div class="col-sm-4 text-right">
+                                    <span class="rai-font-md-neutral">@((impContrUnderQ100).ToString("N2")) €</span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <span class="rai-font-md-neutral">Proposte accettate</span>
+                                </div>
+                                <div class="col-sm-2 text-right">
+                                    <span>@(confUnderQ100)</span>
+                                </div>
+                                <div class="col-sm-4 text-right">
+                                    <span class="rai-font-md-neutral">@((impConfUnderQ100).ToString("N2")) €</span>
+                                </div>
+                            </div>
+                            @if (avviateUnderQ100 > 0)
+                            {
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <span class="rai-font-md-neutral">Recesso online</span>
+                                    </div>
+                                    <div class="col-sm-2 text-right">
+                                        <span>@(avviateUnderQ100)</span>
+                                    </div>
+                                    <div class="col-sm-4 text-right">
+                                        <span class="rai-font-md-neutral">@((impAvviateUnderQ100).ToString("N2")) €</span>
+                                    </div>
+                                </div>
+                            }
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <span class="rai-font-md-bold">Totale</span>
+                                </div>
+                                <div class="col-sm-2 text-right">
+                                    <span class="rai-font-md-bold">@(daContrUnderQ100 + contrUnderQ100 + confUnderQ100 + avviateUnderQ100)</span>
+                                </div>
+                                <div class="col-sm-4 text-right">
+                                    <span class="rai-font-md-bold">@((impDaContrUnderQ100 + impContrUnderQ100 + impConfUnderQ100 + impAvviateUnderQ100).ToString("N2")) €</span>
+                                </div>
+                            </div>
+                            <div class="row push-5-t">
+                                <div class="col-sm-6">
+                                    <i class="rai-font-md-neutral">In attesa </i>
+                                </div>
+                                <div class="col-sm-2 text-right">
+                                    <i class="rai-font-md-neutral">@(daContrOverQ100)</i>
+                                </div>
+                                <div class="col-sm-4 text-right">
+                                    <i class="rai-font-md-neutral">@(impDaContrOverQ100.ToString("N2")) €</i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @if (Model.Saving != null && Model.Saving.Any())
+                    {
+                        var elencoSaving = Model.Saving.Where(x => matrUnderQ100.Contains(x.matricola_dp)).ToList();
+
+                        <div class="block block-content-table">
+                            <div class="block-header">
+                                <span class="block-title">Risparmio conseguibile</span>
+                            </div>
+                            <div class="block-content">
+                                @foreach (var item in elencoSaving.GroupBy(x => x.Anno))
+                                {
+                                    <div class="row">
+                                        <div class="col-sm-6">
+                                            <span class="rai-font-md-neutral">Anno @item.Key</span>
+                                        </div>
+                                        <div class="col-sm-2 text-right">
+                                            <span></span>
+                                        </div>
+                                        <div class="col-sm-4 text-right">
+                                            <span class="rai-font-md-neutral">@(item.Sum(x => x.Risparmio.GetValueOrDefault()).ToString("N2")) €</span>
+                                        </div>
+                                    </div>
+                                }
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <span class="rai-font-md-bold">Totale</span>
+                                    </div>
+                                    <div class="col-sm-2 text-right">
+                                        <span class="rai-font-md-bold"></span>
+                                    </div>
+                                    <div class="col-sm-4 text-right">
+                                        <span class="rai-font-md-bold">@(elencoSaving.Sum(x => x.Risparmio.GetValueOrDefault()).ToString("N2")) €</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-12">
+            @*<div class="panel">
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <table class="table rai-table table-bordered rai-table-vcenter">
+                                    <thead>
+                                        <tr>
+                                            <th rowspan="2" style="vertical-align:middle;">Richieste</th>
+                                            <th colspan="2" class="text-center">&leq; @Model.MaxValue.ToString("N2")</th>
+                                            <th colspan="2" class="text-center">&gt; @Model.MaxValue.ToString("N2")</th>
+                                            <th colspan="2" class="text-center">totale</th>
+                                        </tr>
+                                        <tr>
+                                            <th class="text-center">q.tà</th>
+                                            <th class="text-center">importo</th>
+                                            <th class="text-center">q.tà</th>
+                                            <th class="text-center">importo</th>
+                                            <th class="text-center">q.tà</th>
+                                            <th class="text-center">importo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Da controllare</td>
+                                            <td class="text-right">@daContrUnder</td>
+                                            <td class="text-right">@impDaContrUnder.ToString("N2")</td>
+                                            <td class="text-right">@daContrOver</td>
+                                            <td class="text-right">@impDaContrOver.ToString("N2")</td>
+                                            <td class="text-right">@(daContrUnder + daContrOver)</td>
+                                            <td class="text-right">@impDaContrUnder.ToString("N2")</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Controllate</td>
+                                            <td class="text-right">@contrUnder</td>
+                                            <td class="text-right">@impContrUnder.ToString("N2")</td>
+                                            <td class="text-right"></td>
+                                            <td class="text-right"></td>
+                                            <td class="text-right">@(contrUnder + contrOver)</td>
+                                            <td class="text-right">@impContrUnder.ToString("N2")</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Confermate</td>
+                                            <td class="text-right">@confUnder</td>
+                                            <td class="text-right">@impConfUnder.ToString("N2")</td>
+                                            <td class="text-right"></td>
+                                            <td class="text-right"></td>
+                                            <td class="text-right">@(confUnder + confOver)</td>
+                                            <td class="text-right">@impConfUnder.ToString("N2")</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Avviate</td>
+                                            <td class="text-right">@avviateUnder</td>
+                                            <td class="text-right">@impAvviateUnder.ToString("N2")</td>
+                                            <td class="text-right"></td>
+                                            <td class="text-right"></td>
+                                            <td class="text-right">@avviateUnder</td>
+                                            <td class="text-right">@impAvviateUnder.ToString("N2")</td>
+                                        </tr>
+                                        <tr>
+                                            <td>&nbsp;</td>
+                                            <td class="text-right">@(daContrUnder + contrUnder + confUnder + avviateUnder)</td>
+                                            <td class="text-right">@((impDaContrUnder + impContrUnder + impConfUnder + impAvviateUnder).ToString("N2"))</td>
+                                            <td class="text-right">@(daContrOver + contrOver + confOver)</td>
+                                            <td class="text-right">@((impDaContrOver + impContrOver + impConfOver).ToString("N2"))</td>
+                                            <td class="text-right">@(daContrUnder + daContrOver + contrUnder + contrOver + confUnder + confOver + avviateUnder)</td>
+                                            <td class="text-right">@((impDaContrUnder + impContrUnder + impConfUnder + impAvviateUnder).ToString("N2"))</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>*@
+        </div>
+    </div>
+}

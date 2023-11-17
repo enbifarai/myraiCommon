@@ -1,0 +1,320 @@
+﻿@model myRaiCommonModel.cvModels.cvModel.Experiences
+@using myRaiHelper;
+@using MVCProject.Custom_Helpers
+@{
+    myRai.Data.CurriculumVitae.cv_ModelEntities cvEnt = new myRai.Data.CurriculumVitae.cv_ModelEntities();
+
+    string isGiornalista;
+
+    isGiornalista = Model._isGiornalista;
+
+}
+
+<div class="rai form-group" id="EsperienzaRai">
+
+    <div class="row">
+        <div class="col-md-6" data-tourdb="tour-rai-periodo1" @Html.TourAttributes(Model.TourElements, "tour-rai-periodo1")>
+            <div class="col-md-12  no-padding">
+                <label class="rai-caption">Dal <span class="campoObbligatorio">*</span></label>
+            </div>
+            <div class="col-md-4  push-10 day-box">
+                <select id="_giornoInizio" name="_giornoInizio" class="rai form-control">
+                    @foreach (var item in Model.GetGiorni())
+                    {
+                        <option value="@item.Value" @if (Model._giornoInizio != null && Model._giornoInizio.ToString() == item.Value) { @: selected
+                                }>
+                            @item.Text
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4  push-10 month-box">
+                <select id="_meseInizio" name="_meseInizio" class="rai form-control">
+                    @foreach (var item in Model.GetMesi())
+                    {
+                        <option value="@item.Value" @if (Model._meseInizio != null && Model._meseInizio.ToString() == item.Value) { @: selected
+                                }>
+                            @item.Text
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4  push-10 year-box">
+                <input type="text" placeholder="Anno" class="js-datetimepicker rai form-control  start required-min"
+                       data-format="YYYY" data-locale="it" id="_annoInizio" name="_annoInizio" value="@Model._annoInizio" />
+            </div>
+        </div>
+        <div class="col-md-6" data-tourdb="tour-rai-periodo2" @Html.TourAttributes(Model.TourElements, "tour-rai-periodo2")>
+            <div class="col-md-12 no-padding">
+                <label class="rai-caption">Al <span class="campoObbligatorio">*</span></label>
+            </div>
+            <div class="col-md-4  push-10 day-box">
+                <select id="_giornoFine" name="_giornoFine" class="rai form-control">
+                    @foreach (var item in Model.GetGiorni())
+                    {
+                        <option value="@item.Value" @if (Model._giornoFine != null && Model._giornoFine.ToString() == item.Value) { @: selected
+                                }>
+                            @item.Text
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4  push-10 month-box">
+                <select id="_meseFine" name="_meseFine" class="rai form-control">
+                    @foreach (var item in Model.GetMesi())
+                    {
+                        <option value="@item.Value" @if (Model._meseFine != null && Model._meseFine.ToString() == item.Value) { @: selected
+                                }>
+                            @item.Text
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4  push-10 year-box">
+                <input type="text" placeholder="Anno" class="js-datetimepicker rai form-control  start required-min"
+                       data-format="YYYY" data-locale="it" id="_annoFine" name="_annoFine" value="@Model._annoFine" />
+            </div>
+        </div>
+
+        <div class="push-20 col-md-12">
+            <div class="rai-checkbox">
+                @* css-input css-checkbox css-checkbox-success *@
+                <input type="checkbox" name="_flagMyWork" id="_flagMyWork" onclick="javascript: setDataFine();" value="S" />
+                <label for="_flagMyWork" class="rai-caption">Attualmente lavoro in questo posto</label>
+            </div>
+        </div>
+        <div class="col-md-3 push-10">&nbsp;</div>
+        <div class="col-md-3 push-10">&nbsp;</div>
+    </div>
+    <div class="row">
+        <div class="push-10 col-md-12" data-tourdb="tour-rai-figprof"
+             @Html.TourAttributes(Model.TourElements, "tour-rai-figprof")>
+            @Html.LabelForRequiredObbl(model => model._codiceFiguraProf, "Figura professionale", new { @class = "rai-caption requiredobbl" })
+            @{
+                List<SelectListItem> item_select_figpro = new List<SelectListItem>();
+                foreach (var elem in Model.ListeFigureRai.OrderByDescending(x => x.DTA_INIZIO))
+                {
+                    item_select_figpro.Add(new SelectListItem()
+                    {
+                        Value = elem.CodiceFiguraPro,
+                        Text = elem.DescriFiguraPro
+                    });
+                }
+                //(IEnumerable<SelectListItem>)cvEnt.VDFiguraProfCV.OrderBy(x => x.Descrizione).Select(x => new SelectListItem() { Value = x.Codice, Text = x.Descrizione })
+            }
+            @Html.DropDownList("_codiceFiguraProf", item_select_figpro, string.Empty, new
+       {
+           @id = "_codiceFiguraProf",
+           @class = "js-select2 rai form-control ",
+           @style = "width: 100%",
+           @data_minimum_results_for_search = "Infinity"
+
+       })
+            @Html.ValidationMessageFor(model => model._codiceFiguraProf)
+
+        </div>
+    </div>
+    <div class="row">
+        <div class="push-10 col-md-12" data-tourdb="tour-rai-socgruppo"
+             @Html.TourAttributes(Model.TourElements, "tour-rai-socgruppo")>
+
+            <input type="hidden" id="_societa" name="_societa" value="" />
+            @Html.LabelForRequiredObbl(model => model._codSocieta, "Società del gruppo", new { @class = "rai-caption requiredobbl" })
+            @{
+                List<SelectListItem> item_select_societa = new List<SelectListItem>();
+                foreach (var elem in cvEnt.VDSocieta.OrderBy(x => x.Descrizione))
+                {
+                    item_select_societa.Add(new SelectListItem()
+                    {
+                        Value = elem.Codice,
+                        Text = elem.Descrizione
+                    });
+                }
+                //(IEnumerable<SelectListItem>)cvEnt.VDSocieta.OrderBy(x => x.Descrizione).Select(x => new SelectListItem() { Value = x.Codice, Text = x.Descrizione })
+            }
+            @Html.DropDownList("_codSocieta", item_select_societa, string.Empty, new
+       {
+           @id = "_codSocieta",
+           @class = "js-select2 rai form-control  textable-select",
+           @style = "width: 100%",
+           @data_allow_insert = "true"
+       })
+            @Html.ValidationMessageFor(model => model._codSocieta)
+
+        </div>
+    </div>
+    <div class="row">
+        <div class="push-10 col-md-12" id="select-direzione" data-tourdb="tour-rai-direzione"
+             @Html.TourAttributes(Model.TourElements, "tour-rai-direzione")>
+
+            <input type="hidden" id="_direzione" name="_direzione" value="" />
+            @Html.LabelForRequiredObbl(model => model._codDirezione, "Direzione", new { @class = "rai-caption requiredobbl" })
+            @{
+                List<SelectListItem> item_select_direzione = new List<SelectListItem>();
+                foreach (var elem in cvEnt.VDServizioCV.OrderBy(x => x.Descrizione))
+                {
+                    item_select_direzione.Add(new SelectListItem()
+                    {
+                        Value = elem.Codice,
+                        Text = elem.Descrizione
+                    });
+                }
+                //(IEnumerable<SelectListItem>)cvEnt.VDServizioCV.OrderBy(x => x.Descrizione).Select(x => new SelectListItem() { Value = x.Codice, Text = x.Descrizione })
+            }
+            @Html.DropDownList("_codDirezione", item_select_direzione, string.Empty, new
+       {
+           @id = "_codDirezione",
+           @class = "js-select2 rai form-control  textable-select",
+           @style = "width: 100%",
+           @data_allow_insert = "true"
+       })
+            @Html.ValidationMessageFor(model => model._codDirezione)
+
+        </div>
+
+    </div>
+    @if (isGiornalista == "1")
+    {
+        <div class="push-10 col-md-12" data-tourdb="tour-rai-redazione"
+             @Html.TourAttributes(Model.TourElements, "tour-rai-redazione")>
+
+            <label for="_codRedazione " class="rai-caption">Redazione</label>
+            <select class="js-select2 rai form-control input-validation-error" data-val="true" data-val-required="Campo obbligatorio" id="_codRedazione" name="_codRedazione" style="width: 100%">
+                <option></option>
+                @{
+                    var redazione = cvEnt.DRedazione;
+                    foreach (var elem in redazione)
+                    {
+                        <option value="@elem.CodRedazione">@(elem.DesRedazione)</option>
+                    }
+                }
+            </select>
+            @Html.ValidationMessageFor(x => x._codRedazione)
+        </div>
+    }
+    <div class="row">
+        <div class="push-10 col-md-6" data-tourdb="tour-rai-citta"
+             @Html.TourAttributes(Model.TourElements, "tour-rai-citta")>
+            <input type="hidden" id="_localitaEsp" name="_localitaEsp" value="" />
+            <label for="_codLocalitaEsp" class="rai-caption">Città</label>
+            <select class="js-select2 rai form-control textable-select" id="_codLocalitaEsp" name="_codLocalitaEsp" style="width: 100%">
+                <option></option>
+                @{
+                    var localita = cvEnt.DTabellaCV.Where(x => x.NomeTabella == "LocalitaEsp").OrderBy(y => y.Ordine).ToList();
+                    foreach (var elem in localita)
+                    {
+                        <option value="@elem.Codice">@(elem.Descrizione)</option>
+                    }
+                }
+            </select>
+            @*<input type="text" class="rai form-control " id="_localitaEsp" name="_localitaEsp" style="width: 100%" placeholder="Inserisci la città" />*@
+        </div>
+
+        <div class="push-10 col-md-6" data-tourdb="tour-rai-paese"
+             @Html.TourAttributes(Model.TourElements, "tour-rai-paese")>
+
+            <label for="_nazione " class="rai-caption">Paese</label>
+            <select class="js-select2 rai form-control" id="_nazione" name="_nazione" style="width: 100%">
+                <option></option>
+                @{
+                    var nazione = cvEnt.DNazione.OrderBy(x => new { x.QTA_ORDINE, x.DES_NAZIONE });
+                    foreach (var elem in nazione)
+                    {
+                        <option value="@elem.DES_NAZIONE">@CommonHelper.ToTitleCase(elem.DES_NAZIONE)</option>
+                    }
+                }
+            </select>
+
+        </div>
+    </div>
+    <div class="row">
+        <div class="push-10 col-md-12" data-tourdb="tour-rai-attivita"
+             @Html.TourAttributes(Model.TourElements, "tour-rai-attivita")>
+            @Html.LabelForRequiredObbl(model => model._areaAtt, "Ambito di attività", new { @class = "rai-caption" })
+            @Html.TextBoxFor(model => model._areaAtt, new { @id = "_areaAtt", @class = "rai form-control ", @placeholder = "Inserisci l'ambito di attività. Es. Palinsesto,Riprese TV, Produzione Radio" })
+            @Html.ValidationMessageFor(model => model._areaAtt)
+        </div>
+    </div>
+    <div class="row">
+        <div class="push-10 col-md-12" data-tourdb="tour-rai-incarico"
+             @Html.TourAttributes(Model.TourElements, "tour-rai-incarico")>
+            @Html.LabelForRequiredObbl(model => model._ultRuolo, "Attività", new { @class = "rai-caption" })
+            @Html.TextBoxFor(model => model._ultRuolo, new { @id = "_ultRuolo", @class = "rai form-control ", @placeholder = "Inserisci l'attività. Es. Pianificatore, Operatore steadycam, Tecnico audio" })
+            @Html.ValidationMessageFor(model => model._ultRuolo)
+
+        </div>
+    </div>
+    <div class="row">
+        <div class="push-10 col-md-12" data-tourdb="tour-rai-qualificante"
+             @Html.TourAttributes(Model.TourElements, "tour-rai-qualificante")>
+            <label for="_titoloEspQual " class="rai-caption">Titolo esperienza qualificante</label>
+            <input type="text" class="rai form-control " style="width: 100%" id="_titoloEspQual" name="_titoloEspQual" placeholder="Inserisci un titolo che riassume l'esperienza. Es. Pianificazione palinsesto lungo periodo, Festival di Sanremo, Concerti del Quirinale" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="push-10 col-md-12" data-tourdb="tour-rai-descrizione"
+             @Html.TourAttributes(Model.TourElements, "tour-rai-descrizione")>
+            <label for="_descrizioneEsp " class="rai-caption">Descrizione sintetica dell'esperienza</label>
+            <textarea maxlength="1000" id="_descrizioneEsp" name="_descrizioneEsp" rows="5" class="rai form-control" style="width: 100%" placeholder="Descrivere sinteticamente l'esperienza utilizzando al massimo 1000 caratteri"></textarea>
+
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="push-10 col-md-6" data-tourdb="tour-rai-budget"
+             @Html.TourAttributes(Model.TourElements, "tour-rai-budget")>
+            <label for="_budgetGest " class="rai-caption">Budget Gestito</label>
+            <select class="js-select2 rai form-control" id="_budgetGest" name="_budgetGest" style="width: 100%" placeholder="Scegliere una opzione">
+                <option></option>
+                @{
+                    var budget = cvEnt.DTabellaCV.Where(x => x.NomeTabella == "Budget").OrderBy(y => y.Ordine).ToList();
+                    foreach (var elem in budget)
+                    {
+                        <option value="@elem.Codice">@elem.Descrizione</option>
+                    }
+                }
+                @*                <option value="0">Fino a 500 mila euro</option>
+                    <option value="1">Fino a 1 milione di euro</option>
+                    <option value="2">Oltre 1 milione di euro</option>*@
+            </select>
+            @*<input type="text" class="rai form-control" style="width: 100%" id="_budgetGest" name="_budgetGest" placeholder="Inserisci a testo libero" />*@
+        </div>
+
+        <div class="push-10 col-md-6" data-tourdb="tour-rai-procura"
+             @Html.TourAttributes(Model.TourElements, "tour-rai-procura")>
+            <label for="_procura " class="rai-caption">Procura</label>
+            <select class="js-select2 rai form-control" id="_procura" name="_procura" style="width: 100%" placeholder="Scegliere una opzione">
+                <option></option>
+                <option value="0">SI</option>
+                <option value="1">NO</option>
+            </select>
+            @*<input type="text" class="rai form-control" style="width: 100%" id="_procura" name="_procura" placeholder="Inserisci a testo libero" />*@
+        </div>
+    </div>
+    <div class="row">
+        <div class="push-10 col-md-6" data-tourdb="tour-rai-risorse"
+             @Html.TourAttributes(Model.TourElements, "tour-rai-risorse")>
+            <label for="_risorseGest " class="rai-caption">Risorse Gestite/Coordinate</label>
+            <select class="js-select2 rai form-control" id="_risorseGest" name="_risorseGest" style="width: 100%" placeholder="Scegliere una opzione">
+                <option></option>
+                @{
+                    var risorse = cvEnt.DTabellaCV.Where(x => x.NomeTabella == "Risorse").OrderBy(y => y.Ordine).ToList();
+                    foreach (var elem in risorse)
+                    {
+                        <option value="@elem.Codice">@elem.Descrizione</option>
+                    }
+                }
+                @*                <option value="0">Fino a 10</option>
+                    <option value="1">Fino a 100</option>
+                    <option value="2">Oltre 100</option>*@
+            </select>
+            @*<input type="text" class="rai form-control" style="width: 100%" id="_risorseGest" name="_risorseGest" placeholder="Inserisci a testo libero" />*@
+        </div>
+    </div>
+
+
+
+
+</div>
+<!-- FREAK - COPIARE FINO A QUAAAAAAAAAAAA -->

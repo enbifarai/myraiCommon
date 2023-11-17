@@ -1,0 +1,311 @@
+﻿@using myRaiHelper
+@using myRaiCommonModel.Gestionale
+@using myRaiGestionale.Controllers
+@model CessazioneModel
+
+<script src="~/assets/js/plugins/jquery-validation/additional-methods.min.js"></script>
+
+@{
+    bool showVerbaleFirmato = Model.OperStato.ID_STATO == (int)IncStato.Appuntamento
+        && (!String.IsNullOrWhiteSpace(Model.Pratica.CAUSE_VERTENZE)
+            || (Model.Pratica.DATA_APPUNTAMENTO.HasValue
+                && Model.Pratica.ID_SIGLASIND.HasValue
+                //&& Model.Pratica.ID_RAPPRSINDACATO.HasValue
+                //&& Model.Pratica.ID_RAPPRINDUSTRIA.HasValue
+                //&& Model.Pratica.ID_RAPPRRAI.HasValue
+                &&
+                ((Model.Pratica.IND_PROPRIO_IBAN == "B")
+                || Model.Pratica.IND_PROPRIO_IBAN == "Y"
+                || (Model.Pratica.IND_PROPRIO_IBAN == "N"
+                   && !String.IsNullOrWhiteSpace(Model.Pratica.BANCA)
+                   && !String.IsNullOrWhiteSpace(Model.Pratica.IBAN))
+                )));
+
+
+    string matricola = CommonHelper.GetCurrentUserMatricola();
+    bool isAdmin = CessazioneHelper.IsRoleAdmin(matricola);
+    bool isRelind = CessazioneHelper.EnabledToSubFunc(matricola, "RELIND");
+    bool isGest = CessazioneHelper.EnabledToSubFunc(matricola,  "GEST");
+
+    bool canModifyVerb = false;
+    if (isAdmin || isGest)
+    {
+        canModifyVerb = true;
+    }
+    else if (isRelind)
+    {
+        var isContenzioso = AuthHelper.EnabledToSubFunc(matricola, CessazioneHelper.INCENTIVI_INC_EXTRA, "CONTENZIOSO");
+        if (isContenzioso)
+        {
+            canModifyVerb = true;
+        }
+        else if (Model.Pratica.SEDE.ToUpper() == "ROMA" || Model.Pratica.IND_SBLOCCA_PRATICA.GetValueOrDefault() == 1)
+        {
+            canModifyVerb = true;
+        }
+        else
+        {
+            canModifyVerb = false;
+        }
+    }
+
+}
+
+
+
+
+@*<form id="form-modificaAppuntamento" novalidate="novalidate" method="post">*@
+
+@using (Html.BeginForm("ModificaDatiAppuntamento", "Cessazione", FormMethod.Post, new { @id = "form-modificaAppuntamento", novalidate = "novalidate" }))
+{
+    @Html.HiddenFor(x => x.Pratica.ID_DIPENDENTE)
+
+    <div class="form-group">
+        <div class="block block-content-table">
+            <div class="block-header">
+                <span class="block-title">Dati appuntamento</span>
+            </div>
+            <div class="block-content">
+                <div class="row push-5 push-10-t">
+                    <div class="col-sm-4  text-left">
+                        @Html.LabelFor(m => m.Pratica.DATA_APPUNTAMENTO, "Data appuntamento", new { @class = "rai-caption" })
+                    </div>
+                    <div class="col-sm-8 ">
+                        <div class="input-group">
+                            <span class="input-group-addon" style="cursor: pointer" onclick="$('#_dataapp').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                            @Html.TextBoxFor(m => m.Pratica.DATA_APPUNTAMENTO, new { @class = "js-datetimepicker  form-control required-min", data_format = "DD/MM/YYYY HH:mm", minData = DateTime.Today.ToString("dd/MM/yyyy"), data_locale = "it", id = "_dataapp", placeholder = "Selezionare una data", autocomplete = "off" })
+                        </div>
+                        @Html.ValidationMessageFor(m => m.Pratica.DATA_APPUNTAMENTO, "La data di appuntamento è obbligatoria", new { @class = "field-validation-error hidden" })
+                    </div>
+                </div>
+                <div class="row push-5">
+                    <div class="col-sm-4 text-left">
+                        @Html.LabelFor(m => m.Pratica.NOT_LUOGO_APPUNTAMENTO, "Luogo appuntamento", new { @class = "rai-caption" })
+                    </div>
+                    <div class="col-sm-8">
+                        @Html.TextBoxFor(m => m.Pratica.NOT_LUOGO_APPUNTAMENTO, new { @class = "form-control" })
+                    </div>
+                </div>
+                <div class="row push-5">
+                    <div class="col-sm-4 text-left">
+                        @Html.LabelFor(m => m.Pratica.NUM_BOZZA_GIORNI, "Numero giorni limite per ricezione", new { @class = "rai-caption" })
+                    </div>
+                    <div class="col-sm-8">
+                        @Html.TextBoxFor(m => m.Pratica.NUM_BOZZA_GIORNI, new { @class = "form-control" })
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="block block-content-table block-transparent">
+            <div class="block-header">
+                <label class="block-title">Gestione mail</label>
+            </div>
+            <div class="block-content">
+                <div class="row push-10-t">
+                    @if (myRaiHelper.HrisHelper.GetParametro<string>(myRaiHelper.HrisParam.IncentiviAbilitaMailVerbale) == "TRUE")
+                    {
+                        if (canModifyVerb)
+                        {
+                            <div class="col-sm-12 push-10">
+                                <button class="btn rai-btn-small full-width" onclick="OpenBozzaVerbale(@Model.Pratica.ID_DIPENDENTE)">Gestione mail</button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="col-sm-12 push-10 text-center">
+                                <i>La pratica non è ancora stata sbloccata</i>
+                            </div>
+                        }
+                    }
+
+                    <div class="col-sm-6 push-10">
+                        @*@if (!Model.Pratica.DATA_BOZZA_INVIO.HasValue)
+                            {
+                                @Html.LabelFor(m => m.Pratica.DATA_BOZZA_INVIO, "Data invio", new { @class = "text-italic" })
+                                <div class="input-group">
+                                    <div class="input-group-addon" onclick="$('#Pratica_DATA_BOZZA_INVIO').datetimepicker('show')"><i class="fa fa-calendar"></i></div>
+                                    @Html.TextBoxFor(m => m.Pratica.DATA_BOZZA_INVIO, new { @class = "js-datetimepicker form-control form-control-value " + (canModifyVerb ? "" : "disable"), style = "width: 100%", data_format = "DD/MM/YYYY" })
+                                </div>
+                            }
+                            else
+                            {
+                                @Html.LabelFor(m => m.Pratica.DATA_BOZZA_INVIO, "Data invio", new { @class = "text-italic" })
+                                <div class="input-group">
+                                    @Html.TextBoxFor(m => m.Pratica.DATA_BOZZA_INVIO, new { @class = "js-datetimepicker form-control form-control-value", style = "width: 100%", data_format = "DD/MM/YYYY", @readonly = "readonly" })
+                                    <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                                </div>
+                            }*@
+
+                        @Html.LabelFor(m => m.Pratica.DATA_BOZZA_INVIO, "Data invio", new { @class = "text-italic" })
+                        <div class="input-group">
+                            @Html.TextBoxFor(m => m.Pratica.DATA_BOZZA_INVIO, new { @class = "js-datetimepicker form-control form-control-value", style = "width: 100%", data_format = "DD/MM/YYYY", @readonly = "readonly" })
+                            <div class="input-group-addon"><i class="fa fa-lock"></i></div>
+                        </div>
+
+                        @if (Model.Pratica.DATA_INVIO_PROP.HasValue && !String.IsNullOrWhiteSpace(Model.Pratica.NOT_BOZZA_INVIO))
+                        {
+                            <i class="rai-font-sm-neutral">@Model.Pratica.NOT_BOZZA_INVIO</i>
+                        }
+                    </div>
+
+                    <div class="col-sm-6 push-10">
+                        @Html.LabelFor(m => m.Pratica.DATA_BOZZA_RICEZIONE, "Data ricevuta", new { @class = "text-italic" })
+                        <div class="input-group">
+                            <div class="input-group-addon" onclick="$('#Pratica_DATA_FIRMA_DIP').datetimepicker('show')"><i class="fa fa-calendar"></i></div>
+                            @Html.TextBoxFor(m => m.Pratica.DATA_BOZZA_RICEZIONE, new { @class = "js-datetimepicker form-control form-control-value " + (canModifyVerb ? "" : "disable"), style = "width: 100%", data_format = "DD/MM/YYYY" })
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="wdgt-allegati@((int)IncStato.Appuntamento)" class="bg-neutrals-xl-10" style="margin-left:-15px; margin-right:-15px; padding:10px 25px; margin-bottom:20px">
+            @if (Model.AllegatiApp != null)
+            {
+                @Html.Partial("subpartial/widget_allegati", Model.AllegatiApp)
+            }
+        </div>
+
+        <div class="block block-content-table">
+            <div class="block-header">
+                <label class="block-title">Dati verbale</label>
+            </div>
+            <div class="block-content">
+                @if (!showVerbaleFirmato)
+                {
+                    <div id="insMan" class="row push-10">
+                        <div class="col-sm-12 text-left">
+                            <em>Selezionare '<strong>Inserimento manuale</strong>' in caso di campi non valorizzati</em>
+                        </div>
+                    </div>
+                }
+                <div class="row push-5 push-10-t">
+                    <div class="col-sm-12">
+                        @Html.RaiCheckBoxLabelFor(m => m.IndItl, "Genitore bambino fino a 3 anni", "")
+                    </div>
+                </div>
+                <div class="row push-5">
+                    <div class="col-sm-4">
+                        @Html.LabelFor(model => model.Pratica.DATA_PAGAMENTO, "Data Pagamento", new { @class = "rai-caption" })
+                    </div>
+                    <div class="col-sm-8">
+                        @*@Html.TextBoxFor(m => m.Pratica.DATA_PAGAMENTO, new { @class = "js-datetimepicker form-control form-control-value", style = "width: 100%", placeholder = "Data Pagamento", data_format = "DD/MM/YYYY" })*@
+                        @Html.RaiSelectFor(m => m.Pratica.DATA_PAGAMENTO, myRaiCommonManager.Cessazione.CessazioneManager.GetDatePagamenti(Model.Pratica.DATA_CESSAZIONE.Value))
+                    </div>
+                </div>
+                <div class="row push-5">
+                    <div class="col-sm-4  text-left">
+                        @Html.LabelFor(m => m.Pratica.ID_SIGLASIND, "Sigla Sindacale", new { @class = "rai-caption" })
+                    </div>
+                    <div class="col-sm-8 ">
+                        @Html.DropDownListFor(m => m.Pratica.ID_SIGLASIND, new SelectList(CessazioneController.getSiglaSind(Model.Pratica.SEDE, Model.Pratica.SINTESI1.COD_QUALIFICA), "Value", "Text", null), "Seleziona", new { id = "ID_SIGLASIND", @class = "form-control ", onchange = "PopolaRapprSind('" + Model.Pratica.SEDE + "');" })
+                        @*@Html.ValidationMessageFor(m => m.ID_SIGLASIND, "Campo obbligatorio", new { @class = "field-validation-error hidden" })*@
+                    </div>
+                </div>
+                <div class="row push-5">
+                    <div class="col-sm-4  text-left">
+                        @Html.LabelFor(m => m.Pratica.ID_RAPPRSINDACATO, "Rappr. Sindacato", new { @class = "rai-caption" })
+                    </div>
+                    <div class="col-sm-8 ">
+                        @{
+                            string rapprSindClass = "form-control ";
+                            if (Model.Pratica.ID_RAPPRSINDACATO <= 0)
+                            {
+                                rapprSindClass += " disable";
+                            }
+                        }
+                        @Html.DropDownListFor(m => m.Pratica.ID_RAPPRSINDACATO, new SelectList(CessazioneController.getRapprSind(Model.Pratica.ID_SIGLASIND, Model.Pratica.SEDE), "Value", "Text", null), "Seleziona", new { id = "ID_RAPPRSINDACATO", @class = rapprSindClass })
+                        @*@Html.ValidationMessageFor(m => m.ID_RAPPRSINDACATO, "Campo obbligatorio", new { @class = "field-validation-error hidden" })*@
+                    </div>
+                </div>
+                <div class="row push-5">
+                    <div class="col-sm-4  text-left">
+                        @Html.LabelFor(m => m.Pratica.ID_RAPPRINDUSTRIA, "Rappr. Industria", new { @class = "rai-caption" })
+                    </div>
+                    <div class="col-sm-8 ">
+                        @Html.DropDownListFor(m => m.Pratica.ID_RAPPRINDUSTRIA, new SelectList(CessazioneController.getRapprInd(Model.Pratica.SEDE), "Value", "Text", null), "Seleziona", new { id = "ID_RAPPRINDUSTRIA", @class = "form-control " })
+                        @*@Html.ValidationMessageFor(m => m.ID_RAPPRINDUSTRIA, "Campo obbligatorio", new { @class = "field-validation-error hidden" })*@
+                    </div>
+                </div>
+                <div class="row push-5">
+                    <div class="col-sm-4  text-left">
+                        @Html.LabelFor(m => m.Pratica.ID_RAPPRRAI, "Rappr. RAI", new { @class = "rai-caption" })
+                    </div>
+                    <div class="col-sm-8 ">
+                        @Html.DropDownListFor(m => m.Pratica.ID_RAPPRRAI, new SelectList(CessazioneController.getRappRai(Model.Pratica.SEDE), "Value", "Text", null), "Seleziona", new { id = "ID_RAPPRRAI", @class = "form-control " })
+                        @*@Html.ValidationMessageFor(m => m.ID_RAPPRRAI, "Campo obbligatorio", new { @class = "field-validation-error hidden" })*@
+                    </div>
+                </div>
+                <div class="row push-5">
+                    <div class="col-sm-4  text-left">
+                        @Html.LabelFor(m => m.Pratica.IND_PROPRIO_IBAN, "CC Accredito", new { @class = "rai-caption" })
+                    </div>
+                    <div class="col-sm-8 ">
+                        @Html.DropDownListFor(m => m.Pratica.IND_PROPRIO_IBAN, new SelectList(CessazioneController.getScelteIban(Model.Pratica), "Value", "Text", null), "Seleziona", new { id = "IND_PROPRIO_IBAN", @class = "form-control ", onchange = "CaricaDatiBanca(" + Model.Pratica.ID_DIPENDENTE + ");" })
+                        @*@Html.ValidationMessageFor(m => m.IND_PROPRIO_IBAN, "Campo obbligatorio", new { @class = "field-validation-error hidden" })*@
+                    </div>
+                </div>
+                <div class="row push-5">
+                    <div class="col-sm-4  text-left">
+                        @Html.LabelFor(m => m.Pratica.BANCA, "Banca", new { @class = "rai-caption" })
+                    </div>
+                    <div class="col-sm-8 ">
+                        @Html.TextBoxFor(m => m.Pratica.BANCA, new { id = "BANCA", @class = "form-control   " + (Model.Pratica.IND_PROPRIO_IBAN != "N" ? "disable" : "") })
+                    </div>
+                </div>
+                <div class="row push-5">
+                    <div class="col-sm-4  text-left">
+                        @Html.LabelFor(m => m.Pratica.IBAN, "Codice IBAN", new { @class = "rai-caption" })
+                    </div>
+                    <div class="col-sm-8  text-left">
+                        @Html.TextBoxFor(m => m.Pratica.IBAN, new { id = "IBAN", @class = "form-control  " + (Model.Pratica.IND_PROPRIO_IBAN != "N" ? "disable" : ""), minlength = "27", maxlength = "27", data_rule_iban = "true", data_msg_iban = "Specifica un IBAN corretto" })
+                        @Html.ValidationMessageFor(m => m.Pratica.IBAN)
+                    </div>
+                </div>
+                @if (Model.Pratica.SINTESI1.COD_QUALIFICA == "A01")
+                {
+                <div class="row">
+                    <div class="col-sm-12">
+                        <label class="rai-caption">Vettura aziendale</label>
+                    </div>
+                    <div class="col-sm-6 push-5">
+                        @Html.LabelFor(model => model.VeicoloTipologia, "Tipo vettura", new { @class = "text-italic" })
+                        @Html.TextBoxFor(m => m.VeicoloTipologia, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Tipo vettura" })
+                    </div>
+
+                    <div class="col-sm-6 push-5">
+                        @Html.LabelFor(model => model.VeicoloTarga, "Targa", new { @class = "text-italic" })
+                        @Html.TextBoxFor(m => m.VeicoloTarga, new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Mail" })
+                    </div>
+                </div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="row push-5">
+        <div class="col-sm-12">
+            <div class="rai-btn-fill">
+                <button type="submit" class="btn rai-btn-primary" onclick="SubmitModificaAppuntamento(@Model.Pratica.ID_DIPENDENTE, true)">Salva</button>
+            </div>
+        </div>
+    </div>
+    if (showVerbaleFirmato)
+    {
+        <div class="row push-5">
+            <div class="col-sm-12">
+                <div class="rai-btn-fill">
+                    <button type="submit" class="btn btn-action-icon rai-btn-error btn-action-icon-text" onclick="VerbaleRifiutato(@Model.Pratica.ID_DIPENDENTE)"><i class="glyphicon glyphicon-remove"></i> Verbale rifiutato</button>
+                    <button type="submit" class="btn btn-action-icon rai-btn-success btn-action-icon-text" onclick="SubmitModificaVerbaleFirma(@Model.Pratica.ID_DIPENDENTE)"><i class="fa fa-fw fa-check"></i> Verbale firmato</button>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+
+<script language="javascript">
+    InitDatePicker();
+    //$('#_dataapp').data("DateTimePicker").minDate(moment());
+    //$('#_dataapp').datepicker('option', 'mindate', 0);
+    //$('#_dataapp').datepicker('option', 'stepping', 15);
+</script>

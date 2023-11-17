@@ -1,0 +1,107 @@
+﻿@using myRaiHelper
+@model myRaiCommonModel.Gestionale.DelegaModel
+
+@{
+    var idForm = "form-delega";
+}
+
+<div class="rai block block-transparent no-margin-bottom">
+    <div class="block-header">
+        <label class="rai-font-modal-heading">
+            @if (Model.ID == 0)
+                        {
+                <text>Nuova delega</text>
+                        }
+                        else
+                        {
+                <text>Delega a @Model.Delegato.SINTESI1.Nominativo()</text>
+                        }
+        </label>
+        <div class="block-options">
+            <button data-dismiss="modal" class="btn btn-action-icon"><i class="glyphicon glyphicon-remove"></i></button>
+        </div>
+    </div>
+    <div class="block-content">
+        <div class="row">
+            <div class="col-sm-12">
+                <section class="rai panel">
+                    <header class="panel-heading">
+                        <h2 class="panel-title">Dati delega</h2>
+            </header>
+            <div class="panel-body">
+                @using (Html.BeginForm("Save_Delega", "Valutazioni", FormMethod.Post, new { @id = idForm }))
+                {
+                    @Html.HiddenFor(m => m.ID);
+                            <div class="rai form-group">
+                        <div class="row">
+                            <div class="col-sm-12">
+
+                                        @Html.LabelForRequired(m => m.RuoloDelegato, "Iniziativa/Scheda", new { @class = "rai-caption" })
+                                @if (Model.ID > 0)
+                                {
+                                    <div class="input-group">
+                                        @Html.TextBox("_RuoloDelegato", Model.Delegante.XR_VAL_CAMPAIGN_SHEET.XR_VAL_CAMPAIGN.NAME + " - " + Model.Delegante.XR_VAL_CAMPAIGN_SHEET.DESCRIPTION, new { @class = "form-control", placeholder = "Ruolo da delegare", required = "required", @readonly = "readonly" })
+                                        <span class="input-group-addon"><i class="fa fa-lock"></i></span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    @Html.DropDownListFor(m => m.RuoloDelegato, new SelectList(Model.RuoliDelegabili, "Value", "Text"), new { @class = "form-control", required = "required", onchange = "ValLoadAvailableDelegate()" })
+                                }
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12">
+                                @Html.LabelForRequiredObbl(m => m.PersonaDelegata, "Delegato", new { @class = "rai-caption" })
+                                @if (Model.ID > 0)
+                                {
+                                    <div class="input-group">
+                                        @Html.TextBox("_PersonaDelegata", Model.Delegato.SINTESI1.Nominativo(), new { @class = "form-control", @readonly = "readonly" })
+                                        <span class="input-group-addon"><i class="fa fa-lock"></i></span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    @Html.DropDownListFor(m => m.PersonaDelegata, new SelectList(new List<SelectListItem>() { new SelectListItem() { Value = "", Text = "-" } }, "Value", "Text"), "Seleziona", new { @class = "form-control disable", onchange = "ValLoadAvailablePeople()" })
+                                }
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-6">
+                                @Html.LabelForRequired(m => m.DateStart, "Data inizio", new { @class = "rai-caption" })
+                                <div class="input-group">
+                                    <span class="input-group-addon" style="cursor: pointer" onclick="$('#_dataStart').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                                    @Html.TextBoxFor(m => m.DateStart, new { @class = "js-datetimepicker  form-control required-min", data_format = "DD/MM/YYYY", data_locale = "it", id = "_dataStart", placeholder = "Selezionare una data", autocomplete = "off" })
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                @Html.LabelForRequired(m => m.DateEnd, "Data fine", new { @class = "rai-caption" })
+                                <div class="input-group">
+                                    <span class="input-group-addon" style="cursor: pointer" onclick="$('#_dataEnd').datetimepicker('show')"><i class="fa fa-calendar"></i></span>
+                                    @Html.TextBoxFor(m => m.DateEnd, new { @class = "js-datetimepicker  form-control required-min", data_format = "DD/MM/YYYY", data_locale = "it", id = "_dataEnd", placeholder = "Selezionare una data", autocomplete = "off" })
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                            @Html.Partial("subpartial/Modal_Delega_ElencoPersone", Model)
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="rai-btn-fill">
+                                <button class="btn rai-btn-primary" onclick="ValSalvaDelega(this, '@idForm')">Salva</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script language="javascript">
+    InitDatePicker();
+    $('#_dataStart').data("DateTimePicker").minDate(moment());
+    $('#_dataEnd').data("DateTimePicker").minDate(moment());
+</script>

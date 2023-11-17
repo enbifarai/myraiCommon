@@ -1,0 +1,180 @@
+﻿@using myRaiHelper
+@model myRaiCommonModel.AmministrazioneModel.BustaPaga
+
+@{
+    string titolo = "Dettaglio cedolino";
+}
+
+@using (Html.BeginModal(Model.intestazione))
+{
+    <style>
+        .table-cedo td {
+            padding: 4px 8px !important;
+        }
+    </style>
+
+    <div class="row">
+        <div class="col-sm-12">
+            <section class="rai panel">
+                <div class="panel-body" style="padding: 12px;">
+                    <div class="btn-action-icon-container">
+                        <button class="btn btn-action-icon" onclick="$('#popupview-cedolino-pagato').modal('hide')">
+                            <i class="fa fa-chevron-left"></i>
+                        </button>
+                        <span class="rai-font-sm text-primary"
+                              style="cursor:pointer;display: inline;margin-top: 8px;margin-left: 15px;font-weight: bold;">Torna alla richiesta</span>
+
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-12">
+            @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, ""))
+            {
+                <div class="rai-table-info">
+                    <div class="row">
+                        <div class="col-sm-4"><span>Data competenza</span></div>
+                        <div class="col-sm-8"><span>@Model.DtCompetenza.TitleCase()</span></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-4"><span>Data contabilizzazione</span></div>
+                        <div class="col-sm-8"><span>@Model.DtContab.TitleCase()</span></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-4"><span>Tipo cedolino</span></div>
+                        <div class="col-sm-8">
+                            <span>
+                                @Model.Tipo
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-12">
+            @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, ""))
+            {
+                using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Dettaglio", collapsable: true))
+                {
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <table class="table rai-table rai-table-borderless table-striped table-cedo">
+                                <thead>
+                                    <tr>
+                                        <th class="text-left">Voce</th>
+                                        <th class="text-right" style="width:150px">Accredito</th>
+                                        <th class="text-right" style="width:150px">Addebito</th>
+                                    </tr>
+                                </thead>
+                                @foreach (var item in Model.elencoVoci.Where(x => x.Sezione == myRaiCommonModel.AmministrazioneModel.SezioneVoci.Dettaglio))
+                                {
+                                    <tr>
+                                        <td><span>@item.Descrittiva</span></td>
+                                        <td class="text-right">
+                                            @if (item.Tipo == myRaiCommonModel.AmministrazioneModel.TipoImporto.Credito || item.Tipo == myRaiCommonModel.AmministrazioneModel.TipoImporto.Riepilogo)
+                                            {
+                                                <span class="rai-font-md">@item.ValoreDec.ToString("N2")</span>
+                                            }
+                                        </td>
+                                        <td class="text-right">
+                                            @if (item.Tipo == myRaiCommonModel.AmministrazioneModel.TipoImporto.Debito)
+                                            {
+                                                <span class="rai-font-md">@item.ValoreDec.ToString("N2")</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </table>
+                        </div>
+                    </div>
+                }
+            }
+
+            @using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, ""))
+            {
+                using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Riepilogo", collapsable: true))
+                {
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <table class="table rai-table rai-table-borderless table-striped table-cedo">
+                                <thead>
+                                    <tr>
+                                        <th class="text-left">Descrittiva</th>
+                                        <th class="text-right" style="width:150px"></th>
+                                        <th class="text-right" style="width:150px">Importo</th>
+                                    </tr>
+                                </thead>
+                                @foreach (var item in Model.elencoVoci.Where(x => x.Sezione == myRaiCommonModel.AmministrazioneModel.SezioneVoci.Riepilogo))
+                                {
+                                    if (item.Descrittiva.ToLower() == "totale accrediti"
+                                            || item.Descrittiva.ToLower() == "totale addebiti"
+                                            || item.Descrittiva.ToLower() == "arrotondamento")
+                                    {
+                                        <tr>
+                                            <td colspan="2">
+                                                <span><strong>@item.Descrittiva</strong></span>
+                                            </td>
+                                            <td class="text-right">
+                                                <span><strong>@item.ValoreDec.ToString("N2")</strong></span>
+                                            </td>
+                                        </tr>
+                                    }
+                                    else if (item.Descrittiva.ToLower() == "netto a pagare")
+                                    {
+                                        <tr>
+                                            <td colspan="2" class="bg-interactive-secondary interactive-primary-color text-white">
+                                                <span><strong>@item.Descrittiva</strong></span>
+                                            </td>
+                                            <td class="text-right bg-interactive-secondary interactive-primary-color text-white">
+                                                <span><strong>@item.ValoreDec.ToString("N2")</strong></span>
+                                            </td>
+                                        </tr>
+                                    }
+                                    else if (item.Descrittiva.ToLower() == "oneri" || item.Descrittiva.ToLower() == "costo")
+                                    {
+                                        <tr>
+                                            <td></td>
+                                            <td class="text-right">
+                                                <span><strong>@item.Descrittiva</strong></span>
+                                            </td>
+                                            <td class="text-right">
+                                                <span><strong>@item.ValoreDec.ToString("N2")</strong></span>
+                                            </td>
+                                        </tr>
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td><span>@item.Descrittiva</span></td>
+                                            <td class="text-right">
+                                                @if (item.Tipo == myRaiCommonModel.AmministrazioneModel.TipoImporto.Debito)
+                                                {
+                                                    <span class="rai-font-md">@item.ValoreDec.ToString("N2")</span>
+                                                }
+                                            </td>
+                                            <td class="text-right">
+                                                @if (item.Tipo == myRaiCommonModel.AmministrazioneModel.TipoImporto.Credito || item.Tipo == myRaiCommonModel.AmministrazioneModel.TipoImporto.Riepilogo)
+                                                {
+                                                    <span class="rai-font-md">@item.ValoreDec.ToString("N2")</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </table>
+                        </div>
+                    </div>
+                }
+            }
+
+
+        </div>
+    </div>
+
+}

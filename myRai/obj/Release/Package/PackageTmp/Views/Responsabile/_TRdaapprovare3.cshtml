@@ -1,0 +1,228 @@
+﻿@using System.Globalization;
+@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model EccezioneApprovatoreVM
+
+@{
+    string ariaLabel = CommonHelper.ToTitleCase( Model.Eccezione.dipendente.nome ) + " " + CommonHelper.ToTitleCase( Model.Eccezione.dipendente.cognome );
+    ariaLabel += " ha una richiesta ";
+    if (Model.Eccezione.IsUrgent) { ariaLabel += "URGENTE"; }
+    if (Model.Eccezione.IsOverdue) { ariaLabel += "SCADUTA"; }
+    ariaLabel += " di " + Model.Eccezione.cod;
+    ariaLabel += " per il " + Model.Eccezione.PeriodoRichiesta;
+    if ( Model.Eccezione.dalle != null && Model.Eccezione.dalle.ToString( ).Trim( ) != "00:00" )
+    {
+        if ( Model.Eccezione.dalle != "00.00" && Model.Eccezione.alle != "00.00" )
+        {
+            if ( Model.Eccezione.alle != null )
+            {
+                ariaLabel += " dalle " + Model.Eccezione.dalle.ToString( ).Trim( ) + " alle " + Model.Eccezione.alle.ToString( ).Trim( );
+            }
+            else
+            {
+                ariaLabel += " dalle " + Model.Eccezione.dalle.ToString( ).Trim( );
+            }
+        }
+
+    }
+    else if ( !String.IsNullOrWhiteSpace( Model.Eccezione.qta ) )
+    {
+        ariaLabel += " per una quantità pari a " + Model.Eccezione.qta;
+    }
+}
+
+
+<tr tabindex="-1" role="row" aria-label="@ariaLabel" class="trdata @(Model.Eccezione.IsUrgent ? "urgenti" : Model.Eccezione.IsOverdue ? "scadute" : "")"
+    data-idrichiesta="@Model.Eccezione.IdRichiestaPadre"
+    data-ideccezione="@Model.Eccezione.IdEccezioneRichiesta"
+    data-eccez-data="@Model.Eccezione.data"
+    data-tr="@Model.Eccezione.ndoc"
+    data-livello-richiedente="@Model.Eccezione.LivelloRichiedenteEccezione"
+    data-eccezione="@Model.Eccezione.cod"
+    onfocus="onFocusRowShowCtrl(this)"
+    onblur="onBlurRowShowCtrl(this)"
+    >
+    
+    <td class="font-w600 " style="font-weight: bold; padding:2px;position:relative">
+
+        <div class="row-flex-container">
+            <div class="row-flex-container-text">
+
+        @if ( Model.Eccezione.IsUrgent )
+        {
+            <div class="text-muted">
+                <span style="font-weight: 500; font-size: 10px; color: #ec9639;">URGENTE</span>
+            </div>
+        }
+        @if ( Model.Eccezione.IsOverdue )
+        {
+            <div class="text-muted">
+                <span style="font-weight: 500; font-size: 10px; color: #ec3c4d;">SCADUTA</span>
+            </div>
+        }
+        @if ( Model.Eccezione.flg_storno.ToString( ).Trim( ) == "*" )
+        {
+            <div class="text-muted">
+                <span style="font-weight: bold; font-size: 10px; background-color:yellow;">STORNO</span>
+            </div>
+        }
+        @if ( Model.attivitaCeiton != null )
+        {
+            <div data-toggle="tooltip" style="display:inline" class="rai-ceiton-tag labelceiton" title="@Model.attivitaCeiton.Titolo - @Model.attivitaCeiton.AttivitaPrimaria">
+                <span style="cursor:pointer;font-weight: 500;font-size: 9px;">ATTIVIT&Agrave; CEITON</span>
+            </div>
+            <br />
+        }
+        @{
+            string descr = CommonHelper.ToTitleCase( Model.Eccezione.descrittiva_lunga );
+            string periodo = "";
+            if ( Model.Eccezione.dalle != null && Model.Eccezione.dalle.ToString( ).Trim( ) != "00:00" && Model.Eccezione.dalle.ToString( ).Trim( ) != "00.00" )
+            {
+
+                if ( Model.Eccezione.dalle != "00.00" && Model.Eccezione.alle != "00:00" )
+                {
+                    if ( Model.Eccezione.alle != null )
+                    {
+                        periodo += " dalle " + Model.Eccezione.dalle.ToString( ).Trim( ) + " alle " + Model.Eccezione.alle.ToString( ).Trim( );
+                    }
+                    else
+                    {
+                        periodo += " dalle " + Model.Eccezione.dalle.ToString( ).Trim( );
+                    }
+                }
+
+                else
+                {
+                    periodo += " " + Model.Eccezione.dalle.ToString( ).Trim( );
+                }
+
+            }
+            else
+            {
+                if ( !String.IsNullOrWhiteSpace( Model.Eccezione.qta ) )
+                {
+                    periodo += " " + Model.Eccezione.qta + Model.Eccezione.unita_mis;
+                }
+            }
+        }
+
+
+        <a data-toggle="modal" role="link" tabindex="-1" data-target="#giornata-modal" data-day="@Model.Eccezione.data" href="#"><span class="rai-font-md-bold interactive-primary-color">@Model.Eccezione.cod </span><span class="rai-font-md interactive-primary-color">@descr </span></a>
+        <div class="rai-font-sm">
+            <span class="periodo-ecc">@periodo</span>
+        </div>
+        @if ( !String.IsNullOrWhiteSpace( Model.Eccezione.MotivoRichiesta ) )
+        {
+            <div class="rai-font-sm">
+                <span>Motivo: @Model.Eccezione.MotivoRichiesta</span>
+            </div>
+        }
+            </div>
+
+            <div class="row-flex-container-flags">
+                <div class="label-container">
+                    @if (Model.Eccezione.DataVistoPositivo != null)
+                    {
+                        <div class="label-container-item">Visto<i class="fa fa-fw fa-check feedback-success-color"></i></div>
+                    }
+                    @if (Model.Eccezione.DataVistoNegativo != null)
+                    {
+                        <div class="label-container-item">Visto <i class="glyphicon glyphicon-remove feedback-error-color"></i></div>
+
+                    }
+                    @{
+                        if (Model.Eccezione.HasNotaSegreteria)
+                        {
+                            <div class="label-container-item label-nota">Nota</div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </td>
+
+    <td style="padding:2px;">
+        @if ( Model.Eccezione.IdDocumentoAssociato != null )
+        {
+            @Html.Partial( "DocIcon" , "ShowDoc(" + Model.Eccezione.IdDocumentoAssociato + ")" )
+        }
+    </td>
+
+    <td class="text-right" role="toolbar" style="padding:2px;">
+
+        @Html.Partial( "_approvaRifiutaButtons" )
+
+        @* @if (Model.Eccezione.IdStato == (int)myRaiHelper.EnumStatiRichiesta.InApprovazione)
+            {
+
+
+                <button role="link" aria-label="Rifiuta richiesta" tabindex="-1" style="border: solid 1px #eaeaea;" class="pad6 @Model.Eccezione.ndoc button-rifiuta btn btn-lg btn-default btn-rif-@Model.Eccezione.IdEccezioneRichiesta"
+                                            type="submit">
+                    <i class="glyphicon glyphicon-remove text-danger"></i>
+                </button>
+                <button role="link" aria-label="Approva richiesta" tabindex="-1" style="border: solid 1px #eaeaea;"  class="pad6 @Model.Eccezione.ndoc button-approva btn btn-lg btn-default btn-app-@Model.Eccezione.IdEccezioneRichiesta"
+                                            type="submit">
+                    <i class="fa fa-fw fa-check text-success"></i>
+                </button>
+            }*@
+
+    </td>
+</tr>
+
+@*@{
+        if ( Model.Eccezione.cod.Trim() == "POH" )
+        {
+            <tr tabindex="-1" role="row" aria-label="@ariaLabel" class="trdata">
+                <td class="font-w600" style="font-weight: bold; padding:2px; border:0px;">&nbsp;</td>
+                <td colspan="2" class="font-w600 text-center" style="font-weight: bold; padding:2px; border:0px;">
+                    <span>Permessi Orari </span>
+                    @{
+                        int bilancio = myRaiHelper.UtenteHelper.GetRoh() - myRaiHelper.UtenteHelper.GetPoh();
+                        int hrs = Math.Abs( bilancio ) / 60;
+                        int min = Math.Abs( bilancio ) - ( 60 * hrs );
+                        int POHmese = myRaiHelper.UtenteHelper.GetPohdays().Where( x => x.Date.Month == DateTime.Now.Month ).Count();
+                        int maxPOHmese = myRaiHelper.CommonHelper.GetParametro<int>( EnumParametriSistema.POHperMese );
+
+                        string tx = ( bilancio > 0 ? "+ " : bilancio == 0 ? " " : "- " ) + hrs.ToString().PadLeft( 2, '0' ) + ":" + min.ToString().PadLeft( 2, '0' );
+
+                        string txParentesi = "(" + POHmese + " nel mese corr.)";
+
+                        string txRosso = ( POHmese > maxPOHmese ? "+" + ( POHmese - maxPOHmese ).ToString() + " extra" : "" );
+
+                        <strong class="amount"> @(tx)</strong>
+                        <span class="text-primary visibile-lg" style="font-size:1.0em;">@(txParentesi)</span>
+                        <span class="text-red visibile-lg" style="font-size:0.6em;">@(txRosso)</span>
+                    }
+                </td>
+            </tr>
+        }
+    }*@
+
+@*<tr class="trdata hidden-lg @(Model.Eccezione.IsUrgent ? "warning" : "")"  data-idrichiesta="@Model.Eccezione.IdRichiestaPadre" data-ideccezione="@Model.Eccezione.IdEccezioneRichiesta" data-tr="@Model.Eccezione.ndoc">
+        <td class="text-center"></td>
+        <td class="font-w600 text-info">@Model.Eccezione.descrittiva_lunga</td>
+        <td colspan="5">
+            <a class="font-w600" data-toggle="modal" data-target="#giornata-modal" data-day="@Model.Eccezione.data" href="#">@Model.Eccezione.dipendente.nome @Model.Eccezione.dipendente.cognome</a>
+            <div class="text-muted">
+                <em>@Model.Eccezione.MotivoRichiesta</em>
+            </div>
+
+            @Model.Eccezione.PeriodoRichiesta
+            <div>
+                @if (Model.Eccezione.IdStato == (int)myRaiHelper.EnumStatiRichiesta.InApprovazione)
+                {
+                    <button class="pad6@Model.Eccezione.ndoc button-approva btn btn-lg btn-default  btn-app-@Model.Eccezione.IdEccezioneRichiesta"
+                                           type="submit">
+                        <i class="fa fa-fw fa-check text-success"></i>
+                    </button>
+                    <button class="pad6 Model.Eccezione.ndoc btn button-rifiuta btn-lg btn-default btn-rif-@Model.Eccezione.IdEccezioneRichiesta"
+                                            type="submit">
+                        <i class="fa fa-fw fa-remove text-danger"></i>
+                    </button>
+                }
+
+            </div>
+        </td>
+    </tr>*@

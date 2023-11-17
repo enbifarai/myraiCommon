@@ -1,0 +1,172 @@
+﻿@using myRaiCommonModel
+@model AnagraficaModel
+
+@{
+    var firstDate = Model.DatiContratti.Eventi.Select(x => x.DataInizio).OrderBy(x => x).First();
+    var lastDate = DateTime.Today;
+
+    var listEventi = new List<EventoModel>();
+    listEventi.AddRange(Model.DatiSedi.Eventi);
+    listEventi.AddRange(Model.DatiServizi.Eventi);
+    listEventi.AddRange(Model.DatiRuoli.Eventi);
+    listEventi.AddRange(Model.DatiQualifiche.Eventi);
+
+    var tmp = listEventi.OrderByDescending(x => x.DataInizio).ThenBy(x => x.Tipo);
+}
+
+<style>
+    #tablePeriodo > tbody.js-table-sections-header.open > tr > td {
+        background-color: #F6F8F8; /*Neutral-10*/
+    }
+</style>
+
+<div class="form-group">
+    <div class="row push-10">
+        <div class="col-xs-6 col-md-3">
+            <label class="rai-caption">Seleziona periodo</label>
+            <div class="input-group">
+                <i class="input-group-addon" style="cursor: pointer" onclick="$('#periodoDa').datetimepicker('show')"><i class="fa fa-calendar"></i></i>
+                <input type="text" class="form-control js-datetimepicker" data-format="DD/MM/YYYY" data-locale="it" id="periodoDa" value="@firstDate" data-mindata="@firstDate.ToString("MM/dd/yyyy")" data-maxdata="@lastDate.ToString("MM/dd/yyyy")" onchange="onPeriodFilterChange()" />
+            </div>
+        </div>
+        <div class="col-xs-6 col-md-3">
+            <label class="rai-caption">&nbsp;</label>
+            <div class="input-group">
+                <i class="input-group-addon" style="cursor: pointer" onclick="$('#periodoA').datetimepicker('show')"><i class="fa fa-calendar"></i></i>
+                <input type="text" class="form-control js-datetimepicker" data-format="DD/MM/YYYY" data-locale="it" id="periodoA" value="@lastDate" data-mindata="@firstDate.ToString("MM/dd/yyyy")" data-maxdata="@lastDate.ToString("MM/dd/yyyy")" onchange="onPeriodFilterChange()" />
+            </div>
+        </div>
+        <div class="col-sm-12 col-md-6">
+            <label class="rai-caption">Filtri</label>
+            <div class="rai-checkbox-container rai-check-inline">
+                <div class="rai-checkbox">
+                    <input type="checkbox" id="chkPerSedi" checked="checked" data-per-check-type="@TipoEvento.Sede" onclick="onPeriodFilterChange()" />
+                    <label for="chkPerSedi">Sedi</label>
+                </div>
+                <div class="rai-checkbox">
+                    <input type="checkbox" id="chkPerServ" checked="checked" data-per-check-type="@TipoEvento.Servizio" onclick="onPeriodFilterChange()" />
+                    <label for="chkPerServ">Servizi</label>
+                </div>
+                <div class="rai-checkbox">
+                    <input type="checkbox" id="chkPerMans" checked="checked" data-per-check-type="@TipoEvento.Mansione" onclick="onPeriodFilterChange()" />
+                    <label for="chkPerMans">Mansione</label>
+                </div>
+                <div class="rai-checkbox">
+                    <input type="checkbox" id="chkPerQual" checked="checked" data-per-check-type="@TipoEvento.Qualifica" onclick="onPeriodFilterChange()" />
+                    <label for="chkPerQual">Qualifiche</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row hidden">
+
+    </div>
+    <div class="">
+        <div class="">
+            <table id="tablePeriodo" class="table rai-table rai-table-vcenter js-table-sections rai-table-high-row" style="">
+                @foreach (var item in Model.DatiContratti.Eventi.OrderByDescending(x => x.DataInizio))
+                {
+                    <tbody class="js-table-sections-header" data-contratto="" data-inizio="@item.DataInizio.ToString("yyyyyMMdd")" data-fine="@item.DataFine.ToString("yyyyMMdd")">
+                        <tr>
+                            <td class="full-width">
+                                <span class="rai-font-lg">@item.Descrizione <span class="rai-font-md-neutral-bold">@item.DataInizio.ToString("dd/MM/yyyy") - @(item.DataFine == item.MaxDate ? "presente" : item.DataFine.ToString("dd/MM/yyyy"))</span></span>
+                            </td>
+                            <td class="rai-table-td-action-toggle">
+                                <i class="fa fa-chevron-down"></i>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tbody class="no-border bg-neutrals-xl-10">
+                        <tr>
+                            <td colspan="2">
+                                <div class="panel panel-no-shadow">
+                                    <div class="panel-body">
+                                        <table class="table rai-table rai-table-vcenter rai-table-borderless rai-table-high-row">
+                                            <thead>
+                                                <tr>
+                                                    <th>Data inizio</th>
+                                                    <th>Data fine</th>
+                                                    <th>Variazione</th>
+                                                    <th>Descrizione</th>
+                                                    <th>Motivo variazione</th>
+                                                </tr>
+                                            </thead>
+                                            @foreach (var subItem in tmp.Where(x => x.DataInizio <= item.DataFine && item.DataInizio <= x.DataFine))
+                                            {
+                                                <tr data-periodo-evento="" data-inizio="@subItem.DataInizio.ToString("yyyyMMdd")" data-fine="@subItem.DataFine.ToString("yyyyMMdd")" data-type="@subItem.Tipo">
+                                                    <td>@subItem.DataInizio.ToString("dd/MM/yyyy")</td>
+                                                    <td>
+                                                        @if (subItem.DataFine == subItem.MaxDate)
+                                                        {
+                                                            <span class="feedback-success-color text-bold">presente</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span>@subItem.DataFine.ToString("dd/MM/yyyy")</span>
+                                                        }
+                                                    </td>
+                                                    <td>
+                                                        @subItem.Tipo
+                                                    </td>
+                                                    <td>
+                                                        @subItem.Descrizione
+                                                    </td>
+                                                    <td>
+                                                        @subItem.DescrizioneEvento
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </table>
+                                    </div>
+                                </div>
+
+                            </td>
+                        </tr>
+                    </tbody>
+                }
+            </table>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    function onPeriodFilterChange() {
+
+        var rifInizio = $('#periodoDa').val();
+        var rifFine = $('#periodoA').val();
+
+        rifInizio = rifInizio.substr(6, 4) + rifInizio.substr(3, 2) + rifInizio.substr(0, 2);
+        rifFine = rifFine.substr(6, 4) + rifFine.substr(3, 2) + rifFine.substr(0, 2);
+
+        var listContr = $('[data-contratto]');
+        for (var j = 0; j < listContr.length; j++) {
+            if (rifInizio <= $(listContr[j]).attr('data-fine')
+                && $(listContr[j]).attr('data-inizio') <= rifFine) {
+                $(listContr[j]).show();
+            }
+            else {
+                $(listContr[j]).hide();
+                $(listContr[j]).removeClass('open');
+            }
+        }
+
+
+        var list = $('[data-periodo-evento]');
+        for (var i = 0; i < list.length; i++) {
+            if (rifInizio <= $(list[i]).attr('data-fine')
+                && $(list[i]).attr('data-inizio') <= rifFine) {
+
+                var tipo = $(list[i]).attr('data-type');
+                if ($('[data-per-check-type="' + tipo + '"]:checked').length > 0) {
+                    $(list[i]).show();
+                } else {
+                    $(list[i]).hide();
+                }
+            }
+            else {
+                $(list[i]).hide();
+            }
+        }
+    }
+</script>

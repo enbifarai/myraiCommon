@@ -1,0 +1,221 @@
+﻿@using myRai.Models.DashboardResponsabile
+@model StatoFerieVM
+
+<style>
+    .ct-series-a .ct-line,
+    .ct-series-a .ct-point {
+        stroke: blue !important;
+    }
+
+    .ct-series-b .ct-line,
+    .ct-series-b .ct-point {
+        stroke: green !important;
+    }
+
+    div.ct-series-a {
+        background: blue !important;
+    }
+
+    div.ct-series-b {
+        background: green !important;
+    }
+</style>
+
+<section class="rai panel">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle=""></a>
+        </div>
+        <h2 class="panel-title">Stato ferie</h2>
+    </header>
+    <div class="panel-body">
+        <div class="rai-nav-fill">
+            <div class="rai-nav-fill-item">
+                @{
+                    if ( Model.Page > 1 )
+                    {
+                        <a href="javascript:reloadChartStatoFerieMini(null, @(Model.Anno), @(Model.Page - 1) );" aria-label="Vai alla data precedente">
+                            <span class="icons icon-arrow-left-circle"></span>
+                        </a>
+                    }
+                }
+            </div>
+            <div class="rai-nav-fill-item-label">
+                <div class="col-sm-12" style="padding-left:30px;">
+                    <b>Sede Gapp</b>
+
+                    <select id="sede-sel-mini" style="height:36px;margin-left:15px;padding:0px;background:#eee" onchange="reloadChartStatoFerieMini(null, @(Model.Anno), 1 );">
+                        @foreach ( var s in Model.SediGapp )
+                        {
+                            <option class="form-control " value="@s.value"
+                                    @(s.value == Model.CodiceSedeSelected ? "selected" : "")>
+                                @s.text
+                            </option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="rai-nav-fill-item">
+                @{
+                    if ( Model.Pianificato.Giorno.Count >= Model.ItemsInlist )
+                    {
+                        <a href="javascript:reloadChartStatoFerieMini(null, @(Model.Anno), @(Model.Page + 1) );" aria-label="Vai alla data successiva">
+                            <span class="icons icon-arrow-right-circle"></span>
+                        </a>
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="row">
+            <div id="@(Model.WidgetId)_Mini" style="width:100%;height:300px;" class="ct-chart ct-perfect-fourth ct-golden-section"></div>
+            <div id="wait-sede-mini" style="color:#aaa;padding-left:8px;display:none;float:right">
+                <i class="fa fa-refresh fa-spin text-primary"></i> ATTENDERE...
+            </div>
+        </div>
+        <br />
+        <div class="row">
+            @*<div class="col-xs-2">&nbsp;</div>*@
+            <div class="col-xs-12">
+                <table style="width: 100%">
+                    <tbody>
+                        <tr>
+                            <td class="td-20 text-left">
+                                <div class="rai-chart-legend bg-default ct-series-a"></div>
+                            </td>
+                            <td class="td-80 td-graf rai-font-md">Ferie pianificate ad oggi <b>@(Model.GiorniPianificatiAdOggi)</b> di <b>@(Model.GiorniPianificatiTotali)</b></td>
+
+                        </tr>
+                        <tr>
+                            <td class="td-20 text-left">
+                                <div class="rai-chart-legend bg-default ct-series-b"></div>
+                            </td>
+                            <td class="td-80 td-graf rai-font-md">Ferie effettive ad oggi <b>@(Model.GiorniEffettiviAdOggi)</b></td>
+
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            @*<div class="col-xs-2">&nbsp;</div>*@
+        </div>
+        <br />
+        <div class="rai-widget-cta-action">
+            <a href="javascript:ShowStatoFerieModal(null, @(Model.Anno), 1, '@(Model.DescrizioneSedeGapp)')" aria-label="Visualizza dettaglio stato ferie" class="btn btn-action-default font-w600 bg-interactive-secondary interactive-primary-color">Vedi</a>
+        </div>
+    </div>
+</section>
+
+<script type="text/javascript">
+    $(function () {
+        
+        var periodoMini = new Array();
+        
+        @{ 
+
+            foreach( var giorno in Model.Pianificato.Giorno )
+            {
+                <text>
+                periodoMini.push('@giorno.ToString("dd/MM/yyyy")');
+                </text>
+            }
+        }
+        
+        var pianificateMini = [@(String.Join(",", Model.Pianificato.TotalePerGiorno.Select (a=>a).ToArray() ))];
+        var effettiveMini = [@(String.Join(",", Model.Effettivo.TotalePerGiorno.Select (a=>a).ToArray() ))];
+
+        var chartMini = new Chartist.Line('#@(Model.WidgetId)_Mini', {
+            labels: periodoMini,
+            series: [{
+                name: 'Ferie programmate',
+                data: pianificateMini
+            },
+                {
+                    name: 'Ferie effettive',
+                    data: effettiveMini
+                }]
+        }, {
+                fullWidth: true,
+                chartPadding: { right: 10 }
+            }
+        );
+
+        var $chartMini = $('#@(Model.WidgetId)_Mini');
+
+        var $toolTipMini = $chartMini
+            .append('<div class="tooltip"></div>')
+            .find('.tooltip')
+            .hide();
+
+        $chartMini.on('mouseenter', '.ct-point', function () {
+            var $pointMini = $(this),
+                value = $pointMini.attr('ct:value'),
+                seriesName = $pointMini.parent().attr('ct:series-name');
+            $toolTipMini.html(seriesName + '<br>' + value).show();
+        });
+
+        $chartMini.on('mouseleave', '.ct-point', function () {
+            $toolTipMini.hide();
+        });
+
+        $chartMini.on('mousemove', function (event) {
+            $toolTipMini.css({
+                left: (event.offsetX || event.originalEvent.layerX) - $toolTipMini.width() / 2 - 10,
+                top: (event.offsetY || event.originalEvent.layerY) - $toolTipMini.height() - 40
+            });
+        });
+    });
+
+    function ShowStatoFerieModal(sede, anno, page, descSede) {
+        if (sede == null) {
+            sede = $('#sede-sel-mini').val();
+        }
+
+        $.ajax({
+            type: "POST",
+            url: "@Url.Action( "ChartStatoFerie", "DashboardResponsabile" )",
+            data: {
+                sede: sede,
+                anno: anno,
+                page: page,
+                descSede: descSede
+            },
+            dataType: "html",
+            success: function (risposta) {
+                $("#statoferie-modal-content").html(risposta);
+                $("#statoferie-modal").modal("show");
+                $("#statoferie-modal").on('shown.bs.modal', function () {
+                    CaricaGrafico();
+                });
+            },
+            error: function () {
+                    alert("Chiamata fallita!");
+                }
+            });
+    }
+
+    function reloadChartStatoFerieMini(sede, anno, page) {
+        if (sede == null) {
+            sede = $('#sede-sel-mini').val();
+        }
+
+        $('#@(Model.WidgetId)_Mini').hide();
+        $('#wait-sede-mini').show();
+
+        $.ajax({
+            type: "POST",
+            url: "@Url.Action( Model.Action, "DashboardResponsabile" )",
+            data: {
+                sede: sede,
+                anno: anno,
+                page: page
+            },
+            dataType: "html",
+            success: function (risposta) {
+                $("#@(Model.WidgetId)").html(risposta);
+            },
+            error: function () {
+                    alert("Chiamata fallita!");
+                }
+            });
+    }
+</script>

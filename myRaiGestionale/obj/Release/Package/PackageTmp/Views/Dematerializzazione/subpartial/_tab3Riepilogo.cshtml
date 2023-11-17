@@ -1,0 +1,107 @@
+﻿@using myRaiGestionale.Controllers
+@using myRaiCommonModel
+@using myRaiHelper
+@using myRaiData.Incentivi
+
+@model RiepilogoVM
+
+<div class="rai-table-info">
+    <div class="row push-10-t">
+        <div class="col-sm-4 col-md-3 col-xl-2">
+            <span>Data richiesta</span>
+        </div>
+        <div class="col-sm-8">
+            <span id="span-datarichiesta">@Model.Documento.Documento.DataCreazione.ToString("dd/MM/yyyy")</span>
+        </div>
+    </div>
+    <div class="row push-10-t">
+        <div class="col-sm-4 col-md-3 col-xl-2">
+            <span>Tipo di documento</span>
+        </div>
+        <div class="col-sm-8">
+            <span id="span-tiporichiesta">@Model.Documento.Documento.XR_DEM_TIPOLOGIE_DOCUMENTALI.Descrizione</span>
+        </div>
+    </div>
+    <div class="row push-10-t">
+        <div class="col-sm-4 col-md-3 col-xl-2">
+            <span>Dipendente</span>
+        </div>
+        <div class="col-sm-8">
+            <span id="span-dipendente">@Model.NominativoUtenteDestinatario</span>
+        </div>
+    </div>
+    <div class="row push-10-t">
+        <div class="col-sm-4 col-md-3 col-xl-2">
+            <span>Titolo documento</span>
+        </div>
+        <div class="col-sm-8">
+            <span id="span-documento">@Model.Documento.Documento.Descrizione</span>
+        </div>
+    </div>
+    @{
+        var documentoPrincipale = Model.Documento.Allegati.Where(w => w.IsPrincipal).FirstOrDefault( );
+        if (documentoPrincipale != null)
+        {
+            <div class="row push-10-t">
+                <div class="col-sm-4 col-md-3 col-xl-2">
+                    <span>Documento </span>
+                </div>
+                <div class="col-sm-8">
+                    <span id="span-allegato-container" class="">
+                        <a href="@(Url.Action( "ScaricaPDF" , "Dematerializzazione" ))?idDoc=@documentoPrincipale.Id" class="rai-font-md text-primary" id="span-allegato"><i class="fa fa-download"> </i> @documentoPrincipale.NomeFile</a>
+                    </span>
+                </div>
+            </div>
+        }
+    }
+    <div class="row push-10-t">
+        <div class="col-sm-4 col-md-3 col-xl-2">
+            <span>Incaricato della firma</span>
+        </div>
+        <div class="col-sm-8">
+            <span id="span-incaricato">@Model.NominativoUtenteIncaricatoFirma</span>
+        </div>
+    </div>
+    <div class="row push-10-t">
+        <div class="col-sm-4 col-md-3 col-xl-2">
+            <span>Nota per gli approvatori</span>
+        </div>
+        <div class="col-sm-8">
+            <span id="span-nota">@Model.Documento.Documento.Note</span>
+        </div>
+    </div>
+
+    @{
+        var documentiASupporto = Model.Documento.Allegati.Where(w => !w.IsPrincipal).ToList( );
+        if (documentiASupporto != null && documentiASupporto.Any( ))
+        {
+            int riga = 0;
+            foreach (var a in documentiASupporto.OrderBy(w => w.Id).ToList())
+            {
+                riga++;
+                <div class="row push-10-t">
+                    @{ 
+                        if (riga == 1)
+                        {
+                            <div class="col-sm-4 col-md-3 col-xl-2">
+                                <span>Documenti a supporto</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="col-sm-4 col-md-3 col-xl-2">
+                                <span></span>
+                            </div>
+
+                        }
+                    }
+                    <div class="col-sm-8">
+                        <span id="span-allegato-container" class="rai-font-md text-primary">
+                            <a href="@(Url.Action( "ScaricaPDF" , "Dematerializzazione" ))?idDoc=@a.Id" class="rai-font-md text-primary" id="span-allegato"><i class="fa fa-download"> </i> @a.NomeFile</a>
+                        </span>
+                    </div>
+                </div>
+            }
+        }
+    }
+</div>

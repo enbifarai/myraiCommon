@@ -1,0 +1,1004 @@
+﻿@model myRaiCommonModel.PianoFerieApprovatoreModel
+
+<style>
+    #table-name thead {
+        display: block;
+    }
+    #table-name tbody {
+        display: block;
+        display: block;
+        max-height: 65vh;
+        overflow: hidden;
+        padding-bottom: 25px;
+    }
+
+        #table-name tbody td {
+            width: 160px !important;
+        }
+
+            #table-name tbody td span:first-child {
+                display: inline-block;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                width: 75%;
+                margin-bottom: -2px;
+            }
+
+    #pf-table {
+        width: 100%;
+    }
+
+        #pf-table thead {
+            display: block;
+            overflow: hidden;
+            overflow-y:scroll;
+            padding-right: 20px;
+        }
+
+        #pf-table tbody {
+            display: block;
+            display: block;
+            overflow-y: scroll;
+            overflow-x: scroll;
+            max-height: 65vh;
+        }
+
+            #pf-table.pf-td-ext tbody td {
+                min-width: 27px !important;
+            padding-top: 3px;
+            }
+
+        #pf-table.pf-td-comp tbody td {
+            min-width: 17px !important;
+        }
+
+    #td-t {
+        vertical-align: top;
+    }
+
+</style>
+
+<div class="modal-dialog modal-dialog-popin">
+    <div class="modal-content height100" id="pianoferie-app-content" style="position:relative">
+        <div class="block-header bg-cdf" style="height: 58px; width: 1440px;position:fixed;">
+            <ul class="block-options visible-xs">
+                <li>
+                    <button data-dismiss="modal" type="button"><span aria-hidden="true">×</span></button>
+                </li>
+            </ul>
+
+
+            <div class="calendario-annoVisualizzato" style="max-width: 1400px; min-width: 1000px;">PIANO FERIE SEDE @Model.SedeSelezionataCodice.Substring(0, 5) - @Model.SedeSelezionataDesc</div>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+
+            </div>
+            @{
+
+                DateTime Dcursor = new DateTime(DateTime.Now.Year, 1, 1);
+                int counter = 0;
+            }
+        <div class="row" style="margin-top:68px;max-width:100%;text-align:center">
+                            <div class="col-sm-12" style="padding-left:30px">
+                                <b>Sede Gapp</b>
+
+                                <select id="sede-sel" style="height:36px;margin-left:15px;padding:0px;background:#eee" onchange="SedeChanged()">
+                                    @foreach (var s in Model.SediRepartiList)
+                                    {
+                                        <option class="form-control " value="@s.value"
+                                                @(s.value == Model.SedeSelezionataCodice ? "selected" : "")>
+                                            @s.text
+                                        </option>
+                                    }
+                                </select>
+                <button id="btn-comp" style="float:right;width:90px" class="btn btn-default" onclick="setComp()">Compatta</button>
+                <button id="btn-ext" style="float:right;width:90px" class="btn btn-primary" onclick="setExt()">Estesa</button>
+                                <br />
+                                <em style="font-size:90%"> I dipendenti col nome in grassetto hanno inviato il loro piano ferie per l'approvazione</em><br />
+
+
+                <em style="font-size:90%">Per rifiutare l’intero piano ferie, cliccare sull’icona  <span class="icons icon-note text-warning"></span> e successivamente il tasto “Rifiuta”.  </em>
+                <em style="font-size:90%">Per rifiutare solo alcuni giorni, dopo aver cliccato sull’icona  <span class="icons icon-note text-warning"></span> selezionare i giorni tramite un click sul giorno e successivamente il tasto “Rifiuta”.  </em>
+
+
+                @*<em style="font-size:90%">Cliccando sull'icona <span class="icons icon-note"></span> sarà possibile inviare al dipendente un messaggio relativo al suo piano ferie, sull'icona del giorno per inviarne uno relativo al giorno specifico </em>*@
+
+
+                                <div id="wait-sede" style="color:#aaa;padding-left:8px;display:none;float:right">
+
+
+                                    <i class="fa fa-refresh fa-spin text-primary"></i> ATTENDERE...
+                                </div>
+
+
+                            </div>
+                        </div>
+                        <div id="max-len" style="overflow:auto">
+
+
+                            <table id="table-cont" style="margin-top:5px;width:94%;border:solid 2px #eee;margin-left:25px">
+                                <tr>
+                                    <td style="width:160px;vertical-align:top">
+                                        <table id="table-name">
+                                            <thead>
+                                                <tr>
+                                                    <td class="bord3" style="width:160px;border-bottom:none">&nbsp;</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="bord3" style="width:160px;border-top:none">&nbsp;</td>
+                                                </tr>
+                                                <tr>
+                                    <td class="bord3" style="width:160px;border-top:none;padding-left:14px">
+                                        <div id="selezall" class="rai-checkbox  " style="display: inline-block;margin-left: -10px;margin-bottom: 3px;">
+                                            <input type="checkbox" onchange="SelezionaTutti()" id="cball">
+                                            <label for="check1"></label>
+                                        </div>
+                                        <em>PRESENTI</em>
+                                    </td>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                @{
+                                    var db = new myRaiData.digiGappEntities();
+                                    var progre = 0;
+                                    var selezionabili = 0;
+                                }
+                                                @foreach (var dip in Model.response.dipendenti)
+                                                {
+                                    bool InviatoPF = db.MyRai_PianoFerie.Any(x => x.matricola == dip.matricola.Substring(1) && x.anno == DateTime.Now.Year && x.data_consolidato != null);
+                                    var NonInviatoSoloVisGapp = Model.PianoFerieDipendenti.Any(x => x.Matricola == dip.matricola.Substring(1) && x.NessunInvioPianoFerie);
+
+                                                    var NonInviatoMaSedeConvalidata = Model.PianoFerieDipendenti.Any(x => x.Matricola == dip.matricola.Substring(1) && x.NessunInvioPianoFerie);
+                                                    var RowFerie = Model.PianoFerieDipendenti.Where(x => x.Matricola == dip.matricola.Substring(1)).FirstOrDefault();
+                                                    var esentato = Model.EsentatiPianoFerie.Contains(dip.matricola.Substring(1));
+                                    var dipApprovato = Model.PianoFerieDipendenti.Any(x => x.Matricola == dip.matricola.Substring(1) && x.DataApprovazione != null);
+                                    progre++;
+
+                                    <tr data-pr="@progre">
+                                        <td style="padding-left:5px">
+                                            @{
+                                                bool DisableCB = InviatoPF == false || dipApprovato || RowFerie == null || NonInviatoSoloVisGapp || esentato;
+                                                if (!DisableCB)
+                                                {
+                                                    selezionabili++;
+                                                }
+                                            }
+                                            <div class="rai-checkbox  @(DisableCB ? "disable":"")">
+                                                <input type="checkbox" onchange="AbilitaTastoApprova()"
+                                                       @if (dipApprovato) { @: checked
+                                                       }
+                                                       class="pf-cb" data-matricola="@dip.matricola.Substring(1)">
+                                                <label for="check1"></label>
+                                            </div>
+                                        </td>
+                                        <td class="bord3 @(!esentato?"text-primary":"") nome-dip" style="@(esentato?"background:#eee;":"") position:relative;width:100px;@( InviatoPF || esentato ? "font-weight:bold" : "")">
+                                                            <span title="@(esentato?"Esentato dal piano ferie":"")" style="@(esentato?"font-style:italic":"")">@dip.cognome @(dip.nome.Substring(0, 1)).</span>
+
+                                            <span data-toggle="tooltip" data-container="body" data-original-title="Modifica piano ferie" data-esentato="@(esentato?"1":"0")" data-consolidato="@(RowFerie != null && NonInviatoSoloVisGapp==false ? "true" : "false")" data-matricola="@dip.matricola.Substring(1)" class="@(esentato || dipApprovato || !InviatoPF ?"hide":"") icons icon-note notepf-n text-warning"
+                                                  onclick="SelezionaTRrifiuto(this)"></span>
+
+                                            @*@if (NonInviatoMaSedeConvalidata)
+                                                            {
+                                                                <i id="" style="font-size:16px;cursor:pointer;margin-left:10px"
+                                                                   data-toggle="tooltip" title="" data-original-title="Nessun invio piano ferie dal dipendente, giorni recuperati da Gapp"
+
+                                                                   class="fa fa-info-circle"></i>
+                                                }*@
+                                                        </td>
+                                                    </tr>
+                                                }
+                                                <tr class="bottom-day">
+                                                    <td style="height:20px"></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                    <td id="td-t">
+                                        <div id="div-t" style="max-width:1px;overflow-x:hidden">
+                            <input id="selezionabili" type="hidden" value="@selezionabili" />
+                                            <table id="pf-table" class="pf-td-ext" style="border:solid 3px #eee;border-top:none">
+                                                <thead>
+                                                    <tr>
+                                    @{ 
+                                        int meseLimite = 12;
+
+                                        if ( Model.AlmenoUnUtenteRichiede2021 )
+                                        {
+                                            meseLimite = 15;
+                                        }
+                                    }
+
+                                    @for (int i = 1; i <= meseLimite ; i++)
+                                                        {
+                                        int year = DateTime.Now.Year;
+                                        int mese = i;
+                                        if ( mese > 12)
+                                        {
+                                            mese = mese - 12;
+                                            year = DateTime.Now.Year + 1;
+                                        }
+                                                            counter++;
+                                        DateTime d = new DateTime(year, mese , 1);
+                                                            <td data-prog="@counter" class="bord2" style="text-align:center" colspan="@d.AddMonths(1).AddDays(-1).Day">
+                                            <b>@d.AddDays(-1).AddMonths(1).ToString("MMMM").ToUpper() @(i > 12 ? " " + year.ToString() : "") </b>
+                                                            </td>
+                                                        }
+                                                    </tr>
+                                                    <tr>
+
+                                                        @while (true)
+                                                        {
+                                                            bool SatSun = (int)Dcursor.DayOfWeek == 0 || (int)Dcursor.DayOfWeek == 6;
+                                                            <td data-day="@Dcursor.Day" data-month="@Dcursor.Month" data-header="@Dcursor.ToString("dd/MM/yyyy")" class="bord2 tdCalWid @(SatSun ? "tdDayGrayCal" : "tdDay")"><div class="div-lar pf-ext">@Dcursor.Day</div></td>
+
+                                            if ( Model.AlmenoUnUtenteRichiede2021 )
+                                            {
+                                                DateTime dataLimite = new DateTime( DateTime.Now.Year + 1 , 3 , 31 );
+                                                if ( Dcursor.Date >= dataLimite.Date )
+                                                {
+                                                    Dcursor = new DateTime( DateTime.Now.Year , 1 , 1 );
+                                                    break;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                            if (Dcursor.Month == 12 && Dcursor.Day == 31)
+                                                            {
+                                                                Dcursor = new DateTime(DateTime.Now.Year, 1, 1);
+                                                                break;
+                                                            }
+                                            }
+
+                                                            Dcursor = Dcursor.AddDays(1);
+                                                        }
+                                                    </tr>
+                                                    <tr>
+
+                                                        @while (true)
+                                                        {
+                                                            bool SatSun = (int)Dcursor.DayOfWeek == 0 || (int)Dcursor.DayOfWeek == 6;
+                                                            <td data-day="@Dcursor.Day" data-month="@Dcursor.Month" data-presenti="@Dcursor.ToString("dd/MM/yyyy")" class="bord2 tdCalWid @(SatSun ? "tdDayGrayCal" : "tdDay")"><div class="div-lar pf-ext"></div></td>
+
+                                            if ( Model.AlmenoUnUtenteRichiede2021 )
+                                            {
+                                                DateTime dataLimite = new DateTime( DateTime.Now.Year + 1 , 3 , 31 );
+                                                if ( Dcursor.Date >= dataLimite.Date )
+                                                {
+                                                    break;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                            if (Dcursor.Month == 12 && Dcursor.Day == 31)
+                                                            {
+                                                                break;
+                                                            }
+                                            }
+                                                            Dcursor = Dcursor.AddDays(1);
+                                                        }
+                                                    </tr>
+                                                </thead>
+                                                <tbody onscroll="setScroll();">
+                                    @{ int progress = 0;}
+                                                    @foreach (var dip in Model.response.dipendenti)
+                                                    {
+                                                        Dcursor = new DateTime(DateTime.Now.Year, 1, 1);
+                                                        var RowFerie = Model.PianoFerieDipendenti.Where(x => x.Matricola == dip.matricola.Substring(1)).FirstOrDefault();
+                                        bool approvato = RowFerie != null && RowFerie.MyPianoferieDB != null && RowFerie.MyPianoferieDB.data_approvato != null;
+                                        bool firmato = RowFerie != null && RowFerie.MyPianoferieSediDB_relativo != null &&
+                                                 RowFerie.MyPianoferieSediDB_relativo.data_firma != null;
+                                        progress++;
+
+                                        <tr data-matricola="@dip.matricola.Substring(1)" data-progress="@progress"
+                                            @if (approvato) { @: data-approvato="1"
+                                            }
+                                            @if (firmato) { @: data-firmato="1"
+                                            }>
+
+                                                            @while (true)
+                                                            {
+                                                bool utenteConAnnoSuccessivo = false;
+                                                if ( Model.AlmenoUnUtenteRichiede2021 )
+                                                {
+                                                    utenteConAnnoSuccessivo = Model.MatricoleCheRichiedonoAnnoSuccessivo.Count( w => w.Equals( dip.matricola.Substring( 1 ) ) ) > 0;
+                                                }
+
+                                                bool SatSun = ( int ) Dcursor.DayOfWeek == 0 || ( int ) Dcursor.DayOfWeek == 6 || ( ( Dcursor.Year > DateTime.Now.Year && Model.AlmenoUnUtenteRichiede2021 && !utenteConAnnoSuccessivo ) );
+                                                                bool IsFeriePian = RowFerie != null && (RowFerie.GiorniFerie.Any(x => x == Dcursor) || RowFerie.GiorniRR.Any(x => x == Dcursor) ||
+                                                                    RowFerie.GiorniPR.Any(x => x == Dcursor) ||
+                                                                    RowFerie.GiorniPF.Any(x => x == Dcursor) ||
+                                                                    RowFerie.GiorniPX.Any(x => x == Dcursor) ||
+
+                                                                    RowFerie.GiorniRN.Any(x => x == Dcursor));
+
+                                                                bool HasNote = RowFerie != null && RowFerie.GiorniConNote.Any(x => x == Dcursor);
+                                                                bool IsFE_GAPP = RowFerie != null && RowFerie.Gapp_FE.Contains(Dcursor);
+                                                                bool IsPF_GAPP = RowFerie != null && RowFerie.Gapp_PF.Contains(Dcursor);
+                                                                bool IsPR_GAPP = RowFerie != null && RowFerie.Gapp_PR.Contains(Dcursor);
+
+                                                                <td data-day="@Dcursor.Day" data-month="@Dcursor.Month" data-date="@Dcursor.ToString("dd/MM/yyyy")" style="@(HasNote ? "border:dotted 2px #dc886f" : "")"
+                                                                    class="bord2 tdCalWid @(SatSun ? "tdDayGrayCal" : "tdDay")">
+                                                                    @if (!IsFeriePian)
+                                                                    {
+                                                                        if (IsFE_GAPP)
+                                                                        {
+                                                                            <pie class="pie-cal-anno pie-fe"></pie>
+                                                                        }
+                                                                        else if (IsPF_GAPP)
+                                                                        {
+                                                                            <pie class="pie-cal-anno pie-pf"></pie>
+                                                                        }
+                                                                        else if (IsPR_GAPP)
+                                                                        {
+                                                                            <pie class="pie-cal-anno pie-pr"></pie>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            @:&nbsp;
+                                                                        }
+
+                                                                    }
+                                                                    else
+                                                                    {
+
+                                                                        bool appr = RowFerie != null && RowFerie.DataApprovazione != null;
+                                                                        bool rr = RowFerie.GiorniRR.Any(x => x == Dcursor);
+                                                                        bool rn = RowFerie.GiorniRN.Any(x => x == Dcursor);
+                                                                        bool pf = RowFerie.GiorniPF.Any(x => x == Dcursor);
+                                                                        bool pr = RowFerie.GiorniPR.Any(x => x == Dcursor);
+                                                                        bool px = RowFerie.GiorniPX.Any(x => x == Dcursor);
+                                                                        string cla = rr == true ? "pianif-RR" : rn == true ? "pianif-RN" : "pianif";
+                                                        if (pf)
+                                                        {
+                                                                            cla = "pianif-PF";
+                                                                        }
+                                                        if (pr)
+                                                        {
+                                                                            cla = "pianif-PR";
+                                                                        }
+                                                        if (px)
+                                                        {
+                                                                            cla = "pianif-PX";
+                                                                        }
+
+                                                        <pie style="cursor:pointer" class="pie-cal-anno @(appr ? "pie-appr" : "pie-inapp") @cla" onclick="SelezionaTDrifiuto(this)"></pie>
+                                                                    }
+
+
+                                                                </td>
+
+                                                if ( Model.AlmenoUnUtenteRichiede2021 )
+                                                {
+                                                    DateTime dataLimite = new DateTime( DateTime.Now.Year + 1 , 3 , 31 );
+                                                    if ( Dcursor.Date >= dataLimite.Date )
+                                                    {
+                                                        break;
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                                if (Dcursor.Month == 12 && Dcursor.Day == 31)
+                                                                {
+                                                                    break;
+                                                                }
+                                                }
+                                                                Dcursor = Dcursor.AddDays(1);
+                                                            }
+                                                        </tr>
+                                                    }
+                                                    @{
+                                                        Dcursor = new DateTime(DateTime.Now.Year, 1, 1);
+                                                    }
+
+                                                    <tr class="bottom-day">
+
+                                                        @while (true)
+                                                        {
+                                            bool utenteConAnnoSuccessivo = false;
+                                            bool SatSun = (int)Dcursor.DayOfWeek == 0 || (int)Dcursor.DayOfWeek == 6 || ( ( Dcursor.Year > DateTime.Now.Year && Model.AlmenoUnUtenteRichiede2021 && !utenteConAnnoSuccessivo ) );
+                                                            <td data-day="@Dcursor.Day" data-month="@Dcursor.Month" class="bord2 tdCalWid @(SatSun?"tdDayGrayCal":"tdDay")">@Dcursor.Day</td>
+
+                                            if ( Model.AlmenoUnUtenteRichiede2021 )
+                                            {
+                                                DateTime dataLimite = new DateTime( DateTime.Now.Year + 1 , 3 , 31 );
+                                                if ( Dcursor.Date >= dataLimite.Date )
+                                                {
+                                                    break;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                            if (Dcursor.Month == 12 && Dcursor.Day == 31)
+                                                            {
+                                                                break;
+                                                            }
+                                            }
+                                                            Dcursor = Dcursor.AddDays(1);
+                                                        }
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+
+        <div class="row" style="width:99%;height:80px;position:absolute;bottom:0px;text-align:center; margin-left:5px;">
+
+            @*<em style="font-size:90%">Prima della convalida finale da parte del responsabile di secondo livello è sempre possibile togliere l'approvazione per permettere modifiche al piano</em>
+                <div class="rai-btn-fill" id="div-approva">
+                    @if (true)
+                    {
+
+                    }
+                    <a class="btn rai-btn-primary @(Model.response.dipendenti==null || Model.response.dipendenti.Count()==0
+                                                //|| Model.SedeSelezionataApprovataData != null
+                                                ? "disable" : "")" data-toggle="tooltip" title=" Esporta piano ferie " style="min-height:48px; padding: 12px 6px; " href="javascript:ApprovaPianoFerieSede('@Model.SedeSelezionataCodice',@Dcursor.Year)">Approva</a>
+                    <a class="btn rai-btn-secondary" href="@Url.Action("EsportaPianoFerie", "PianoFerie", new { sede = Model.SedeSelezionataCodice, anno = DateTime.Now.Year })" target="_blank" data-toggle="tooltip" title=" Esporta piano ferie " style="min-height:48px; padding: 12px 6px; "> Esporta piano ferie </a>
+                </div>*@
+                    @if (Model.SedeSelezionataApprovataData == null)
+                    {
+                        <em style="font-size:90%">Prima della convalida finale da parte del responsabile di secondo livello è sempre possibile togliere l'approvazione per permettere modifiche al piano</em>
+                <div class="rai-btn-fill" id="div-approva">
+                    <a id="approva-pf" class="btn rai-btn-primary disable" title=" Approva piano ferie " style="min-height:48px; padding: 12px 6px; " href="javascript:ApprovaPianoFerieSede('@Model.SedeSelezionataCodice',@Dcursor.Year)">Approva</a>
+                    <a class="btn rai-btn-secondary" href="@Url.Action("EsportaPianoFerie", "PianoFerie", new { sede = Model.SedeSelezionataCodice, anno = DateTime.Now.Year })" target="_blank" style="min-height:48px; padding: 12px 6px; "> Esporta piano ferie </a>
+                        </div>
+                    }
+                    else
+                    {
+                @*<div><span style="margin-left:10px"><b>Approvata @(( ( DateTime ) Model.SedeSelezionataApprovataData ).ToString( "dd/MM/yyyy" ))</b></span></div>*@
+                <div class="rai-btn-fill" id="div-approva">
+                    <a id="approva-pf" class="btn rai-btn-primary disable" data-toggle="tooltip" title=" Approva piano ferie " style="min-height:48px; padding: 12px 6px; " href="javascript:ApprovaPianoFerieSede('@Model.SedeSelezionataCodice',@Dcursor.Year)">Approva</a>
+
+                    <a href="/pianoferie/downloadpdfpf?sede=@(Model.SedeSelezionataCodice)&anno=@Dcursor.Year&att=1" class="btn rai-btn-secondary" style="min-height:48px; padding: 12px 6px; ">Genera PDF attuale</a>
+                            @if (Model.SedeSelezionataFirmataData == null)
+                            {
+                                <a style="min-height:48px; padding: 12px 6px; " class="btn rai-btn-secondary @(Model.response.dipendenti==null || Model.response.dipendenti.Count()==0?"disable":"")" href="javascript:StornaApprovazione('@Model.SedeSelezionataCodice',@Dcursor.Year)">
+                                    Storna approvazione
+                                </a>
+                                <a href="/pianoferie/downloadpdfpf?sede=@(Model.SedeSelezionataCodice)&anno=@Dcursor.Year" class="btn rai-btn-small" style="min-height:48px; padding: 12px 6px; ">Scarica PDF approvato</a>
+                        <a class="btn btn rai-btn-small" href="@Url.Action("EsportaPianoFerie", "PianoFerie", new { sede = Model.SedeSelezionataCodice, anno = DateTime.Now.Year })" target="_blank" data-toggle="tooltip" title=" Esporta piano ferie " style="min-height:48px; padding: 12px 6px; "> Esporta piano ferie </a>
+                            }
+                            else
+                            {
+                                <a href="/pianoferie/downloadpdfpf?sede=@(Model.SedeSelezionataCodice)&anno=@Dcursor.Year" class="btn rai-btn-secondary" style="min-height:48px; padding: 12px 6px; ">Scarica PDF approvato</a>
+                        <a class="btn btn rai-btn-secondary" href="@Url.Action("EsportaPianoFerie", "PianoFerie", new { sede = Model.SedeSelezionataCodice, anno = DateTime.Now.Year })" target="_blank" data-toggle="tooltip" title=" Esporta piano ferie " style="min-height:48px; padding: 12px 6px; "> Esporta piano ferie </a>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+<input type="hidden" id="matricola" />
+<input type="hidden" id="data" />
+<input type="hidden" id="anno" />
+<div class="modal fade" id="nota-giorno" style="z-index:3000" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-popout">
+        <div class="modal-content" style="height:300px;width:600px;margin:auto;margin-top:62px">
+            <div class="block block-themed block-transparent remove-margin-b">
+
+
+                <div class="block-content block-content-full block-content-mini bg-primary">
+                    <h4 id="titolo-nota" class="font-w600">Inserisci la nota</h4>
+                </div>
+
+
+                <div class="block-content">
+
+                    <div class="form-group push-10">
+                        <div class="col-xs-12">
+                            <textarea id="nota-digitata" class="form-control" rows="4" placeholder=""></textarea>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="block-content block-content-full bg-gray-lighter clearfix">
+                    <button onclick="SalvaNota()" id="conferma-nota" class="bg-puls_dash btn-scriv pull-right btn btn-square btn-default push-5-r push-10" type="button">
+                        CONFERMA
+                    </button>
+                    <button onclick="$('#nota-giorno').modal('hide')" class="pull-right btn btn-square btn-default bg-puls_dash btn-scriv push-5-r push-10" type="button"
+                            style="margin-right: 10px;">
+                        ANNULLA
+                    </button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <input type="hidden" id="action-url" />
+</div>
+<div class="modal fade" id="nota-matricola" style="z-index:3000" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-popout">
+        <div class="modal-content" style="height:300px;width:600px;margin:auto;margin-top:80px">
+            <div class="block block-themed block-transparent remove-margin-b">
+
+
+                <div class="block-content block-content-full block-content-mini bg-primary">
+                    <h4 id="titolo-nota-matricola" class="font-w600">Inserisci la nota</h4>
+                </div>
+
+
+                <div class="block-content">
+
+                    <div class="form-group push-10">
+                        <div class="col-xs-12">
+                            <textarea id="nota-matricola-digitata" class="form-control" rows="4" placeholder=""></textarea>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="block-content block-content-full bg-gray-lighter clearfix">
+                    <button onclick="SalvaNotaMatricola()" id="conferma-nota-matricola" class="bg-puls_dash btn-scriv pull-right btn btn-square btn-default push-5-r push-10" type="button">
+                        CONFERMA
+                    </button>
+                    <button onclick="$('#nota-matricola').modal('hide')" class="pull-right btn btn-square btn-default bg-puls_dash btn-scriv push-5-r push-10" type="button"
+                            style="margin-right: 10px;">
+                        ANNULLA
+                    </button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <input type="hidden" id="action-url" />
+</div>
+<script>
+
+    if ($("#selezionabili").val() == "0") {
+        $("#selezall").addClass("hide");
+    }
+
+    function SelezionaTutti() {
+        var sel = $("#cball").prop("checked");
+        $(".pf-cb").each(function () {
+            if ($(this).closest("div").hasClass("disable")==false) {
+                $(this).prop("checked", sel);
+                
+                    $(this).change();
+                
+            }
+        });
+    }
+    function SelezionaTDrifiuto(element) {
+        debugger
+        if ($(element).closest("tr").hasClass("border-interactive-primary-color")) {
+            if ($(element).closest("td").hasClass("sel-rifiuto"))
+                $(element).closest("td").removeClass("sel-rifiuto");
+            else
+             $(element).closest("td").addClass("sel-rifiuto");
+        }
+
+    }
+    function SelezionaTRrifiuto(element) {
+        debugger
+        $("#table-cont td").removeClass("sel-rifiuto");
+
+        var prog = $(element).closest("tr").attr("data-pr");
+        var tr = $("#pf-table tr[data-progress=" + prog + "]");
+        if ($(tr).hasClass("bordosel")) {
+            $(tr).removeClass("border-interactive-primary-color");
+            $(tr).removeClass("bordosel");
+            $("#approva-pf").text("Approva");
+            $("#approva-pf").addClass("disable");
+        }
+        else {
+            $("#pf-table tr").removeClass("border-interactive-primary-color");
+            $("#pf-table tr").removeClass("bordosel");
+            $(tr).addClass("border-interactive-primary-color");
+            $(tr).addClass("bordosel");
+            $("#approva-pf").removeClass("disable");
+            $("#approva-pf").text("Rifiuta");
+        }
+
+
+        $(".pf-cb").each(function () {
+            if ($(this).parent("div").hasClass("disable") == false) {
+                $(this).prop("checked", false);
+            }
+        });
+    }
+    Presenti();
+
+    function Presenti() {
+        var totMatricole = $(".nome-dip").length;
+        var totDate = $("td[data-presenti]");
+        $(totDate).each(function () {
+            var data = $(this).attr("data-presenti");
+            var presenti = 0;
+            $("td[data-date='" + data + "']").each(function () {
+                if ($(this).html().trim().indexOf("pie") < 0)
+                    presenti++;
+            });
+            $(this).html("<span style='font-size:11px;font-weight:bold'>" + presenti +"</span>");
+        });
+    }
+
+
+
+    function SalvaNota() {
+        var matr = $("#matricola").val();
+        var da = $("#data").val();
+        var nota = $("#nota-digitata").val();
+        $.ajax({
+            type: 'POST',
+            url: "/PianoFerie/saveNota",
+            dataType: "json",
+            data: { matricola: matr, data: da, nota: nota },
+            cache: false,
+            success: function (data) {
+                if (data.result == true) {
+                    $('#nota-giorno').modal('hide');
+                    var t = $("tr[data-matricola='" + matr + "']").find("td[data-date='" + da + "']")[0];
+                    if (nota.trim()!="")
+                        $(t).css("border", "dotted 2px #dc886f");
+                    else
+                        $(t).css("border", "solid 1px #eee");
+                }
+                else
+                    swal(data.error, '', 'error');
+            }
+        });
+    }
+    if ($("#td-t").width() == 0) {
+                 setTimeout(
+                     function () {
+
+                    $("#div-t").css("max-width", $("#td-t").width() + "px");
+                         $("#pf-table thead").css("max-width", $("#td-t").width() + "px");
+                         $("#pf-table tbody").css("max-width", $("#td-t").width() + "px");
+                         
+                    $("#max-len").css("max-height", $("#pianoferie-app-content").height() - 210 + "px");
+                        if ($("#max-len").get(0).scrollHeight > $("#max-len").height()) {
+                            $(".bottom-day").show();
+                            
+                        }
+                        else {
+                            $(".bottom-day").hide();
+                         }
+                         getvis();
+                    },
+                    2000
+                );
+    }
+    else {
+        $("#div-t").css("max-width", $("#td-t").width() + "px");
+        $("#pf-table thead").css("max-width", $("#td-t").width() + "px");
+        $("#pf-table tbody").css("max-width", $("#td-t").width() + "px");
+
+        $("#max-len").css("max-height", $("#pianoferie-app-content").height() - 210 + "px");
+        var lunTabella = $("#pf-table").height();
+        if (lunTabella < 600) {
+            var tdlen= $("#pianoferie-app-content").height() - 210 - lunTabella - 40;
+            $("#pf-table").append("<tr><td colspan='31' style='height:"+tdlen+"px'></td></tr>");
+        }
+        if ($("#max-len").get(0).scrollHeight > $("#max-len").height()) {
+            $(".bottom-day").show();
+            
+        }
+        else {
+            $(".bottom-day").hide();
+            
+        }
+        getvis();
+    }
+
+ 
+    function SedeChanged() {
+        $("#max-len").addClass("rai-loader");
+        var sede = $("#sede-sel").val();
+        $("#wait-sede").css("display", "inline-block");;
+        $("#table-cont").css("opacity", "0.3");
+        $(".calendario-annoVisualizzato").text("PIANO FERIE");
+        ShowPfApprovatore(sede);
+    }
+    function ShowNota(matr, data, nominativo) {
+        $("#matricola").val(matr);
+        $("#data").val(data);
+        $("#titolo-nota").text("Inserisci una nota sul " + data + " di " + nominativo);
+        $.ajax({
+            type: 'GET',
+            url: "/PianoFerie/getNota",
+            dataType: "json",
+            data: { matricola: matr, data: data },
+            cache: false,
+            success: function (data) {
+                $("#nota-giorno").modal("show");
+                $("#nota-digitata").val(data.nota);
+            }
+        });
+    }
+    function ShowNotaMatricola(matr, anno,nominativo ) {
+        $("#matricola").val(matr);
+        $("#anno").val(anno);
+        $("#titolo-nota-matricola").text("Inserisci una nota per il piano ferie di " + nominativo);
+
+        $.ajax({
+            type: 'GET',
+            url: "/PianoFerie/getNotaPF",
+            dataType: "json",
+            data: { matricola: matr, anno: anno },
+            cache: false,
+            success: function (data) {
+               
+                $("#nota-matricola").modal("show");
+                $("#nota-matricola-digitata").val(data.nota);
+               
+
+            }
+        });
+    }
+    function SalvaNotaMatricola() {
+        var matr = $("#matricola").val();
+        var anno = $("#anno").val();
+        var nota = $("#nota-matricola-digitata").val();
+        $.ajax({
+            type: 'POST',
+            url: "/PianoFerie/saveNotaPF",
+            dataType: "json",
+            data: { matricola: matr, anno: anno, nota: nota },
+            cache: false,
+            success: function (data) {
+                if (data.result == true) {
+                    $('#nota-matricola').modal('hide');
+                    var m = $("span[data-matricola='" + matr + "']")[0];
+
+                    if (nota != null && nota.trim() != "") {
+                        $(m).removeClass("notepf-n");
+                        $(m).addClass("notepf-y");
+                    }
+                    else {
+                        $(m).removeClass("notepf-y");
+                        $(m).addClass("notepf-n");
+                    }
+                }
+                else
+                    swal(data.error, '', 'error');
+            }
+        });
+    }
+    function StornaApprovazione(sede, anno) {
+
+        swal({
+            title: 'Confermi ?',
+            text: "Verrranno stornate solo le approvazioni dei singoli piani ferie non ancora firmati e non di tutta la sede.",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Conferma',
+            cancelButtonText: 'Annulla'
+        }).then(function () {
+            $.ajax({
+                type: 'POST',
+                url: "/PianoFerie/stornasede",
+                dataType: "json",
+                data: { anno: anno, sede: sede },
+                cache: false,
+                success: function (data) {
+                    if (data.result == true) {
+                        SedeChanged();
+                    }
+                    else
+                        swal(data.error, '', 'error');
+
+                }
+            });
+            });
+    }
+    function RifiutaPianoFerie() {
+        var progr = $("#table-cont tr.border-interactive-primary-color").attr("data-progress");
+        var trName = $("#table-name tr[data-pr=" + progr + "]");
+        var matr = trName.find("span.icons").attr("data-matricola");
+
+        var dateRifiutate = [];
+
+            $("#table-cont tr.border-interactive-primary-color td.sel-rifiuto").each(function () {
+                dateRifiutate.push($(this).attr("data-date"));
+            });
+
+
+
+        var msg = "Il piano ferie della matricola " + matr + " verrà rifiutato e tutti i giorni impostati verranno eliminati.";
+        if (dateRifiutate.length > 0) {
+            msg = "Il piano ferie della matricola " + matr + " verrà rifiutato ed i giorni selezionati (" + dateRifiutate.length + ") verranno eliminati.";
+        }
+
+        var qselezionati = dateRifiutate.length;
+
+        if (dateRifiutate.length == 0) {
+            $("#table-cont tr.border-interactive-primary-color td").each(function () {
+                if ($(this).find("pie.pianif").length > 0 || $(this).find("pie.pianif-RR").length > 0 || $(this).find("pie.pianif-RN").length > 0) {
+                    dateRifiutate.push($(this).attr("data-date"));
+                }
+            });
+        }
+
+        msg += "<div style='font-size: 12px;font-weight: bold;text-align: left;margin-top:16px'>Nota per il dipendente"+
+            "<span style='color: red;'>*</span></div>";
+        msg += "<textarea onkeyup='checknota()' id='notadip' style='width:100%'>";
+        swal({
+            title: 'Confermi ?',
+            html: msg,
+            type: 'warning',
+            onOpen: function () { $(".swal2-confirm").addClass("disable") },
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Conferma',
+            cancelButtonText: 'Annulla',
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+            inviaRifiuto(matr, dateRifiutate, $("#notadip").val(), qselezionati);
+            });
+    }
+    function inviaRifiuto(matricola, giorniRifiutati, nota,qselezionati) {
+        $("#pianoferie-app-content").addClass("rai-loader");
+        $.ajax({
+            type: 'POST',
+            url: "/PianoFerie/rimuoviGiorni",
+            dataType: "json",
+            data: { matricola: matricola, date: giorniRifiutati.toString(), nota: nota, quantisel: qselezionati },
+            cache: false,
+            success: function (data) {
+                debugger
+                $("#pianoferie-app-content").removeClass("rai-loader");
+                if (data.esito == true) {
+                    if (qselezionati > 0) {
+                        $("#table-cont tr.border-interactive-primary-color td").each(function () {
+                            var da = $(this).attr("data-date");
+                            if (giorniRifiutati.indexOf(da) >= 0) {
+                                $(this).html("");
+                                $(this).removeClass("sel-rifiuto");
+                            }
+                        });
+                        var pr = $("#table-cont tr.border-interactive-primary-color").attr("data-progress");
+                        $("#table-name tr[data-pr=" + pr + "] div.rai-checkbox").addClass("disable");
+                        $("#table-name tr[data-pr="+pr+"] span.icon-note").remove()
+                        $("#table-cont tr.border-interactive-primary-color").removeClass("border-interactive-primary-color");
+                        $("#table-cont tr").removeClass("bordosel");
+                        $("#approva-pf").addClass("disable");
+
+                    }
+                    else
+                        SedeChanged();
+                    
+                   
+                }
+                else
+                    swal(data.errore, '', 'error');
+
+            }
+        });
+    }
+    function checknota() {
+        var nota = $("#notadip").val();
+        if (nota.trim() == "")
+            $(".swal2-confirm").addClass("disable");
+        else
+            $(".swal2-confirm").removeClass("disable");
+    }
+    function ApprovaPianoFerieSede(sede, anno) {
+        if ($("#approva-pf").text() == "Rifiuta") {
+            return RifiutaPianoFerie();
+        }
+        var matricoleSelezionate = [];
+        $("input.pf-cb").each(function () {
+            if ($(this).prop("checked") && $(this).closest("div").hasClass("disable")==false ) {
+                matricoleSelezionate.push($(this).attr("data-matricola"));
+            }
+        });
+        debugger
+        if (matricoleSelezionate.length == 0) {
+            swal("Non è stato selezionato alcun piano ferie.", '', 'error');
+            return;
+        }
+        var tutti = $("span[data-consolidato]").length;
+        var consolidati = $("span[data-consolidato='true'][data-esentato='0']").length;
+        var esentati = $("span[data-esentato='1']").length;
+        debugger
+
+        //if (consolidati == 0) {
+        //    swal("Non ci sono piani ferie consolidati", '', 'error');
+        //    return;
+        //}
+        //if (consolidati + esentati < tutti) {
+        //    swal("Non tutti i piani ferie sono stati consolidati dai dipendenti", '', 'error');
+        //    return;
+        //}
+
+        swal({
+            title: 'Confermi ?',
+            text: "Procedi con l'approvazione dei piani ferie selezionati della sede "+sede+ " ?",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Conferma',
+            cancelButtonText: 'Annulla',
+            customClass: 'rai rai-confirm-cancel'
+        }).then(function () {
+            $("#div-approva").addClass("rai-loader");
+                        $.ajax({
+                            type: 'POST',
+                            url: "/PianoFerie/approvasede",
+                            dataType: "json",
+                            data: { anno: anno, sede: sede, matricole: matricoleSelezionate.toString() },
+                            cache: false,
+                            success: function (data) {
+                                $("#div-approva").removeClass("rai-loader");
+                                if (data.result == true) {
+                                    SedeChanged();
+                                    //location.href = "/pianoferie/getpfpdf?sede=" + sede + "&anno=" + anno;
+                                }
+                                else
+                                    swal(data.error, '','error');
+
+                            }
+                        });
+            });
+    }
+
+    function getvis() {
+        var td1 = $("[data-date='01/01/2019']");
+        var offset1 = $(td1)[0].getBoundingClientRect().left;
+
+        var td2 = $("[data-date='@DateTime.Now.ToString("dd/MM/yyyy")']");
+        var offset2 = $(td2)[0].getBoundingClientRect().left;
+
+        $("#div-t").scrollLeft(offset2 - offset1);
+
+    }
+    function setComp() {
+        $(".div-lar").removeClass("pf-ext")
+        $(".div-lar").addClass("pf-comp");
+
+        $("#pf-table").removeClass("pf-td-ext");
+        $("#pf-table").addClass("pf-td-comp");
+
+        $("#btn-comp").removeClass("btn-default").addClass("btn-primary");
+        $("#btn-ext").removeClass("btn-primary").addClass("btn-default");
+
+        $("pie").css("margin", "0px 0px 0px 2px");
+
+        $("#pf-table tr:eq(1) td").each(function () { $(this).css("min-width", "17px") });
+        $("#pf-table tr:eq(2) td").each(function () { $(this).css("min-width", "17px") });
+    }
+    function setExt() {
+        $(".div-lar").removeClass("pf-comp")
+        $(".div-lar").addClass("pf-ext");
+
+        $("#pf-table").removeClass("pf-td-comp");
+        $("#pf-table").addClass("pf-td-ext");
+
+        $("#btn-ext").removeClass("btn-default").addClass("btn-primary");
+        $("#btn-comp").removeClass("btn-primary").addClass("btn-default");
+
+        $("pie").css("margin", "");
+        $("#pf-table tr:eq(1) td").each(function () { $(this).css("min-width", "") });
+        $("#pf-table tr:eq(2) td").each(function () { $(this).css("min-width", "") });
+    }
+
+    function setScroll() {
+        $('#table-name tbody').scrollTop($('#pf-table tbody').scrollTop());
+        $('#pf-table thead').scrollLeft($('#pf-table tbody').scrollLeft());
+    }
+    function AbilitaTastoApprova() {
+        $("#table-cont td").removeClass("sel-rifiuto");
+        $("#pf-table tr").removeClass("border-interactive-primary-color");
+        $("#pf-table tr").removeClass("bordosel");
+        $("#approva-pf").text("Approva");
+        $("#approva-pf").attr("data-original-title", "Approva piano ferie");
+        var tot = 0;
+        $(".pf-cb").each(function () {
+            if ($(this).prop("checked") == true && $(this).parent("div").hasClass("disable") == false) {
+                tot++;
+            }
+        });
+        if (tot > 0)
+            $("#approva-pf").removeClass("disable");
+        else
+            $("#approva-pf").addClass("disable");
+    }
+</script>

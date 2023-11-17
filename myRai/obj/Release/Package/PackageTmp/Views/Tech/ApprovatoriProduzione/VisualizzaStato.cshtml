@@ -1,0 +1,133 @@
+﻿@using myRaiCommonModel.Tech;
+
+@model TechApprovatoriProduzioneVM
+
+@{
+    Layout = null;
+}
+
+<section class="panel">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a id="btn-esporta-situazione" href="#" target="_blank" class="panel-action fa fa-save"></a>
+            <a id="btn-esporta-situazione2" href="#" target="_blank" class="panel-action fa fa-save hide"></a>
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle></a>
+        </div>
+        <h2 class="panel-title">Situazione approvatori di produzione</h2>
+    </header>
+    <div class="panel-body" id="SituazioneAppovatoriContainer" style="display: block; padding: 8px">
+
+        <div class="row">
+            <div class="col-sm-11">
+                <div class="input-group mb-md">
+                    <span class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                    <input class="js-datetimepicker form-control" data-format="DD/MM/YYYY" value="@(Model.DataDA.HasValue ? Model.DataDA.GetValueOrDefault().ToString("dd/MM/yyyy"): "")" data-locale="it" type="text" id="datada" name="datada" placeholder="Dal">
+                    <span class="input-group-addon"><i class="icons icon-calendar"></i></span>
+                    <input class="js-datetimepicker form-control" data-format="DD/MM/YYYY" value="@(Model.DataA.HasValue ? Model.DataA.GetValueOrDefault().ToString("dd/MM/yyyy"): "")" data-locale="it" type="text" id="dataal" name="dataal" placeholder="Al">
+                </div>
+            </div>
+            <div class="col-sm-1">
+                <button id="button-filtra-approvatori" class="btn btn-success" type="button">INVIA</button>
+            </div>
+        </div>
+
+        <div style="max-height: 300px; overflow-y: auto">
+            @if ( Model.ApprovatoriStati.Count( ) == 0 )
+            {
+                <div style="text-align: center;">
+                    <i class="fa fa-refresh fa-spin" style="font-size: 22px; color: #ebebeb;"></i>
+                </div>
+            }
+            else
+            {
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th class="text-primary">Nominativo</th>
+                            <th class="text-primary">Matricola</th>
+                            <th class="text-primary">In approvazione</th>
+                            <th class="text-primary">Approvate</th>
+                            <th class="text-primary">SedeGapp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            foreach ( var item in Model.ApprovatoriStati )
+                            {
+                                <tr>
+                                    <td class="col-xs-4"><b>@(item.Nominativo)</b></td>
+                                    <td class="col-xs-2"><b>@(item.Matricola)</b></td>
+                                    <td class="col-xs-2">@(item.InApprovazione)</td>
+                                    <td class="col-xs-2">@(item.Approvate)</td>
+                                    <td class="col-xs-2">@(item.SedeGapp)</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</section>
+
+<script type="text/javascript">
+
+    $('#button-filtra-approvatori').on('click', function () {
+        var dt1 = $('#datada').val();
+        var dt2 = $('#dataal').val();
+        $("#SituazioneAppovatoriContainer").html('Caricamento dati in corso..');
+
+        $.ajax({
+            url: '/tech/ControllaApprovatoriProduzione',
+            type: "GET",
+            cache: false,
+            dataType: "html",
+            data: { dtStart: dt1, dtEnd: dt2 },
+            success: function (data) {
+                $("#container-stato-approvazione-produzione").html(data);
+            },
+            error: function (result) {
+            }
+        });
+    });
+
+    $('#btn-esporta-situazione').on('click', function (e) {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        var dt1 = $('#datada').val();
+        var dt2 = $('#dataal').val();
+        $(this).attr('href', '@(Url.Action("EsportaStatoApprovatori","Tech"))?dtStart=' + dt1 + '&dtEnd=' + dt2);
+    });
+
+    $(function () {
+         jQuery('.js-datetimepicker').each(function () {
+            var $input = $(this);
+
+            $input.datetimepicker({
+                format: $input.data('format') ? $input.data('format') : false,
+                useCurrent: $input.data('use-current') ? $input.data('use-current') : false,
+                locale: moment.locale('' + ($input.data('locale') ? $input.data('locale') : '') + ''),
+                showTodayButton: $input.data('show-today-button') ? $input.data('show-today-button') : false,
+                showClear: $input.data('show-clear') ? $input.data('show-clear') : false,
+                showClose: $input.data('show-close') ? $input.data('show-close') : false,
+                sideBySide: $input.data('side-by-side') ? $input.data('side-by-side') : false,
+                inline: $input.data('inline') ? $input.data('inline') : false,
+
+                icons: {
+                    time: 'fa fa-clock-o',
+                    date: 'si si-calendar',
+                    up: 'fa fa-arrow-up',
+                    down: 'fa fa-arrow-down',
+                    previous: 'icons icon-arrow-left',
+                    next: 'icons icon-arrow-right',
+                    today: 'si si-size-actual',
+                    clear: 'si si-trash',
+                    close: 'si si-close'
+                }
+            })
+                .on("dp.change", function (e) {
+                    $input.change();
+                });
+        });
+    });
+</script>

@@ -1,0 +1,681 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel.ess;
+@model  DettaglioTrasfertaVM
+
+@{
+    Layout = null;
+    string modalTitle = "Dettaglio trasferta " + Model.FViaggio;
+}
+
+@using (Html.BeginModal(modalTitle))
+{
+ 
+        @helper NoDataBlock()
+        {
+            <div class="row">
+                @Html.Partial("~/Views/Shared/_NoDati.cshtml")
+            </div>
+        }
+
+        @helper NoDataBlockWithDate(DateTime? firstEmpty, DateTime? lastEmpty)
+        {
+            <div id="" class="block block-transparent block-content-table">
+                <div class="block-header block-content-mini">
+                    <label class="rai-font-table-heading">
+                        @{
+
+                            string testoTitle = "";
+
+                            if (firstEmpty.GetValueOrDefault() == lastEmpty.GetValueOrDefault())
+                            {
+                                testoTitle = String.Format("{0} {1} {2}", System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(firstEmpty.GetValueOrDefault().ToString("dddd").ToLower()),
+System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(firstEmpty.GetValueOrDefault().ToString("dd").ToLower()),
+System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(firstEmpty.GetValueOrDefault().ToString("MMMM")));
+                            }
+                            else
+                            {
+                                testoTitle = String.Format("Da {0} {1} {2}", System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(firstEmpty.GetValueOrDefault().ToString("dddd").ToLower()),
+System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(firstEmpty.GetValueOrDefault().ToString("dd").ToLower()),
+System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(firstEmpty.GetValueOrDefault().ToString("MMMM")));
+                            }
+                        }
+                        @testoTitle
+                    </label>
+                </div>
+                <div class="block-content block-content-mini">
+                    <div id="">
+                        <div class="rai-table-info">
+                            <div class="row" id="">
+                                <div class="col-xs-12">
+                                    @Html.Partial("~/Views/Shared/_NoDati.cshtml")
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="modal-backdrop fade in"></div>
+
+
+
+
+         <div class="rai height100 scroll-container">
+
+        <div class="row">
+            <!-- Colonna sinistra -->
+            <div class="col-sm-6">
+                @if (Model.Itinerario == null || !Model.Itinerario.Any())
+                {
+                    @NoDataBlock()
+                }
+                else if (Model.FoglioViaggio != null)
+                {
+                    DateTime dataStart = Model.FoglioViaggio.DATA_PARTENZA;
+                    DateTime current = Model.FoglioViaggio.DATA_PARTENZA;
+                    DateTime? firstEmpty = null;
+                    DateTime? lastEmpty = null;
+
+                    while (current <= Model.FoglioViaggio.DATA_ARRIVO)
+                    {
+                        bool hasIts = false;
+                        bool hasAlberghi = false;
+                        bool hasDiarias = Model.Diaria != null && Model.Diaria.Any(x => x.DATA == current);
+
+                        if (Model.Itinerario != null && Model.Itinerario.Any())
+                        {
+                            var _its = Model.Itinerario.Where(i => i.DATA_ARRIVO == current).ToList();
+
+                            hasIts = _its.Any();
+                        }
+
+                        if (Model.Alberghi != null && Model.Alberghi.Any())
+                        {
+                            var _alberghi = Model.Alberghi.Where(b => b.data != null && b.data == current).ToList();
+                            hasAlberghi = _alberghi.Any();
+                        }
+
+                        // se nella data esaminata non ci sono né itinerari né alberghi
+                        // ed è la prima data senza valori
+                        // salvo la data esaminata
+                        if (!hasIts && !hasAlberghi && !hasDiarias && !lastEmpty.HasValue)
+                        {
+                            firstEmpty = current;
+                            lastEmpty = current;
+                            current = current.AddDays(1);
+                            continue;
+                        }
+                        else if (!hasIts && !hasAlberghi && !hasDiarias)
+                        {
+                            lastEmpty = current;
+                            current = current.AddDays(1);
+                            continue;
+                        }
+                        else if ((hasIts || hasAlberghi || hasDiarias) &&
+                                                (firstEmpty.HasValue && lastEmpty.HasValue))
+                        {
+
+                            @NoDataBlockWithDate(firstEmpty, lastEmpty)
+
+                            firstEmpty = null;
+                            lastEmpty = null;
+                        }
+
+                        string titleBlock = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(current.ToString("dddd").ToLower()) + " " + (current.ToString("dd")) + " " + System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(current.ToString("MMMM"));
+
+                        // reperimento di tutti gli itinerari per la data esaminata
+                        var its = Model.Itinerario.Where(i => i.DATA_ARRIVO == current).ToList();
+                        using (Html.BeginPanel(myRaiHelper.PanelType.Panel, titleBlock, false))
+                        {
+                            <div class="row border-bottom push-5">
+                                <div class="col-xs-5">
+                                    <span class="rai-font-sm-neutral">Voce di spesa</span>
+                                </div>
+                                <div class="col-xs-7 text-right">
+                                    <span class="rai-font-sm-neutral">Importo</span>
+                                </div>
+                            </div>
+                            <div class="rai-table-info">
+                                @if (its != null && its.Any())
+                                {
+
+                                    foreach (var it in its)
+                                    {
+                                        <div class="row" id="">
+                                            <div class="col-xs-3">
+                                                <span>
+                                                    @{
+                                                        try
+                                                        {
+                                                            MezzoTrasportoEnum mezzo = (MezzoTrasportoEnum)Enum.Parse(typeof(MezzoTrasportoEnum), it.COD_MEZZO_TRASP);
+                                                            @mezzo.GetAmbientValue()
+                                                        }
+                                                        catch (Exception ex)
+                                                        {
+                                                        }
+                                                    }
+                                                </span>
+                                            </div>
+                                            <div class="col-xs-6">
+                                                <span>
+                                                    @{
+                                                        string itinerario = it.DESTINAZIONE;
+                                                        string numeroB = "";
+
+                                                        if (Model.BigliettiRai != null &&
+                                                            Model.BigliettiRai.Any())
+                                                        {
+                                                            var biglietto = Model.BigliettiRai.Where(b => b.Data_partenza_viaggio == current).FirstOrDefault();
+
+                                                            if (biglietto != null)
+                                                            {
+                                                                itinerario = biglietto.Itinerario;
+                                                                numeroB = biglietto.Numero_biglietto;
+
+                                                                if (!String.IsNullOrEmpty(numeroB))
+                                                                {
+                                                                    itinerario = String.Format("{0} ({1})", itinerario, numeroB);
+                                                                }
+                                                                else
+                                                                {
+                                                                    itinerario = String.Format("{0}", itinerario);
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+
+                                                    @(itinerario)
+
+                                                    @{
+                                                        if (!String.IsNullOrEmpty(it.CodicePrenotazione) &&
+                                                            !String.IsNullOrEmpty(it.CodiceMezzo))
+                                                        {
+                                                            <span id="" tabindex="0" data-popover-content="#myPopover" class="push-5-l" data-toggle="popover" data-html="true" data-container="body" data-placement="right" title="" data-content="Codice prenotazione: <b>@(it.CodicePrenotazione)</b><br />Codice mezzo: <b>@(it.CodiceMezzo)</b><br />Origine: @(it.Origine)<br />Data origine: @(it.DataPartenza.HasValue ? it.DataPartenza.GetValueOrDefault().ToString("dd/MM/yyyy HH:mm:ss") : "")<br />Destinazione: @(it.DestCitta)<br />Data arrivo: @(it.DataArrivoFull.HasValue ? it.DataArrivoFull.GetValueOrDefault().ToString("dd/MM/yyyy HH:mm:ss") : "")" data-original-title="&nbsp;" data-trigger="focus" aria-label="Informazioni albergo">
+                                                                <i id="" class="fa fa-info-circle" title="Dettaglio itinerario"></i>
+                                                            </span>
+                                                        }
+                                                    }
+                                                </span>
+                                            </div>
+                                            <div class="col-xs-3 text-right">
+                                                <span>
+                                                    @(String.Format("{0:N2} €", it.IMPORTO_BIGLIETTI_RAI))
+                                                </span>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                @if (Model.Alberghi != null && Model.Alberghi.Any())
+                                {
+                                    var alberghi = Model.Alberghi.Where(b => b.data != null && b.data == current).ToList();
+
+                                    foreach (var a in alberghi)
+                                    {
+                                        <div class="row">
+                                            <div class="col-xs-3">
+                                                <span>
+                                                    Albergo
+                                                </span>
+                                            </div>
+                                            <div class="col-xs-6">
+                                                @{
+                                                    string randomId = DateTime.Now.ToString("yyyyMMddHHmmssf");
+                                                    Int64 myId = Int64.Parse(randomId);
+                                                }
+
+                                                <span>
+                                                    @a.denominazione
+                                                </span>
+                                                <span id="" tabindex="0" data-popover-content="#myPopover" class="push-5-l" data-toggle="popover" data-html="true" data-container="body" data-placement="right" title="" data-content="@a.denominazione <br> @a.indirizzo <br> @a.citta (@a.prov)) <br> Tel @(a.telefono) <br> Fax @(a.fax) <br> " data-original-title="&nbsp;" data-trigger="focus" aria-label="Informazioni albergo">
+                                                    <i id="" class="fa fa-info-circle" title="Dettaglio albergo"></i>
+                                                </span>
+                                            </div>
+                                            <div class="col-xs-3 text-right">
+                                                @{
+                                                    decimal tempCosto = 0;
+                                                    tempCosto = a.costo_effettivo;
+
+                                                    if (tempCosto.Equals(0) || tempCosto.Equals(0.0))
+                                                    {
+                                                        if (Model.Diaria != null && Model.Diaria.Any())
+                                                        {
+                                                            var d = Model.Diaria.Where(dd => dd.DATA.Equals(current)).FirstOrDefault();
+                                                            if (d != null)
+                                                            {
+                                                                tempCosto = d.PERNOTTO_PDL;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                <span>
+                                                    @(String.Format("{0:N2} €", tempCosto))
+                                                </span>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                @if (hasDiarias)
+                                {
+                                    var d = Model.Diaria.Where(dd => dd.DATA.Equals(current)).FirstOrDefault();
+
+                                    if (d.DIRITTO_COLAZ == "1")
+                                    {
+                                        <div class="row">
+                                            <div class="col-sm-5">
+                                                <span>Colazione</span>
+                                            </div>
+                                            <div class="col-xs-1 hidden"></div>
+                                            <div class="col-sm-7 text-right">
+                                                @if (d.FRUIZIONE_COLAZ == "L")
+                                                {
+                                                    <span>@String.Format("{0:N2} €", d.COLAZ_PDL)</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>@String.Format("{0:N2} €", d.COLAZ_FOR)</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                    if (d.DIRITTO_PRANZO == "1")
+                                    {
+                                        <div class="row">
+                                            <div class="col-sm-5">
+                                                <span>Pranzo</span>
+                                            </div>
+                                            <div class="col-xs-1 hidden"></div>
+                                            <div class="col-sm-7 text-right">
+                                                @if (d.FRUIZIONE_PRANZO == "L")
+                                                {
+                                                    <span>@String.Format("{0:N2} €", d.PASTO_PDL_1)</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>@String.Format("{0:N2} €", d.PASTO_FOR_1)</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                    if (d.DIRITTO_CENA == "1")
+                                    {
+                                        <div class="row">
+                                            <div class="col-sm-5">
+                                                <span>Cena</span>
+                                            </div>
+                                            <div class="col-xs-1 hidden"></div>
+                                            <div class="col-sm-7 text-right">
+                                                @if (d.FRUIZIONE_CENA == "L")
+                                                {
+                                                    <span>@String.Format("{0:N2} €", d.PASTO_PDL_2)</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>@String.Format("{0:N2} €", d.PASTO_FOR_2)</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        }
+
+
+                        current = current.AddDays(1);
+
+                        if (current > Model.FoglioViaggio.DATA_ARRIVO)
+                        {
+                            if (firstEmpty.HasValue && lastEmpty.HasValue)
+                            {
+                                @NoDataBlockWithDate(firstEmpty, lastEmpty)
+
+                                firstEmpty = null;
+                                lastEmpty = null;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    @NoDataBlock()
+                }
+
+
+            </div>
+            <!-- Fine colonna sinistra -->
+            <!-- Colonna destra -->
+            <div class="col-sm-6">
+
+                <div id="" class="block block-transparent block-content-table">
+                    <div class="block-header block-content-mini">
+                        <label class="rai-font-table-heading">Dati trasferta</label>
+                    </div>
+                    <div class="block-content block-content-mini">
+                        <div id="">
+                            <div class="rai-table-info">
+                                <div class="row" id="">
+                                    <div class="col-xs-5"><span>Autorizzazione di viaggio n </span></div>
+                                    <div class="col-xs-7"><span>@(Model.FoglioViaggio.NUM_FOG)</span></div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-xs-5"><span>Stato</span></div>
+                                    <div class="col-xs-7"><span>@(CommonHelper.ToTitleCase(Model.StatoTrasferta.Desc_Stato))</span></div>
+                                </div>
+                                <div class="row" id="">
+                                    <div class="col-xs-5"><span>Destinazione </span></div>
+                                    <div class="col-xs-7"><span>@CommonHelper.ToTitleCase(Model.FoglioViaggio.ITINERARIO)</span></div>
+                                </div>
+                                <div class="row" id="">
+                                    <div class="col-xs-5"><span>Scopo missione </span></div>
+                                    <div class="col-xs-7"><span>@CommonHelper.ToTitleCase(Model.FoglioViaggio.SCOPO)</span></div>
+                                </div>
+                                <div class="row" id="">
+                                    <div class="col-xs-5"><span>Periodo </span></div>
+                                    <div class="col-xs-7"><span>@String.Format("dal {0} al {1}", Model.FoglioViaggio.DATA_PARTENZA.ToString("dd/MM/yyyy"), Model.FoglioViaggio.DATA_ARRIVO.ToString("dd/MM/yyyy"))</span></div>
+                                </div>
+                                <div class="row" id="">
+                                    <div class="col-xs-5"><span>Autorizzato da </span></div>
+                                    <div class="col-xs-7"><span>@CommonHelper.ToTitleCase(myRai.Business.CommonManager.GetNominativoPerMatricolaCognomeNome(Model.FoglioViaggio.AUTORIZZATA_DA))</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @using (Html.BeginBlock(myRaiHelper.BlockType.ContentTable, "Costi"))
+                {
+                    using (Html.BeginPanel(myRaiHelper.PanelType.NoHeader, "", false))
+                    {
+
+                        if (Model.NotaSpeseTrasferta == null)
+                        {
+                            <div class="row">
+                                <div class="col-xs-12">
+                                    @Html.Partial("~/Views/Shared/_NoDati.cshtml")
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            decimal totSpesePagateRai = Model.NotaSpeseTrasferta.TOT_BIGLIETTI_DOC_RAI;
+                            decimal totDiarie = Model.NotaSpeseTrasferta.TOT_PDL + Model.NotaSpeseTrasferta.TOT_FORFAIT;
+                            decimal totSpViaggio = Model.NotaSpeseTrasferta.TOT_TAXI_BUS + Model.NotaSpeseTrasferta.TOT_PEDAGGI + Model.NotaSpeseTrasferta.TOT_CARBUR + Model.NotaSpeseTrasferta.TOT_NOLO + Model.NotaSpeseTrasferta.TOT_BIGLIETTI_DOC_NO_RAI;
+                            decimal totPDL = Model.NotaSpeseTrasferta.TOT_PDL + totSpViaggio + Model.NotaSpeseTrasferta.TOT_PER_CONTO + Model.NotaSpeseTrasferta.TOT_ALTRE_SPESE_DOC + Model.NotaSpeseTrasferta.TOT_ALTRE_SPESE_NO_DOC;
+
+                            if (totSpesePagateRai > 0)
+                            {
+                                <div class="rai block block-transparent block-content-table">
+                                    <div class="block-header">
+                                        <label class="block-title">Spese pagate RAI</label>
+                                    </div>
+                                    <div class="block-content">
+                                        <div class="rai-table-info">
+                                            @if (Model.NotaSpeseTrasferta.TOT_BIGLIETTI_DOC_RAI > 0)
+                                            {
+                                                <div class="row">
+                                                    <div class="col-xs-8">
+                                                        <span>Biglietti documentati <i>pagati da RAI</i></span>
+                                                    </div>
+                                                    <div class="col-xs-1 hidden"></div>
+                                                    <div class="col-xs-4 text-right">
+                                                        <span>@(String.Format("{0:N2} €", Model.NotaSpeseTrasferta.TOT_BIGLIETTI_DOC_RAI))</span>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+
+                            if (totDiarie > 0 || totSpViaggio > 0)
+                            {
+                                <div class="rai block block-transparent block-content-table">
+                                    <div class="block-header">
+                                        <label class="block-title">Spese piè di lista o forfait</label>
+                                    </div>
+                                    <div class="block-content">
+                                        @if (Model.NotaSpeseTrasferta.TOT_FORFAIT > 0)
+                                        {
+
+                                            DiariaTrasfertaVM myModelPDL = new DiariaTrasfertaVM()
+                                            {
+                                                Diaria = Model.Diaria,
+                                                Tipo = DiariaTrasfertaEnum.Forfait
+                                            };
+
+                                            <div class="rai-table-info">
+                                                @Html.Partial("~/Views/Anagrafica/subpartial/TblDettaglioDiaria.cshtml", myModelPDL)
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-xs-8">
+                                                    <span class="rai-font-md-bold">Totale a forfait</span>
+                                                </div>
+                                                <div class="col-xs-4 text-right">
+                                                    <span class="rai-font-md-bold">@(String.Format("{0:N2} €", Model.NotaSpeseTrasferta.TOT_FORFAIT))</span>
+                                                </div>
+                                            </div>
+                                        }
+                                        <br />
+                                        @if (totPDL > 0)
+                                        {
+                                            <div class="rai-table-info">
+                                                @if (Model.NotaSpeseTrasferta.TOT_PDL > 0)
+                                                {
+                                                    DiariaTrasfertaVM myModelPDL = new DiariaTrasfertaVM()
+                                                    {
+                                                        Diaria = Model.Diaria,
+                                                        Tipo = DiariaTrasfertaEnum.PieDiLista
+                                                    };
+
+                                                    @Html.Partial("~/Views/Anagrafica/subpartial/TblDettaglioDiaria.cshtml", myModelPDL)
+                                                }
+                                                @if (Model.NotaSpeseTrasferta.TOT_TAXI_BUS > 0)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-xs-8">
+                                                            <span>Taxi trasporto pubblico</span>
+                                                        </div>
+                                                        <div class="col-xs-1 hidden"></div>
+                                                        <div class="col-xs-4 text-right">
+                                                            <span>@(String.Format("{0:N2} €", Model.NotaSpeseTrasferta.TOT_TAXI_BUS))</span>
+                                                        </div>
+                                                    </div>
+                                                }
+                                                @if (Model.NotaSpeseTrasferta.TOT_PEDAGGI > 0)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-xs-8">
+                                                            <span>Pedaggi</span>
+                                                        </div>
+                                                        <div class="col-xs-1 hidden"></div>
+                                                        <div class="col-xs-4 text-right">
+                                                            <span>@(String.Format("{0:N2} €", Model.NotaSpeseTrasferta.TOT_PEDAGGI))</span>
+                                                        </div>
+                                                    </div>
+                                                }
+                                                @if (Model.NotaSpeseTrasferta.TOT_CARBUR > 0)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-xs-8">
+                                                            <span>Spese carburante</span>
+                                                        </div>
+                                                        <div class="col-xs-1 hidden"></div>
+                                                        <div class="col-xs-4 text-right">
+                                                            <span>@(String.Format("{0:N2} €", Model.NotaSpeseTrasferta.TOT_CARBUR))</span>
+                                                        </div>
+                                                    </div>
+                                                }
+                                                @if (Model.NotaSpeseTrasferta.KM_AUTO > 0)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-xs-8">
+                                                            <span>Totale Km auto</span>
+                                                        </div>
+                                                        <div class="col-xs-4 text-right">
+                                                            <span>@(String.Format("{0} €", Model.NotaSpeseTrasferta.KM_AUTO))</span>
+                                                        </div>
+                                                    </div>
+                                                }
+                                                @if (Model.NotaSpeseTrasferta.TOT_NOLO > 0)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-xs-8">
+                                                            <span>Nolo auto propria</span>
+                                                        </div>
+                                                        <div class="col-xs-1 hidden"></div>
+                                                        <div class="col-xs-4 text-right">
+                                                            <span>@(String.Format("{0:N2} €", Model.NotaSpeseTrasferta.TOT_NOLO))</span>
+                                                        </div>
+                                                    </div>
+                                                }
+
+                                                @if (Model.NotaSpeseTrasferta.TOT_BIGLIETTI_DOC_NO_RAI > 0)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-xs-8">
+                                                            <span>Biglietti documentati <i>pagati dal dipendente</i></span>
+                                                        </div>
+                                                        <div class="col-xs-1 hidden"></div>
+                                                        <div class="col-xs-4 text-right">
+                                                            <span>@(String.Format("{0:N2} €", Model.NotaSpeseTrasferta.TOT_BIGLIETTI_DOC_NO_RAI))</span>
+                                                        </div>
+                                                    </div>
+                                                }
+                                                @if (Model.NotaSpeseTrasferta.TOT_BIGLIETTI_SMARRITI > 0)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-xs-8">
+                                                            <span>Biglietti F.S. smarriti</span>
+                                                        </div>
+                                                        <div class="col-xs-4 text-right">
+                                                            <span>@(String.Format("{0:N2} €", Model.NotaSpeseTrasferta.TOT_BIGLIETTI_SMARRITI))</span>
+                                                        </div>
+                                                    </div>
+                                                }
+
+                                                @if (Model.NotaSpeseTrasferta.TOT_PER_CONTO > 0)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-xs-8">
+                                                            <span>Spese per conto RAI</span>
+                                                        </div>
+                                                        <div class="col-xs-1 hidden"></div>
+                                                        <div class="col-xs-4 text-right">
+                                                            <span>@(String.Format("{0:N2} €", Model.NotaSpeseTrasferta.TOT_PER_CONTO))</span>
+                                                        </div>
+                                                    </div>
+                                                }
+                                                @if (Model.NotaSpeseTrasferta.TOT_ALTRE_SPESE_DOC > 0)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-xs-8">
+                                                            <span>Altre spese documentate</span>
+                                                        </div>
+                                                        <div class="col-xs-4 text-right">
+                                                            <span>@(String.Format("{0:N2} €", Model.NotaSpeseTrasferta.TOT_ALTRE_SPESE_DOC))</span>
+                                                        </div>
+                                                    </div>
+                                                }
+                                                @if (Model.NotaSpeseTrasferta.TOT_ALTRE_SPESE_NO_DOC > 0)
+                                                {
+                                                    <div class="row">
+                                                        <div class="col-xs-8">
+                                                            <span>Altre spese non documentate</span>
+                                                        </div>
+                                                        <div class="col-xs-4 text-right">
+                                                            <span>@(String.Format("{0:N2} €", Model.NotaSpeseTrasferta.TOT_ALTRE_SPESE_NO_DOC))</span>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-xs-8 ">
+                                                    <span class="rai-font-md-bold">Totale a piè lista</span>
+                                                </div>
+                                                <div class="col-xs-1  hidden">
+                                                </div>
+                                                <div class="col-xs-4 text-right">
+                                                    <span class="rai-font-md-bold">@(String.Format("{0:N2} €", totPDL))</span>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+
+
+                            decimal tot1 = Model.NotaSpeseTrasferta.TOT_FORFAIT + totPDL;
+                            if (tot1 >= 0)
+                            {
+                                <div class="row push-5-t">
+                                    <div class="col-xs-9">
+                                        <span class="rai-font-md-bold">Totale spese</span>
+                                    </div>
+                                    <div class="col-xs-3 text-right">
+                                        <span class="rai-font-md-bold">@(String.Format("{0:N2} €", tot1))</span>
+                                    </div>
+                                </div>
+                            }
+
+
+                            decimal tot5 = Model.FoglioViaggio.ANTICIPI;
+
+                            if (tot5 >= 0)
+                            {
+                                <div class="row">
+                                    <div class="col-xs-6 rai-font-md-neutral"><span>Anticipi e ris. ( *)</span></div>
+                                    <div class="col-xs-3 text-left rai-font-md-neutral"></div>
+                                    <div class="col-xs-3 text-right rai-font-md-neutral"><span>@(String.Format("{0:N2} €", tot5))</span></div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-xs-12 rai-font-sm-neutral">
+                                        <span>(*) In liquidazione sarà comunque dedotto quanto percepito in cassa</span>
+                                    </div>
+                                </div>
+                            }
+
+
+                            decimal residuoNetto = Model.ResiduoNetto - Model.FoglioViaggio.ANTICIPI;
+
+                            <div class="row push-10-t">
+                                <div class="col-xs-8 rai-font-lg-bold">
+                                    <span>Residuo netto</span>
+                                </div>
+                                <div class="col-xs-4 text-right rai-font-lg-bold">
+                                    <span>@(String.Format("{0:N2} €", residuoNetto))</span>
+                                </div>
+                            </div>
+                            if (residuoNetto != 0)
+                            {
+                                <div class="row">
+                                    <div class="col-xs-12 rai-font-sm">
+                                        @if (residuoNetto > 0)
+                                        {
+                                            <span>da accreditare</span>
+                                        }
+                                        else
+                                        {
+                                            <span>da recuperare</span>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+
+                    }
+                }
+            </div>
+            <!-- Fine colonna destra -->
+        </div>
+
+          </div>
+ 
+}
+
+<script type="text/javascript">
+    $(function () {
+        $('[data-toggle="popover"]').popover();
+    });
+</script>

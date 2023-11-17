@@ -1,0 +1,186 @@
+﻿@using myRaiCommonModel
+@using myRaiHelper
+@model AnagraficaNoDipModel
+
+@using (Html.BeginModal("Gestione anagrafica"))
+{
+    <div class="row">
+        <div class="col-md-12">
+            @using (Html.BeginPanel(PanelType.NoHeader, ""))
+            {
+
+                <div class="row">
+                    <div class="col-sm-6 push-10">
+                        @Html.LabelFor(m => m.DatiAnagrafici.Matricola, new { @class = "rai-caption" })
+                        <div class="input-group">
+                            @Html.TextBoxFor(m => m.DatiAnagrafici.Matricola, new { @class = "form-control", @readonly = "readonly" })
+                            <div class="input-group-addon">
+                                <i class="fa fa-lock"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane active" id="tab-anag" role="tabpanel">
+                    @using (Html.BeginForm("Save_Anagrafica", "AnagNoDip", FormMethod.Post, new { @id = "form-anag" }))
+                    {
+                        <div class="form-group">
+                            <div class="row">
+                                <div class="col-sm-6 push-10">
+                                    @Html.LabelForRequiredObbl(m => m.DataInizio, "Data inizio", new { @class = "rai-caption" })
+                                    <div class="input-group">
+                                        <div class="input-group-addon" onclick="$('#DataInizio').click()">
+                                            <i class="fa fa-calendar"></i>
+                                        </div>
+                                        @Html.TextBoxFor(m => m.DataInizio, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY", data_locale = "it", placeholder = "Data inizio", autocomplete = "off", required = "required" })
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    @Html.LabelForRequiredObbl(m => m.DataFine, "Data fine", new { @class = "rai-caption" })
+                                    <div class="input-group">
+                                        <div class="input-group-addon" onclick="$('#DataFine').click()">
+                                            <i class="fa fa-calendar"></i>
+                                        </div>
+                                        @Html.TextBoxFor(m => m.DataFine, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY", data_locale = "it", placeholder = "Data fine", autocomplete = "off", required = "required" })
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-6 push-10">
+                                    @Html.LabelForRequiredObbl(m => m.DatiAnagrafici.Cognome, "Cognome", new { @class = "rai-caption" })
+                                    @Html.TextBoxFor(m => m.DatiAnagrafici.Cognome, new { @class = "form-control", required = "required", onchange = "CalcolaCF();" })
+                                </div>
+                                <div class="col-sm-6 push-10">
+                                    @Html.LabelForRequiredObbl(m => m.DatiAnagrafici.Nome, "Nome", new { @class = "rai-caption" })
+                                    @Html.TextBoxFor(m => m.DatiAnagrafici.Nome, new { @class = "form-control", required = "required", onchange = "CalcolaCF();" })
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-6 push-10">
+                                    @Html.LabelForRequiredObbl(m => m.DatiAnagrafici.DataNascita, "Data nascita", new { @class = "rai-caption" })
+                                    <div class="input-group">
+                                        <div class="input-group-addon" onclick="$('#DatiAnagrafici_DataNascita').click()">
+                                            <i class="fa fa-calendar"></i>
+                                        </div>
+                                        @Html.TextBoxFor(m => m.DatiAnagrafici.DataNascita, new { @class = "form-control js-datetimepicker", data_format = "DD/MM/YYYY", data_locale = "it", placeholder = "Data nascita", autocomplete = "off", required = "required", onchange = "CalcolaCF();" })
+                                    </div>
+                                </div>
+                                <div class="col-sm-6 push-10">
+                                    @Html.LabelForRequiredObbl(m => m.DatiAnagrafici.CodLuogoNascita, "Luogo di nascita", new { @class = "rai-caption" })
+                                    @Html.RaiAsyncSelectFor(m => m.DatiAnagrafici.CodLuogoNascita, Url.Action("GetComuni", "Anagrafica"), 3, attributes: new { required = "required" }, onSelectchange: "CalcolaCF()", tipoFiltro: myRaiHelper.SelectFilterType.StartsWith)
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-6 push-10">
+                                    @Html.LabelForRequiredObbl(m => m.DatiAnagrafici.Sesso, "Sesso", new { @class = "rai-caption" })
+                                    <div class="rai-radio-container rai-radio-inline">
+                                        @Html.RaiRadioButtonLabelFor(m => m.DatiAnagrafici.Sesso, "M", "Maschile", "", new { required = "required", onchange = "CalcolaCF();" })
+                                        @Html.RaiRadioButtonLabelFor(m => m.DatiAnagrafici.Sesso, "F", "Femminile", "", new { required = "required", onchange = "CalcolaCF();" })
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-6 push-10">
+                                    @Html.LabelForRequiredObbl(m => m.DatiAnagrafici.CodiceFiscale, "Codice fiscale", new { @class = "rai-caption" })
+                                    @Html.TextBoxFor(m => m.DatiAnagrafici.CodiceFiscale, new { @class = "form-control", required = "required" })
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="row push-20-t">
+                    <div class="col-sm-12">
+                        <div class="rai-btn-fill">
+                            <button id="btnSave" onclick="AnagSave()" class="btn rai-btn-primary">Salva</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<script>
+    InitDatePicker();
+
+    function CalcolaCF() {
+        var cognome = $('#DatiAnagrafici_Cognome').val();
+        var nome = $('#DatiAnagrafici_Nome').val();
+        var sesso = $('#DatiAnagrafici_Sesso').val();
+        var dataNascita = $('#DatiAnagrafici_DataNascita').val();
+        var luogoNascita = $('#DatiAnagrafici_CodLuogoNascita').val() ?? '';
+
+
+        if (cognome != '' && nome != '' && sesso != '' && dataNascita != '' && luogoNascita != '') {
+            $.ajax({
+                url: '/AnagNoDip/CalcolaCF',
+                cache: 'false',
+                type: 'POST',
+                dataType: "json",
+                data: {
+                    cognome: cognome,
+                    nome: nome,
+                    sesso: sesso,
+                    dataNascita: dataNascita,
+                    luogoNascita: luogoNascita
+                },
+                success: function (data) {
+                    if (data.Esito == true) {
+                        $("#DatiAnagrafici_CodiceFiscale").val(data.cf);
+                    }
+                    else {
+                        debugger
+                    }
+                },
+                error: function (a, b, c) {
+                    debugger
+                }
+            });
+        }
+    }
+
+    function AnagSave() {
+        debugger
+        var form = $('#form-anag');
+        var validator = $(form).validate();
+
+        if (!$(form).valid()) {
+            validator.focusInvalid();
+            return false;
+        }
+
+        swal({
+            title: 'Sei sicuro?',
+            text: "Vuoi confermare i dati?",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sì!',
+            cancelButtonText: 'Annulla',
+            reverseButtons: 'true'
+        }).then(function () {
+            var obj = new FormData($(form)[0]);
+
+            $.ajax({
+                url: "/AnagNoDip/Save_Anagrafica",
+                type: "POST",
+                cache: false,
+                dataType: 'html',
+                contentType: false,
+                processData: false,
+                data: obj,
+                success: function (data) {
+                    switch (data) {
+                        case "OK":
+                            swal("OK", "Salvataggio effettuato", "success");
+                            break;
+                        default:
+                            swal("Oops...", data, 'error');
+                    }
+                }
+            });
+        })
+
+
+    }
+</script>

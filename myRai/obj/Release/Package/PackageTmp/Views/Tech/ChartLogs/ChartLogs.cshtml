@@ -1,0 +1,141 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel.Tech;
+@using MVCProject.Custom_Helpers;
+
+@model List<Punto>
+
+@{
+    Layout = null;
+}
+
+<style>
+    .ct-series-a .ct-line,
+    .ct-series-a .ct-point {
+        stroke: blue !important;
+    }
+
+    .ct-series-b .ct-line,
+    .ct-series-b .ct-point {
+        stroke: green !important;
+    }
+</style>
+
+<section class="panel">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle></a>
+        </div>
+
+        <h2 class="panel-title">Stato logs</h2>
+    </header>
+    <div class="panel-body">
+        <div id="ChartistLineChartWithTooltips" class="ct-chart ct-perfect-fourth ct-golden-section"></div>
+    </div>
+</section>
+
+<script type="text/javascript">
+    var serie = [];
+    var serieTimeout = [];
+
+    @{
+        if (Model != null && Model.Any())
+        {
+            for(var idx = 0; idx < 24; idx++)
+            {
+                int val = 0;
+                var item = Model.Where( a => a.Ascissa.Equals( idx ) ).FirstOrDefault();
+
+                if (item != null)
+                {
+                    val = item.Ordinata;
+                }
+                <text>
+                serie.push( @(val) );
+                </text>
+            }
+        }
+    }
+
+    ( function ()
+    {
+        serieTimeout = getData(@((int)ChartLogTypesEnum.Timeout));
+
+        if ( $( '#ChartistLineChartWithTooltips' ).get( 0 ) )
+        {
+            new Chartist.Line( '#ChartistLineChartWithTooltips', {
+                labels: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+                        '10', '11', '12', '13', '14', '15', '16', '17', '18', '19',
+                        '20', '21', '22', '23'],
+                series: [{
+                    name: 'Numero di logs',
+                    data: serie
+                },
+                {
+                    name: 'Log timeout',
+                    data: serieTimeout
+                }]
+            } );
+
+            var $chart = $( '#ChartistLineChartWithTooltips' );
+
+            var $toolTip = $chart
+				.append( '<div class="tooltip"></div>' )
+				.find( '.tooltip' )
+				.hide();
+
+            $chart.on( 'mouseenter', '.ct-point', function ()
+            {
+                var $point = $( this ),
+					value = $point.attr( 'ct:value' ),
+					seriesName = $point.parent().attr( 'ct:series-name' );
+                $toolTip.html( seriesName + '<br>' + value ).show();
+            } );
+
+            $chart.on( 'mouseleave', '.ct-point', function ()
+            {
+                $toolTip.hide();
+            } );
+
+            $chart.on( 'mousemove', function ( event )
+            {
+                $toolTip.css( {
+                    left: ( event.offsetX || event.originalEvent.layerX ) - $toolTip.width() / 2 - 10,
+                    top: ( event.offsetY || event.originalEvent.layerY ) - $toolTip.height() - 40
+                } );
+            } );
+        }
+    } )();
+
+    function getData(tipo)
+    {
+        var data = [];
+
+        $.ajax( {
+            url: '@Url.Action("GetData","Tech")',
+            type: "POST",
+            data: {
+                tipo: tipo
+            },
+            cache: false,
+            async: false,
+            dataType: 'json',
+            success: function ( result )
+            {
+                var j = 0;
+                for ( var i = 0; i < 24; i++ )
+                {
+                    if (result[j].Ascissa == i)
+                    {
+                        data.push( result[j].Ordinata );
+                        j++;
+                    }
+                    else
+                    {
+                        data.push( 0 );
+                    }
+                }
+            }
+        } );
+        return data;
+    }
+</script>

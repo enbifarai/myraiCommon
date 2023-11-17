@@ -1,0 +1,199 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model ModelDash
+
+@{
+    ViewBag.Title = "Approvazioni produzione";
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    string[] mess = CommonHelper.GetParametri<string>(EnumParametriSistema.MessaggioChiusura);
+}
+
+<style>
+    .select2-results__option:nth-child(even) {
+        background-color: #fff;
+    }
+</style>
+
+
+<section role="main" class="content-body">
+    @{
+        int TotEvid = (UtenteHelper.GetQuadratura() == Quadratura.Settimanale ? @Model.TotaleEvidenzeDaGiustificareSoloAssIng : @Model.TotaleEvidenzeDaGiustificare);
+
+    }
+    <main id="main-container">
+        <div class="content">
+            <div class="row">
+                <div class="col-md-8">
+                    @if (!UtenteHelper.GappChiuso())
+                    {
+                        <section class="panel">
+                            @if (UtenteHelper.IsBoss(CommonHelper.GetCurrentUserPMatricola()) ||
+                            UtenteHelper.IsBossLiv2(CommonHelper.GetCurrentUserPMatricola()))
+                            {
+
+                                @Html.Partial("~/Views/ApprovazioneProduzione/subpartial/da_approvare1.cshtml")
+                            }
+                            else
+                            {
+                                @Html.Partial("~/Views/ApprovazioneProduzione/subpartial/da_approvareCustom.cshtml")
+                            }
+                        </section>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning alert-dismissable ">
+                            <h3 class="font-w300 push-15 text-black ">@mess[0]</h3>
+                            <p class="text-black">@mess[1]</p>
+                        </div>
+                    }
+                </div>
+                <div class="col-md-4">
+                    @Html.Partial("~/Views/ApprovazioneProduzione/subpartial/ricerca_att.cshtml", Model.RicercaModelAttivita)
+                </div>
+            </div>
+        </div>
+    </main>
+</section>
+
+
+@Html.Partial("../Richieste/_motivoRifiuto")
+@Html.Partial("../Richieste/_nuovarichiesta", Model.Raggruppamenti)
+@Html.Partial("../Richieste/_popupInizialePreSelezione")
+@Html.Partial("../Richieste/_validarifiutatutti")
+@Html.Partial("../Responsabile/popupResponsabile")
+
+<div class="modal fade right" id="giornata-modal" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+</div>
+<div class="modal fade right" id="doc-modal" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-popin modal-lg">
+        <div class="block-header bg-cdf" style="height: 0px; padding: 0px;">
+            <ul class="block-options visible-xs">
+                <li>
+                    <button data-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+                </li>
+            </ul>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+
+        </div>
+        <div class="modal-content" id="pdfcontent" style="text-align: center">
+            <iframe style="width: 100%; margin: 8px; border: none" id="docframe"></iframe>
+        </div>
+
+    </div>
+
+</div>
+@section afterjs
+{
+    <script>
+    $(document).ready(function () {
+        var color = "#0088CC";
+        if (document.getElementsByClassName("bg-cdf").length) {
+            var style = window.getComputedStyle(document.getElementsByClassName("bg-cdf")[0], null);
+            if (style.length) {
+                var rgb = style["background-color"];
+                if (rgb.length) {
+                    var color = rgb.replace('rgb(', '').replace(')', '').split(',');
+
+                    var r, g, b;
+                    r = parseInt(color[0].trim());
+                    g = parseInt(color[1].trim());
+                    b = parseInt(color[2].trim());
+
+                    color = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+                }
+            }
+        }
+
+        $('.chart').easyPieChart({
+            "barColor": color, "delay": 300, scaleColor: false, lineWidth: 7, size: 125
+        });
+        $('.chart-small').easyPieChart({
+            "barColor": color, "delay": 300, scaleColor: false, lineWidth: 4, size: 55
+        });
+
+        $(".select2").select2({
+        });
+
+        $('#stato').on('change', function () {
+            var idStatoSelezionato = $(this).val();
+
+            if (idStatoSelezionato == "" || idStatoSelezionato == "undefined" || idStatoSelezionato == null) {
+                idStatoSelezionato = 0;
+            }
+
+            $('#divSelectAttivita').html('');
+            $.ajax({
+                url: '@(Url.Action( "LoadSelect" , "ApprovazioneProduzione" ))',
+                type: "POST",
+                cache: false,
+                async: false,
+                data: JSON.stringify({
+                    idStato: idStatoSelezionato
+                }),
+                contentType: "application/json; charset=utf-8",
+                success: function (response) {
+                    $('#divSelectBox').html(response);
+                    $('#refresh-attivita').attr("data-refreshurl", "/ApprovazioneProduzione/GetRichiesteAttProduzione");
+                },
+                error: function (err) {
+                    $('#refresh-attivita').attr("data-refreshurl", "");
+                }
+            });
+        });
+    });
+
+    function Verifica() {
+        // verifica i filtri
+        var nominativo = $('#nominativo').val();
+        var idStatoSelezionato = $('#stato').val();
+        var titolo = $('#titolo').val();
+        var eccezione = $('#eccezione').val();
+        var datada = $('#datada').val();
+        var dataal = $('#dataal').val();
+        $('#refresh-attivita').attr("data-refreshurl", "");
+
+        var continua = (idStatoSelezionato > 0);
+
+        if (continua) {
+            $('#refresh-attivita').attr("data-refreshurl", "/ApprovazioneProduzione/GetRichiesteAttProduzione");
+            $('#refresh-attivita').click();
+            return true;
+        }
+
+        if ($.trim(titolo).length > 0 &&
+            idStatoSelezionato > 0) {
+            $('#refresh-attivita').attr("data-refreshurl", "/ApprovazioneProduzione/GetRichiesteAttProduzione");
+            $('#refresh-attivita').click();
+            return true;
+        }
+
+        if ($.trim(nominativo).length > 0 && continua) {
+            $('#refresh-attivita').attr("data-refreshurl", "/ApprovazioneProduzione/GetRichiesteAttProduzione");
+            $('#refresh-attivita').click();
+            return true;
+        }
+
+        if (eccezione > 0 && continua) {
+            $('#refresh-attivita').attr("data-refreshurl", "/ApprovazioneProduzione/GetRichiesteAttProduzione");
+            $('#refresh-attivita').click();
+            return true;
+        }
+
+        if ($.trim(datada).length > 0 && continua) {
+            $('#refresh-attivita').attr("data-refreshurl", "/ApprovazioneProduzione/GetRichiesteAttProduzione");
+            $('#refresh-attivita').click();
+            return true;
+        }
+
+        if ($.trim(dataal).length > 0 && continua) {
+            $('#refresh-attivita').attr("data-refreshurl", "/ApprovazioneProduzione/GetRichiesteAttProduzione");
+            $('#refresh-attivita').click();
+            return true;
+        }
+
+        return false;
+    }
+    </script>
+}

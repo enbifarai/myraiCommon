@@ -1,0 +1,102 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model  ApprovazioniPendingModel
+
+<section class="panel">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblSitFeriePerm" aria-expanded="true"></a>
+        </div>
+        <h2 id="lblSitFeriePerm" class="panel-title">
+            Approvazioni pending per sede
+            @{
+                int tot1 = Model.MeseCorr.Sum( x => x.richiesteDaApprovare );
+                int tot2 = Model.MesePrec.Sum( x => x.richiesteDaApprovare );
+            }
+
+            @if ( Model.MeseCorr.Count( ) + Model.MesePrec.Count( ) > 0 )
+            {
+                @:(@(tot1 + tot2))
+            }
+        </h2>
+    </header>
+    <div class="panel-body" style="display: block; padding: 8px">
+        <div class="block" style="max-height: 300px; overflow-y: auto">
+            @if ( Model.MesePrec.Count( ) == 0 && Model.MeseCorr.Count( ) == 0 )
+            {
+                <div style="text-align: center;">
+                    <i class="fa fa-refresh fa-spin" style="font-size: 22px; color: #ebebeb;"></i>
+                </div>
+            }
+            else
+            {
+                <ul class="nav nav-tabs nav-tabs-alt  nav-justified" data-toggle="tabs" role="tablist">
+                    <li class="tabbianco active" role="presentation">
+                        <a href="#tab1" tabindex="0" role="tab" style="border:0px;">MESE PREC (@tot2)</a>
+                    </li>
+                    <li class="tabbianco" role="presentation">
+                        <a id="mcorr" href="#tab2" tabindex="0" role="tab" style="border:0px;">MESE CORR (@tot1)</a>
+                    </li>
+                </ul>
+                <div class="block-content tab-content">
+                    <div class="table-responsive tab-pane active" id="tab1" role="tabpanel">
+                        <table id="table-meseprec" class="table table-hover">
+                            <thead>
+                                <tr>
+                            <th class="text-primary"><a style="cursor:pointer"  onclick='$( "#container-appr").load("/tech/getappr");'>Sede</a></th>
+                            <th class="text-primary"><a style="cursor:pointer" onclick='$( "#container-appr").load("/tech/getappr?ord=p");'>In approvazione</a> </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ( var item in Model.MesePrec )
+                                {
+                                    <tr>
+                                        <td><b>@item.sede</b></td>
+                                        <td data-pending="@item.richiesteDaApprovare">
+                                            <b>@item.richiesteDaApprovare</b> (
+                                            @foreach ( string s in item.NominativiL1 )
+                                            {
+                                                <a id="p-@item.sede-@s" href="javascript:getname('@s','p-@item.sede-@s')" data-toggle="tooltip"
+                                                   title="Clicca per nominativo" style="cursor:pointer">@s</a>
+                                            }
+                                            )
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="table-responsive tab-pane" id="tab2" role="tabpanel">
+                        <table class="table table-hover">
+                            <thead>
+<tr>
+                            <th class="text-primary"><a style="cursor:pointer" onclick='$( "#container-appr").load("/tech/getappr");'>Sede</a></th>
+                            <th class="text-primary"><a style="cursor:pointer" onclick='$( "#container-appr").load("/tech/getappr?ord=p");'>In approvazione</a> </th>
+</tr>
+                            </thead>
+                            <tbody>
+                                @foreach ( var item in Model.MeseCorr )
+                                {
+                                    <tr>
+                                        <td><b>@item.sede</b></td>
+                                        <td>
+                                            <b>@item.richiesteDaApprovare</b> (
+                                            @foreach ( string s in item.NominativiL1 )
+                                            {
+                                                <a id="c-@item.sede-@s" href="javascript:getname('@s','c-@item.sede-@s')" data-toggle="tooltip"
+                                                   title="Clicca per nominativo" style="cursor:pointer">@s</a>
+                                            }
+                                            )
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>

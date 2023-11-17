@@ -1,0 +1,107 @@
+﻿@using myRaiGestionale.Controllers
+@model myRaiCommonModel.Gestionale.RicercaAnagrafica
+
+@{
+    var formId = "form-ricerca-" + Model.BoxDest;
+}
+
+<style>
+    @@media (max-width:768px) {
+        .xs-collapsed {
+            display: none;
+        }
+    }
+</style>
+
+
+<section class="panel @(Request.Browser.IsMobileDevice?"panel-collapsed":"")">
+    <header class="panel-heading ">
+        <h2 id="lblRightBox" class="panel-title">Ricerca</h2>
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblRightBox" aria-expanded="@(Request.Browser.IsMobileDevice?"false":"true")"></a>
+        </div>
+    </header>
+
+    @using (Ajax.BeginForm("RicercaPratiche", "PoliticheRetributive", new AjaxOptions
+    {
+        InsertionMode = InsertionMode.Replace,
+        HttpMethod = "POST",
+        UpdateTargetId = Model.BoxDest,
+        OnBegin = "gestPreSubmit('" + Model.BoxDest + "')",
+        OnSuccess = "gestSuccessSubmit('" + formId + "','" + Model.BoxDest + "')"
+    }, new { id = formId, @class = "panel-body xs-collapsed", role = "search" }))
+    {
+        @Html.HiddenFor(m => m.HasFilter, new { @class = formId + " form-control-bool" })
+        @Html.HiddenFor(m => m.ResultView)
+        @Html.HiddenFor(m => m.MatricoleMultiple, new { @class= formId+ " form-control-bool"})
+        <div class="form-group">
+            <div class="row">
+                <div class="col-xl-6 col-sm-12 push-10">
+                    <label class="rai-caption">Matricola</label>
+                    @Html.TextBoxFor(m => m.Matricola, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Matricola" })
+                </div>
+                <div class="col-xl-6 col-sm-12 push-10">
+                    <label class="rai-caption">Cognome</label>
+                    @Html.TextBoxFor(m => m.Cognome, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Cognome" })
+                </div>
+                <div class="col-xl-6 col-sm-12 push-10">
+                    <label class="rai-caption">Nome</label>
+                    @Html.TextBoxFor(m => m.Nome, new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Nome" })
+                </div>
+                <div class="col-xl-6 col-sm-12 push-10">
+                    <label class="rai-caption">Direzione</label>
+                    <select class="@formId form-control form-control-value-int valid" data-val="true" id="IdDirezionePratica" name="IdDirezionePratica">
+                        <option value="0">Seleziona una direzione</option>
+                        @foreach (var group in PoliticheRetributiveController.getDirezioniPratica())
+                        {
+                            <optgroup label="@group.Name">
+                                @foreach (var item in group.ListItems)
+                                {
+                                    <option value="@item.Value">@item.Text</option>
+                                }
+                            </optgroup>
+                        }
+                    </select>
+
+                </div>
+                <div class="col-xl-6 col-sm-12 push-10">
+                    <label class="rai-caption">Piano</label>
+                    @Html.DropDownListFor(m => m.Piano, new SelectList(PoliticheRetributiveController.getCampagnaList(true), "Value", "Text", null), new { @class = formId + " form-control form-control-value-int", style = "width: 100%", placeholder = "Piano" })
+                </div>
+                <div class="col-xl-6 col-sm-12 push-10">
+                    <label class="rai-caption">Stato</label>
+                    @Html.DropDownListFor(m => m.Stato, new SelectList(PoliticheRetributiveController.getStatiList(), "Value", "Text", null), new { @class = formId + " form-control form-control-value-int", style = "width: 100%", placeholder = "Stato" })
+                </div>
+                <div class="col-xl-6 col-sm-12 push-10">
+                    <label class="rai-caption">Provvedimento</label>
+                    @Html.DropDownListFor(m => m.Provvedimento, new SelectList(PoliticheRetributiveController.getProvvList(), "Value", "Text", null), new { @class = formId + " form-control form-control-value-int", style = "width: 100%", placeholder = "Gestione manuale" })
+                </div>
+                <div class="col-xl-6 col-sm-12 push-10">
+                    <label class="rai-caption">Gestione manuale</label>
+                    @Html.DropDownListFor(m => m.GestioneManuale, new SelectList(PoliticheRetributiveController.getGestioneManuale(), "Value", "Text", null), new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Stato" })
+                </div>
+                <div class="col-xl-6 col-sm-12 push-10">
+                    <label class="rai-caption">Decorrenza</label>
+                    @Html.DropDownListFor(m => m.Decorrenza, new SelectList(PoliticheRetributiveController.getDecorrenzeVisibili(), "Value", "Text", null), new { @class = "form-control form-control-value", style = "width: 100%", placeholder = "Decorrenza" })
+                </div>
+                <div class="col-xl-6 col-sm-12 push-10">
+                    <label class="rai-caption">Categoria</label>
+                    @Html.DropDownListFor(m => m.Categoria, new SelectList(PoliticheRetributiveController.getQualList(), "Value", "Text", null), new { @class = formId + " form-control form-control-value", style = "width: 100%", placeholder = "Categoria" })
+                </div>
+                @*<div class="col-xl-6 col-sm-12 push-10">
+                        @Html.DropDownListFor(m=>m.PraticaInCarico, new SelectList(PoliticheRetributiveController.getElabList(), "Value", "Text", null), new { @class = formId+" form-control form-control-value", style = "width: 100%", placeholder = "Elaborazione" })
+                    </div>*@
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="rai-btn-fill">
+                    <input type="button" id="btnAzzera" class="btn rai-btn-secondary" title="Azzera" value="Azzera" onclick="GestPulisciFiltri('@(formId)',true)" />
+                    <input type="submit" id="btnCerca" class="btn rai-btn-primary" title="Cerca" value="Cerca" onclick="GestCheckHasFilter('@(formId)')" />
+                </div>
+            </div>
+        </div>
+    }
+
+</section>

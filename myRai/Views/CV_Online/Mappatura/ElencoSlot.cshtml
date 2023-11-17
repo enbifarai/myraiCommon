@@ -1,0 +1,81 @@
+﻿@model myRaiCommonModel.cvModels.cvModel.Mappatura
+
+@{
+    Layout = null;
+
+    var elencoDisponibilita = Model.ElencoSlot
+                .GroupBy(x => x.DataDispo)
+                .Select(y => new 
+                { 
+                    data = y.Key.Value, 
+                    stanze = y.GroupBy(z => z.Id_Stanza) 
+                });
+}
+
+<div id="elencoSlot">
+    <div class="row push-10-t">
+        <div class="col-sm-12 ">
+            <label class="rai-font-md">Date disponibili:</label>
+        </div>
+    </div>
+    <div class="row" style="min-height:50px;">
+        <div class="col-sm-12 ">
+        @foreach (var data in elencoDisponibilita)
+        {
+            <button class="btn btn-default" data-date="@data.data.ToString("yyyy_MM_dd")" onclick="javascript:ShowSlotRoom(this)">@data.data.ToString("dd/MM/yyyy")</button>
+        }
+        </div>
+    </div>
+    <div class="row push-10-t">
+        <div class="col-sm-12 ">
+            <label class="rai-font-md">Stanze disponibili:</label>
+        </div>
+    </div>
+    <div class="row" style="min-height:50px;">
+        @foreach (var data in elencoDisponibilita)
+        {
+            <div class="col-sm-12" style="display:none;" data-date="@data.data.ToString("yyyy_MM_dd")">
+                @foreach (var stanza in data.stanze)
+	            {
+                    var recStanza = Model.ElencoStanze.FirstOrDefault(x => x.Id_Stanza == stanza.Key);
+                    <button class="btn btn-default" data-room-date="@data.data.ToString("yyyy_MM_dd")" data-room-id="@stanza.Key" onclick="javascript:ShowSlotTime(this)">@recStanza.DesStanza</button>
+	            }
+            </div>
+        }
+    </div> 
+    <div class="row push-10-t">
+        <div class="col-sm-12">
+            <label class="rai-font-md">Orari disponibli</label>
+        </div>
+    </div>
+    <div class="row" style="min-height:50px;">
+        @foreach (var data in elencoDisponibilita)
+        {
+            foreach (var stanza in data.stanze)
+            {
+                <div class="col-sm-12" style="display:none;" data-room-date="@data.data.ToString("yyyy_MM_dd")" data-room-id="@stanza.Key">
+                    @foreach (var orario in stanza.OrderBy(x=>x.OrarioInizioDispo))
+	                {
+		                <button class="btn btn-default" data-time="" data-selected="false" data-id-slot="@orario.Id_Slot" onclick="SelectSlotTime(this)">@orario.OrarioInizioDispo.Value.ToString("HH:mm")-@orario.OrarioFineDispo.Value.ToString("HH:mm")</button>
+	                }
+                </div>
+            }
+        }
+    </div>
+    
+    <div class="row push-10-t">
+        <div class="col-sm-12">
+            <div class="rai-btn-fill">
+                @if (Model.CanModify)
+        {
+                    <button id="btnEditPren" class="btn btn-default" onclick="ModificaPrenotazioneMappatura()">Modifica</button>
+        }
+                @if (Model.CanBook && Model.prenSlot == null)
+        {
+                    <button id="btnAddPren" class="btn rai-btn-primary" onclick="AggiungiPrenotazione()">Prenota</button>
+        }
+            </div>
+        </div>
+
+    </div>
+</div>   

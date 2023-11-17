@@ -1,0 +1,158 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model List<sediPdfModel>
+
+<section class="panel">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="javascript:$('#divdoc').slideToggle()" class="panel-action" style="color: #aaa;">
+                <i class="fa fa-file-pdf-o" aria-hidden="true"></i>
+            </a>
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblSitFeriePerm" aria-expanded="true"></a>
+        </div>
+        <h2 id="lblSitFeriePerm" class="panel-title">
+            Stato Documenti per sede
+            @if ( Model.Count( ) > 0 )
+            {
+                int daConv = 0;
+                foreach ( var s in Model )
+                {
+                    daConv += s.files.Where( x => x.status == "S_OK" ).Count( );
+                }
+                @:(@daConv da firmare)
+            }
+        </h2>
+        <div id="divdoc" style="width:100%;display:none;padding-top:8px">
+            <div class="row" style="background-color:#fff;padding:10px">
+                <form action="/tech/crpdf" method="post" id="formpdf">
+                    <div class="col-sm-3">
+                        <input type="text" class="form-control" name="sede" placeholder="Sede..." />
+                    </div>
+                    <div class="col-sm-3">
+                        <input type="text" class="form-control js-datetimepicker" data-format="DD/MM/YYYY" data-locale="it" name="pdfda" placeholder="Dal..." />
+                    </div>
+                    <div class="col-sm-3">
+                        <input type="text" class="form-control js-datetimepicker" data-format="DD/MM/YYYY" data-locale="it"
+                               name="pdfa" placeholder="Al..." />
+                    </div>
+                    <div class="col-sm-3" style="text-align:right">
+                        <i id="wwwaaa" class="fa fa-refresh fa-spin" style="font-size: 22px; color: #ebebeb;display:none"></i>
+                        <a style="width:200px" class="btn btn-default bg-puls_dash btn-scriv" href="javascript:createPDF()">GENERA PDF</a>
+                    </div>
+                </form>
+            </div>
+            <div class="row" style="background-color:#fff;padding:10px">
+                <div class="col-sm-3">
+                    &nbsp;
+                </div>
+                <div class="col-sm-3">
+                    &nbsp;
+                </div>
+                <div class="col-sm-3" style="text-align:right">
+                    <input type="text" class="form-control js-datetimepicker" data-format="DD/MM/YYYY" data-locale="it"
+                           id="datacheck" placeholder="Data da verificare..." />
+                </div>
+                <div class="col-sm-3" style="text-align:right">
+                    <i id="waitcheck" class="fa fa-refresh fa-spin" style="font-size: 22px; color: #ebebeb;display:none"></i>
+                    <a id="btn-check-conv" style="width:200px" class="btn btn-default bg-puls_dash btn-scriv" href="javascript:checkConvalide()">CHECK CONVALIDE</a>
+                </div>
+            </div>
+
+
+            <div class="row" style="background-color:#fff;padding:10px">
+                <form action="/tech/uppdf" method="post" id="formpdf-up" enctype='multipart/form-data'>
+                    <div class="col-sm-3">
+                        <input type="text" class="form-control" name="sede" placeholder="Sede..." />
+                    </div>
+                    <div class="col-sm-3">
+                        <input type="text" class="form-control js-datetimepicker" data-format="DD/MM/YYYY" data-locale="it" name="pdfda" placeholder="Dal..." />
+                    </div>
+                    <div class="col-sm-3">
+                        <input type="text" class="form-control js-datetimepicker" data-format="DD/MM/YYYY" data-locale="it"
+                               name="pdfa" placeholder="Al..." />
+                    </div>
+                    <div class="col-sm-3">
+                        <div class="row">
+                            <div class="col-sm-6"  style="padding-left:4px">
+                                
+                                <a style="width:100%" onclick="$('#upl').click()"  class="btn btn-default bg-puls_dash btn-scriv" >PDF...</a>
+                                <input type="file" id="upl" name="pdfile" style="display:none"/>
+                            </div>
+                            <div class="col-sm-6"  style="padding-right:4px">
+                                <i id="wwwaaa" class="fa fa-refresh fa-spin" style="font-size: 22px; color: #ebebeb;display:none"></i>
+                                <a style="width:100%" id="upl-pdf"  class="btn btn-default bg-puls_dash btn-scriv" href="javascript:uplPDF()">UPLOAD</a>
+                            </div>
+                        </div>
+                    </div>
+                   
+                </form>
+            </div>
+
+
+
+        </div>
+    </header>
+    <div class="panel-body" style="display: block; padding: 8px">
+        <div id="div-sedi" style="max-height: 300px; overflow-y: auto">
+            @if ( Model.Count( ) == 0 )
+            {
+                <div style="text-align: center;">
+                    <i class="fa fa-refresh fa-spin" style="font-size: 22px; color: #ebebeb;"></i>
+                </div>
+            }
+            else
+            {
+                <table id="table-sedi" class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th class="text-primary">Sede</th>
+                            <th class="text-primary">Dal/Al</th>
+                            <th class="text-primary">Dal/Al</th>
+                            <th class="text-primary">Dal/Al</th>
+                            <th class="text-primary">Dal/Al</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ( var item in Model )
+                        {
+                            <tr>
+                                <td class="nome-sede"><b>@item.sede</b></td>
+                                @{
+                                    int c = 0;
+                                }
+                                @foreach ( var pdf in item.files )
+                                {
+                                    c++;
+                                    <td>
+                                        <a href="/tech/getpdf?idpdf=@pdf.id" target="_blank">@pdf.dal.ToString( "dd/MM/yyyy" )-@pdf.al.ToString( "dd/MM/yyyy" )</a>
+                                        @if ( pdf.status == "C_OK" )
+                                        {
+                                            <br />
+                                            <i data-toggle="tooltip" title="" data-original-title="Firmato digitalmente"
+                                               class="fa fa-circle circle-green" aria-hidden="true"></i>
+                                            <em style="font-size: 86%">@pdf.matricola_conv @(pdf.data_conv != null ? ( ( DateTime ) pdf.data_conv ).ToString( "dd/MM/yyyy HH.mm" ) : "") </em>
+                                        }
+                                        @if ( pdf.status == "S_OK" )
+                                        {
+                                            <br />
+                                            <i data-toggle="tooltip" title="" data-original-title="Stampato"
+                                               class="fa fa-circle circle-orange" aria-hidden="true"></i>
+                                            <em style="font-size: 86%">@pdf.matricola_stampa @(pdf.data_stampa != null ? ( ( DateTime ) pdf.data_stampa ).ToString( "dd/MM/yyyy HH.mm" ) : "") </em>
+                                        }
+                                    </td>
+                                }
+                                @for ( int i = c ; i <= 4 ; i++ )
+                                {
+                                    <td></td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+    <script>InitDatePicker()</script>
+</section>

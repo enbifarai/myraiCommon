@@ -1,0 +1,160 @@
+﻿@model myRaiCommonModel.cvModels.cvModel
+
+@{
+    var lista = Model.competenzeRai.Where(x => x._stato != "").OrderByDescending(x => x._flagPrincipale).ToList();
+    string text_tooltip = "Indicare le attività svolte in ambito Rai e/o Extra Rai.<br>Selezionare l’attività svolta, specificando se principale o secondaria.<br>Per attività principale si intende quella attualmente svolta (max. 2 attività).<br>Per attività secondaria si intende l’attività già svolta e che si è disponibili a svolgere in caso di necessità o di interesse.";
+}
+
+<section class="rai panel">
+    <header class="panel-heading bg-primary">
+        <h2 class="panel-title text-white"><span tabindex="0">Attivit&agrave; e competenze editoriali</span>
+                    <span tabindex="0" id="popCompetenzeEditoriali" data-popover-content="#myPopover" class="push-5-l" data-toggle="popover" data-html="true" data-container="body" data-placement="right" title="" data-content="Indica le attività svolte in ambito Rai e/o Extra Rai.<ul><li>Selezionare l’attività svolta, specificando se principale o secondaria.</li><li>Per attività principale si intende quella attualmente svolta (max. 2 attività).</li><li>Per attività secondaria si intende l’attività già svolta e che si è disponibili a svolgere in caso di necessità o di interesse.</li></ul>" data-original-title="&nbsp;" data-trigger="focus" aria-label="Informazioni sezione">
+                <i id="" class="fa fa-info-circle"></i>
+            </span>
+        </h2>
+        <div class="panel-actions rai-panel-actions">
+            <button class="btn-action-icon" data-toggle="modal" data-target="#modalCompetenzeRaiInserimento" onclick="InizializzaTuttoDopoAjax()" aria-label="Aggiungi competenze"><span class="fa fa-plus"></span></button>
+        </div>
+        
+    </header>
+
+    <div class="panel-body panel-body-nopadding-xs">
+        @* FREAK - PRIMA TABELLA VISIBILE CON AL MASSIMO 3 ELEMENTI *@
+        <table class="js-table-sections table table-hover rai-table rai-table-vcenter" role="grid">
+            <tbody>
+            @{
+                int index_max;
+                int count_lista;
+                int i;
+                int j = -1;
+                int tbIX = -1;
+                count_lista = lista.Count;
+                if (count_lista < 3)
+                {
+                    index_max = count_lista;
+                }
+                else
+                {
+                    index_max = 3;   
+                }
+                for (i=0; i<index_max; i++)
+                {
+                    string not_primo_elemento = "";
+                    string ii_riga="";
+                    string iii_riga="";
+                    if(i==0){
+                        tbIX = 0;
+                    }else{
+                        tbIX = -1;
+                    }
+                    if (i>0)
+                    {
+                        not_primo_elemento = "actions-hover actions-fade";
+                    }
+                    
+                    if (lista[i]._flagPrincipale == "1")
+                    {
+                        ii_riga = "Principale";
+                    }
+                    else
+                    {
+                        ii_riga = "Secondario";
+                    }
+
+                    if (lista[i]._flagExtraRai == "1")
+                    {
+                        iii_riga = "Extra Rai";
+                    }
+                    else
+                    {
+                        iii_riga = "Rai";
+                    }
+                    <tr role="row" tabindex="@tbIX" onfocus="onFocusRow(this);">
+                        <td class="text-left">
+                            <span class="text-bold ">@lista[i]._descConProf</span><br />
+                            <span class="">@ii_riga</span><br />
+                            <span class="text-italic ">@iii_riga</span>
+                        </td>
+                        <td class="rai-table-td-action" >
+                            <a class="btn btn-action-icon" href="#" data-toggle="modal" data-target="#modalCompetenzeRaiInserimento"  onclick=""><i class="fa fa-pencil"></i></a>
+                        </td>
+                    </tr>
+                }
+            }
+           </tbody>
+        </table>
+        @* FREAK - SECONDA TABELLA COLLAPSABILE *@
+
+        @if (i < count_lista)
+        {
+            //creo la tabella a scomparsa
+            <div class="collapse" id="coll1">
+            <table class="js-table-sections table table-hover rai-table rai-table-vcenter">
+                <tbody>
+                    @for (j = i; j < count_lista; j++)
+                    {
+                        string not_primo_elemento = "actions-hover actions-fade";
+                        string ii_riga="";
+                        string iii_riga="";
+                        
+                        if (lista[j]._flagPrincipale == "1")
+                        {
+                            ii_riga = "Principale";
+                        }
+                        else
+                        {
+                            ii_riga = "Secondario";
+                        }
+
+                        if (lista[j]._flagExtraRai == "1")
+                        {
+                            iii_riga = "Extra Rai";
+                        }
+                        else
+                        {
+                            iii_riga = "Rai";
+                        }
+                        <tr>
+                            <td class="text-left">
+                                <span class="text-bold ">@lista[j]._descConProf</span><br />
+                                <span class="">@ii_riga</span><br />
+                                <span class="text-italic ">@iii_riga</span>
+                            </td>
+                        <td class="rai-table-td-action" >
+                            <a class="btn btn-action-icon" href="#" data-toggle="modal" data-target="#modalCompetenzeRaiInserimento" onclick=""><i class="fa fa-pencil"></i></a>
+                        </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+                </div>
+            if (j > -1)
+            {
+                <div class="rai section-bottom">
+                    <a id="toggle-competenzeRai" data-toggle="collapse" data-target="#coll1" class="apri-panel" onclick="toggleAngle('toggle-competenzeRai')"><i class="fa fa-2x push-5-t font-w600 fa-angle-down text-white"></i></a>    @* onclick="togglePanel('toggle-competenzeRai', 'tabella-espandibile')"  *@
+                </div>
+            }                
+        }
+        @if (count_lista == 0)
+        {
+            @Html.Partial("~/Views/CV_Online/partials/_no_elements.cshtml");
+        }  
+    </div>
+</section>
+
+@* FREAK - MODALE PER INSERIMENTO Competenze Rai PROFESSIONALI *@
+@Html.Partial("CompetenzeRai/partials/_modalInserimento", Model.competenzeRai)
+@* ******************************************************* *@
+
+@* FREAK - DIV per Modale di Modifica *@
+<div class="modal right fade modalCheck" role="dialog" aria-hidden="true"  id="frkModificaCompetenzeRai">
+
+</div>
+
+@* ********************************** *@
+<script>
+    $('[data-toggle="popover"]').popover({
+        template: '<div class="popover"><div class="arrow"></div><div><span style="float:left; width:100%; display:inline;" class="popover-title"></span><span class="customPopOverCloser" style="float:right; width:5%; margin-top: -30px; margin-left: -3px; dispay:inline; cursor:pointer;" aria-hidden="true">x</span></div><div class="clearfix"></div><div class="popover-content"></div></div>',
+        html: true
+    });
+</script>

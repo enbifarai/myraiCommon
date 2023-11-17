@@ -1,0 +1,159 @@
+﻿@using myRaiHelper;
+@using myRaiCommonModel;
+@using MVCProject.Custom_Helpers;
+
+@model SchedeEccezioniModel
+
+<section class="panel" id="panel-eventi-1">
+    <header class="panel-heading">
+        <div class="panel-actions">
+            <a href="#" class="panel-action panel-action-toggle" data-panel-toggle="" aria-labelledby="lblEccezioni" tabindex="0" aria-expanded="true"></a>
+        </div>
+        <h2 id="lblEccezioni" class="panel-title">Eccezioni presenti</h2>
+    </header>
+
+    <div id="eventi" class="block panel-body no-padding">
+        <div class="block-content tab-content">
+            <div style="text-align:right" class="row">
+                <div class="col-xs-12 col-sm-3" style="text-align:left">
+                    <div class="checkbox-custom checkbox-text-danger">
+                        <input type="checkbox" id="cb1" checked="checked" onchange="FiltraEcc(1)">
+                        <label> Mai modificate</label>
+                    </div>
+                </div>
+                <div class="col-xs-12 col-sm-3" style="text-align:left">
+                    <div class="checkbox-custom checkbox-text-primary">
+                        <input type="checkbox" id="cb2" checked="checked" onchange="FiltraEcc(2)">
+                        <label> Modificate</label>
+                    </div>
+                </div>
+                <div class="col-xs-12 col-sm-3" style="text-align:left">
+                    <div class="checkbox-custom checkbox-default">
+                        <input type="checkbox" id="cb3" checked="checked" onchange="FiltraEcc(3)">
+                        <label>Da inserire</label>
+                    </div>
+                </div>
+                <div class="col-xs-12 col-sm-3" style="text-align:left">
+                    <div class="input-group input-search" style="@((Request.Browser.IsMobileDevice) ? "margin-top:5px;" : "margin-top:-5px;" )">
+                        <input onkeyup="filterEcc()" id="filter" type="text" class="form-control" placeholder="Cerca...">
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" type="submit"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <br />
+            <div class="table-responsive">
+                <table class="js-table-sections table table-hover rai-table rai-table-vcenter" id="table-ecc" role="grid">
+                    <thead>
+                        <tr>
+                            <th>Eccezione</th>
+                            <th>Tipologia</th>
+                            <th>Area Tematica</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        @{int row = 0;}
+
+                        @foreach (var item in Model.Schede)
+                        {
+                            if (item.codice.StartsWith("$") || item.codice.StartsWith("+"))
+                            { continue; }
+
+                            row++;
+                            Boolean NonPresente = item.data_inizio_validita == default(DateTime);
+                            Boolean MaiModificata = item.data_modifica == null;
+                            int tipo = 2;
+                            if (NonPresente)
+                            {
+                                tipo = 3;
+                            }
+                            else
+                                if (MaiModificata)
+                            {
+                                tipo = 1;
+                            }
+                            string classeCss = "";
+
+                            string ariaLabel = item.codice + ":" + item.descrittiva + " - " + item.definizione;
+                            if (item.MyRai_Regole_TipoAssenza != null)
+                            {
+                                ariaLabel += ". Tipo assenza:" + item.MyRai_Regole_TipoAssenza.tipo_assenza;
+                            }
+                            string strTematiche = "";
+                            if (item.MyRai_Regole_SchedeEccezioni_Tematiche != null)
+                            {
+                                List<string> tematiche = new List<string>();
+                                foreach (var tem in item.MyRai_Regole_SchedeEccezioni_Tematiche.ValidToday())
+                                {
+                                    tematiche.Add(tem.MyRai_Regole_Tematiche.tematica);
+                                }
+                                if (tematiche.Count > 0)
+                                {
+                                    strTematiche = String.Join(", ", tematiche.ToArray());
+                                    ariaLabel += ". Tematiche:" + strTematiche;
+                                }
+                            }
+
+
+                            <tr class="tipo-@tipo" role="row" onfocus="onFocusRow(this)" tabindex="@(row==1?"0":"-1")">
+                                <td>
+
+                                    @if (NonPresente)
+                                    {
+
+                                    }
+                                    else
+                                    {
+                                        if (MaiModificata)
+                                        {
+                                            classeCss = "text-danger";
+                                        }
+                                        else
+                                        {
+                                            classeCss = "text-primary";
+                                        }
+
+                                    }
+                                    <span class="@classeCss"><b>@item.codice : @item.descrittiva</b></span>
+                                </td>
+                                <td>
+                                    @if (item.MyRai_Regole_TipoAssenza != null)
+                                    {
+
+                                        <span class="@classeCss"> @item.MyRai_Regole_TipoAssenza.tipo_assenza</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.MyRai_Regole_SchedeEccezioni_Tematiche != null)
+                                    {
+                                        <span class="@classeCss">@strTematiche</span>
+                                    }
+                                </td>
+                                <td style="text-align:right">
+                                    @if (NonPresente)
+                                    {
+                                        @*<a class="btn rai-btn-small" onclick="newEccezione('@item.codice');" role="link" tabindex="-1">Aggiungi</a>*@
+                                        <a class="btn-action-icon" onclick="newEccezione('@item.codice');" role="link" tabindex="-1"><i class="fa fa-plus"></i></a>
+                                    }
+                                    else
+                                    {
+                                        <div class="btn-action-icon-container">
+                                            <a class="btn-action-icon" onclick="modificaEccezione(@item.id);" role="link" tabindex="-1"><i class="fa fa-pencil"></i></a>
+                                            <a class="btn-action-icon" onclick="showDettaglioEccezione('@item.codice');" role="link" tabindex="-1"><i class="fa fa-eye"></i></a>
+                                        </div>
+                                    }
+
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+
+                </table>
+            </div>
+        </div>
+    </div>
+
+</section>

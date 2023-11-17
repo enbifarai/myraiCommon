@@ -1,0 +1,80 @@
+﻿@{
+    Layout = "~/Views/Shared/_layoutContent.cshtml";
+    ViewBag.Title = "HRIS - Servizi";
+
+    var servizi = myRaiCommonManager.AnagraficaManager.GetServizi("", "", true);
+    servizi.Insert(0, new SelectListItem() { Value = "", Text = "Seleziona una direzione" });
+}
+
+<section role="main" class="content-body">
+    <main id="main-container">
+        <div class="content">
+            <div class="row">
+                <div class="col-md-8">
+                    @using (Html.BeginPanel(myRaiHelper.PanelType.PanelNoPadding, "Elenco"))
+                    {
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div id="servizi-elenco">
+
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="col-md-4">
+                    @using (Html.BeginPanel(myRaiHelper.PanelType.Panel, "Ricerca", false))
+                    {
+                        using (Ajax.BeginForm("Elenco_Servizi", "Servizi", new AjaxOptions
+                        {
+                            InsertionMode = InsertionMode.Replace,
+                            HttpMethod = "POST",
+                            OnBegin = "$('#servizi-elenco').addClass('rai-loader');",
+                            UpdateTargetId = "servizi-elenco",
+                            OnSuccess = "$('#servizi-elenco').removeClass('rai-loader');"
+                        }, new { id = "form-ric-ser", @class = "", role = "search" }))
+                        {
+                            <div class="form-group">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <label class="rai-caption">Codice</label>
+                                        @Html.RaiSelect("ricCodice", servizi)
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <label class="rai-caption" for="ricDes">Descrizione</label>
+                                        <input type="text" id="ricDes" name="ricDes" class="form-control" />
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <label class="rai-caption" for="ricDesExt">Descrizione estesa</label>
+                                        <input type="text" id="ricDesExt" name="ricDesExt" class="form-control" />
+                                    </div>
+                                </div>
+                                <div class="row form-button">
+                                    <div class="col-sm-12 rai-btn-fill">
+                                        <input type="submit" class="btn rai-btn-primary" value="Cerca" />
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </main>
+</section>
+
+@Html.RenderModal("servizio", myRaiHelper.ModalPosition.Right, myRaiHelper.ModalSize.Full)
+
+@section afterjs {
+    <script>
+        RaiUpdateWidget("servizi-elenco", '/Servizi/Elenco_Servizi', 'html');
+
+        function ServizioModifica(codice) {
+            RaiOpenAsyncModal('modal-servizio', '/Servizi/Modal_Servizio', { codice: codice }, null, 'POST');
+        }
+    </script>
+}

@@ -1,0 +1,130 @@
+﻿@using myRaiGestionale.Controllers;
+@using myRaiHelper;
+@using myRaiCommonModel.Gestionale;
+@model myRaiCommonModel.Gestionale.ValutatoreEsterno
+
+
+@using (Html.BeginForm("Save_ValutatoreEsterno", "Valutazioni", FormMethod.Post, htmlAttributes: new { @id = "form-valExt-" + Model.IdValutatore }))
+{
+    @Html.HiddenFor(m => m.IdValutatore)
+    @Html.HiddenFor(m => m.IdPersonaValued)
+<div class="rai form-group">
+    <div class="row push-5">
+        <div class="col-sm-4">
+            <label class="rai-caption">Valutatore assegnato</label>
+        </div>
+        <div class="col-sm-8">
+            <div class="input-group rai">
+                <input type="text" readonly class="form-control rai" value="@Model.ActualEvaluator.Role.SINTESI1.Nominativo()" />
+                <span class="input-group-addon"><i class="fa fa-lock"></i></span>
+            </div>
+        </div>
+    </div>
+    @if (Model.ActualEvaluator.Role.XR_VAL_CAMPAIGN_SHEET.EXT_EVALUATOR.GetValueOrDefault() == (int)ValutazioniExtEvalPermission.Autorizzato
+            || Model.ActualEvaluator.Role.XR_VAL_CAMPAIGN_SHEET.EXT_EVALUATOR.GetValueOrDefault() == (int)ValutazioniExtEvalPermission.Obbligatorio)
+    {
+        <div class="row push-5">
+            <div class="col-sm-4">
+                <label class="rai-caption">Valutatore esterno richiesto</label>
+            </div>
+            <div class="col-sm-8">
+                @if (Model.ExternalEvaluator == null)
+                {
+                    @*@Html.DropDownListFor(m => m.IdPersonaSel, new SelectList(ValutazioniController.GetPersonList(Model.ActualEvaluator.Role.ID_PERSONA), "Value", "Text"), new { @class = "js-select2 form-control rai", style = "width: 100%", placeholder = "Persona selezionata" })*@
+                    @Html.RaiSelectFor(m => m.IdPersonaSel, ValutazioniController.GetPersonList(Model.ActualEvaluator.Role.ID_PERSONA), "Seleziona un responsabile")
+                }
+                else
+                {
+                    <div class="input-group rai">
+                        @Html.TextBox("PersonaSel", Model.ExternalEvaluator.EXT_EVALUATOR.Nominativo(), new { @class = "form-control", style = "width: 100%", placeholder = "Persona selezionata", @readonly = "readonly" })
+                        <span class="input-group-addon rai"><i class="fa fa-lock"></i></span>
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="row push-10">
+            <div class="col-sm-4">
+                <label class="rai-caption">Motivazione</label>
+            </div>
+            <div class="col-sm-8">
+                @if (Model.ExternalEvaluator == null)
+                {
+                    @Html.TextAreaFor(m => m.NoteRequest, new { @class = "form-control", rows = "2" })
+                }
+                else
+                {
+                    @Html.TextAreaFor(m => m.NoteRequest, new { @class = "form-control", rows = "2", @readonly = "readonly" })
+                }
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-12">
+
+                @if (Model.ExternalEvaluator == null)
+                {
+                    <div class="rai-btn-fill">
+                        <button class="btn rai-btn-primary" onclick="ValSalvaRichiestaExtVal(this, 'form-valExt-@Model.IdValutatore')">Richiedi</button>
+                    </div>
+                }
+                else
+                {
+                    if (Model.Approved.HasValue)
+                    {
+                        if (Model.Approved.Value)
+                        {
+                            <label class="rai-label rai-label-success">Richiesta approvata</label>
+                        }
+                        else
+                        {
+                            <label class="rai-label rai-label-error">Richiesta rifiutata</label>
+                        }
+                    }
+                    else
+                    {
+                        <label class="rai-label rai-label-warning">In attesa di approvazione</label>
+                    }
+                }
+
+            </div>
+        </div>
+        if (Model.ExternalEvaluator != null && Model.Approved.HasValue && !String.IsNullOrWhiteSpace(Model.NoteApproved))
+        {
+            <div class="row">
+                <div class="col-sm-4">
+                    <label class="rai-caption">
+                        Motivo
+                    </label>
+                </div>
+                <div class="col-sm-8">
+                    <label>@Model.NoteApproved</label>
+                </div>
+            </div>
+        }
+    }
+
+    @if (Model.AutoVal != (int)ValutazioniAuto.No || Model.ActualEvaluator.Role.XR_VAL_CAMPAIGN_SHEET.EMPLOYEE_VIEW.GetValueOrDefault())
+    {
+    <div class="row push-20-t">
+        <div class="col-sm-12">
+            <div class="rai-btn-fill">
+                @if (Model.AutoVal != (int)ValutazioniAuto.No)
+                {
+                <a class="btn rai-btn-small" onclick="ValPage_Valutazione(@Model.IdValutazione, false, false, 'Autovalutazione')">Compila autovalutazione</a>
+                }
+                else if (Model.ActualEvaluator.Role.XR_VAL_CAMPAIGN_SHEET.EMPLOYEE_VIEW.GetValueOrDefault())
+                {
+                    <a class="btn rai-btn-small" onclick="ValPage_Valutazione(@Model.IdValutazione, false, false, 'Autovalutazione')"><i class="fa fa-external-link"></i> Apri valutazione</a>
+                }
+            </div>
+        </div>
+    </div>
+}
+</div>
+}
+
+
+<script>
+    $(".js-select2").select2({
+        placeholder: "Seleziona dalla lista",
+    });
+</script>
